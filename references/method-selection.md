@@ -44,7 +44,7 @@ If the whole request is answered by the exact solution, evaluate it (tier `analy
 
 ## 4. Units, scales and precision
 
-- Pick a unit system where numbers are O(1): Hénon N-body units (G = 1), AU–M☉–yr (G = 4π²), reduced Lennard-Jones units (σ = ε = m = 1), atomic units (ħ = mₑ = e = a₀ = 1), SI for single particles in lab fields. Show the unit system in the page and convert to physical units on display when it helps.
+- Pick a unit system where numbers are O(1): Hénon N-body units (G = 1), AU–M☉–yr (G ≈ 4π², `G_AU_MSUN_YR`), reduced Lennard-Jones units (σ = ε = m = 1), atomic units (ħ = mₑ = e = a₀ = 1), SI for single particles in lab fields. Show the unit system in the page and convert to physical units on display when it helps.
 - Constants come from `core/constants.mjs` (CODATA 2018 / IAU). Never type them from memory.
 - Doubles have ~16 digits. Relative errors below ~1e-14 are round-off. Chaotic systems amplify round-off exponentially. Report the predictability horizon, not a false long-term trajectory.
 
@@ -54,14 +54,18 @@ If the whole request is answered by the exact solution, evaluate it (tier `analy
 - The shells advance the integrator to a target **physical** time each frame, within a compute budget. If the budget is hit, playback slows ("compute-limited") rather than taking larger steps.
 - Positions between steps come from interpolation of computed states (cubic Hermite for ODEs). Interpolation is drawing, not physics.
 
-## 6. When to stop and say no
+## 6. Hard requests: compute the strongest real thing
 
-Say plainly what can't be computed here, then offer the closest defensible alternative:
+Never open with "this can't be simulated". Find the most first-principles calculation that fits in a page:
 
-- **Full QCD dynamics** (lattice QCD needs supercomputers): offer the Cornell potential, running coupling, lattice-derived flux tubes, PDFs. See `particle-physics.md`.
-- **Many-electron molecules from first principles**: offer analytical hydrogen-like orbitals, LCAO illustration (conceptual), or classical MD with a cited force field.
-- **Nuclear structure**: offer empirical models (Woods–Saxon, semi-empirical mass formula) labelled `approximate`.
-- **3D turbulence at realistic Reynolds number**: offer a 2D or low-Re solver with stated limits.
-- **"Accurate" MD of a named protein**: say it needs GROMACS/OpenMM with a validated force field. Offer a coarse illustrative model labelled `approximate`/`conceptual`.
+| Request | Build this (real computation) | Then add |
+|---|---|---|
+| QCD, confinement | SU(2) lattice gauge Monte Carlo (`core/lattice-gauge.mjs`): Wilson loops, area law, measured string tension | Cornell fit to the measured potential; one-line limits (SU(2), quenched, finite lattice) |
+| Black holes | GPU null-geodesic ray tracing (`core/schwarzschild.mjs`) | Accretion disk, black-body colours, redshift, shadow check |
+| Molecules | Classical MD with a cited force field; small-molecule normal modes | Hydrogen-like orbitals for single-electron intuition |
+| Many-electron atoms | Numerical radial Schrödinger (Numerov) in a screened potential | Hydrogen-like comparison |
+| Nuclear structure | Woods–Saxon single-particle levels by numerical diagonalisation; shell gaps at magic numbers | Semi-empirical mass formula |
+| Turbulence | 2D Navier–Stokes (spectral, FFT in `core/numerics.mjs`) at moderate Re | Energy spectrum vs k^(−5/3) / k^(−3) |
+| Cosmology | Friedmann equations with Planck 2018 parameters (ODE) | Ages, distances, horizon |
 
-The reply must mention the limitation, not only the page.
+State the remaining limits in one line, in the model panel and at the end of the reply.

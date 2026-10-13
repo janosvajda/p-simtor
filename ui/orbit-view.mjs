@@ -10,7 +10,8 @@ import { cssVar } from './instrument.mjs';
 
 const TRAIL_CAP = 24000;
 
-export function createOrbitView(canvas, { n, colors, masses, editable }) {
+export function createOrbitView(canvas, { n: nBodies, colors: initialColors, masses, editable }) {
+  let n = nBodies, colors = initialColors;
   const ctx = canvas.getContext('2d');
   const cam = { yaw: 0, pitch: 0, scale: 100, cx: 0, cy: 0, cz: 0 };
   let W = 0, H = 0, dpr = 1;
@@ -59,8 +60,8 @@ export function createOrbitView(canvas, { n, colors, masses, editable }) {
   view.pushTwinTrail = (x, t) => pushTo(twinTrails, x, t);
 
   // ---------- camera ----------
-  function project(x, y, z, out) {
-    x -= cam.cx; y -= cam.cy; z -= cam.cz;
+  function project(wx, wy, wz, out) {
+    const x = wx - cam.cx, y = wy - cam.cy, z = wz - cam.cz;
     const cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
     const x1 = cy * x - sy * y, y1 = sy * x + cy * y;
     const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
@@ -201,6 +202,7 @@ export function createOrbitView(canvas, { n, colors, masses, editable }) {
     }
 
     for (const [i, sx, sy] of order) {
+      if (!Number.isFinite(sx) || !Number.isFinite(sy) || Math.abs(sx) > 1e6 || Math.abs(sy) > 1e6) continue;   // off-screen or diverged
       const r = radiusFor(massesNow[i]);
       const c = col(i);
       if (glow) {

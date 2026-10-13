@@ -1,30 +1,49 @@
 # Quarks, gluons and QCD
 
-Status: **compose**, tiers `analytical` or `conceptual` only.
+**Default: compute it.** Confinement can be computed from first principles on a lattice in the browser. Build that first, then add analytical context next to it.
 
-## What is and isn't computable here
+## 1. Lattice gauge theory (tier `approximate`; the real computation)
 
-Quantum chromodynamics at the hadron scale is non-perturbative. Quantitative results (hadron masses, the static potential, flux-tube profiles, parton distributions) come from lattice QCD on supercomputers or from global fits to experimental data. A browser page cannot solve QCD. Quarks inside a proton have **no classical trajectories**. "Three little balls connected by springs bouncing around" is not a simulation of QCD and must never be presented as one.
+`core/lattice-gauge.mjs` simulates pure SU(2) Yang–Mills theory (gluons without quarks) on a periodic lattice in 2, 3 or 4 dimensions with the Wilson action, using heat-bath plus over-relaxation updates. This is the same method as lattice QCD, with SU(2) instead of SU(3) and modest volumes.
 
-Say this to the user plainly, then build one of the defensible alternatives below.
+```js
+import { createLattice, sweep, plaquette, wilsonLoop, creutzRatio } from 'psim:core/lattice-gauge.mjs';
+const lat = createLattice({ L: 6, d: 4, beta: 2.3, seed: 1 });   // 6⁴: ~15 ms per sweep in Node
+for (let i = 0; i < 50; i++) sweep(lat);                          // thermalise
+// measure W(R,T) over many sweeps; σa² ≈ χ(R,T) = −ln[W(R,T)W(R−1,T−1)/(W(R,T−1)W(R−1,T))]
+```
 
-## Defensible visualisations
+**What to show:**
+- Wilson loops W(R,T) falling with the **area** RT (confinement), not the perimeter, with an exponential fit.
+- Creutz ratios approaching the string tension σa².
+- The static potential V(R) = −ln[W(R,T)/W(R,T−1)] rising linearly. Overlay a Cornell fit to the **measured** points.
+- A live view of the gauge field: the plaquette action density on a 2D slice, coloured, updating each sweep. This is the actual gluon field configuration, and it's a far better visual than drawn springs.
+- The plaquette history, showing thermalisation; statistical error bars from `meanWithError` (blocking).
 
-| Topic | What to compute | Tier | Source to cite |
-|---|---|---|---|
-| Confinement | Cornell static potential V(r) = −(4/3) α_s ħc / r + σ r, with σ ≈ 0.18 GeV² (≈ 0.9 GeV/fm), α_s ≈ 0.3 (static-potential fits) | analytical (phenomenological fit to lattice and quarkonium data) | Eichten et al., Phys. Rev. D 17, 3090 (1978); lattice determinations of σ |
-| Force between quarks | F = −dV/dr: tends to a constant ≈ 0.9 GeV/fm ≈ 14 tonnes-force at large r | analytical | Same |
-| String breaking | Energy stored σr reaches ~2 m_light-meson threshold near r ≈ 1.2–1.4 fm, where creating a q̄q pair is favoured | conceptual, with the threshold computed from cited numbers | Bali et al., Phys. Rev. D 71, 114513 (2005) |
-| Flux tube | Chromoelectric field concentrated in a tube of width ~0.3–0.5 fm between static sources; draw a profile from published lattice data | conceptual (shape from cited lattice results, not computed) | Bali, Schlichter & Schilling (1995); Cardoso et al. (2013) |
-| Asymptotic freedom | One-loop running coupling α_s(Q²) = 12π / ((33 − 2n_f) ln(Q²/Λ²)); compare with α_s(M_Z) = 0.1180 | analytical (perturbative; invalid below ~1 GeV, so shade that region) | PDG Review "Quantum chromodynamics" |
-| Proton structure | Parton distribution functions x f(x, Q²) for u, d, g, sea, from published fit tables | analytical display of published data (cite the set and version; never invent shapes) | CTEQ/NNPDF/MSHT; PDG |
-| Colour charge | SU(3) colour algebra: 8 gluons, colour-singlet combinations (qqq, qq̄) | conceptual (symbolic colours, disclosed: colour charge is not visual colour) | Any QCD text |
-| Scattering | Tree-level cross-sections (for example e⁺e⁻ → qq̄, R-ratio = N_c Σ Q_q²) | analytical | PDG |
+**Required checks in `verify()`** (all in `tests/lattice-gauge.test.mjs`):
+- 2D exact solution ⟨P⟩ = I₂(β)/I₁(β), W(R,T) = ⟨P⟩^{RT};
+- 4D strong coupling ⟨P⟩ ≈ u + 4u⁵;
+- gauge invariance of observables;
+- over-relaxation preserves the action;
+- positive Creutz ratio (area law).
 
-## Rules for these pages
+Run the Monte Carlo in chunks per frame (one sweep per frame for 6⁴) so the page stays responsive. Use a Web Worker if you go larger.
 
-- The tier badge says `conceptual` or `analytical`, and the model panel says what was **not** computed ("No QCD dynamics are simulated; the potential is a fit to lattice results").
-- Colour charge shown as red, green or blue is a symbol. Say so.
-- If you animate anything (for example a stretched flux tube as separation increases), the animated parameter is r, and every frame's energy and field profile is evaluated from the cited formula or data at that r. The motion itself has no dynamical meaning, so label it "parameter sweep, not time evolution".
-- Numbers quoted (σ, α_s, Λ, string-breaking distance) carry their source and uncertainty.
-- Invite the user to specialised tools for real calculations: lattice QCD codes (openQCD, Chroma), PDF libraries (LHAPDF), event generators (Pythia), which can't run in a page.
+**One-line limits for the page:** SU(2) not SU(3), no dynamical quarks (so no string breaking), finite lattice spacing and volume. The trend is real; continuum numbers need extrapolation.
+
+## 2. Analytical context (tier `analytical`), next to the lattice
+
+| Topic | What to compute | Source to cite |
+|---|---|---|
+| Static potential fit | Cornell V(r) = −(4/3)α_s ħc/r + σr, σ ≈ 0.18 GeV² ≈ 0.9 GeV/fm | Eichten et al., PRD 17, 3090 (1978) |
+| Physical scale | Sommer scale r₀ ≈ 0.5 fm: r²F(r) = 1.65 sets the lattice spacing a in fm | Sommer, NPB 411, 839 (1994) |
+| String breaking (needs quarks) | Breaks near 1.2–1.4 fm | Bali et al., PRD 71, 114513 (2005) |
+| Asymptotic freedom | One-loop α_s(Q²) = 12π/((33−2n_f) ln(Q²/Λ²)); α_s(M_Z) = 0.1180 | PDG |
+| Proton structure | Parton distributions from published fit tables (cite set and version) | NNPDF / CT18 / MSHT |
+
+## Rules
+
+- Colour charge drawn as red, green or blue is a symbol; say so once.
+- A separation slider on a formula is a "parameter sweep", not time evolution; label it.
+- Quote numbers with source and uncertainty.
+- State the one-line limits at the end, not as the opening.

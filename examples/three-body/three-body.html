@@ -125,6 +125,7 @@ body {
 }
 .psim-tier i { width: 7px; height: 7px; border-radius: 50%; background: var(--good); }
 .psim-tier[data-tier="approximate"] i { background: var(--warn); }
+.psim-tier[data-tier="unverified"] i { background: var(--warn); }
 .psim-tier[data-tier="analytical"] i { background: var(--accent); }
 .psim-tier[data-tier="conceptual"] i { background: var(--muted); }
 
@@ -226,13 +227,15 @@ body {
 .psim-field .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .psim-field .top span { color: var(--ink-2); }
 .psim-field .top input[type=number], .psim-num {
-  width: 92px; text-align: right;
+  width: 108px; text-align: right;
   font: 12px var(--mono); color: var(--ink);
   background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 2px 6px;
 }
 .psim-field .top input[type=number]:hover, .psim-num:hover { border-color: var(--line); }
 .psim-field .top input[type=number]:focus, .psim-num:focus { outline: none; border-color: var(--accent); }
 .psim-hint { color: var(--muted); font-size: 12px; margin: 0; }
+.psim-limit { color: var(--warn); font: 11px var(--mono); }
+.psim-limit:empty { display: none; }
 .psim-hint b { color: var(--ink-2); font-weight: 500; }
 
 select.psim-select {
@@ -295,7 +298,8 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 .psim-prose li { margin: 3px 0; }
 .psim-prose cite { font-style: normal; color: var(--muted); }
 
-.psim-check { display: grid; grid-template-columns: 16px 1fr auto; gap: 8px; align-items: baseline; }
+.psim-check { display: grid; grid-template-columns: 16px 1fr; column-gap: 8px; row-gap: 2px; align-items: baseline; }
+.psim-check code { grid-column: 2; overflow-wrap: anywhere; }
 .psim-check i { width: 8px; height: 8px; border-radius: 50%; background: var(--good); transform: translateY(-1px); }
 .psim-check i.warn { background: var(--warn); }
 .psim-check i.bad { background: var(--bad); }
@@ -325,6 +329,76 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
+}
+
+/* ---------- figures (ui/plot.mjs) ---------- */
+.psim-figure { margin: 0; display: grid; gap: 6px; min-width: 0; }
+.psim-plot-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.psim-plot-head .t { font: 600 12px/1.3 var(--sans); color: var(--ink-2); }
+.psim-plot-head .l { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.psim-plot-head .k { display: inline-flex; align-items: center; gap: 6px; font: 11px var(--sans); color: var(--muted); cursor: default; }
+.psim-plot-head .k.on { color: var(--ink); }
+.psim-plot-head .k i { width: 12px; height: 2.5px; border-radius: 2px; }
+.psim-plot2 { position: relative; border-radius: 10px; background: color-mix(in srgb, var(--stage) 75%, transparent); border: 1px solid var(--line); }
+.psim-plot2 canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* ---------- equations split into terms (ui/equation.mjs) ---------- */
+.psim-equation { display: grid; gap: 10px; }
+.psim-equation h3, .psim-derivation h3 { margin: 0; font: 600 11px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.psim-eqrow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 6px; }
+.psim-eqrow .op { align-self: center; font: 20px var(--serif); color: var(--muted); padding: 0 2px; }
+.psim-term {
+  display: grid; grid-template-rows: auto 3px auto auto; justify-items: center; align-content: start; gap: 5px;
+  padding: 10px 12px 9px; border-radius: 10px; min-width: 88px;
+  background: color-mix(in srgb, var(--stage) 70%, transparent); border: 1px solid var(--line);
+  transition: opacity .15s, border-color .15s; outline: none;
+}
+.psim-term[data-id]:not([data-id=""]) { cursor: default; }
+.psim-term:hover, .psim-term:focus-visible { border-color: var(--line-strong); }
+.psim-term.dim { opacity: .35; }
+.psim-term.lhs { background: transparent; border-style: dashed; }
+.psim-term .mx { font-size: 19px; line-height: 1.2; color: var(--ink); min-height: 30px; display: grid; place-items: center; }
+.psim-term .mx math { font-size: 19px; }
+.psim-term .bar { width: 100%; height: 3px; border-radius: 2px; background: var(--line); }
+.psim-term .lb { font: 11px/1.25 var(--sans); color: var(--muted); text-align: center; max-width: 150px; }
+.psim-term .v { font: 12px var(--mono); color: var(--ink-2); white-space: nowrap; }
+.psim-where { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: baseline; padding: 8px 12px; border-left: 2px solid var(--line-strong); }
+.psim-where .kw { grid-column: 1 / -1; font: italic 12px var(--serif); color: var(--muted); }
+.psim-where .w { display: contents; }
+.psim-where .mx math { font-size: 15px; color: var(--ink); }
+.psim-where .mean { color: var(--ink-2); font-size: 12.5px; }
+.psim-where .v { font: 12px var(--mono); color: var(--ink); text-align: right; }
+.psim-derivation ol { margin: 8px 0 0; padding: 0; list-style: none; counter-reset: step; display: grid; gap: 8px; }
+.psim-derivation li { counter-increment: step; display: grid; grid-template-columns: 22px 1fr; column-gap: 8px; align-items: center; }
+.psim-derivation li::before { content: counter(step); grid-row: span 2; align-self: start; margin-top: 8px; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--line-strong); font: 10.5px/18px var(--mono); text-align: center; color: var(--muted); }
+.psim-derivation .mx { overflow-x: auto; padding: 4px 0; }
+.psim-derivation .mx math { font-size: 17px; color: var(--ink); }
+.psim-derivation .why { font-size: 12px; color: var(--muted); }
+
+/* ---------- workbench layout: stage + figures + equations (instrument-app layout: 'workbench') ---------- */
+.psim-app.workbench .psim-stage { overflow: auto; background: var(--stage); }
+.psim-bench { position: relative; display: grid; gap: 18px; padding: 18px 18px 84px; min-height: 100%; }
+.psim-bench .psim-canvaswrap { position: relative; height: clamp(300px, 52vh, 620px); border-radius: 12px; overflow: hidden; border: 1px solid var(--line);
+  background: radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 90%, var(--accent) 10%) 0%, var(--stage) 65%); }
+.psim-bench .psim-canvaswrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+.psim-bench .psim-figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+.psim-bench .psim-eqs { display: grid; gap: 18px; }
+.psim-app.workbench .psim-transport { position: fixed; left: calc((100vw - 372px) / 2); }
+.psim-app.workbench .psim-hud { left: 30px; top: 30px; }
+.psim-app.workbench .psim-legend { right: 30px; top: 30px; }
+@media (max-width: 860px) {
+  .psim-app.workbench .psim-transport { left: 50%; }
+  .psim-bench { padding: 12px 12px 84px; }
+}
+
+@media (max-width: 860px) {
+  /* phones: legend bottom-right, clear of HUD (top-left), scale bars (bottom-left) and transport */
+  .psim-legend { top: auto; bottom: 70px; left: auto; right: 14px; max-width: 58%; justify-items: end; text-align: right; font-size: 10.5px; }
+  .psim-app.workbench { grid-template-rows: auto auto auto; }
+  .psim-app.workbench .psim-stage { overflow: visible; }
+  .psim-app.workbench .psim-transport { position: absolute; }
+  .psim-app.workbench .psim-legend { top: auto; bottom: 14px; left: auto; right: 26px; }
+  .psim-bench .psim-canvaswrap { height: 70vh; }
 }
 </style>
 </head>
@@ -466,7 +540,8 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
       0
      ]
     }
-   ]
+   ],
+   "stepsPerCrossing": 16000
   },
   "lagrange": {
    "title": "Lagrange equilateral triangle",
@@ -513,7 +588,8 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
       0
      ]
     }
-   ]
+   ],
+   "stepsPerCrossing": 4000
   },
   "hierarchical": {
    "title": "Hierarchical triple",
@@ -613,53 +689,66 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 }</script>
 <script type="application/json" id="psim-verification">{
  "figure-eight": {
-  "generated": "2026-10-12T23:18:48.924Z",
+  "generated": "2026-10-13T16:38:49.201Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
+  "settings": {
+   "integrator": "logh4",
+   "G": 1,
+   "softening": 0,
+   "stepsPerCrossing": 2000
+  },
   "duration": 25.30365592,
   "conservation": {
-   "dE": 1.431831322936391e-14,
-   "dP": 6.184755530441844e-15,
-   "dL": 7.447376735855156e-15,
-   "steps": 13808,
-   "h": 0.0047176798613811095
+   "dE": 6.2167355885131e-12,
+   "dP": 8.23973562081536e-15,
+   "dL": 8.206031089976432e-15,
+   "scope": "maximum over every computed step",
+   "final": {
+    "dE": 2.949917544844854e-14,
+    "dP": 5.121459204254588e-15,
+    "dL": 6.471688091072216e-15
+   },
+   "steps": 15821,
+   "h": 0.004117411519382586
   },
   "convergence": {
    "integrator": "logh4",
    "expectedOrder": 4,
-   "observedOrder": 4.005789182611188,
+   "observedOrder": 4.007509453640313,
+   "orderH": 0.004117411519382586,
    "horizon": 25.30365592,
    "converged": true,
-   "finalDifference": 2.3469581156097545e-12,
-   "h": 0.0047176798613811095,
+   "finalDifference": 2.1946791555178e-12,
+   "h": 0.004117411519382586,
    "steps": [
-    13808,
-    27615,
-    55230
+    15821,
+    31641,
+    63282
    ]
   },
   "determinism": {
    "identical": true,
-   "steps": 13808
+   "steps": 15821
   },
   "frameIndependence": {
    "identical": true,
-   "steps": 13808
+   "steps": 15821
   },
   "benchmarks": [
    {
     "name": "Kepler e=0.9, 10 orbits",
     "integrator": "logh4",
-    "positionError": 0.00009384891471210458,
-    "dE": 1.9539925233402687e-13,
-    "steps": 1317
+    "positionError": 3.870242951849858e-12,
+    "dE": 8.419931418757157e-13,
+    "steps": 87178
    },
    {
     "name": "Figure-eight periodicity (1 period)",
     "integrator": "logh4",
-    "returnError": 4.102075177245404e-8,
-    "dE": 1.621592100674949e-14,
-    "steps": 3452
+    "returnError": 4.102126557359856e-8,
+    "dE": 1.0350587876648612e-15,
+    "steps": 3956
    },
    {
     "name": "Pythagorean problem to t=80",
@@ -670,56 +759,69 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 84
+  "runtimeMs": 175
  },
  "pythagorean": {
-  "generated": "2026-10-12T23:18:49.230Z",
+  "generated": "2026-10-13T16:38:52.577Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
+  "settings": {
+   "integrator": "logh4",
+   "G": 1,
+   "softening": 0,
+   "stepsPerCrossing": 16000
+  },
   "duration": 80,
   "conservation": {
-   "dE": 2.4443316898073367e-11,
-   "dP": 1.0032649153963452e-14,
-   "dL": 1.5069026649800342e-14,
-   "steps": 92426,
-   "h": 0.024631484181914437
+   "dE": 6.124785706782107e-9,
+   "dP": 5.947078940705758e-13,
+   "dL": 1.958886261088549e-13,
+   "scope": "maximum over every computed step",
+   "final": {
+    "dE": 7.467351401290509e-12,
+    "dP": 1.2482214352009609e-13,
+    "dL": 1.1490811631743606e-14
+   },
+   "steps": 751585,
+   "h": 0.0030789355227393046
   },
   "convergence": {
    "integrator": "logh4",
    "expectedOrder": 4,
    "observedOrder": 3.998597217758773,
-   "horizon": 59.2,
+   "orderH": 0.024631484181914437,
+   "horizon": 74,
    "converged": false,
-   "finalDifference": 0.043127150755647214,
-   "h": 0.024631484181914437,
+   "finalDifference": 0.0005955204634296606,
+   "h": 0.0030789355227393046,
    "steps": [
-    92426,
-    187856,
-    375789
+    751585,
+    1503172,
+    3006351
    ]
   },
   "determinism": {
    "identical": true,
-   "steps": 92426
+   "steps": 751585
   },
   "frameIndependence": {
    "identical": true,
-   "steps": 92426
+   "steps": 751585
   },
   "benchmarks": [
    {
     "name": "Kepler e=0.9, 10 orbits",
     "integrator": "logh4",
-    "positionError": 0.00009384891471210458,
-    "dE": 1.9539925233402687e-13,
-    "steps": 1317
+    "positionError": 3.870242951849858e-12,
+    "dE": 8.419931418757157e-13,
+    "steps": 87178
    },
    {
     "name": "Figure-eight periodicity (1 period)",
     "integrator": "logh4",
-    "returnError": 4.102075177245404e-8,
-    "dE": 1.621592100674949e-14,
-    "steps": 3452
+    "returnError": 4.102126557359856e-8,
+    "dE": 1.0350587876648612e-15,
+    "steps": 3956
    },
    {
     "name": "Pythagorean problem to t=80",
@@ -730,56 +832,69 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 360
+  "runtimeMs": 4674
  },
  "lagrange": {
-  "generated": "2026-10-12T23:18:49.461Z",
+  "generated": "2026-10-13T16:38:54.449Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
+  "settings": {
+   "integrator": "logh4",
+   "G": 1,
+   "softening": 0,
+   "stepsPerCrossing": 4000
+  },
   "duration": 60,
   "conservation": {
-   "dE": 2.139016371434839e-10,
-   "dP": 1.50512432861038e-14,
-   "dL": 1.588321608213324e-14,
-   "steps": 40251,
-   "h": 0.0045
+   "dE": 1.2567709835783109e-10,
+   "dP": 2.4945605822134827e-14,
+   "dL": 2.702953183648917e-14,
+   "scope": "maximum over every computed step",
+   "final": {
+    "dE": 1.9914440467042973e-12,
+    "dP": 1.746106845281322e-14,
+    "dL": 9.398425453731144e-15
+   },
+   "steps": 80063,
+   "h": 0.00225
   },
   "convergence": {
    "integrator": "logh4",
    "expectedOrder": 4,
    "observedOrder": 4.254390812260229,
+   "orderH": 0.0045,
    "horizon": 21.9,
    "converged": false,
-   "finalDifference": 5.015338392210782,
-   "h": 0.0045,
+   "finalDifference": 5.553362906490307,
+   "h": 0.00225,
    "steps": [
-    40251,
     80063,
-    159250
+    159250,
+    320411
    ]
   },
   "determinism": {
    "identical": true,
-   "steps": 40251
+   "steps": 80063
   },
   "frameIndependence": {
    "identical": true,
-   "steps": 40251
+   "steps": 80063
   },
   "benchmarks": [
    {
     "name": "Kepler e=0.9, 10 orbits",
     "integrator": "logh4",
-    "positionError": 0.00009384891471210458,
-    "dE": 1.9539925233402687e-13,
-    "steps": 1317
+    "positionError": 3.870242951849858e-12,
+    "dE": 8.419931418757157e-13,
+    "steps": 87178
    },
    {
     "name": "Figure-eight periodicity (1 period)",
     "integrator": "logh4",
-    "returnError": 4.102075177245404e-8,
-    "dE": 1.621592100674949e-14,
-    "steps": 3452
+    "returnError": 4.102126557359856e-8,
+    "dE": 1.0350587876648612e-15,
+    "steps": 3956
    },
    {
     "name": "Pythagorean problem to t=80",
@@ -790,56 +905,69 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 170
+  "runtimeMs": 657
  },
  "hierarchical": {
-  "generated": "2026-10-12T23:18:50.506Z",
+  "generated": "2026-10-13T16:38:56.890Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
+  "settings": {
+   "integrator": "logh4",
+   "G": 1,
+   "softening": 0,
+   "stepsPerCrossing": 2000
+  },
   "duration": 40,
   "conservation": {
-   "dE": 1.0830211735432399e-13,
-   "dP": 3.031863142316331e-14,
-   "dL": 1.7237449195890574e-14,
-   "steps": 405989,
-   "h": 0.0010052131684515652
+   "dE": 1.6314965267042052e-13,
+   "dP": 8.840585085737825e-14,
+   "dL": 4.7066412909310105e-14,
+   "scope": "maximum over every computed step",
+   "final": {
+    "dE": 1.9327226730434022e-14,
+    "dP": 8.288141923946164e-14,
+    "dL": 2.887043551259013e-14
+   },
+   "steps": 566725,
+   "h": 0.0007201123806643316
   },
   "convergence": {
    "integrator": "logh4",
    "expectedOrder": 4,
-   "observedOrder": 3.999240800087657,
+   "observedOrder": 3.932851600149089,
+   "orderH": 0.0007201123806643316,
    "horizon": 40,
    "converged": true,
-   "finalDifference": 2.2995359214562315e-10,
-   "h": 0.0010052131684515652,
+   "finalDifference": 7.700150870465296e-11,
+   "h": 0.0007201123806643316,
    "steps": [
-    405989,
-    811978,
-    1623955
+    566725,
+    1133449,
+    2266897
    ]
   },
   "determinism": {
    "identical": true,
-   "steps": 405989
+   "steps": 566725
   },
   "frameIndependence": {
    "identical": true,
-   "steps": 405989
+   "steps": 566725
   },
   "benchmarks": [
    {
     "name": "Kepler e=0.9, 10 orbits",
     "integrator": "logh4",
-    "positionError": 0.00009384891471210458,
-    "dE": 1.9539925233402687e-13,
-    "steps": 1317
+    "positionError": 3.870242951849858e-12,
+    "dE": 8.419931418757157e-13,
+    "steps": 87178
    },
    {
     "name": "Figure-eight periodicity (1 period)",
     "integrator": "logh4",
-    "returnError": 4.102075177245404e-8,
-    "dE": 1.621592100674949e-14,
-    "steps": 3452
+    "returnError": 4.102126557359856e-8,
+    "dE": 1.0350587876648612e-15,
+    "steps": 3956
    },
    {
     "name": "Pythagorean problem to t=80",
@@ -850,56 +978,69 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 1484
+  "runtimeMs": 3335
  },
  "broucke-a2": {
-  "generated": "2026-10-12T23:18:51.062Z",
+  "generated": "2026-10-13T16:38:58.124Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
+  "settings": {
+   "integrator": "logh4",
+   "G": 1,
+   "softening": 0,
+   "stepsPerCrossing": 2000
+  },
   "duration": 20,
   "conservation": {
-   "dE": 2.3411445004085214e-12,
-   "dP": 6.616269486198763e-15,
-   "dL": 6.659711511327341e-15,
-   "steps": 16681,
-   "h": 0.004199408971344784
+   "dE": 2.6400167090129133e-13,
+   "dP": 1.0836913695346416e-14,
+   "dL": 2.2550847280749126e-14,
+   "scope": "maximum over every computed step",
+   "final": {
+    "dE": 2.0288312845440254e-13,
+    "dP": 8.604109580071357e-15,
+    "dL": 1.9314920985925878e-14
+   },
+   "steps": 31452,
+   "h": 0.0022271114560131018
   },
   "convergence": {
    "integrator": "logh4",
    "expectedOrder": 4,
-   "observedOrder": 3.9990148338369327,
+   "observedOrder": 3.9762463299358384,
+   "orderH": 0.0022271114560131018,
    "horizon": 20,
    "converged": true,
-   "finalDifference": 3.49639702904671e-10,
-   "h": 0.004199408971344784,
+   "finalDifference": 2.938929514055731e-11,
+   "h": 0.0022271114560131018,
    "steps": [
-    16681,
-    33361,
-    66721
+    31452,
+    62904,
+    125807
    ]
   },
   "determinism": {
    "identical": true,
-   "steps": 16681
+   "steps": 31452
   },
   "frameIndependence": {
    "identical": true,
-   "steps": 16681
+   "steps": 31452
   },
   "benchmarks": [
    {
     "name": "Kepler e=0.9, 10 orbits",
     "integrator": "logh4",
-    "positionError": 0.00009384891471210458,
-    "dE": 1.9539925233402687e-13,
-    "steps": 1317
+    "positionError": 3.870242951849858e-12,
+    "dE": 8.419931418757157e-13,
+    "steps": 87178
    },
    {
     "name": "Figure-eight periodicity (1 period)",
     "integrator": "logh4",
-    "returnError": 4.102075177245404e-8,
-    "dE": 1.621592100674949e-14,
-    "steps": 3452
+    "returnError": 4.102126557359856e-8,
+    "dE": 1.0350587876648612e-15,
+    "steps": 3956
    },
    {
     "name": "Pythagorean problem to t=80",
@@ -910,7 +1051,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 90
+  "runtimeMs": 253
  }
 }</script>
 
@@ -992,10 +1133,10 @@ function kineticEnergy(s) {
 function forceFunction(s) {
   const { n, x, m, G, eps2 } = s;
   let U = 0;
-  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+  for (let i = 0; i < n; i++) {for (let j = i + 1; j < n; j++) {
     const dx = x[3 * j] - x[3 * i], dy = x[3 * j + 1] - x[3 * i + 1], dz = x[3 * j + 2] - x[3 * i + 2];
     U += G * m[i] * m[j] / Math.sqrt(dx * dx + dy * dy + dz * dz + eps2);
-  }
+  }}
   return U;
 }
 
@@ -1033,10 +1174,10 @@ function centerOfMass(s) {
 /** Shift to the barycentric frame: centre of mass at rest at the origin. */
 function toBarycentric(s) {
   const { x: c, v: u } = centerOfMass(s);
-  for (let i = 0; i < s.n; i++) for (let k = 0; k < 3; k++) {
+  for (let i = 0; i < s.n; i++) {for (let k = 0; k < 3; k++) {
     s.x[3 * i + k] -= c[k];
     s.v[3 * i + k] -= u[k];
-  }
+  }}
   return s;
 }
 
@@ -1058,7 +1199,8 @@ function drift(s, ref) {
   const dP = Math.hypot(now.P[0] - ref.P[0], now.P[1] - ref.P[1], now.P[2] - ref.P[2]);
   const dL = Math.hypot(now.L[0] - ref.L[0], now.L[1] - ref.L[1], now.L[2] - ref.L[2]);
   return {
-    dE: Math.abs((now.E - ref.E) / ref.E),
+    // relative to |E₀|, or to T₀ + U₀ when the system is (nearly) marginally bound
+    dE: Math.abs(now.E - ref.E) / (Math.abs(ref.E) > 1e-9 * (ref.T + ref.U) ? Math.abs(ref.E) : (ref.T + ref.U)),
     dP: dP / scaleP,
     dL: dL / scaleL,
     now,
@@ -1181,18 +1323,26 @@ const INTEGRATORS = {
  * simulation independent of display frame rate: the step sequence depends only
  * on the initial value problem and h, never on when frames are drawn.
  */
-function createStepper(sys, { integrator = 'logh4', h, stepsPerCrossing = 2000 } = {}) {
+function createStepper(sys, { integrator = 'logh4', h: hGiven, stepsPerCrossing = 2000 } = {}) {
   const spec = INTEGRATORS[integrator];
   if (!spec) throw new Error(`Unknown integrator "${integrator}"`);
   const ctx = { B: -totalEnergy(sys) };
-  if (h == null) h = defaultStep(sys, integrator, stepsPerCrossing);
+  const h = hGiven ?? defaultStep(sys, integrator, stepsPerCrossing);
+  if (!(Number.isFinite(h) && h !== 0)) throw new Error(`createStepper: step ${h} is not usable (coincident bodies or zero energy scale?)`);
   const prev = { t: sys.t, x: sys.x.slice(), v: sys.v.slice() };
   const ref = invariants(sys);
   return {
     sys, integrator, spec, h, ctx, prev, ref,
     step() {
       prev.t = sys.t; prev.x.set(sys.x); prev.v.set(sys.v);
+      const steps0 = sys.steps;
       spec.step(sys, this.h, ctx);
+      if (!Number.isFinite(sys.t) || (sys.t - prev.t) * Math.sign(this.h) <= 0
+        || !sys.x.every(Number.isFinite) || !sys.v.every(Number.isFinite) || !Number.isFinite(totalEnergy(sys))) {
+        sys.t = prev.t; sys.x.set(prev.x); sys.v.set(prev.v); sys.steps = steps0;
+        computeAccelerations(sys);
+        throw new Error('createStepper: numerical step failed; reduce the step size or resolve the collision');
+      }
     },
     /** Advance until sys.t >= tTarget. Returns false if maxSteps was hit first. */
     advanceTo(tTarget, maxSteps = Infinity) {
@@ -1211,12 +1361,36 @@ function createStepper(sys, { integrator = 'logh4', h, stepsPerCrossing = 2000 }
 }
 
 /**
- * A sensible default step. Fixed-step methods: dt = t_cross / 2000.
- * LogH methods: h chosen so that, at the initial configuration, dt ≈ t_cross / 2000;
- * because dt = h/U adapts, close encounters automatically get shorter steps.
+ * Shortest pairwise dynamical time min √(r_ij³ / G(m_i + m_j)). Unlike the crossing
+ * time, it stays meaningful for extreme mass ratios (a planet around a star), where
+ * the total energy, and hence the crossing time, is dominated by the light body.
+ */
+function pairTime(s) {
+  let t = Infinity;
+  for (let i = 0; i < s.n; i++) {for (let j = i + 1; j < s.n; j++) {
+    const r = Math.hypot(s.x[3 * j] - s.x[3 * i], s.x[3 * j + 1] - s.x[3 * i + 1], s.x[3 * j + 2] - s.x[3 * i + 2]);
+    t = Math.min(t, Math.sqrt(r * r * r / (s.G * (s.m[i] + s.m[j]))));
+  }}
+  return t;
+}
+
+/** Shortest pair crossing time r_ij / |v_i − v_j|; resolves fast unbound flybys. */
+function pairCrossingTime(s) {
+  let t = Infinity;
+  for (let i = 0; i < s.n; i++) {for (let j = i + 1; j < s.n; j++) {
+    const speed = Math.hypot(s.v[3 * j] - s.v[3 * i], s.v[3 * j + 1] - s.v[3 * i + 1], s.v[3 * j + 2] - s.v[3 * i + 2]);
+    if (speed > 0) t = Math.min(t, Math.hypot(s.x[3 * j] - s.x[3 * i], s.x[3 * j + 1] - s.x[3 * i + 1], s.x[3 * j + 2] - s.x[3 * i + 2]) / speed);
+  }}
+  return t;
+}
+
+/**
+ * A sensible default step: dt = t_char / stepsPerCrossing with t_char = min(crossing
+ * time, 2π × shortest pair orbital or crossing time). LogH methods: h chosen so that dt ≈ that value at the
+ * initial configuration; because dt = h/U adapts, close encounters get shorter steps.
  */
 function defaultStep(sys, integrator, stepsPerCrossing = 2000) {
-  const tc = crossingTime(sys);
+  const tc = Math.min(crossingTime(sys), 2 * Math.PI * pairTime(sys), 2 * Math.PI * pairCrossingTime(sys));
   const dt = tc / stepsPerCrossing;
   if (!INTEGRATORS[integrator].adaptive) return dt;
   return dt * forceFunction(sys);
@@ -1246,17 +1420,26 @@ function hermite(t0, x0, v0, t1, x1, v1, t, outX, outV) {
 
 /**
  * Integrate a copy of the system to time tEnd and return final state and drift.
- * Used by verification scripts and by in-page convergence checks.
+ * Used by verification scripts and by in-page convergence checks. With
+ * trackConservation, maxDrift records the worst error at every computed step.
  */
 function integrateTo(bodies, opts, tEnd) {
   const sys = createSystem(bodies, opts);
   if (opts.barycentric !== false) toBarycentric(sys);
   const st = createStepper(sys, opts);
   const x = new Float64Array(3 * sys.n), v = new Float64Array(3 * sys.n);
-  st.advanceTo(tEnd);
+  let maxDrift;
+  if (opts.trackConservation) {
+    maxDrift = { dE: 0, dP: 0, dL: 0 };
+    while (sys.t < tEnd) {
+      st.step();
+      const errors = drift(sys, st.ref);
+      for (const key of ['dE', 'dP', 'dL']) maxDrift[key] = Math.max(maxDrift[key], errors[key]);
+    }
+  } else st.advanceTo(tEnd);
   st.sampleAt(tEnd, x, v);
   const d = drift(sys, st.ref);
-  return { x, v, steps: sys.steps, h: st.h, dE: d.dE, dP: d.dP, dL: d.dL, sys };
+  return { x, v, steps: sys.steps, h: st.h, dE: d.dE, dP: d.dP, dL: d.dL, maxDrift, sys };
 }
 
 /** Max position difference between two flat state vectors. */
@@ -1268,7 +1451,7 @@ function stateDistance(xa, xb) {
   return d;
 }
 
-return { createSystem, cloneSystem, computeAccelerations, kineticEnergy, forceFunction, totalEnergy, totalMomentum, angularMomentum, centerOfMass, toBarycentric, invariants, drift, crossingTime, leapfrogStep, yoshida4Step, loghStep, logh4Step, INTEGRATORS, createStepper, defaultStep, hermite, integrateTo, stateDistance };
+return { createSystem, cloneSystem, computeAccelerations, kineticEnergy, forceFunction, totalEnergy, totalMomentum, angularMomentum, centerOfMass, toBarycentric, invariants, drift, crossingTime, leapfrogStep, yoshida4Step, loghStep, logh4Step, INTEGRATORS, createStepper, pairTime, pairCrossingTime, defaultStep, hermite, integrateTo, stateDistance };
 })();
 
 // ---- psim:core/kepler.mjs
@@ -1276,8 +1459,20 @@ __psim["core/kepler.mjs"] = (() => {
 // Analytic two-body (Kepler) solution, used as a reference for numerical integrators.
 
 /** Solve Kepler's equation E − e sin E = M for elliptic orbits (Newton iteration). */
-function solveKepler(M, e, tol = 1e-15) {
-  M = M % (2 * Math.PI);
+/**
+ * Eccentricities computed from state vectors carry round-off: a circular orbit can come out as
+ * e = −1e−16. Treat |e| below 1e−12 as 0; reject only physically impossible values.
+ */
+function checkEccentricity(e, who) {
+  if (Math.abs(e) < 1e-12) return 0;
+  if (!(e > 0 && e < 1)) throw new Error(`${who}: elliptic orbits need 0 ≤ e < 1 (got ${e})`);
+  return e;
+}
+
+function solveKepler(meanAnomaly, eIn, tol = 1e-15) {
+  const e = checkEccentricity(eIn, 'solveKepler');
+  // reduce to [0, 2π): with E₀ = π for high e, Newton converges monotonically only there
+  const M = ((meanAnomaly % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
   let E = e < 0.8 ? M : Math.PI;
   for (let k = 0; k < 100; k++) {
     const f = E - e * Math.sin(E) - M;
@@ -1305,7 +1500,8 @@ function keplerRelative(a, e, mu, t) {
 }
 
 /** Bodies for a barycentric two-body orbit starting at pericentre. */
-function keplerBodies(m1, m2, a, e, G = 1) {
+function keplerBodies(m1, m2, a, eIn, G = 1) {
+  const e = checkEccentricity(eIn, 'keplerBodies');
   const mu = G * (m1 + m2);
   const r = a * (1 - e);
   const v = Math.sqrt(mu * (1 + e) / r);
@@ -1316,7 +1512,7 @@ function keplerBodies(m1, m2, a, e, G = 1) {
   ];
 }
 
-return { solveKepler, keplerRelative, keplerBodies };
+return { checkEccentricity, solveKepler, keplerRelative, keplerBodies };
 })();
 
 // ---- psim:core/presets.mjs
@@ -1342,6 +1538,7 @@ const THREE_BODY_PRESETS = {
     source: 'Burrau (1913); Szebehely & Peters (1967), Astron. J. 72, 876.',
     note: 'Masses 3, 4, 5 start at rest on a 3-4-5 triangle. A long chaotic dance of close encounters ends near t ≈ 60–70 with body 3 ejected and bodies 4 and 5 bound as a binary.',
     duration: 80,
+    stepsPerCrossing: 16000, // resolves the energy-error spike during the closest encounter
     bodies: [
       { m: 3, x: [1, 3, 0], v: [0, 0, 0] },
       { m: 4, x: [-2, -1, 0], v: [0, 0, 0] },
@@ -1353,6 +1550,7 @@ const THREE_BODY_PRESETS = {
     source: 'Lagrange (1772). Linear stability requires (m1+m2+m3)² > 27(m1m2+m2m3+m3m1) (Routh 1875).',
     note: 'Equal masses on a rotating equilateral triangle. An exact solution, but unstable for equal masses: round-off grows until the configuration breaks up.',
     duration: 60,
+    stepsPerCrossing: 4000,
     bodies: lagrangeTriangle([1, 1, 1], 1),
   },
   'hierarchical': {
@@ -1376,7 +1574,7 @@ const THREE_BODY_PRESETS = {
 };
 
 /** Equilateral triangle in the plane rotating rigidly about the barycentre. */
-function lagrangeTriangle(m, side) {
+function lagrangeTriangle(m, side, G = 1) {
   const M = m[0] + m[1] + m[2];
   const pts = [0, 1, 2].map(k => {
     const th = Math.PI / 2 + k * 2 * Math.PI / 3;
@@ -1384,7 +1582,7 @@ function lagrangeTriangle(m, side) {
   });
   const c = [0, 1, 2].map(i => pts.reduce((s, p, j) => s + m[j] * p[i], 0) / M);
   // Angular velocity of the rigid rotation: Ω² = G M / side³.
-  const omega = Math.sqrt(M / (side * side * side));
+  const omega = Math.sqrt(G * M / (side * side * side));
   return m.map((mi, j) => {
     const r = [pts[j][0] - c[0], pts[j][1] - c[1], 0];
     return { m: mi, x: r, v: [-omega * r[1], omega * r[0], 0] };
@@ -1414,7 +1612,7 @@ return { THREE_BODY_PRESETS, lagrangeTriangle };
 __psim["core/nbody-verify.mjs"] = (() => {
 // Numerical verification for gravitational N-body simulations.
 // Pure functions: used by scripts/psim.mjs (baked reports), tests, and in-page checks.
-const { createSystem, createStepper, toBarycentric, integrateTo, stateDistance, drift, INTEGRATORS } = __psim["core/nbody.mjs"];
+const { createSystem, createStepper, toBarycentric, integrateTo, stateDistance, drift, defaultStep, INTEGRATORS } = __psim["core/nbody.mjs"];
 const { keplerBodies, keplerRelative } = __psim["core/kepler.mjs"];
 const { THREE_BODY_PRESETS } = __psim["core/presets.mjs"];
 function systemSize(bodies) {
@@ -1429,7 +1627,7 @@ function systemSize(bodies) {
  * samples, before chaos amplifies differences) and the predictability horizon:
  * the last time at which the h/2 and h/4 runs still agree to `tol` × system size.
  */
-function convergenceStudy(bodies, opts, tEnd, { samples = 200, tol = 1e-3 } = {}) {
+function convergenceStudy(bodies, opts, tEnd, { samples = 200, tol = 1e-3, calibrateOrder = true } = {}) {
   let base;
   const runs = [1, 0.5, 0.25].map(f => {
     const sys = createSystem(bodies, opts);
@@ -1440,6 +1638,10 @@ function convergenceStudy(bodies, opts, tEnd, { samples = 200, tol = 1e-3 } = {}
     return { st, x: new Float64Array(3 * sys.n) };
   });
   const size = systemSize(bodies);
+  // At very fine production steps, round-off dominates the refinement ratios.
+  // Choose an order-calibration step from the initial dynamical scales, before
+  // seeing any errors. Accuracy and the horizon always use the production step.
+  const orderH = calibrateOrder ? Math.max(base, defaultStep(runs[0].st.sys, opts.integrator, 2000)) : base;
   const rows = [];
   let horizon = tEnd, horizonFound = false;
   for (let k = 1; k <= samples; k++) {
@@ -1451,7 +1653,10 @@ function convergenceStudy(bodies, opts, tEnd, { samples = 200, tol = 1e-3 } = {}
     if (!horizonFound && e2 > tol * size) { horizon = rows.length > 1 ? rows[rows.length - 2].t : 0; horizonFound = true; }
   }
   // Observed order from samples where errors are resolved above round-off and still small.
-  const orders = rows
+  const orderRows = orderH > base * (1 + 1e-12)
+    ? convergenceStudy(bodies, { ...opts, h: orderH }, tEnd, { samples, tol, calibrateOrder: false }).rows
+    : rows;
+  const orders = orderRows
     .filter(r => r.e2 > 1e-13 * size && r.e1 < 1e-2 * size)
     .slice(0, 20)
     .map(r => Math.log2(r.e1 / r.e2));
@@ -1460,6 +1665,7 @@ function convergenceStudy(bodies, opts, tEnd, { samples = 200, tol = 1e-3 } = {}
     integrator: opts.integrator,
     expectedOrder: INTEGRATORS[opts.integrator].order,
     observedOrder: order,
+    orderH,
     horizon,
     converged: !horizonFound,
     finalDifference: rows[rows.length - 1].e2 / size,
@@ -1483,9 +1689,11 @@ function determinismCheck(bodies, opts, tEnd) {
 }
 
 /**
- * Advance the same system with two very different "frame" schedules (60 Hz and
- * irregular 7–41 ms frames at different playback speeds). The physical state at
- * a common time must be bit-identical: rendering never alters the step sequence.
+ * Regression guard for frame-rate independence: advance the same system with two different
+ * target-time schedules (uniform, and irregular 0.2–2.5× steps), as a page's clock would.
+ * The state at a common time must be bit-identical. This holds by design (steps never adapt
+ * to the target time); the check fails if a change ever makes them, e.g. by clipping the
+ * last step to land exactly on a frame time.
  */
 function frameIndependenceCheck(bodies, opts, tEnd) {
   const final = schedule => {
@@ -1556,15 +1764,16 @@ function verifyScenario(scenario) {
   };
   const tEnd = scenario.duration;
   const t0 = Date.now();
-  const main = integrateTo(scenario.bodies, opts, tEnd);
+  const main = integrateTo(scenario.bodies, { ...opts, trackConservation: true }, tEnd);
   const conv = convergenceStudy(scenario.bodies, opts, tEnd);
   delete conv.rows;
   return {
     generated: new Date().toISOString(),
     integrator: opts.integrator,
     integratorLabel: INTEGRATORS[opts.integrator].label,
+    settings: { ...opts },
     duration: tEnd,
-    conservation: { dE: main.dE, dP: main.dP, dL: main.dL, steps: main.steps, h: main.h },
+    conservation: { ...main.maxDrift, scope: 'maximum over every computed step', final: { dE: main.dE, dP: main.dP, dL: main.dL }, steps: main.steps, h: main.h },
     convergence: conv,
     determinism: determinismCheck(scenario.bodies, opts, tEnd),
     frameIndependence: frameIndependenceCheck(scenario.bodies, opts, tEnd),
@@ -1574,6 +1783,69 @@ function verifyScenario(scenario) {
 }
 
 return { convergenceStudy, determinismCheck, frameIndependenceCheck, keplerBenchmark, figureEightBenchmark, pythagoreanBenchmark, verifyScenario };
+})();
+
+// ---- psim:core/verification.mjs
+__psim["core/verification.mjs"] = (() => {
+// Shared verification gates for the CLI and browser. Reports are evidence only
+// when every check is explicit and the tested settings still match the simulation.
+
+function validateModuleReport(report) {
+  if (!report || !Array.isArray(report.checks) || !report.checks.length) throw new Error('verification: need a non-empty checks array');
+  for (const [i, check] of report.checks.entries()) {
+    const where = `verification check ${i + 1}`;
+    if (!check || typeof check.label !== 'string' || !check.label.trim()) throw new Error(`${where}: label is required`);
+    if (typeof check.pass !== 'boolean') throw new Error(`${where}: pass must be explicitly true or false`);
+    if (typeof check.value === 'number') {
+      if (!Number.isFinite(check.value)) throw new Error(`${where}: measured value must be finite`);
+    } else if (typeof check.value !== 'string' || !check.value.trim() || /NaN|Infinity|∞|^\s*—\s*$/.test(check.value)) {
+      throw new Error(`${where}: measured value must be finite and present`);
+    }
+    if (check.state != null && check.state !== 'warn') throw new Error(`${where}: optional state must be 'warn'`);
+  }
+  return report;
+}
+
+/** Reasons a gravity report cannot support a successful verification claim. */
+function gravityReportProblems(report) {
+  const problems = [];
+  const finiteError = (value, limit, label) => {
+    if (!(Number.isFinite(value) && value >= 0)) problems.push(`${label} is missing or non-finite`);
+    else if (value > limit) problems.push(`${label} ${value.toExponential(2)} exceeds ${limit.toExponential(0)}`);
+  };
+  const c = report?.conservation, cv = report?.convergence;
+  finiteError(c?.dE, report?.settings?.softening > 0 ? 1e-4 : 1e-8, 'energy error');
+  finiteError(c?.dP, 1e-10, 'momentum drift');
+  finiteError(c?.dL, 1e-10, 'angular momentum drift');
+  if (!(Number.isFinite(c?.h) && c.h > 0)) problems.push('step parameter is missing or non-finite');
+  if (!(Number.isFinite(report?.duration) && report.duration > 0)) problems.push('verification duration is invalid');
+  if (!(Number.isFinite(cv?.observedOrder) && Number.isFinite(cv?.expectedOrder) && cv.expectedOrder > 0)) problems.push('convergence order is unresolved or non-finite');
+  else if (Math.abs(cv.observedOrder - cv.expectedOrder) > 0.6) problems.push('observed convergence order differs from theory');
+  if (!(Number.isFinite(cv?.horizon) && cv.horizon >= 0 && cv.horizon <= report.duration && typeof cv.converged === 'boolean')) problems.push('convergence horizon is invalid');
+  finiteError(cv?.finalDifference, Infinity, 'final refinement difference');
+  if (report?.determinism?.identical !== true || report?.frameIndependence?.identical !== true) problems.push('reproducibility check failed');
+  if (!Array.isArray(report?.benchmarks) || !report.benchmarks.length) problems.push('benchmarks are missing');
+  else {for (const b of report.benchmarks) {
+    const name = b?.name ?? 'unnamed benchmark';
+    finiteError(b?.dE, 1e-9, `${name}: energy error`);
+    if (b && Object.hasOwn(b, 'positionError')) finiteError(b.positionError, 1e-3, `${name}: position error`);
+    else if (b && Object.hasOwn(b, 'returnError')) finiteError(b.returnError, 1e-6, `${name}: return error`);
+    else if (b?.matchesLiterature !== true) problems.push(`benchmark failed: ${name}`);
+  }}
+  return problems;
+}
+
+/** Match solver settings, allowing only round-off in the computed step parameter. */
+function gravityReportMatches(report, settings) {
+  if (!report?.settings || report.integrator !== settings.integrator) return false;
+  for (const key of ['integrator', 'G', 'softening', 'stepsPerCrossing']) {
+    if (report.settings[key] !== settings[key]) return false;
+  }
+  const h = report.conservation?.h;
+  return Number.isFinite(h) && h > 0 && Number.isFinite(settings.h) && Math.abs(h - settings.h) <= 1e-12 * Math.abs(h);
+}
+
+return { validateModuleReport, gravityReportProblems, gravityReportMatches };
 })();
 
 // ---- psim:ui/instrument.mjs
@@ -1636,7 +1908,7 @@ function grade(x, good, warn) {
 
 // ---------- theme ----------
 
-function initTheme(button) {
+function initTheme(toggleButton) {
   const root = document.documentElement;
   let stored = null;
   try { stored = localStorage.getItem('psim-theme'); } catch { /* storage unavailable */ }
@@ -1644,12 +1916,12 @@ function initTheme(button) {
   const sys = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
   const apply = t => {
     root.dataset.theme = t;
-    if (button) button.innerHTML = t === 'dark' ? ICONS.sun : ICONS.moon;
-    if (button) button.title = t === 'dark' ? 'Light theme' : 'Dark theme';
+    if (toggleButton) toggleButton.innerHTML = t === 'dark' ? ICONS.sun : ICONS.moon;
+    if (toggleButton) toggleButton.title = t === 'dark' ? 'Light theme' : 'Dark theme';
     root.dispatchEvent(new CustomEvent('psim-theme', { detail: t }));
   };
   apply(query || stored || root.dataset.theme || sys);
-  button?.addEventListener('click', () => {
+  toggleButton?.addEventListener('click', () => {
     const t = root.dataset.theme === 'dark' ? 'light' : 'dark';
     try { localStorage.setItem('psim-theme', t); } catch { /* ignore */ }
     apply(t);
@@ -1678,31 +1950,49 @@ function row(label, value = '—', cls = '') {
   return r;
 }
 
+/** Value for a numeric input: short, exact enough, scientific notation for small or huge numbers. */
+const inputValue = v => {
+  const a = Math.abs(v);
+  return a !== 0 && (a < 1e-3 || a >= 1e7) ? v.toExponential(4) : String(+Number(v).toPrecision(6));
+};
+
 /**
- * Slider + exact numeric entry. Linear or logarithmic. onInput receives the number.
- * The numeric box accepts values beyond the slider range (the slider clamps visually).
+ * Slider + exact numeric entry, linear or logarithmic. onInput receives the number.
+ * Typed values are clamped to `limits` (default: the slider's [min, max]) and rounded when
+ * `integer` is set, so a typo like 100000000 can never freeze the page. Pass wider `limits`
+ * when a quantity may legitimately exceed the slider's range.
  */
-function slider({ label, min, max, step = 'any', value, log = false, unit = '', digits = 3, onInput }) {
+function slider({ label, min, max, step = 'any', value, log = false, unit = '', digits = 3, integer = false, limits = [min, max], onInput }) {
   const toS = v => log ? Math.log10(v) : v;
   const fromS = s => log ? Math.pow(10, s) : s;
+  const [lo, hi] = limits;
+  const tidy = v => {
+    const c = Math.min(hi, Math.max(lo, v));
+    return integer ? Math.round(c) : c;
+  };
   const range = el('input', { type: 'range', min: toS(min), max: toS(max), step: log ? 'any' : step, value: toS(value), 'aria-label': label });
-  const num = el('input', { type: 'number', step: 'any', value: +Number(value).toPrecision(6), 'aria-label': `${label} value` });
+  const num = el('input', { type: 'number', step: integer ? 1 : 'any', min: lo, max: hi, value: inputValue(value), 'aria-label': `${label} value` });
   const unitEl = unit ? el('span', { style: 'color:var(--muted);font:11px var(--mono)' }, unit) : null;
+  const note = el('span', { class: 'psim-limit', role: 'status' });
   const field = el('label', { class: 'psim-field' },
     el('div', { class: 'top' }, el('span', {}, label), el('div', { style: 'display:flex;align-items:baseline;gap:4px' }, num, unitEl)),
-    range);
+    range, note);
   range.addEventListener('input', () => {
-    const v = +(+fromS(+range.value)).toPrecision(digits + 1);
-    num.value = v;
+    const v = tidy(+(+fromS(+range.value)).toPrecision(digits + 1));
+    num.value = inputValue(v);
+    note.textContent = '';
     onInput?.(v);
   });
   num.addEventListener('change', () => {
-    const v = +num.value;
-    if (!Number.isFinite(v)) return;
+    const raw = +num.value;
+    if (!Number.isFinite(raw)) { num.value = inputValue(tidy(fromS(+range.value))); return; }
+    const v = tidy(raw);
+    note.textContent = v !== raw ? `limited to ${inputValue(v)} (allowed ${inputValue(lo)}–${inputValue(hi)})` : '';
+    num.value = inputValue(v);
     range.value = toS(v);
     onInput?.(v);
   });
-  field.setValue = v => { range.value = toS(v); num.value = +Number(v).toPrecision(6); };
+  field.setValue = v => { range.value = toS(v); num.value = inputValue(v); };
   return field;
 }
 
@@ -1881,7 +2171,7 @@ function beacon() {
   };
 }
 
-return { el, ICONS, sci, fix, grade, initTheme, cssVar, section, row, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon };
+return { el, ICONS, sci, fix, grade, initTheme, cssVar, section, row, inputValue, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon };
 })();
 
 // ---- psim:ui/orbit-view.mjs
@@ -1896,7 +2186,8 @@ __psim["ui/orbit-view.mjs"] = (() => {
 const { cssVar } = __psim["ui/instrument.mjs"];
 const TRAIL_CAP = 24000;
 
-function createOrbitView(canvas, { n, colors, masses, editable }) {
+function createOrbitView(canvas, { n: nBodies, colors: initialColors, masses, editable }) {
+  let n = nBodies, colors = initialColors;
   const ctx = canvas.getContext('2d');
   const cam = { yaw: 0, pitch: 0, scale: 100, cx: 0, cy: 0, cz: 0 };
   let W = 0, H = 0, dpr = 1;
@@ -1945,8 +2236,8 @@ function createOrbitView(canvas, { n, colors, masses, editable }) {
   view.pushTwinTrail = (x, t) => pushTo(twinTrails, x, t);
 
   // ---------- camera ----------
-  function project(x, y, z, out) {
-    x -= cam.cx; y -= cam.cy; z -= cam.cz;
+  function project(wx, wy, wz, out) {
+    const x = wx - cam.cx, y = wy - cam.cy, z = wz - cam.cz;
     const cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
     const x1 = cy * x - sy * y, y1 = sy * x + cy * y;
     const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
@@ -2087,6 +2378,7 @@ function createOrbitView(canvas, { n, colors, masses, editable }) {
     }
 
     for (const [i, sx, sy] of order) {
+      if (!Number.isFinite(sx) || !Number.isFinite(sy) || Math.abs(sx) > 1e6 || Math.abs(sy) > 1e6) continue;   // off-screen or diverged
       const r = radiusFor(massesNow[i]);
       const c = col(i);
       if (glow) {
@@ -2234,6 +2526,7 @@ return { createOrbitView };
 // ---- page
 const nb = __psim["core/nbody.mjs"];
 const { convergenceStudy } = __psim["core/nbody-verify.mjs"];
+const { gravityReportMatches, gravityReportProblems } = __psim["core/verification.mjs"];
 const { el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon } = __psim["ui/instrument.mjs"];
 const { createOrbitView } = __psim["ui/orbit-view.mjs"];
 const cfg = readJsonScript('psim-config');
@@ -2391,7 +2684,7 @@ function renderModel() {
   const usesLogh = integrator.startsWith('logh');
   secModel.body.replaceChildren(
     el('div', { class: 'psim-prose' },
-      el('p', {}, el('b', {}, TIERS[cfg.tier] + '. '), cfg.tierReason ?? 'Deterministic integration of Newton\'s equations for point masses. Accuracy is measured, not assumed: conservation laws, step-size convergence and published benchmarks are reported in the Verification panel.')),
+      el('p', {}, el('b', {}, `${tierBtn.querySelector('span').textContent}. `), cfg.tierReason ?? 'Deterministic integration of Newton\'s equations for point masses. Accuracy is measured, not assumed: conservation laws, step-size convergence and published benchmarks are reported in the Verification panel.')),
     el('p', { class: 'psim-hint' }, 'Equations of motion'), math(eom),
     el('p', { class: 'psim-hint' }, 'Conserved energy (also P = Σ mᵢvᵢ and L = Σ mᵢ rᵢ × vᵢ)'), math(energy),
     usesLogh ? el('p', { class: 'psim-hint' }, 'Time transformation used by the LogH integrator (fictitious time s)') : null,
@@ -2448,12 +2741,12 @@ function exportCsv() {
 function exportJson() {
   const d = nb.drift(sys, ref);
   download(`${slug()}-run.json`, JSON.stringify({
-    generator: 'p-simtor', title: cfg.title, units, tier: cfg.tier,
+    generator: 'p-simtor', title: cfg.title, units, tier: tierBtn.dataset.tier,
     model: 'Newtonian point-mass gravity', integrator, h: st.h, stepsPerCrossing, softening: cfg.softening ?? 0,
     initialConditions: ic, barycentric, t: sys.t, steps: sys.steps,
     diagnostics: { dE: d.dE, dP: d.dP, dL: d.dL, E0: ref.E },
     finalState: { x: Array.from(sys.x.subarray(0, 3 * ic.length)), v: Array.from(sys.v.subarray(0, 3 * ic.length)) },
-    buildTimeVerification: report?.[scenarioKey] ?? null,
+    buildTimeVerification: currentVerification(),
   }, null, 2), 'application/json');
 }
 
@@ -2465,7 +2758,13 @@ function renderBodies() {
     const vecRow = (label, key) => {
       const inputs = [0, 1, 2].map(k => el('input', { type: 'number', step: 'any', value: +b[key][k].toPrecision(10), 'aria-label': `${label} ${'xyz'[k]} of ${b.name}` }));
       inputs.forEach((inp, k) => inp.addEventListener('change', () => {
-        const v = +inp.value; if (!Number.isFinite(v)) return;
+        const raw = +inp.value;
+        // keep edits within 100× the scenario's own scales: beyond that the system is a
+        // different problem (and a typo like 1e15 would make every number overflow)
+        const lim = 100 * (key === 'x' ? scales.r : scales.v);
+        const v = Number.isFinite(raw) ? Math.max(-lim, Math.min(lim, raw)) : ic[i][key][k];
+        if (v !== raw) toast(stage, `${label}${'xyz'[k]} limited to ±${+lim.toPrecision(3)} ${key === 'x' ? units.length : `${units.length}/${units.time}`}`);
+        inp.value = +v.toPrecision(10);
         ic[i][key][k] = v; custom = true; rebuild();
       }));
       return { row: el('div', { class: 'psim-vec' }, el('span', {}, label), ...inputs), inputs };
@@ -2473,7 +2772,7 @@ function renderBodies() {
     const pos = vecRow('r', 'x'), vel = vecRow('v', 'v');
     const massEl = el('span', { class: 'm' });
     const massSlider = slider({
-      label: `Mass`, min: 0.01, max: 100, value: b.m, log: true, unit: units.mass, digits: 3,
+      label: 'Mass', min: Math.min(0.01, b.m / 100), max: Math.max(100, b.m * 100), value: b.m, log: true, unit: units.mass, digits: 3,
       onInput: v => { ic[i].m = Math.max(1e-12, v); custom = true; rebuild(); },
     });
     const card = el('div', { class: 'psim-bodycard' },
@@ -2495,10 +2794,17 @@ function refreshBodyInputs(only) {
 }
 
 // ---------------------------------------------------------------- simulation lifecycle
+let scales = { r: 1, v: 1 };
 function loadScenario(key) {
   scenarioKey = key;
   custom = false;
   const s = scenarios[key];
+  stepsPerCrossing = s.stepsPerCrossing ?? cfg.stepsPerCrossing ?? 2000;
+  accuracySlider.setValue(stepsPerCrossing);
+  // characteristic size and speed of this scenario: limits for typed edits
+  const rMax = Math.max(...s.bodies.map(b => Math.hypot(...b.x)), 1e-12);
+  const Mtot = s.bodies.reduce((a, b) => a + b.m, 0);
+  scales = { r: rMax, v: Math.max(...s.bodies.map(b => Math.hypot(...b.v)), Math.sqrt(units.G * Mtot / rMax)) };
   ic = s.bodies.map((b, i) => ({ name: b.name ?? `m${'₁₂₃₄₅₆'[i]}`, m: b.m, x: [...b.x], v: [...b.v] }));
   scenarioSelect.value = key;
   scenarioNote.textContent = s.note ?? '';
@@ -2508,6 +2814,7 @@ function loadScenario(key) {
   tp.querySelector('input[type=range]').value = Math.log10(sp);
   tp.querySelector('output').textContent = `${sci(sp, 2)} ${units.time}/s`;
   if (view) view.resetTrails(ic.length);
+  if (s.trailTime) { trailTime = s.trailTime; view?.setTrailTime(trailTime); }
   renderBodies();
   rebuild({ refit: true });
 }
@@ -2515,13 +2822,21 @@ function loadScenario(key) {
 function rebuild({ shift = barycentric, refit = false } = {}) {
   if (custom) scenarioSelect.value = '__custom';
   const opts = { G: units.G, softening: cfg.softening ?? 0 };
+  const previous = sys;
   sys = nb.createSystem(ic, opts);
   if (shift) {
     nb.toBarycentric(sys);
     // Store the barycentric values back so the inputs show what is integrated.
     ic.forEach((b, i) => { for (let k = 0; k < 3; k++) { b.x[k] = sys.x[3 * i + k]; b.v[k] = sys.v[3 * i + k]; } });
   }
-  st = nb.createStepper(sys, { integrator, stepsPerCrossing });
+  try {
+    st = nb.createStepper(sys, { integrator, stepsPerCrossing });
+  } catch (err) {
+    // e.g. two bodies at the same point: keep running the last valid setup and say why
+    toast(stage, `Cannot integrate this setup: ${err.message.replace(/^createStepper: /, '')}`);
+    sys = previous;
+    return;
+  }
   ref = st.ref;
   twin = twinSt = null;
   if (twinOn) {
@@ -2553,8 +2868,8 @@ function rebuild({ shift = barycentric, refit = false } = {}) {
   if (refit) view.fit(sys.x);
   rH.set(`${sci(st.h, 3)}${nb.INTEGRATORS[integrator].adaptive ? ' (fictitious time)' : ` ${units.time}`}`);
   rE0.set(sci(ref.E, 6));
-  renderModel();
   renderVerification();
+  renderModel();
   studyOut.replaceChildren();
 }
 
@@ -2587,10 +2902,17 @@ function onStepTaken() {
 }
 
 function stepOnce() {
-  st.step();
-  onStepTaken();
-  if (twinSt) { twinSt.advanceTo(sys.t); view.pushTwinTrail(twin.x, twin.t); }
+  try {
+    st.step();
+    onStepTaken();
+    if (twinSt) { twinSt.advanceTo(sys.t); view.pushTwinTrail(twin.x, twin.t); }
+  } catch (err) { stopOnFailure(err); }
   tDisplay = sys.t;
+}
+
+function stopOnFailure(err) {
+  setPlaying(false);
+  toast(stage, `Integration paused: ${err.message}. Increase accuracy or revise the initial conditions.`);
 }
 
 /** Advance physics to the clock's target time within a per-frame compute budget. */
@@ -2598,14 +2920,13 @@ function advance(target) {
   const deadline = performance.now() + 9;
   let k = 0;
   while (sys.t < target) {
-    st.step();
-    onStepTaken();
+    try { st.step(); onStepTaken(); } catch (err) { stopOnFailure(err); break; }
     if ((++k & 127) === 0 && performance.now() > deadline) break;
   }
   limited = sys.t < target;
   const reached = Math.min(target, sys.t);
   if (twinSt) {
-    while (twin.t < reached) { twinSt.step(); view.pushTwinTrail(twin.x, twin.t); }
+    try { while (twin.t < reached) { twinSt.step(); view.pushTwinTrail(twin.x, twin.t); } } catch (err) { stopOnFailure(err); }
   }
   return reached;
 }
@@ -2615,22 +2936,32 @@ function check(label, value, state) {
   return el('div', { class: 'psim-check' }, el('i', { class: state === 'good' ? '' : state }), el('span', {}, label), el('code', {}, value));
 }
 
-function renderVerification() {
+function currentVerification() {
   const rep = !custom && report ? report[scenarioKey] : null;
+  return gravityReportMatches(rep, { integrator, h: st.h, G: units.G, softening: cfg.softening ?? 0, stepsPerCrossing }) ? rep : null;
+}
+
+function renderVerification() {
+  const rep = currentVerification();
+  const verified = rep && gravityReportProblems(rep).length === 0;
+  tierBtn.dataset.tier = verified ? cfg.tier : 'unverified';
+  tierBtn.querySelector('span').textContent = verified ? TIERS[cfg.tier] : 'Verification needed';
   if (!rep) {
     verifyBody.replaceChildren(el('p', { class: 'psim-hint' },
       custom ? 'The initial conditions have been edited, so the build-time report does not apply. Run the convergence study below to verify this configuration.'
-        : 'No build-time report is embedded for this scenario. Run the convergence study below.'));
+        : report?.[scenarioKey] ? 'The integrator or accuracy settings have changed, so the build-time report does not apply. Run the convergence study below to check the current setup.'
+          : 'No build-time report is embedded for this scenario. Run the convergence study below.'));
     return;
   }
   const c = rep.conservation, cv = rep.convergence;
   const orderOk = cv.observedOrder != null && Math.abs(cv.observedOrder - cv.expectedOrder) < 0.6;
   verifyBody.replaceChildren(
     el('p', { class: 'psim-hint' }, `Measured when this page was built (${rep.generated.slice(0, 10)}), ${rep.integratorLabel}, t = 0 → ${rep.duration}:`),
-    check('Energy conservation |ΔE/E₀|', sci(c.dE), grade(c.dE, 1e-8, 1e-5)),
+    check('Maximum energy error |ΔE/E₀|', sci(c.dE), grade(c.dE, 1e-8, 1e-5)),
     check('Momentum drift', sci(c.dP), grade(c.dP, 1e-10, 1e-6)),
     check('Angular momentum drift', sci(c.dL), grade(c.dL, 1e-10, 1e-6)),
     check(`Convergence order (expected ${cv.expectedOrder})`, cv.observedOrder == null ? 'unresolved' : fix(cv.observedOrder, 2), orderOk ? 'good' : 'warn'),
+    cv.orderH > c.h * (1 + 1e-12) ? el('p', { class: 'psim-hint' }, `Order measured at coarser h = ${sci(cv.orderH, 4)} to resolve truncation above round-off. Conservation and the predictability horizon use the finer production step h = ${sci(c.h, 4)}.`) : null,
     check('Trajectory converged (10⁻³ of size) until', cv.converged ? `t = ${fix(cv.horizon, 1)} (whole run)` : `t ≈ ${fix(cv.horizon, 1)}`, cv.converged ? 'good' : 'warn'),
     check('Bit-identical rerun', rep.determinism.identical ? 'yes' : 'no', rep.determinism.identical ? 'good' : 'bad'),
     check('Independent of frame rate', rep.frameIndependence.identical ? 'yes' : 'no', rep.frameIndependence.identical ? 'good' : 'bad'),
@@ -2655,6 +2986,7 @@ function runStudy() {
     studyOut.replaceChildren(
       el('p', { class: 'psim-hint' }, `Runs at h, h/2, h/4 to t = ${fix(tEnd, 2)} (${r.steps.map(s => s.toLocaleString()).join(' / ')} steps, ${ms.toFixed(0)} ms):`),
       check(`Observed order (expected ${r.expectedOrder})`, r.observedOrder == null ? 'unresolved' : fix(r.observedOrder, 2), orderOk ? 'good' : 'warn'),
+      r.orderH > r.h * (1 + 1e-12) ? el('p', { class: 'psim-hint' }, `Order measured at coarser h = ${sci(r.orderH, 4)}; the horizon and final difference use production h = ${sci(r.h, 4)}.`) : null,
       check('Converged until', r.converged ? `t = ${fix(r.horizon, 2)} (whole run)` : `t ≈ ${fix(r.horizon, 2)}`, r.converged ? 'good' : 'warn'),
       check('Final h/2 vs h/4 difference', sci(r.finalDifference), grade(r.finalDifference, 1e-6, 1e-3)),
       r.converged ? null : el('p', { class: 'psim-hint' },
@@ -2711,9 +3043,9 @@ function updateReadouts(now) {
     if (pts.length > 12) {
       const tail = pts.slice(Math.floor(pts.length * 2 / 3));
       rLyap.set(`${sci(slope(tail), 3)} / ${units.time}`);
-    }
+    } else rLyap.set('collecting…');
     sepPlot.draw();
-  } else { rSep.set('—'); rLyap.set('—'); }
+  } else { rSep.set('twin off'); rLyap.set('twin off'); }
   // Scale bar
   const step = view.gridStep;
   scalebar.querySelector('span').style.width = `${step * view.cam.scale}px`;
@@ -2758,8 +3090,10 @@ window.psim = {
   setup: () => ({ bodies: JSON.parse(JSON.stringify(ic)), integrator, stepsPerCrossing, G: units.G, softening: cfg.softening ?? 0, barycentric, h: st.h }),
   drift: () => nb.drift(sys, ref),
   play: p => setPlaying(p),
-  advanceTo: t => { st.advanceTo(t); tDisplay = Math.max(tDisplay, Math.min(t, sys.t)); return window.psim.state(); },
+  // same path as playback (trails, plots, CSV records), just without waiting for frames
+  advanceTo: t => { while (sys.t < t) { st.step(); onStepTaken(); if (twinSt) twinSt.advanceTo(sys.t); } tDisplay = Math.max(tDisplay, Math.min(t, sys.t)); return window.psim.state(); },
   scenarios: () => Object.keys(scenarios),
+  fit: () => { st.sampleAt(tDisplay, xNow, vNow); view.fit(xNow); },
   load: k => loadScenario(k),
 };
 status.set('model', 'nbody');

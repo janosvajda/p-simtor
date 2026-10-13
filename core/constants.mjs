@@ -6,7 +6,7 @@ export const CODATA = 'CODATA 2018';
 
 export const c = 299792458;                 // m s^-1, exact
 export const h = 6.62607015e-34;            // J s, exact
-export const hbar = 1.054571817e-34;        // J s
+export const hbar = 6.62607015e-34 / (2 * Math.PI);  // J s, exact (h/2π)
 export const e = 1.602176634e-19;           // C, exact
 export const kB = 1.380649e-23;             // J K^-1, exact
 export const NA = 6.02214076e23;            // mol^-1, exact
@@ -30,7 +30,10 @@ export const hbarcMeVfm = 197.3269804;      // MeV fm
 // Astronomy (IAU 2012/2015 nominal values)
 export const AU = 1.495978707e11;           // m, exact (IAU 2012)
 export const GMsun = 1.3271244e20;          // m^3 s^-2 (IAU 2015 nominal)
-export const Msun = 1.98847e30;             // kg (derived, G-limited)
+export const Msun = 1.3271244e20 / 6.67430e-11;     // kg, GM☉/G (G-limited, ±2.2e-5)
 export const yearJulian = 365.25 * 86400;   // s
-/** G in AU^3 Msun^-1 yr^-1 units: 4π² to the precision of Kepler's third law for the Sun. */
-export const G_AU_MSUN_YR = 4 * Math.PI * Math.PI;
+/**
+ * G in AU³ M☉⁻¹ yr⁻² with the Julian year and IAU GM☉: 39.47693 (≈ 4π², which is exact only
+ * for the Gaussian year 2π/k). Using this value keeps AU–yr runs consistent with SI ones.
+ */
+export const G_AU_MSUN_YR = 1.3271244e20 * (365.25 * 86400) ** 2 / 1.495978707e11 ** 3;

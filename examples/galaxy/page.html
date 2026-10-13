@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="p-simtor">
+<title>Dark matter and galaxy rotation</title>
+<link rel="stylesheet" href="psim:ui/instrument.css">
+</head>
+<body>
+<script type="application/json" id="psim-verification">null</script>
+<script type="module">
+import { createInstrument } from 'psim:ui/instrument-app.mjs';
+import { PARAMS, createSim, circularSpeed, eilers2019, haloDensity, R0, NFW_SCALE } from './physics.mjs';
+
+// ------------------------------------------------------------------ stage: the stellar disk
+const cam = { tilt: 0.45, spin: 0 };            // tilt 0 = face-on
+
+function draw(ctx, sim, view) {
+  const { W, H } = view, C = view.color, glow = C('--glow') === '1';
+  const d = sim.disk, scale = Math.min(W, H) / 2 / 27;   // fits R ≈ 27 kpc
+  const cx = W / 2, cy = H / 2, ct = Math.cos(cam.tilt), st = Math.sin(cam.tilt);
+  const P = (x, y, z) => [cx + x * scale, cy - (y * ct - z * st) * scale];
+
+  // Dark-matter halo: projected NFW density as a soft glow (invisible in reality).
+  if (sim.comps.halo) {
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, 30 * scale);
+    for (const r of [0, 2, 5, 10, 20, 30]) {
+      const rho = haloDensity(Math.max(r, 0.5)) / haloDensity(2);
+      g.addColorStop(r / 30, `rgba(140, 120, 255, ${Math.min(0.22, 0.22 * Math.sqrt(rho))})`);
+    }
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  }
+  // Reference rings every 5 kpc and the Sun's radius.
+  ctx.lineWidth = 1;
+  for (let r = 5; r <= 25; r += 5) {
+    ctx.strokeStyle = r === 5 * Math.round(R0 / 5) ? C('--grid-strong') : C('--grid');
+    ctx.beginPath(); ctx.ellipse(cx, cy, r * scale, r * scale * ct, 0, 0, 2 * Math.PI); ctx.stroke();
+  }
+  ctx.setLineDash([3, 4]); ctx.strokeStyle = C('--warn');
+  ctx.beginPath(); ctx.ellipse(cx, cy, R0 * scale, R0 * scale * ct, 0, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = C('--warn'); ctx.font = '10.5px ui-monospace, Menlo, monospace';
+  ctx.fillText('Sun’s orbit, 8 kpc', cx + R0 * scale * 0.72, cy - R0 * scale * ct * 0.72 - 6);
+
+  // Stars: one computed test particle each. Colour encodes the radius each star started at.
+  ctx.globalCompositeOperation = glow ? 'lighter' : 'source-over';
+  const n = d.n, size = glow ? 2.1 : 1.7;
+  for (let i = 0; i < n; i++) {
+    const [px, py] = P(d.x[3 * i], d.x[3 * i + 1], d.x[3 * i + 2]);
+    if (px < -5 || px > W + 5 || py < -5 || py > H + 5) continue;
+    const f = Math.min(1, d.R0s[i] / 20);
+    const r = Math.round(255 - 110 * f), g = Math.round(214 - 40 * f), b = Math.round(160 + 95 * f);
+    ctx.fillStyle = `rgba(${r},${g},${b},${glow ? 0.7 : 0.8})`;
+    ctx.fillRect(px - size / 2, py - size / 2, size, size);
+  }
+  ctx.globalCompositeOperation = 'source-over';
+  // centre and scale bar
+  ctx.fillStyle = C('--ink'); ctx.beginPath(); ctx.arc(cx, cy, 2, 0, 7); ctx.fill();
+  ctx.strokeStyle = C('--muted');
+  ctx.beginPath(); ctx.moveTo(16, H - 30); ctx.lineTo(16, H - 24); ctx.lineTo(16 + 5 * scale, H - 24); ctx.lineTo(16 + 5 * scale, H - 30); ctx.stroke();
+  ctx.fillStyle = C('--muted'); ctx.fillText('5 kpc', 16, H - 10);
+}
+
+function onPointer(canvas) {
+  let drag = null;
+  canvas.style.cursor = 'grab';
+  canvas.addEventListener('pointerdown', e => { drag = { y: e.clientY, tilt: cam.tilt }; canvas.setPointerCapture(e.pointerId); });
+  canvas.addEventListener('pointermove', e => { if (drag) cam.tilt = Math.max(0, Math.min(1.55, drag.tilt + (e.clientY - drag.y) * 0.006)); });
+  canvas.addEventListener('pointerup', () => { drag = null; });
+  canvas.addEventListener('dblclick', () => { cam.tilt = 0.45; });
+}
+
+// ------------------------------------------------------------------ workbench
+function bench({ eqs, figs, createPlot, createEquation, M }) {
+  const cur = { R: R0 };
+  const curve = createPlot({
+    title: 'Rotation curve v_c(R): what holds the stars in orbit', height: 320,
+    x: { label: 'radius R', unit: 'kpc', min: 0, max: 28 },
+    y: { label: 'circular speed', unit: 'km/s', min: 0, max: 280 },
+    onCursor: R => { cur.R = Math.max(0.3, R); },
+  });
+  figs.append(curve.el);
+  const all = { bulge: true, disk: true, halo: true }, visible = { bulge: true, disk: true, halo: false };
+  curve.band('meas', 5, 25, { color: '--grid', alpha: 0.6, label: 'measured range' });
+  curve.fn('bulge', R => circularSpeed(R).bulge, { color: '--body-0', label: 'bulge', width: 1.3 });
+  curve.fn('disk', R => circularSpeed(R).disk, { color: '--body-1', label: 'stellar disk', width: 1.3 });
+  curve.fn('halo', R => circularSpeed(R).halo, { color: '--body-4', label: 'dark-matter halo', width: 1.3 });
+  curve.fn('visible', R => circularSpeed(R, visible).total, { color: '--muted', dash: true, label: 'visible matter only' });
+  curve.fn('total', R => circularSpeed(R, all).total, { color: '--ink', label: 'model total', width: 2.2 });
+  curve.fn('eilers', R => (R >= 5 && R <= 25 ? eilers2019(R) : NaN), { color: '--warn', dot: true, label: 'measured (Eilers+ 2019)', width: 2 });
+  curve.cursor(cur.R);
+
+  const vsq = (s, sub) => M.sup(M.sub(M.i(s), M.i(sub)), M.n(2));
+  const eq = createEquation({
+    title: 'Where the orbital speed comes from (values at the cursor radius)',
+    lhs: { mathml: `${M.sup(M.sub(M.i('v'), M.i('c')), M.n(2))}${M.paren(M.i('R'))}`, label: 'circular speed², total', value: () => circularSpeed(cur.R).total ** 2, unit: 'km²/s²', digits: 5 },
+    terms: [
+      { id: 'bulge', mathml: vsq('v', 'bulge'), label: 'bulge (Hernquist)', color: '--body-0', value: () => circularSpeed(cur.R).bulge ** 2, unit: 'km²/s²', digits: 4 },
+      { id: 'disk', mathml: vsq('v', 'disk'), label: 'stars and gas (Miyamoto–Nagai)', color: '--body-1', value: () => circularSpeed(cur.R).disk ** 2, unit: 'km²/s²', digits: 4 },
+      { id: 'halo', mathml: vsq('v', 'halo'), label: 'dark matter (NFW)', color: '--body-4', value: () => circularSpeed(cur.R).halo ** 2, unit: 'km²/s²', digits: 4 },
+    ],
+    where: [
+      { mathml: M.sup(M.sub(M.i('v'), M.i('i')), M.n(2)), meaning: 'R × radial pull of component i (gravity balances the centripetal acceleration)' },
+      { mathml: M.sub(M.i('M'), M.i('halo')) + M.paren(`<mo>&lt;</mo>${M.i('r')}`), meaning: 'NFW: 4πρ₀r_s³ [ln(1 + r/r_s) − (r/r_s)/(1 + r/r_s)], r_s', value: () => NFW_SCALE, unit: 'kpc' },
+      { mathml: M.i('R'), meaning: 'cursor radius (drag on the plot)', value: () => cur.R, unit: 'kpc', digits: 3 },
+      { mathml: `${M.sub(M.i('v'), M.i('c'))}`, meaning: 'circular speed at the cursor', value: () => circularSpeed(cur.R).total, unit: 'km/s', digits: 4 },
+    ],
+    note: 'Without the halo term, v_c falls roughly as 1/√R beyond the disk (Kepler). Measured speeds stay nearly flat: that missing pull is the evidence for dark matter.',
+    link: curve,
+  });
+  eqs.append(eq.el);
+
+  return {
+    update(sim) {
+      curve.data('sim', sim.measuredCurve(), { color: '--good', dots: true, label: 'simulated stars (mean v_φ)', r: 2.6, ignoreScale: true });
+      curve.cursor(cur.R);
+      curve.invalidate(); curve.draw();
+      eq.update();
+    },
+  };
+}
+
+createInstrument({
+  title: 'Dark matter and galaxy rotation',
+  subtitle: 'Thousands of stars in a Milky-Way mass model · bulge, disk and dark-matter halo · leapfrog orbits',
+  tier: 'approximate',
+  tierReason: 'Test-star orbits are integrated numerically with symplectic leapfrog in a mass model normalised like MWPotential2014, with a Hernquist bulge replacing its cut-off power-law bulge. Energy error and convergence are measured. The stars do not source the potential, so spiral arms and bars cannot form.',
+  layout: 'workbench',
+  params: PARAMS,
+  create: createSim,
+  draw, onPointer, bench,
+  timeUnit: 'Myr', speed: 60, duration: 2000,
+  hudLine: sim => `${sim.disk.n.toLocaleString()} stars · halo ${sim.comps.halo ? 'on' : 'off'} · ${(100 * sim.escaped()).toFixed(1)} % beyond 40 kpc`,
+  model: {
+    legend: ['kpc · Myr · km/s · purple glow: dark-matter density (invisible in reality)', 'star colour: starting radius (inner warm → outer blue) · drag to tilt'],
+    assumptions: [
+      'Static, axisymmetric potential: bulge (Hernquist, a = 0.6 kpc), disk (Miyamoto–Nagai, a = 3 kpc, b = 0.28 kpc), halo (NFW, r_s = 16 kpc), normalised like MWPotential2014: v_c(8 kpc) = 220 km/s with 5/60/35 % force fractions (Bovy 2015).',
+      'Stars are test particles (no self-gravity, no gas, no star formation); collisions between stars are negligible in real galaxies too.',
+      'Initial disk: exponential surface density (scale length 2.6 kpc), 8 km/s velocity dispersion, seeded random numbers.',
+      'Full-model starting velocities come from the analytic potential. Removing the halo expands the disk and can unbind some outer stars; crossing 40 kpc alone does not imply escape.',
+      'Kick-drift-kick leapfrog, Δt = 0.244 Myr: energy error bounded and second order; L_z conserved exactly.',
+    ],
+    conventions: [
+      'Purple glow: projected dark-matter density, shown so it can be seen; dark matter emits no light.',
+      'Star colour marks the radius where each star started, so mixing and escape are visible.',
+      'Rings every 5 kpc; dashed amber ring: the Sun’s orbital radius.',
+    ],
+    references: [
+      'J. Bovy, ApJS 216, 29 (2015): galpy and MWPotential2014.',
+      'C. Eilers, D. Hogg, H.-W. Rix, M. Ness, ApJ 871, 120 (2019): Milky Way circular velocity curve 5–25 kpc.',
+      'J. F. Navarro, C. S. Frenk, S. D. M. White, ApJ 462, 563 (1996).',
+      'V. Rubin & W. K. Ford, ApJ 159, 379 (1970): flat rotation curves (M31).',
+    ],
+  },
+});
+</script>
+</body>
+</html>

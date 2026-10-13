@@ -6,37 +6,9 @@ Your task is to create **p-simtor**, a fully functional, independently designed,
 
 This is a real software development task. Build the actual skill, not a proposal, mockup, or standalone demonstration website.
 
-## 1. Mandatory reference: Anatomy
-
-**Reference repository:**
-https://github.com/wheresryan22/anatomy
-
-Before designing or implementing p-simtor, thoroughly examine this repository.
-
-Understand:
-
-- What makes Anatomy an AI agent skill rather than a conventional application.
-- How users install it directly from GitHub.
-- How it is invoked through Claude Code, Codex, and OpenCode.
-- How its SKILL.md guides an agent through creating working artifacts.
-- How its instructions, reusable capabilities, and supporting tools work together.
-- How it generates complete, standalone interactive outputs.
-- How it achieves high visual quality and verifies generated work.
-- How it packages its functionality for reuse across different projects.
-
-**Use Anatomy as a reference for the type of product, installation experience, agent workflow, craftsmanship, and quality standard.**
-
-Do not copy Anatomy's directory structure, implementation, internal abstractions, visualization methods, or design decisions without independent technical justification.
-
-Anatomy focuses on interactive illustrations of machines and mechanisms.
-
 **p-simtor focuses on computational physics, particle dynamics, mathematical models, and scientific simulations.**
 
-These are fundamentally different technical domains and require independently designed systems.
-
-The goal is to achieve a comparable level of skill usability and refinement while creating entirely original scientific capabilities.
-
-## 2. Non-negotiable requirement: An installable agent skill
+## 1. Non-negotiable requirement: An installable agent skill
 
 p-simtor MUST be an actual installable Agent Skill, following the open Agent Skills specification.
 
@@ -48,7 +20,7 @@ It must NOT be:
 - A collection of example animations.
 - A generic prompt with no supporting implementation.
 
-The final GitHub repository must itself be directly installable as a skill, just as Anatomy is.
+The final GitHub repository must itself be directly installable as a skill.
 
 After publishing to GitHub, a user should be able to run a command in this form:
 
@@ -84,7 +56,7 @@ Verify that the skill can be installed from its repository, discovered by a comp
 
 If specific agent environments are unavailable, distinguish actual verification from documented but untested compatibility.
 
-## 3. Core vision
+## 2. Core vision
 
 p-simtor transforms descriptions of physical phenomena into computationally grounded interactive visualizations.
 
@@ -107,7 +79,7 @@ The agent should handle different requests intelligently rather than relying on 
 
 **The mathematics determines the physical behavior. The visuals reveal that behavior.**
 
-## 4. Scientific scope
+## 3. Scientific scope
 
 Design p-simtor to support scientific phenomena across scales.
 
@@ -177,7 +149,7 @@ When exact simulation is computationally infeasible, use defensible approximatio
 
 **Each domain must use mathematics appropriate to its physics. Do not force all scales into a single classical particle model.**
 
-## 5. Mathematical accuracy
+## 4. Mathematical accuracy
 
 Scientific correctness is p-simtor's highest priority.
 
@@ -219,7 +191,7 @@ Do not animate fabricated paths and describe them as computed physics.
 
 Do not allow rendering effects to modify scientific quantities.
 
-## 6. Scientific verification
+## 5. Scientific verification
 
 Every generated simulation must communicate how trustworthy its results are.
 
@@ -249,7 +221,7 @@ The generated simulation should make its scientific assumptions and limitations 
 
 Never claim numerical accuracy without evidence.
 
-## 7. Exceptional visual quality
+## 6. Exceptional visual quality
 
 Visual excellence is a fundamental part of p-simtor.
 
@@ -282,9 +254,9 @@ The user should immediately understand what physical quantities are being repres
 
 If an important visual element uses exaggerated scale, symbolic color, or nonphysical motion, disclose that convention.
 
-The visual standard should be comparable in ambition and refinement to Anatomy, but p-simtor must develop its own visual language.
+The visual standard should be highly ambitious and refined, with p-simtor's own distinctive visual language.
 
-## 8. Interactive behavior
+## 7. Interactive behavior
 
 A generated simulation should be an interactive scientific instrument, not a looping video.
 
@@ -308,7 +280,7 @@ For example, increasing one body's mass in a three-body gravitational simulation
 
 Do not merely change the animation speed or visual appearance.
 
-## 9. Generated output
+## 8. Generated output
 
 p-simtor must generate complete, usable artifacts.
 
@@ -333,7 +305,7 @@ Do not require an unnecessarily complicated development environment for ordinary
 
 Select the necessary implementation technologies through independent research and technical evaluation.
 
-## 10. Skill intelligence
+## 9. Skill intelligence
 
 The value of p-simtor is not simply that it contains simulation code.
 
@@ -355,11 +327,9 @@ When the requested fidelity is not feasible, explain the limitations and offer t
 
 Keep the skill general enough to support new scientific problems beyond its original examples.
 
-## 11. Original architecture
+## 10. Original architecture
 
 Design p-simtor's implementation from its requirements.
-
-Do not reproduce Anatomy's folders, file hierarchy, drawing tools, camera system, or architectural conventions.
 
 Investigate the best implementation approach for:
 
@@ -383,7 +353,7 @@ Keep the finished skill usable and maintainable.
 
 Do not introduce unnecessary frameworks, services, or infrastructure.
 
-## 12. Build a real working first version
+## 11. Build a real working first version
 
 Do not stop after writing documentation or designing the architecture.
 
@@ -409,7 +379,7 @@ This first implementation is a verification target, not a restriction that p-sim
 
 Design the skill's instructions and supporting capabilities so they can grow into molecular, quantum, atomic, nuclear, and particle physics without scientifically invalid generalizations.
 
-## 13. Installation, invocation, and regression testing
+## 12. Installation, invocation, and regression testing
 
 Test the complete user experience.
 
@@ -449,7 +419,7 @@ Include agent-skill evaluations covering requests such as:
 
 Where functionality is not yet implemented, document the limitation explicitly. Do not substitute fake scientific demonstrations or silently advertise unsupported capabilities.
 
-## 14. Success criteria
+## 13. Success criteria
 
 The project is successful only when:
 
@@ -465,15 +435,11 @@ The project is successful only when:
 - It supports extension into additional physics domains.
 - Installation and at least one full generation workflow have been tested.
 
-## 15. Execute the task
+## 14. Execute the task
 
-Begin by analyzing the Anatomy repository specifically as an example of a successful installable AI agent skill.
+Begin by researching the Agent Skills standard and the scientific and computational requirements of p-simtor.
 
-Identify what makes its user experience, installation, instructions, generated artifacts, and quality assurance effective.
-
-Then independently research the scientific and computational requirements of p-simtor.
-
-Design an original implementation that delivers an equivalent standard of skill usability while specializing in physics simulation.
+Design an original implementation that delivers an excellent standard of skill usability while specializing in physics simulation.
 
 **Create the repository, write the skill, implement the necessary functionality, produce the first working simulation, and test the installation and invocation process.**
 
@@ -486,8 +452,6 @@ Do not finish with a design proposal when implementation is possible.
 **Project name: p-simtor**
 
 **Product type: Installable AI Agent Skill**
-
-**Reference product: https://github.com/wheresryan22/anatomy**
 
 **Primary purpose: Scientifically rigorous, mathematically driven, visually extraordinary physics simulations.**
 

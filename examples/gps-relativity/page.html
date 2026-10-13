@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="p-simtor">
+<title>GPS and relativity</title>
+<link rel="stylesheet" href="psim:ui/instrument.css">
+</head>
+<body>
+<script type="application/json" id="psim-verification">null</script>
+<script type="module">
+import { createInstrument } from 'psim:ui/instrument-app.mjs';
+import { sci } from 'psim:ui/instrument.mjs';
+import { PARAMS, createSim, R_EARTH, GM_EARTH, W0, circularOffset, MICRO_PER_DAY } from './physics.mjs';
+
+const C2 = 299792458 ** 2;
+
+// ------------------------------------------------------------------ stage: Earth, orbit, two clocks
+function clockFace(ctx, x, y, R, label, seconds, extra, color, C) {
+  ctx.strokeStyle = C('--line-strong'); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(x, y, R, 0, 7); ctx.stroke();
+  for (let k = 0; k < 60; k++) {
+    const a = k / 60 * 2 * Math.PI, r1 = k % 5 ? R * 0.9 : R * 0.82;
+    ctx.beginPath(); ctx.moveTo(x + Math.sin(a) * r1, y - Math.cos(a) * r1); ctx.lineTo(x + Math.sin(a) * R * 0.97, y - Math.cos(a) * R * 0.97); ctx.stroke();
+  }
+  const s = seconds % 60, a = s / 60 * 2 * Math.PI;
+  ctx.strokeStyle = color; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.sin(a) * R * 0.85, y - Math.cos(a) * R * 0.85); ctx.stroke();
+  ctx.fillStyle = C('--ink'); ctx.font = '600 12px ui-sans-serif, system-ui'; ctx.textAlign = 'center';
+  ctx.fillText(label, x, y + R + 18);
+  ctx.font = '11px ui-monospace, Menlo, monospace'; ctx.fillStyle = C('--muted');
+  ctx.fillText(extra, x, y + R + 34);
+  ctx.textAlign = 'start';
+}
+
+function draw(ctx, sim, view) {
+  const { W, H } = view, C = view.color;
+  const narrow = W < 640;
+  const ox = narrow ? W / 2 : W * 0.36, oy = narrow ? H * 0.36 : H / 2;
+  const maxR = sim.a * (1 + sim.e);
+  const scale = (narrow ? Math.min(W, H * 0.62) : Math.min(W * 0.62, H)) * 0.44 / maxR;
+  // Earth (to scale) with the equator line
+  const re = R_EARTH * scale;
+  const g = ctx.createRadialGradient(ox - re * 0.3, oy - re * 0.3, re * 0.1, ox, oy, re);
+  g.addColorStop(0, '#3d7bd6'); g.addColorStop(1, '#13325f');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(ox, oy, re, 0, 7); ctx.fill();
+  ctx.fillStyle = C('--muted'); ctx.font = '11px ui-sans-serif, system-ui'; ctx.textAlign = 'center';
+  ctx.fillText('Earth (to scale)', ox, oy + re + 14); ctx.textAlign = 'start';
+  // orbit ellipse (analytic shape, perigee on +x) and the computed trail
+  const a = sim.a * scale, b = a * Math.sqrt(1 - sim.e ** 2), cxo = ox - sim.a * sim.e * scale;
+  ctx.setLineDash([3, 5]); ctx.strokeStyle = C('--grid-strong');
+  ctx.beginPath(); ctx.ellipse(cxo, oy, a, b, 0, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]);
+  const [px, py] = sim.position();
+  const sx = ox + px * scale, sy = oy - py * scale;
+  // signal path to a ground receiver
+  const ang = Math.atan2(-(sy - oy), sx - ox);
+  const gx = ox + Math.cos(ang) * re, gy = oy - Math.sin(ang) * re;
+  ctx.strokeStyle = C('--accent'); ctx.globalAlpha = 0.5; ctx.setLineDash([2, 4]);
+  ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(gx, gy); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+  ctx.fillStyle = C('--body-1'); ctx.beginPath(); ctx.arc(gx, gy, 3.5, 0, 7); ctx.fill();
+  // satellite
+  ctx.fillStyle = C('--body-0'); ctx.fillRect(sx - 4, sy - 4, 8, 8);
+  ctx.fillRect(sx - 14, sy - 1.5, 8, 3); ctx.fillRect(sx + 6, sy - 1.5, 8, 3);
+  ctx.fillStyle = C('--ink-2'); ctx.font = '11px ui-sans-serif, system-ui';
+  ctx.fillText('GPS satellite', sx + 16, sy - 8);
+
+  // two clocks: same coordinate time, different proper times
+  const t = sim.sys.t, off = sim.offset();
+  const cx1 = narrow ? W * 0.28 : W * 0.8, cx2 = narrow ? W * 0.72 : W * 0.8;
+  const cy1 = narrow ? H * 0.78 : H * 0.27, cy2 = narrow ? H * 0.78 : H * 0.66;
+  const R = narrow ? Math.min(W * 0.16, 52) : Math.min(H * 0.13, 62);
+  clockFace(ctx, cx1, cy1, R, 'Ground clock', t, `τ = t − ${sci(W0 / C2 * t * 1e6, 3)} µs`, C('--body-1'), C);
+  clockFace(ctx, cx2, cy2, R, 'Satellite clock', t + off, `${off >= 0 ? '+' : '−'}${Math.abs(off * 1e6).toFixed(4)} µs ahead`, C('--body-0'), C);
+  ctx.fillStyle = C('--warn'); ctx.font = '600 12px ui-monospace, Menlo, monospace'; ctx.textAlign = 'center';
+  const errKm = 299792.458 * off;
+  ctx.fillText(`uncorrected position error ≈ ${Math.abs(errKm).toFixed(2)} km`, narrow ? W / 2 : cx2, narrow ? H * 0.95 : cy2 + R + 62);
+  ctx.textAlign = 'start';
+}
+
+// ------------------------------------------------------------------ workbench
+function bench({ eqs, figs, createPlot, createEquation, createDerivation, M }) {
+  const drift = createPlot({
+    title: 'Satellite clock minus ground clock', height: 260,
+    x: { label: 'time', unit: 'hours', min: 0, max: 24 }, y: { label: 'offset', unit: 'µs', min: -10, max: 50 },
+  });
+  const wobble = createPlot({
+    title: 'Periodic part from the eccentric orbit', height: 260,
+    x: { label: 'time', unit: 'hours', min: 0, max: 24 }, y: { label: 'offset − mean drift', unit: 'ns', min: -60, max: 60 },
+  });
+  figs.append(drift.el, wobble.el);
+  let sim = null;
+  const r = () => sim?.rate() ?? { r: 26561.75e3, v2: GM_EARTH / 26561.75e3 };
+  const e10 = x => x * 1e10;
+  const eq = createEquation({
+    title: 'Clock rate of the satellite relative to the ground (values now, in units of 10⁻¹⁰)',
+    lhs: { mathml: `<mfrac><mrow><msub><mi>dτ</mi><mtext>sat</mtext></msub><mo>−</mo><msub><mi>dτ</mi><mtext>ground</mtext></msub></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac>`, label: 'fractional rate difference', value: () => e10((W0 - GM_EARTH / r().r - r().v2 / 2) / C2), unit: '×10⁻¹⁰', digits: 5 },
+    terms: [
+      { id: 'ground', mathml: M.frac(M.sub(M.i('W'), M.n(0)), M.sup(M.i('c'), M.n(2))), label: 'ground clock sits deep in Earth’s potential (+ rotation): it runs slow', color: '--body-1', value: () => e10(W0 / C2), unit: '×10⁻¹⁰', digits: 5 },
+      { id: 'grav', sign: '−', mathml: M.frac(`${M.i('G')}${M.i('M')}`, `${M.i('r')}${M.sup(M.i('c'), M.n(2))}`), label: 'satellite is higher up: less slowing by gravity (general relativity)', color: '--good', value: () => e10(GM_EARTH / r().r / C2), unit: '×10⁻¹⁰', digits: 5 },
+      { id: 'vel', sign: '−', mathml: M.frac(M.sup(M.i('v'), M.n(2)), `${M.n(2)}${M.sup(M.i('c'), M.n(2))}`), label: 'satellite moves at ~3.9 km/s: time dilation (special relativity)', color: '--bad', value: () => e10(r().v2 / 2 / C2), unit: '×10⁻¹⁰', digits: 5 },
+    ],
+    where: [
+      { mathml: M.sub(M.i('W'), M.n(0)), meaning: 'geoid potential, gravity + rotation (IERS 2010)', value: () => W0, unit: 'm²/s²' },
+      { mathml: `${M.i('G')}${M.i('M')}`, meaning: 'Earth’s gravitational parameter (WGS 84)', value: () => GM_EARTH, unit: 'm³/s²' },
+      { mathml: M.i('r'), meaning: 'satellite distance from Earth’s centre (now)', value: () => r().r / 1e3, unit: 'km', digits: 7 },
+      { mathml: M.i('v'), meaning: 'satellite speed (now)', value: () => Math.sqrt(r().v2) / 1e3, unit: 'km/s', digits: 5 },
+    ],
+    link: drift,
+  });
+  const steps = createDerivation([
+    { mathml: `<mfrac><mrow><mi>d</mi><mi>τ</mi></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac><mo>=</mo><mn>1</mn><mo>−</mo><mfrac><mi>U</mi><msup><mi>c</mi><mn>2</mn></msup></mfrac><mo>−</mo><mfrac><msup><mi>v</mi><mn>2</mn></msup><mrow><mn>2</mn><msup><mi>c</mi><mn>2</mn></msup></mrow></mfrac>`, note: 'Weak-field limit of general relativity: gravity and speed both slow a clock.' },
+    { mathml: `<msup><mi>v</mi><mn>2</mn></msup><mo>=</mo><mfrac><mrow><mi>G</mi><mi>M</mi></mrow><mi>a</mi></mfrac><mspace width="0.5em"/><mtext>(circular orbit)</mtext><mspace width="0.5em"/><mo>⇒</mo><mspace width="0.5em"/><mfrac><mrow><mi>Δ</mi><mi>τ</mi></mrow><mi>t</mi></mfrac><mo>=</mo><mfrac><mrow><msub><mi>W</mi><mn>0</mn></msub><mo>−</mo><mfrac><mn>3</mn><mn>2</mn></mfrac><mfrac><mrow><mi>G</mi><mi>M</mi></mrow><mi>a</mi></mfrac></mrow><msup><mi>c</mi><mn>2</mn></msup></mfrac><mo>=</mo><mn>4.4647</mn><mo>×</mo><msup><mn>10</mn><mn>−10</mn></msup>`, note: 'For GPS (a = 26 561.75 km): +45.8 µs/day from gravity, −7.2 µs/day from speed.' },
+    { mathml: `<mn>4.4647</mn><mo>×</mo><msup><mn>10</mn><mn>−10</mn></msup><mo>×</mo><mn>86400</mn><mtext> s</mtext><mo>=</mo><mn>38.6</mn><mtext> µs/day</mtext><mo>⇒</mo><mi>c</mi><mo>×</mo><mn>38.6</mn><mtext> µs</mtext><mo>≈</mo><mn>11.6</mn><mtext> km/day</mtext>`, note: 'Light travels 11.6 km in 38.6 µs: without relativity, GPS fixes would drift by ~10 km every day.' },
+    { mathml: `<msub><mi>f</mi><mtext>factory</mtext></msub><mo>=</mo><mn>10.23</mn><mtext> MHz</mtext><mo>×</mo><mo>(</mo><mn>1</mn><mo>−</mo><mn>4.4647</mn><mo>×</mo><msup><mn>10</mn><mn>−10</mn></msup><mo>)</mo><mo>=</mo><mn>10.22999999543</mn><mtext> MHz</mtext>`, note: 'So satellite clocks are built slow on purpose: exactly the value in the GPS specification (IS-GPS-200).' },
+  ], { title: 'Why 38 microseconds a day, and what GPS does about it' });
+  eqs.append(eq.el, steps);
+
+  let lastN = -1, built = null;
+  return {
+    update(s) {
+      sim = s;
+      if (built !== s) { built = s; lastN = -1; drift.setX({ max: 24 }); wobble.setX({ max: 24 }); }
+      eq.update();
+      if (s.history.length === lastN) return;
+      lastN = s.history.length;
+      const tMax = Math.max(24, s.history[s.history.length - 1][0]);
+      drift.setX({ max: tMax }); wobble.setX({ max: tMax });
+      const slope = circularOffset(s.a) * MICRO_PER_DAY / 24;      // µs per hour
+      drift.setY({ min: Math.min(-10, -7.2 / 24 * tMax * 1.2), max: Math.max(50, 45.8 / 24 * tMax * 1.15) });
+      drift.fn('expected', h => slope * h, { color: '--muted', dash: true, label: 'expected 38.6 µs/day (GPS)', width: 1.2 });
+      drift.data('grav', s.history.map(p => [p[0], p[2]]), { color: '--good', label: 'gravity part (GR)' });
+      drift.data('vel', s.history.map(p => [p[0], p[3]]), { color: '--bad', label: 'speed part (SR)' });
+      drift.data('ground', s.history.map(p => [p[0], p[1]]), { color: '--body-0', label: 'net offset (computed)', width: 2.2 });
+      const per = s.history.map(p => [p[0], (p[1] - slope * p[0]) * 1e3]);
+      const amp = Math.max(5, 2e9 * Math.sqrt(GM_EARTH * s.a) * s.e / C2 * 1.3);
+      wobble.setY({ min: -amp, max: amp });
+      wobble.fn('analytic', h => s.e ? (() => { const E = solveE(h * 3600, s); return 1e9 * (-2 * Math.sqrt(GM_EARTH * s.a) * s.e * Math.sin(E) / C2); })() : 0,
+        { color: '--muted', dash: true, label: 'F e √a sin E (GPS ICD formula)', width: 1.4, ignoreScale: true });
+      wobble.data('num', per, { color: '--body-0', label: 'computed', width: 2 });
+      drift.invalidate(); wobble.invalidate(); drift.draw(); wobble.draw();
+    },
+  };
+}
+
+function solveE(t, s) {
+  const n = 2 * Math.PI / s.period, Mn = (n * t) % (2 * Math.PI);
+  let E = Mn;
+  for (let k = 0; k < 30; k++) E -= (E - s.e * Math.sin(E) - Mn) / (1 - s.e * Math.cos(E));
+  return E;
+}
+
+createInstrument({
+  title: 'GPS and relativity',
+  subtitle: 'Why satellite clocks run 38 µs/day fast: general relativity (+45.8) and special relativity (−7.2)',
+  tier: 'validated',
+  tierReason: 'The orbit is integrated numerically and both clocks are integrated along it from the weak-field metric. Results match the IAU/IERS constants and the GPS interface specification (factory frequency, F constant) to their published digits.',
+  layout: 'workbench',
+  params: PARAMS,
+  create: createSim,
+  draw, bench,
+  timeUnit: 'h', speed: 1.5, duration: 24,
+  hudLine: sim => `offset ${(sim.offset() * 1e6).toFixed(4)} µs · ${(MICRO_PER_DAY * circularOffset(sim.a)).toFixed(2)} µs/day`,
+  model: {
+    legend: ['SI units · Earth and orbit to scale', 'clocks share coordinate time t; hands show each clock’s own time'],
+    assumptions: [
+      'Weak-field (post-Newtonian) clock rates dτ/dt = 1 − U/c² − v²/2c², accurate to ~10⁻¹⁹ near Earth.',
+      'Earth is a point mass for the orbit; the ground clock uses the true geoid potential W₀ (gravity + rotation, IERS 2010). J₂ effects (~10⁻¹³) and the Sun’s and Moon’s tides are neglected.',
+      'The receiver’s own motion and the Sagnac effect (≈ 100 ns per signal path) are not modelled.',
+    ],
+    conventions: [
+      'Clock hands show seconds; the microsecond offsets are written underneath (they are far too small to see on a dial).',
+      'The dashed line from the satellite marks the radio signal to a receiver on the ground.',
+    ],
+    references: [
+      'N. Ashby, Living Rev. Relativ. 6, 1 (2003): Relativity in the Global Positioning System.',
+      'IS-GPS-200 (GPS interface specification), §3.3.1.1 and §20.3.3.3.3.1.',
+      'IERS Conventions (2010), IERS Technical Note 36; IAU 2000 Resolution B1.9 (L_G).',
+    ],
+  },
+});
+</script>
+</body>
+</html>

@@ -54,14 +54,20 @@ export async function launch() {
   ws.onmessage = ev => {
     const msg = JSON.parse(ev.data);
     if (msg.id && pending.has(msg.id)) {
-      const { res, rej } = pending.get(msg.id);
+      const { res, rej, timer } = pending.get(msg.id);
+      clearTimeout(timer);
       pending.delete(msg.id);
       msg.error ? rej(new Error(msg.error.message)) : res(msg.result);
     } else if (msg.method) listeners.forEach(l => l(msg));
   };
-  const send = (method, params = {}) => new Promise((res, rej) => {
+  ws.onclose = () => {
+    for (const { rej, timer } of pending.values()) { clearTimeout(timer); rej(new Error('Chrome connection closed')); }
+    pending.clear();
+  };
+  const send = (method, params = {}, timeoutMs = 10000) => new Promise((res, rej) => {
     const mid = ++id;
-    pending.set(mid, { res, rej });
+    const timer = setTimeout(() => { pending.delete(mid); rej(new Error(`Chrome timed out: ${method}`)); }, timeoutMs);
+    pending.set(mid, { res, rej, timer });
     ws.send(JSON.stringify({ id: mid, method, params }));
   });
   const once = method => new Promise(res => {
@@ -81,7 +87,10 @@ export async function launch() {
       await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: scale, mobile });
       const loaded = once('Page.loadEventFired');
       await send('Page.navigate', { url });
-      await loaded;
+      let timer;
+      try {
+        await Promise.race([loaded, new Promise((_res, rej) => { timer = setTimeout(() => rej(new Error('Chrome page load timed out')), 10000); })]);
+      } finally { clearTimeout(timer); }
     },
     async eval(expression) {
       const r = await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
@@ -94,7 +103,7 @@ export async function launch() {
       return file;
     },
     async close() {
-      try { await send('Browser.close'); } catch { /* already closing */ }
+      try { await send('Browser.close', {}, 1000); } catch { /* closed or unresponsive: kill below */ }
       ws.close();
       await sleep(200);
       proc.kill();
@@ -118,7 +127,7 @@ const READ_ATTRS = `(() => {
  * errors, verify the simulation is live, check for horizontal overflow, save
  * screenshots. Then run model-specific interaction tests (see interactionTests).
  */
-export async function checkPage(file, { shotsDir, waitMs = 3000 } = {}) {
+export async function checkPage(file, { shotsDir, waitMs = 3000, advance } = {}) {
   if (!findChrome()) {
     return { runs: [], problems: ['Chrome/Chromium not found. Set CHROME_PATH, or open the page manually and check the browser console.'] };
   }
@@ -136,21 +145,42 @@ export async function checkPage(file, { shotsDir, waitMs = 3000 } = {}) {
       b.consoleErrors.length = 0;
       await b.goto(`${pathToFileURL(file).href}?${v.q}&autoplay=1`, v);
       await sleep(waitMs);
+      if (advance != null) {
+        // fast-forward the simulation (in the page's own time unit) to see long-term behaviour
+        const r = await evalWithin(b, `window.psim?.advanceTo ? (window.psim.advanceTo(${+advance}), window.psim.fit?.(), 'ok') : 'no advanceTo'`, 60000);
+        if (r.frozen || r.error) {
+          const summary = r.error ?? `advancing to t = ${advance} took longer than 60 s`;
+          problems.push(`${v.label}: ${summary}`);
+          runs.push({ label: v.label, ok: false, summary });
+          return { runs, problems };
+        }
+        await sleep(600);
+      }
       const a = await b.eval(READ_ATTRS);
       const overflow = await b.eval('document.documentElement.scrollWidth - document.documentElement.clientWidth');
+      // Every diagnostic must show a value: "—" or NaN means a quantity failed to compute in the page.
+      const blank = await b.eval(`[...document.querySelectorAll('.psim-row')].filter(r => /^(—|NaN|[−-]?∞|[+-]?Infinity)(?:$|\\s)|NaN/.test(r.querySelector('.v')?.textContent.trim() ?? '')).map(r => r.querySelector('.k')?.textContent)`);
       const shot = await b.screenshot(join(shotsDir, `${name}-${v.label.replace(/[^a-z]+/g, '-')}.png`));
       const errors = [...(Array.isArray(a.errors) ? a.errors : []), ...b.consoleErrors];
       const live = (a.frames ?? 0) > 0 && (a.t ?? 0) > 0;
-      const ok = a.ready === true && errors.length === 0 && live && overflow <= 1;
+      const ok = a.ready === true && errors.length === 0 && live && overflow <= 1 && blank.length === 0;
       const summary = a.ready === undefined
         ? 'page did not report ready (script failed to start?)'
         : `frames ${a.frames ?? 0}, t = ${typeof a.t === 'number' ? a.t.toFixed(3) : '—'}, steps ${a.steps ?? '—'}`
           + `${typeof a.drift === 'number' ? `, |ΔE/E0| ${a.drift.toExponential(2)}` : ''}`
           + `${overflow > 1 ? `, horizontal overflow ${overflow}px` : ''}`
+          + `${blank.length ? `, diagnostics without a value: ${blank.join(', ')}` : ''}`
           + `${errors.length ? `, errors: ${errors.join(' | ')}` : ''}`;
       if (!ok) problems.push(`${v.label}: ${summary}`);
       runs.push({ label: v.label, ok, summary, screenshot: shot });
     }
+    for (const t of await stressInputs(b, file)) {
+      runs.push({ label: t.label, ok: t.ok, summary: t.summary });
+      if (!t.ok) problems.push(`${t.label}: ${t.summary}`);
+    }
+    // A failed stress test may have left the renderer frozen. Close it in finally,
+    // without issuing further page commands that would wait on that renderer.
+    if (problems.length) return { runs, problems };
     const model = await b.eval('window.psim?.model ?? null').catch(() => null);
     if (interactionTests[model]) {
       for (const t of await interactionTests[model](b, file)) {
@@ -164,6 +194,56 @@ export async function checkPage(file, { shotsDir, waitMs = 3000 } = {}) {
   return { runs, problems };
 }
 
+/** Evaluate with a deadline: a frozen page never answers. */
+async function evalWithin(b, expr, ms) {
+  let timer;
+  const timeout = new Promise(res => { timer = setTimeout(() => res({ frozen: true }), ms); });
+  const r = await Promise.race([b.eval(expr).then(v => ({ value: v })).catch(e => ({ error: e.message })), timeout]);
+  clearTimeout(timer);
+  return r;
+}
+
+/**
+ * Abuse every numeric input in the side panel (huge, negative, zero, nonsense): the page must
+ * stay responsive and error-free. Catches unbounded parameters (e.g. 10⁸ stars) and inputs that
+ * crash the model. Each input is tested on a fresh page load.
+ */
+export async function stressInputs(b, file, { timeoutMs = 3000, settleMs = 400, initialWaitMs = 300 } = {}) {
+  const url = `${pathToFileURL(file).href}?autoplay=1`;
+  await b.goto(url, { width: 1440, height: 900 });
+  await sleep(initialWaitMs);
+  const count = await b.eval(`document.querySelectorAll('.psim-side input[type=number]').length`);
+  const bad = [];
+  const result = () => [{
+    label: 'extreme inputs',
+    ok: bad.length === 0,
+    summary: bad.length ? bad.slice(0, 4).join(' · ') : `${Math.min(count, 24)} numeric inputs × {10¹⁵, −10¹⁵, 0}: page stayed responsive, no errors`,
+  }];
+  for (let i = 0; i < Math.min(count, 24); i++) {
+    for (const value of ['1e15', '-1e15', '0']) {
+      b.consoleErrors.length = 0;
+      const edited = await evalWithin(b, `(() => { const inp = document.querySelectorAll('.psim-side input[type=number]')[${i}]; inp.value = '${value}'; inp.dispatchEvent(new Event('change')); })()`, timeoutMs);
+      if (edited.frozen || edited.error) {
+        bad.push(`input #${i} = ${value}: ${edited.error ?? 'page froze during input change'}`);
+        return result();
+      }
+      await sleep(settleMs);
+      const alive = await evalWithin(b, `JSON.stringify({ label: document.querySelectorAll('.psim-side input[type=number]')[${i}].getAttribute('aria-label'), errors: JSON.parse(document.documentElement.dataset.psimErrors || '[]'), invalid: [...document.querySelectorAll('.psim-row .v')].some(r => /^(—|NaN|[−-]?∞|[+-]?Infinity)(?:$|\\s)|NaN/.test(r.textContent.trim())) })`, timeoutMs);
+      if (alive.frozen || alive.error) {
+        bad.push(`input #${i} = ${value}: page froze`);
+        return result();
+      }
+      const info = JSON.parse(alive.value ?? '{}');
+      const errs = [...(info.errors ?? []), ...b.consoleErrors];
+      if (errs.length) { bad.push(`"${info.label}" = ${value}: ${errs[0]}`); break; }
+      if (info.invalid) { bad.push(`"${info.label}" = ${value}: non-finite diagnostic`); break; }
+    }
+    await b.goto(url, { width: 1440, height: 900 });
+    await sleep(150);
+  }
+  return result();
+}
+
 /**
  * Model-specific end-to-end tests: drive the real UI, then compare the page's
  * computed state with an independent Node integration of the same setup.
@@ -171,10 +251,20 @@ export async function checkPage(file, { shotsDir, waitMs = 3000 } = {}) {
 export const interactionTests = {
   async generic(b, file) {
     await b.goto(`${pathToFileURL(file).href}?autoplay=0`, { width: 1440, height: 900 });
-    await sleep(300);
+    await sleep(600);
+    const out = [];
+    // Optional page self-test (e.g. GPU output vs an exact formula): window.psim.selfTest()
+    // returns { label, pass, ...measurements } or an array of them.
+    if (await b.eval('typeof window.psim?.selfTest === "function"')) {
+      const r = await b.eval('Promise.resolve(window.psim.selfTest())').catch(e => ({ label: 'page self-test', pass: false, error: e.message }));
+      for (const t of [].concat(r)) {
+        const { label, pass, ...rest } = t;
+        out.push({ label: label ?? 'page self-test', ok: pass === true, summary: JSON.stringify(rest) });
+      }
+    }
     const input = '.psim-side .psim-field input[type=number]';
     if (!(await b.eval(`!!document.querySelector('${input}')`))) {
-      return [{ label: 'parameter edit → model', ok: true, summary: 'no numeric parameters to test' }];
+      return [...out, { label: 'parameter edit → model', ok: true, summary: 'no numeric parameters to test' }];
     }
     await b.eval('window.psim.restart()');
     const s1 = await b.eval('window.psim.steps(300)');
@@ -184,7 +274,17 @@ export const interactionTests = {
     const s2 = await b.eval('window.psim.steps(300)');
     const changedKey = Object.keys(p0).find(k => p0[k] !== p1[k]);
     const differs = JSON.stringify(s1) !== JSON.stringify(s2);
-    return [{
+    // Blackbody's scale selector is a display control: changing only the scale
+    // must redraw its spectrum even though the temperature stays the same.
+    const hasScale = await b.eval(`[...document.querySelectorAll('select')].some(s => [...s.options].some(o => o.value === 'lin') && [...s.options].some(o => o.value === 'log'))`);
+    if (hasScale) {
+      const before = await b.eval(`document.querySelector('.psim-figure canvas').toDataURL()`);
+      await b.eval(`(() => { const s = [...document.querySelectorAll('select')].find(q => [...q.options].some(o => o.value === 'lin')); s.value = s.value === 'lin' ? 'log' : 'lin'; s.dispatchEvent(new Event('change')); })()`);
+      await sleep(200);
+      const after = await b.eval(`document.querySelector('.psim-figure canvas').toDataURL()`);
+      out.push({ label: 'spectrum axis control', ok: before !== after, summary: before !== after ? 'changing only the axis scale redrew the spectrum' : 'axis selector left the plot unchanged' });
+    }
+    return [...out, {
       label: 'parameter edit → model',
       ok: !!changedKey && differs,
       summary: changedKey
@@ -213,6 +313,21 @@ export const interactionTests = {
       ok: base.d === 0,
       summary: `max |x_page − x_node| = ${base.d.toExponential(2)} at t = ${base.page.t.toFixed(4)} (${base.page.steps} steps)`,
     });
+    // Editing either solver control must withdraw the old report and trust label.
+    for (const control of ['integrator', 'accuracy']) {
+      const selector = control === 'integrator'
+        ? "[...document.querySelectorAll('select')].find(s => [...s.options].some(o => o.value === 'leapfrog'))"
+        : "document.querySelector('input[aria-label=\"Steps per crossing time value\"]')";
+      await b.eval(`(() => {
+        const input = ${selector};
+        input.value = ${control === 'integrator' ? JSON.stringify(base.setup.integrator === 'leapfrog' ? 'logh4' : 'leapfrog') : String(base.setup.stepsPerCrossing * 2)};
+        input.dispatchEvent(new Event('change'));
+      })()`);
+      const withdrawn = await b.eval(`document.getElementById('tier').dataset.tier === 'unverified' && document.querySelector('.psim-side').textContent.includes('build-time report does not apply')`);
+      results.push({ label: `${control} → report`, ok: withdrawn, summary: withdrawn ? 'changed solver settings withdrew the old verification and trust label' : 'stale verification remained visible' });
+      await b.goto(`${pathToFileURL(file).href}?autoplay=0`, { width: 1440, height: 900 });
+      await sleep(300);
+    }
     // Change m₁ through the real number input, as a user would.
     await b.eval('window.psim.load(window.psim.scenarios()[0])');
     const m0 = (await b.eval('window.psim.setup()')).bodies[0].m;

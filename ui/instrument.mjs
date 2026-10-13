@@ -56,7 +56,7 @@ export function grade(x, good, warn) {
 
 // ---------- theme ----------
 
-export function initTheme(button) {
+export function initTheme(toggleButton) {
   const root = document.documentElement;
   let stored = null;
   try { stored = localStorage.getItem('psim-theme'); } catch { /* storage unavailable */ }
@@ -64,12 +64,12 @@ export function initTheme(button) {
   const sys = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
   const apply = t => {
     root.dataset.theme = t;
-    if (button) button.innerHTML = t === 'dark' ? ICONS.sun : ICONS.moon;
-    if (button) button.title = t === 'dark' ? 'Light theme' : 'Dark theme';
+    if (toggleButton) toggleButton.innerHTML = t === 'dark' ? ICONS.sun : ICONS.moon;
+    if (toggleButton) toggleButton.title = t === 'dark' ? 'Light theme' : 'Dark theme';
     root.dispatchEvent(new CustomEvent('psim-theme', { detail: t }));
   };
   apply(query || stored || root.dataset.theme || sys);
-  button?.addEventListener('click', () => {
+  toggleButton?.addEventListener('click', () => {
     const t = root.dataset.theme === 'dark' ? 'light' : 'dark';
     try { localStorage.setItem('psim-theme', t); } catch { /* ignore */ }
     apply(t);
@@ -98,31 +98,49 @@ export function row(label, value = '—', cls = '') {
   return r;
 }
 
+/** Value for a numeric input: short, exact enough, scientific notation for small or huge numbers. */
+export const inputValue = v => {
+  const a = Math.abs(v);
+  return a !== 0 && (a < 1e-3 || a >= 1e7) ? v.toExponential(4) : String(+Number(v).toPrecision(6));
+};
+
 /**
- * Slider + exact numeric entry. Linear or logarithmic. onInput receives the number.
- * The numeric box accepts values beyond the slider range (the slider clamps visually).
+ * Slider + exact numeric entry, linear or logarithmic. onInput receives the number.
+ * Typed values are clamped to `limits` (default: the slider's [min, max]) and rounded when
+ * `integer` is set, so a typo like 100000000 can never freeze the page. Pass wider `limits`
+ * when a quantity may legitimately exceed the slider's range.
  */
-export function slider({ label, min, max, step = 'any', value, log = false, unit = '', digits = 3, onInput }) {
+export function slider({ label, min, max, step = 'any', value, log = false, unit = '', digits = 3, integer = false, limits = [min, max], onInput }) {
   const toS = v => log ? Math.log10(v) : v;
   const fromS = s => log ? Math.pow(10, s) : s;
+  const [lo, hi] = limits;
+  const tidy = v => {
+    const c = Math.min(hi, Math.max(lo, v));
+    return integer ? Math.round(c) : c;
+  };
   const range = el('input', { type: 'range', min: toS(min), max: toS(max), step: log ? 'any' : step, value: toS(value), 'aria-label': label });
-  const num = el('input', { type: 'number', step: 'any', value: +Number(value).toPrecision(6), 'aria-label': `${label} value` });
+  const num = el('input', { type: 'number', step: integer ? 1 : 'any', min: lo, max: hi, value: inputValue(value), 'aria-label': `${label} value` });
   const unitEl = unit ? el('span', { style: 'color:var(--muted);font:11px var(--mono)' }, unit) : null;
+  const note = el('span', { class: 'psim-limit', role: 'status' });
   const field = el('label', { class: 'psim-field' },
     el('div', { class: 'top' }, el('span', {}, label), el('div', { style: 'display:flex;align-items:baseline;gap:4px' }, num, unitEl)),
-    range);
+    range, note);
   range.addEventListener('input', () => {
-    const v = +(+fromS(+range.value)).toPrecision(digits + 1);
-    num.value = v;
+    const v = tidy(+(+fromS(+range.value)).toPrecision(digits + 1));
+    num.value = inputValue(v);
+    note.textContent = '';
     onInput?.(v);
   });
   num.addEventListener('change', () => {
-    const v = +num.value;
-    if (!Number.isFinite(v)) return;
+    const raw = +num.value;
+    if (!Number.isFinite(raw)) { num.value = inputValue(tidy(fromS(+range.value))); return; }
+    const v = tidy(raw);
+    note.textContent = v !== raw ? `limited to ${inputValue(v)} (allowed ${inputValue(lo)}–${inputValue(hi)})` : '';
+    num.value = inputValue(v);
     range.value = toS(v);
     onInput?.(v);
   });
-  field.setValue = v => { range.value = toS(v); num.value = +Number(v).toPrecision(6); };
+  field.setValue = v => { range.value = toS(v); num.value = inputValue(v); };
   return field;
 }
 

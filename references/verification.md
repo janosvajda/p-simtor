@@ -21,10 +21,24 @@ Every page carries evidence for its trust tier. Choose checks that match the mat
 | Frame-rate independence | Advance with two different frame schedules | All time-dependent pages | identical |
 | UI → physics | Change a parameter in the real UI; state must change and match an independent run | All interactive pages (`psim check`) | identical to Node run |
 
+## Precision with purpose (stop here)
+
+| Kind of check | Good enough |
+|---|---|
+| Identity of an evaluated formula (F = −dV/dr, analytic gradient vs finite difference) | 1e-8 relative |
+| Conservation in a long symplectic run | 1e-8 (few-body), 1e-4 (many particles), bounded, no drift |
+| Comparison with an exact solution at the method's resolution | the method's known error at that step size |
+| Comparison with a measurement | its stated uncertainty (often 0.1–5 %) |
+| Convergence order | within ±0.3 of theory |
+
+Going further costs tokens without changing any claim. A **differential** measurement (subtract a reference run that shares the systematic error) beats brute-force precision when the effect is tiny (see the Mercury test in `tests/real-world.test.mjs`).
+
 ## Rules
 
 - A check that never fails is not a check. Make sure each test would catch the bug it targets. p-simtor's own convergence check caught a bug where the step size was silently ignored.
-- Put measured values in the page (Verification panel), not adjectives.
+- Put measured values in the page (Verification panel), not adjectives. Gravity reports measure the maximum conservation error over every computed step, and also retain the final error.
+- A report applies only to its tested setup. Gravity pages withdraw the report and mark verification needed after solver settings or initial conditions change; exported JSON follows the same rule.
+- At very fine timesteps, floating-point noise can dominate refinement ratios. Gravity measures order at an explicitly reported calibration step based on the initial dynamical scales (at most 2000 steps per crossing); conservation and the predictability horizon still use the actual finer production step.
 - When a check fails, fix the model, method or step size. Don't loosen the threshold to make it pass. If a limit is real (chaos, approximation), report it as a limit.
 - Separate the **model's** validity from the **numerics'** accuracy. A perfectly converged softened N-body run is still softened.
 
@@ -37,3 +51,5 @@ Every page carries evidence for its trust tier. Choose checks that match the mat
   notes: ['Neglected effects and why they are negligible'] }
 ```
 `pass: false` makes `psim build --verify-module` exit with code 2, and the page shows the failed check in red.
+
+Every check requires an explicit boolean `pass`, a label, and a finite measured value (number or formatted text). Missing results, NaN and infinity are rejected; imported report files undergo the same checks. Adaptive ODE tolerances are local error controls, not a guarantee on accumulated global error. `dopri5` throws on exhausted budgets or an unresolvable step; its `stopped` flag denotes only an intentional `onStep` stop.
