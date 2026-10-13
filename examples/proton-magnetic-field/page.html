@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="p-simtor">
+<title>Proton in a magnetic field</title>
+<link rel="stylesheet" href="psim:ui/instrument.css">
+</head>
+<body>
+<script type="application/json" id="psim-verification">null</script>
+<script type="module">
+import { createInstrument } from 'psim:ui/instrument-app.mjs';
+import { sci } from 'psim:ui/instrument.mjs';
+import { PARAMS, createSim } from './physics.mjs';
+
+const BOLD_B = '𝐁', BOLD_V = '𝐯', BOLD_E = '𝐄', BOLD_U = '𝐮';
+// yaw about B; elev = angle of the eye above the orbital plane (0: side-on, π/2: looking down B).
+const cam = { yaw: -0.55, elev: 0.42 };
+
+function project(view, p, scale, center) {
+  const x = p[0] - center[0], y = p[1] - center[1], z = p[2] - center[2];
+  const cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
+  const x1 = cy * x - sy * y, y1 = sy * x + cy * y;
+  const ce = Math.cos(cam.elev), se = Math.sin(cam.elev);
+  const up = ce * z + se * y1;            // +z (along B) points up the screen
+  return [view.W / 2 + x1 * scale, view.H / 2 - up * scale, ce * y1 - se * z];
+}
+
+function niceStep(raw) {
+  const e = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / e;
+  return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * e;
+}
+function fmtLen(m) {
+  if (m >= 1) return `${+m.toPrecision(3)} m`;
+  if (m >= 1e-2) return `${+(m * 100).toPrecision(3)} cm`;
+  if (m >= 1e-3) return `${+(m * 1000).toPrecision(3)} mm`;
+  return `${+(m * 1e6).toPrecision(3)} µm`;
+}
+
+function draw(ctx, sim, view) {
+  const C = view.color;
+  const a = sim.analytic, p = sim.params;
+  const r = a.radius;
+  const scale = 0.2 * Math.min(view.W, view.H) / r;
+  // Follow the particle along B and the guiding centre across it.
+  const vE = p.E / p.B;
+  const center = [p.E ? sim.x[0] - (sim.x[0] - vE * sim.t * 1e-9) : 0, 0, sim.x[2]];
+  if (p.E) center[0] = vE * sim.t * 1e-9;
+
+  // Field lines: B ∥ ẑ, uniform. Drawn as a lattice of parallel lines with direction ticks.
+  const step = niceStep(r * 1.1);
+  ctx.lineWidth = 1;
+  for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) {
+    const px = Math.round(center[0] / step) * step + i * step, py = j * step;
+    const zSpan = 3 * r;
+    const A = project(view, [px, py, center[2] - zSpan], scale, center);
+    const B = project(view, [px, py, center[2] + zSpan], scale, center);
+    ctx.strokeStyle = C('--grid-strong');
+    ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke();
+    // direction tick (chevron) at a z that scrolls with the field, not with time
+    const zt = Math.floor(center[2] / step) * step + step / 2;
+    const T0 = project(view, [px, py, zt], scale, center), T1 = project(view, [px, py, zt + step * 0.12], scale, center);
+    const ang = Math.atan2(T1[1] - T0[1], T1[0] - T0[0]);
+    ctx.fillStyle = C('--grid-strong');
+    ctx.beginPath(); ctx.moveTo(T1[0], T1[1]);
+    ctx.lineTo(T1[0] - 6 * Math.cos(ang - 0.5), T1[1] - 6 * Math.sin(ang - 0.5));
+    ctx.lineTo(T1[0] - 6 * Math.cos(ang + 0.5), T1[1] - 6 * Math.sin(ang + 0.5));
+    ctx.fill();
+  }
+
+  // Analytic gyro-circle (E = 0 only): exact reference the computed orbit should overlay.
+  if (!p.E) {
+    ctx.setLineDash([3, 5]); ctx.strokeStyle = C('--muted'); ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let k = 0; k <= 96; k++) {
+      const th = 2 * Math.PI * k / 96;
+      const Q = project(view, [r * Math.cos(th), r * Math.sin(th), sim.x[2]], scale, center);
+      k ? ctx.lineTo(Q[0], Q[1]) : ctx.moveTo(Q[0], Q[1]);
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  // Computed trajectory (integrator states only).
+  const tr = sim.trail;
+  const N = tr.length, CH = 24;
+  const col = C('--body-1');
+  ctx.strokeStyle = col; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const per = Math.max(1, Math.ceil(N / CH));
+  for (let c = 0; c * per < N - 1; c++) {
+    const i0 = c * per, i1 = Math.min(N - 1, (c + 1) * per);
+    const age = 1 - i1 / (N - 1);
+    ctx.globalAlpha = 0.08 + 0.92 * Math.pow(1 - age, 1.5);
+    ctx.lineWidth = 0.7 + 1.1 * (1 - age);
+    ctx.beginPath();
+    for (let i = i0; i <= i1; i++) { const Q = project(view, tr[i], scale, center); i === i0 ? ctx.moveTo(Q[0], Q[1]) : ctx.lineTo(Q[0], Q[1]); }
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  const last = project(view, tr[N - 1], scale, center), P = project(view, sim.x, scale, center);
+  ctx.beginPath(); ctx.moveTo(last[0], last[1]); ctx.lineTo(P[0], P[1]); ctx.stroke();
+
+  // Proton marker and velocity direction.
+  const g = sim.gamma(), v = sim.u.map(q => q / g), vn = Math.hypot(...v);
+  const V = project(view, [sim.x[0] + v[0] / vn * r * 0.45, sim.x[1] + v[1] / vn * r * 0.45, sim.x[2] + v[2] / vn * r * 0.45], scale, center);
+  ctx.strokeStyle = C('--ink-2'); ctx.lineWidth = 1.3;
+  ctx.beginPath(); ctx.moveTo(P[0], P[1]); ctx.lineTo(V[0], V[1]); ctx.stroke();
+  const glow = C('--glow') === '1';
+  if (glow) {
+    ctx.globalCompositeOperation = 'lighter';
+    const gr = ctx.createRadialGradient(P[0], P[1], 0, P[0], P[1], 34);
+    gr.addColorStop(0, 'rgba(255,111,154,0.55)'); gr.addColorStop(1, 'rgba(255,111,154,0)');
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(P[0], P[1], 34, 0, 7); ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  ctx.fillStyle = C('--body-2');
+  ctx.beginPath(); ctx.arc(P[0], P[1], 6, 0, 7); ctx.fill();
+  ctx.fillStyle = glow ? 'rgba(255,255,255,0.9)' : C('--panel');
+  ctx.font = '600 9px ui-sans-serif, system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('+', P[0], P[1] + 0.5);
+  ctx.textAlign = 'start'; ctx.textBaseline = 'alphabetic';
+
+  // Labels and scale bar.
+  ctx.fillStyle = C('--muted'); ctx.font = '11px ui-monospace, Menlo, monospace';
+  const lb = project(view, [Math.round(center[0] / step) * step + 2 * step, -2 * step, center[2] + 1.6 * r], scale, center);
+  ctx.fillText(`${BOLD_B} = ${p.B} T ẑ`, lb[0] + 6, lb[1]);
+  if (p.E) ctx.fillText(`${BOLD_E} = ${sci(p.E, 2)} V/m ŷ   drift → x̂`, 16, view.H - 64);
+  const bar = niceStep(r * 0.8);
+  ctx.strokeStyle = C('--muted'); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(16, view.H - 34); ctx.lineTo(16, view.H - 28); ctx.lineTo(16 + bar * scale, view.H - 28); ctx.lineTo(16 + bar * scale, view.H - 34); ctx.stroke();
+  ctx.fillText(fmtLen(bar), 16, view.H - 14);
+}
+
+function onPointer(canvas, view) {
+  let drag = null;
+  canvas.style.cursor = 'grab';
+  canvas.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, yaw: cam.yaw, elev: cam.elev }; canvas.setPointerCapture(e.pointerId); canvas.style.cursor = 'grabbing'; });
+  canvas.addEventListener('pointermove', e => {
+    if (!drag) return;
+    cam.yaw = drag.yaw + (e.clientX - drag.x) * 0.006;
+    cam.elev = Math.max(0, Math.min(Math.PI / 2, drag.elev + (e.clientY - drag.y) * 0.006));
+  });
+  const end = () => { drag = null; canvas.style.cursor = 'grab'; };
+  canvas.addEventListener('pointerup', end); canvas.addEventListener('pointercancel', end);
+  canvas.addEventListener('dblclick', () => { cam.yaw = -0.55; cam.elev = 0.42; });
+}
+
+const R = s => `<msub><mi>${s}</mi></msub>`;
+createInstrument({
+  title: 'Proton in a uniform magnetic field',
+  subtitle: 'Relativistic Lorentz-force motion · Boris pusher · SI units',
+  tier: 'validated',
+  tierReason: 'Exact single-particle electrodynamics in prescribed uniform fields, integrated with the relativistic Boris scheme. Energy conservation, gyroradius, gyroperiod, convergence order and E×B drift are checked against exact results (Verification).',
+  params: PARAMS,
+  create: createSim,
+  draw, onPointer,
+  timeUnit: 'ns',
+  speed: 30,
+  duration: 1000,
+  hudLine: sim => `r = ${sci(sim.analytic.radius, 3)} m · T = ${sci(sim.analytic.period * 1e9, 3)} ns · γ = ${sim.gamma().toFixed(5)}`,
+  model: {
+    legend: ['SI units · B along ẑ', 'dashed: analytic gyro-circle · solid: computed path'],
+    equations: [
+      { caption: 'Equation of motion (Lorentz force), with u = γv',
+        mathml: `<math display="block"><mfrac><mrow><mi>d</mi><mi>${BOLD_U}</mi></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac><mo>=</mo><mfrac><mi>q</mi><mi>m</mi></mfrac><mo>(</mo><mi>${BOLD_E}</mi><mo>+</mo><mfrac><mi>${BOLD_U}</mi><mi>γ</mi></mfrac><mo>×</mo><mi>${BOLD_B}</mi><mo>)</mo><mo>,</mo><mspace width="1em"/><mi>γ</mi><mo>=</mo><msqrt><mrow><mn>1</mn><mo>+</mo><msup><mi>u</mi><mn>2</mn></msup><mo>/</mo><msup><mi>c</mi><mn>2</mn></msup></mrow></msqrt></math>` },
+      { caption: 'Exact references (E = 0)',
+        mathml: `<math display="block"><mi>r</mi><mo>=</mo><mfrac><mrow><mi>γ</mi><mi>m</mi>${R('v')}<msub><mrow></mrow><mo>⊥</mo></msub></mrow><mrow><mo>|</mo><mi>q</mi><mo>|</mo><mi>B</mi></mrow></mfrac><mo>,</mo><mspace width="1em"/><mi>T</mi><mo>=</mo><mfrac><mrow><mn>2</mn><mi>π</mi><mi>γ</mi><mi>m</mi></mrow><mrow><mo>|</mo><mi>q</mi><mo>|</mo><mi>B</mi></mrow></mfrac><mo>,</mo><mspace width="1em"/><msub><mi>v</mi><mi>d</mi></msub><mo>=</mo><mfrac><mi>E</mi><mi>B</mi></mfrac></math>` },
+    ],
+    assumptions: [
+      'Single proton (CODATA 2018 mass and charge) in prescribed, uniform, static fields; no self-field.',
+      'Fully relativistic kinematics; radiation reaction neglected (negligible for protons at these energies and fields).',
+      'Boris scheme: 2nd order, conserves energy exactly in pure B; the orbit radius carries a known factor √(1+(ΩΔt/2)²).',
+      'The E×B drift formula E/B is the non-relativistic guiding-centre result (valid for E ≪ cB).',
+    ],
+    conventions: [
+      'Solid trail: integrator states only. Dashed circle: exact analytic gyro-orbit for comparison.',
+      'Lines parallel to ẑ show the uniform B field; chevrons point along B.',
+      'The camera follows the particle along B (and the guiding centre when E ≠ 0).',
+    ],
+    references: [
+      'J. P. Boris, Proc. 4th Conf. Numerical Simulation of Plasmas (1970).',
+      'C. K. Birdsall & A. B. Langdon, Plasma Physics via Computer Simulation (1991), §4-3, 4-7.',
+      'H. Qin et al., Phys. Plasmas 20, 084503 (2013): why the Boris algorithm conserves phase-space volume.',
+    ],
+  },
+});
+</script>
+</body>
+</html>

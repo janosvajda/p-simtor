@@ -1,0 +1,1348 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="p-simtor">
+<title>Proton in a magnetic field</title>
+<style>/* psim:ui/instrument.css */
+/* p-simtor instrument shell.
+   A simulation page is a scientific instrument: a large stage for the physics,
+   a quiet control column, and numbers you can trust at a glance.
+   Colours are tokens so every domain view (orbits, fields, densities) can read them. */
+
+:root {
+  --bg: #07090d;
+  --stage: #0a0d13;
+  --panel: #0e1219;
+  --raise: #141923;
+  --line: rgba(196, 214, 255, 0.09);
+  --line-strong: rgba(196, 214, 255, 0.18);
+  --ink: #e6e9ef;
+  --ink-2: #b6bdcb;
+  --muted: #7b8396;
+  --faint: #4a5163;
+  --accent: #8cc8ff;
+  --accent-ink: #06121f;
+  --good: #7fd8a4;
+  --warn: #f2c46d;
+  --bad: #ff7a85;
+  --grid: rgba(150, 175, 230, 0.06);
+  --grid-strong: rgba(150, 175, 230, 0.13);
+  --glow: 1;
+  --body-0: #ffb35c;
+  --body-1: #68c3ff;
+  --body-2: #ff6f9a;
+  --body-3: #9be08a;
+  --body-4: #c49bff;
+  --body-5: #ffe07a;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --sans: ui-sans-serif, -apple-system, "Segoe UI", "Inter", system-ui, sans-serif;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --radius: 10px;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg: #efede7;
+  --stage: #f7f5f0;
+  --panel: #fbfaf7;
+  --raise: #ffffff;
+  --line: rgba(30, 34, 46, 0.09);
+  --line-strong: rgba(30, 34, 46, 0.18);
+  --ink: #171a21;
+  --ink-2: #3a3f4b;
+  --muted: #6b7180;
+  --faint: #a4a8b2;
+  --accent: #1c6fd1;
+  --accent-ink: #ffffff;
+  --good: #23864f;
+  --warn: #a8700f;
+  --bad: #c43b4a;
+  --grid: rgba(30, 40, 70, 0.055);
+  --grid-strong: rgba(30, 40, 70, 0.12);
+  --glow: 0;
+  --body-0: #d4731c;
+  --body-1: #1a78bf;
+  --body-2: #cf2f63;
+  --body-3: #3a8f33;
+  --body-4: #7a48cf;
+  --body-5: #a88600;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 13px/1.45 var(--sans);
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
+
+.psim-app {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 372px;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* ---------- header ---------- */
+.psim-head {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.psim-mark {
+  width: 22px; height: 22px; flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  position: relative;
+}
+.psim-mark::before, .psim-mark::after {
+  content: ""; position: absolute; border-radius: 50%;
+}
+.psim-mark::before { inset: 5px; border: 1px solid var(--accent); transform: scaleX(1.6) rotate(-25deg); opacity: .8; }
+.psim-mark::after { width: 4px; height: 4px; left: 9px; top: 9px; background: var(--ink); }
+.psim-title { min-width: 0; flex: 0 1 auto; }
+.psim-title h1 {
+  margin: 0; font: 600 15px/1.2 var(--sans); letter-spacing: .01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.psim-title p { margin: 2px 0 0; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.psim-head .spacer { flex: 1; }
+
+.psim-tier {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 4px 10px 4px 8px; border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  font: 500 11px/1 var(--sans); letter-spacing: .04em; text-transform: uppercase;
+  color: var(--ink-2); background: transparent; cursor: pointer; white-space: nowrap;
+}
+.psim-tier i { width: 7px; height: 7px; border-radius: 50%; background: var(--good); }
+.psim-tier[data-tier="approximate"] i { background: var(--warn); }
+.psim-tier[data-tier="analytical"] i { background: var(--accent); }
+.psim-tier[data-tier="conceptual"] i { background: var(--muted); }
+
+.psim-iconbtn {
+  width: 32px; height: 32px; display: grid; place-items: center;
+  border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink-2);
+  cursor: pointer;
+}
+.psim-iconbtn:hover { border-color: var(--line-strong); color: var(--ink); }
+.psim-iconbtn svg { width: 16px; height: 16px; }
+
+/* ---------- stage ---------- */
+.psim-stage {
+  position: relative; min-height: 0; overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 92%, var(--accent) 8%) 0%, var(--stage) 60%);
+}
+.psim-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.psim-stage canvas.grab { cursor: grab; }
+.psim-stage canvas.grabbing { cursor: grabbing; }
+.psim-stage canvas.move { cursor: move; }
+
+.psim-hud {
+  position: absolute; left: 16px; top: 14px;
+  display: grid; gap: 2px; pointer-events: none;
+  font: 12px/1.35 var(--mono); color: var(--ink-2);
+}
+.psim-hud b { font-weight: 500; color: var(--ink); font-size: 20px; letter-spacing: -.01em; }
+.psim-hud .dim { color: var(--muted); }
+.psim-hud .flag { color: var(--warn); }
+
+.psim-legend {
+  position: absolute; right: 16px; top: 14px; display: grid; gap: 4px; justify-items: end;
+  font: 11px/1.3 var(--sans); color: var(--muted); pointer-events: none; text-align: right;
+}
+
+.psim-transport {
+  position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 4px;
+  padding: 5px; border-radius: 12px;
+  background: color-mix(in srgb, var(--panel) 86%, transparent);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  max-width: calc(100% - 32px);
+}
+.psim-transport button {
+  height: 32px; min-width: 32px; padding: 0 9px; border-radius: 8px;
+  border: 0; background: transparent; color: var(--ink-2); cursor: pointer;
+  display: inline-grid; place-items: center; font: 500 12px var(--sans);
+}
+.psim-transport button:hover { background: var(--raise); color: var(--ink); }
+.psim-transport button.primary { background: var(--ink); color: var(--bg); width: 40px; }
+.psim-transport svg { width: 15px; height: 15px; }
+.psim-transport .sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
+.psim-transport label { display: flex; align-items: center; gap: 8px; padding: 0 8px; color: var(--muted); font-size: 11px; }
+.psim-transport input[type=range] { width: 110px; }
+.psim-transport output { font: 12px var(--mono); color: var(--ink-2); min-width: 64px; }
+
+.psim-scalebar {
+  position: absolute; left: 16px; bottom: 22px; pointer-events: none;
+  font: 11px var(--mono); color: var(--muted);
+}
+.psim-scalebar span { display: block; height: 6px; border: 1px solid var(--muted); border-top: 0; margin-bottom: 4px; }
+
+/* ---------- side column ---------- */
+.psim-side {
+  min-height: 0; overflow: auto;
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+  scrollbar-width: thin;
+}
+.psim-sec { border-bottom: 1px solid var(--line); }
+.psim-sec > summary {
+  list-style: none; cursor: pointer; user-select: none;
+  display: flex; align-items: center; gap: 8px;
+  padding: 13px 18px;
+  font: 600 11px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+}
+.psim-sec > summary::-webkit-details-marker { display: none; }
+.psim-sec > summary::after {
+  content: ""; margin-left: auto; width: 6px; height: 6px;
+  border-right: 1.5px solid var(--faint); border-bottom: 1.5px solid var(--faint);
+  transform: rotate(-45deg); transition: transform .15s;
+}
+.psim-sec[open] > summary::after { transform: rotate(45deg); }
+.psim-sec > summary .aside { margin-left: auto; text-transform: none; letter-spacing: 0; font: 11px var(--mono); color: var(--faint); }
+.psim-sec > summary .aside + ::after { margin-left: 8px; }
+.psim-body { padding: 2px 18px 16px; display: grid; gap: 10px; }
+
+.psim-row { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 10px; }
+.psim-row .k { color: var(--muted); }
+.psim-row .v { font: 12px var(--mono); color: var(--ink); text-align: right; }
+.psim-row .v.good { color: var(--good); }
+.psim-row .v.warn { color: var(--warn); }
+.psim-row .v.bad { color: var(--bad); }
+
+.psim-field { display: grid; gap: 6px; }
+.psim-field .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.psim-field .top span { color: var(--ink-2); }
+.psim-field .top input[type=number], .psim-num {
+  width: 92px; text-align: right;
+  font: 12px var(--mono); color: var(--ink);
+  background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 2px 6px;
+}
+.psim-field .top input[type=number]:hover, .psim-num:hover { border-color: var(--line); }
+.psim-field .top input[type=number]:focus, .psim-num:focus { outline: none; border-color: var(--accent); }
+.psim-hint { color: var(--muted); font-size: 12px; margin: 0; }
+.psim-hint b { color: var(--ink-2); font-weight: 500; }
+
+select.psim-select {
+  width: 100%; height: 34px; padding: 0 10px; border-radius: 8px;
+  background: var(--raise); color: var(--ink); border: 1px solid var(--line);
+  font: 13px var(--sans);
+}
+
+input[type=range] {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 18px; background: transparent; margin: 0;
+}
+input[type=range]::-webkit-slider-runnable-track { height: 2px; background: var(--line-strong); border-radius: 2px; }
+input[type=range]::-moz-range-track { height: 2px; background: var(--line-strong); border-radius: 2px; }
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 12px; height: 12px; margin-top: -5px; border-radius: 50%;
+  background: var(--ink); border: 2px solid var(--panel); box-shadow: 0 0 0 1px var(--line-strong);
+}
+input[type=range]::-moz-range-thumb {
+  width: 10px; height: 10px; border-radius: 50%; background: var(--ink); border: 2px solid var(--panel);
+}
+input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 40%, transparent); }
+
+.psim-btn {
+  height: 32px; padding: 0 12px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--line-strong); background: transparent; color: var(--ink);
+  font: 500 12px var(--sans);
+}
+.psim-btn:hover { background: var(--raise); }
+.psim-btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.psim-btn:disabled { opacity: .5; cursor: progress; }
+.psim-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.psim-toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--ink-2); cursor: pointer; }
+.psim-toggle input { appearance: none; -webkit-appearance: none; width: 28px; height: 16px; border-radius: 99px; background: var(--line-strong); position: relative; cursor: pointer; margin: 0; flex: none; transition: background .15s; }
+.psim-toggle input::after { content: ""; position: absolute; left: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--ink); transition: transform .15s; }
+.psim-toggle input:checked { background: var(--accent); }
+.psim-toggle input:checked::after { transform: translateX(12px); background: var(--accent-ink); }
+
+/* body cards */
+.psim-bodycard { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; display: grid; gap: 8px; }
+.psim-bodycard header { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.psim-bodycard header i { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 10px currentColor; }
+.psim-bodycard header .m { margin-left: auto; font: 12px var(--mono); color: var(--muted); font-weight: 400; }
+.psim-vec { display: grid; grid-template-columns: 22px repeat(3, minmax(0, 1fr)); gap: 4px; align-items: center; }
+.psim-vec span { color: var(--muted); font: 11px var(--mono); }
+.psim-vec input { width: 100%; min-width: 0; text-align: right; font: 11.5px var(--mono); color: var(--ink); background: var(--raise); border: 1px solid var(--line); border-radius: 6px; padding: 4px 5px; }
+.psim-vec input:focus { outline: none; border-color: var(--accent); }
+
+/* plots */
+.psim-plot { position: relative; height: 112px; border-radius: 8px; background: color-mix(in srgb, var(--stage) 70%, transparent); border: 1px solid var(--line); }
+.psim-plot canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.psim-plot .cap { position: absolute; left: 8px; top: 6px; font: 10.5px var(--mono); color: var(--muted); pointer-events: none; }
+
+/* model / maths */
+.psim-math { overflow-x: auto; padding: 10px 12px; border-radius: 8px; background: color-mix(in srgb, var(--stage) 60%, transparent); border: 1px solid var(--line); }
+.psim-math math { font-size: 15px; color: var(--ink); }
+.psim-prose { color: var(--ink-2); font-size: 12.5px; }
+.psim-prose p { margin: 0 0 8px; }
+.psim-prose ul { margin: 0; padding-left: 18px; }
+.psim-prose li { margin: 3px 0; }
+.psim-prose cite { font-style: normal; color: var(--muted); }
+
+.psim-check { display: grid; grid-template-columns: 16px 1fr auto; gap: 8px; align-items: baseline; }
+.psim-check i { width: 8px; height: 8px; border-radius: 50%; background: var(--good); transform: translateY(-1px); }
+.psim-check i.warn { background: var(--warn); }
+.psim-check i.bad { background: var(--bad); }
+.psim-check span { color: var(--ink-2); }
+.psim-check code { font: 11.5px var(--mono); color: var(--ink); }
+
+.psim-toast {
+  position: absolute; left: 50%; top: 16px; transform: translate(-50%, -8px); opacity: 0;
+  padding: 8px 12px; border-radius: 8px; background: var(--ink); color: var(--bg); font-size: 12px;
+  transition: opacity .2s, transform .2s; pointer-events: none;
+}
+.psim-toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (max-width: 860px) {
+  .psim-app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 64vh auto; height: auto; }
+  .psim-head { gap: 10px; }
+  .psim-title { flex: 1; }
+  .psim-tier { padding: 6px; }
+  .psim-tier span { display: none; }
+  .psim-side { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+  .psim-head { padding: 10px 16px; }
+  .psim-title p { display: none; }
+  .psim-transport label.speed { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+</style>
+</head>
+<body>
+<script type="application/json" id="psim-verification">{
+ "summary": "Relativistic Boris pusher checked against exact single-particle results:",
+ "checks": [
+  {
+   "label": "Energy conserved in pure B (200 gyrations)",
+   "value": "|Δγ/γ| = 0.00e+0",
+   "pass": true
+  },
+  {
+   "label": "Orbit radius vs exact discrete-Boris radius",
+   "value": "rel. diff 2.66e-11",
+   "pass": true
+  },
+  {
+   "label": "Orbit radius vs analytic γmv⊥/(qB), 256 steps/gyration",
+   "value": "rel. err 7.53e-5",
+   "pass": true
+  },
+  {
+   "label": "Phase-error convergence order (expected 2)",
+   "value": "2.00",
+   "pass": true
+  },
+  {
+   "label": "Relativistic gyroperiod at 1 GeV (γ = 2.0658)",
+   "value": "135.5044 ns vs 135.5043 ns",
+   "pass": true
+  },
+  {
+   "label": "E×B drift speed vs E/B (non-relativistic)",
+   "value": "10000.0 vs 10000.0 m/s",
+   "pass": true
+  }
+ ],
+ "notes": [
+  "Radiation reaction (synchrotron loss) is neglected; for protons below TeV energies in ≤10 T it is many orders of magnitude below the integration error."
+ ],
+ "generated": "2026-10-12T23:18:51.420Z",
+ "runtimeMs": 248
+}</script>
+<script type="module">
+const __psim = {};
+// ---- psim:ui/instrument.mjs
+__psim["ui/instrument.mjs"] = (() => {
+// Reusable instrument UI: DOM helpers, controls, log-scale plots, the simulation
+// clock, number formatting, theme handling and data export.
+// Domain-agnostic: orbit, field and density views all build on these pieces.
+
+function el(tag, attrs = {}, ...children) {
+  const node = document.createElementNS(
+    tag === 'svg' || attrs.xmlns === 'svg' ? 'http://www.w3.org/2000/svg' : 'http://www.w3.org/1999/xhtml', tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false || k === 'xmlns') continue;
+    if (k.startsWith('on') && typeof v === 'function') node.addEventListener(k.slice(2), v);
+    else if (k === 'class') node.className = v;
+    else if (k === 'html') node.innerHTML = v;
+    else if (k in node && typeof v !== 'string') node[k] = v;
+    else node.setAttribute(k, v === true ? '' : v);
+  }
+  for (const c of children.flat()) if (c != null && c !== false) node.append(c.nodeType ? c : document.createTextNode(String(c)));
+  return node;
+}
+
+const ICONS = {
+  play: '<svg viewBox="0 0 16 16"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg>',
+  pause: '<svg viewBox="0 0 16 16"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg>',
+  step: '<svg viewBox="0 0 16 16"><path d="M3 2.5v11l7-5.5zM11 2.5h2v11h-2z" fill="currentColor"/></svg>',
+  restart: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8a5 5 0 1 0 1.6-3.7"/><path d="M3 2.5v3h3"/></svg>',
+  fit: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg>',
+  sun: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6L13 13M3 13l1.4-1.4M11.6 4.4L13 3"/></svg>',
+  moon: '<svg viewBox="0 0 16 16"><path d="M13.5 10A6 6 0 0 1 6 2.5a6 6 0 1 0 7.5 7.5z" fill="currentColor"/></svg>',
+  info: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 7v4.5M8 4.6v.1"/></svg>',
+};
+
+// ---------- formatting ----------
+
+const SUP = { '-': '⁻', 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹' };
+
+/** 2.44e-11 -> "2.4×10⁻¹¹". */
+function sci(x, digits = 2) {
+  if (x == null || Number.isNaN(x)) return '—';
+  if (x === 0) return '0';
+  if (!Number.isFinite(x)) return x > 0 ? '∞' : '−∞';
+  const e = Math.floor(Math.log10(Math.abs(x)));
+  if (e >= -2 && e < 4) return fix(x, Math.max(0, digits - 1 - e));
+  const m = x / Math.pow(10, e);
+  return `${m.toFixed(digits - 1)}×10${String(e).split('').map(c => SUP[c]).join('')}`;
+}
+
+function fix(x, d = 3) {
+  if (x == null || Number.isNaN(x)) return '—';
+  return x.toFixed(d).replace('-', '−');
+}
+
+/** Classify a relative error against thresholds -> 'good' | 'warn' | 'bad'. */
+function grade(x, good, warn) {
+  if (!(x <= warn)) return 'bad';
+  return x <= good ? 'good' : 'warn';
+}
+
+// ---------- theme ----------
+
+function initTheme(button) {
+  const root = document.documentElement;
+  let stored = null;
+  try { stored = localStorage.getItem('psim-theme'); } catch { /* storage unavailable */ }
+  const query = new URLSearchParams(location.search).get('theme');
+  const sys = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  const apply = t => {
+    root.dataset.theme = t;
+    if (button) button.innerHTML = t === 'dark' ? ICONS.sun : ICONS.moon;
+    if (button) button.title = t === 'dark' ? 'Light theme' : 'Dark theme';
+    root.dispatchEvent(new CustomEvent('psim-theme', { detail: t }));
+  };
+  apply(query || stored || root.dataset.theme || sys);
+  button?.addEventListener('click', () => {
+    const t = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    try { localStorage.setItem('psim-theme', t); } catch { /* ignore */ }
+    apply(t);
+  });
+}
+
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+// ---------- layout pieces ----------
+
+function section(title, { open = true, aside } = {}) {
+  const body = el('div', { class: 'psim-body' });
+  const asideEl = aside != null ? el('span', { class: 'aside' }, aside) : null;
+  const sec = el('details', { class: 'psim-sec', open }, el('summary', {}, title, asideEl), body);
+  sec.body = body;
+  sec.aside = asideEl;
+  return sec;
+}
+
+function row(label, value = '—', cls = '') {
+  const v = el('span', { class: `v ${cls}` }, value);
+  const r = el('div', { class: 'psim-row' }, el('span', { class: 'k' }, label), v);
+  r.set = (text, c) => { v.textContent = text; v.className = `v ${c ?? ''}`; };
+  return r;
+}
+
+/**
+ * Slider + exact numeric entry. Linear or logarithmic. onInput receives the number.
+ * The numeric box accepts values beyond the slider range (the slider clamps visually).
+ */
+function slider({ label, min, max, step = 'any', value, log = false, unit = '', digits = 3, onInput }) {
+  const toS = v => log ? Math.log10(v) : v;
+  const fromS = s => log ? Math.pow(10, s) : s;
+  const range = el('input', { type: 'range', min: toS(min), max: toS(max), step: log ? 'any' : step, value: toS(value), 'aria-label': label });
+  const num = el('input', { type: 'number', step: 'any', value: +Number(value).toPrecision(6), 'aria-label': `${label} value` });
+  const unitEl = unit ? el('span', { style: 'color:var(--muted);font:11px var(--mono)' }, unit) : null;
+  const field = el('label', { class: 'psim-field' },
+    el('div', { class: 'top' }, el('span', {}, label), el('div', { style: 'display:flex;align-items:baseline;gap:4px' }, num, unitEl)),
+    range);
+  range.addEventListener('input', () => {
+    const v = +(+fromS(+range.value)).toPrecision(digits + 1);
+    num.value = v;
+    onInput?.(v);
+  });
+  num.addEventListener('change', () => {
+    const v = +num.value;
+    if (!Number.isFinite(v)) return;
+    range.value = toS(v);
+    onInput?.(v);
+  });
+  field.setValue = v => { range.value = toS(v); num.value = +Number(v).toPrecision(6); };
+  return field;
+}
+
+function toggle(label, checked, onChange) {
+  const input = el('input', { type: 'checkbox', checked });
+  input.addEventListener('change', () => onChange(input.checked));
+  const t = el('label', { class: 'psim-toggle' }, el('span', {}, label), input);
+  t.input = input;
+  return t;
+}
+
+function select(options, value, onChange) {
+  const s = el('select', { class: 'psim-select' },
+    options.map(o => el('option', { value: o.value, selected: o.value === value }, o.label)));
+  s.addEventListener('change', () => onChange(s.value));
+  return s;
+}
+
+function button(label, onClick, cls = '') {
+  return el('button', { class: `psim-btn ${cls}`, type: 'button', onclick: onClick }, label);
+}
+
+function toast(stage, text) {
+  let t = stage.querySelector('.psim-toast');
+  if (!t) { t = el('div', { class: 'psim-toast', role: 'status' }); stage.append(t); }
+  t.textContent = text;
+  t.classList.add('on');
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove('on'), 1800);
+}
+
+// ---------- transport ----------
+
+function transport({ onToggle, onStep, onRestart, onFit, speed, speedLabel, onSpeed }) {
+  const play = el('button', { class: 'primary', title: 'Play / pause (Space)', 'aria-label': 'Play or pause', html: ICONS.play, onclick: onToggle });
+  const out = el('output', {}, speedLabel(speed));
+  const range = el('input', { type: 'range', min: -2, max: 2, step: 'any', value: Math.log10(speed), 'aria-label': 'Playback speed' });
+  range.addEventListener('input', () => { const s = Math.pow(10, +range.value); out.textContent = speedLabel(s); onSpeed(s); });
+  const bar = el('div', { class: 'psim-transport' },
+    el('button', { title: 'Restart from initial conditions (R)', 'aria-label': 'Restart', html: ICONS.restart, onclick: onRestart }),
+    play,
+    el('button', { title: 'Advance one integrator step (.)', 'aria-label': 'Step', html: ICONS.step, onclick: onStep }),
+    el('span', { class: 'sep' }),
+    el('label', { class: 'speed' }, 'speed', range, out),
+    el('span', { class: 'sep' }),
+    el('button', { title: 'Fit view to bodies (F)', 'aria-label': 'Fit view', html: ICONS.fit, onclick: onFit }));
+  bar.setPlaying = p => { play.innerHTML = p ? ICONS.pause : ICONS.play; };
+  return bar;
+}
+
+/**
+ * Simulation clock. Converts wall-clock frames into a target *physical* time.
+ * The integrator then advances to that target with its own step sequence, so
+ * the physics never depends on frame rate. Long frames (background tabs) are capped.
+ */
+function createClock({ speed = 1 } = {}) {
+  return {
+    speed, playing: false, last: null,
+    tick(now, t) {
+      if (this.last == null || !this.playing) { this.last = now; return t; }
+      const dt = Math.min(0.1, (now - this.last) / 1000);
+      this.last = now;
+      return t + dt * this.speed;
+    },
+  };
+}
+
+// ---------- plots ----------
+
+/**
+ * Lightweight log-y line plot for diagnostics (energy error, separations).
+ * series: [{ color: cssVarName, data: [[x, y], ...] }]
+ */
+function logPlot({ caption, yMin = 1e-16, yMax = 1, height = 112 }) {
+  const canvas = el('canvas');
+  const box = el('div', { class: 'psim-plot', style: `height:${height}px` }, canvas, el('span', { class: 'cap' }, caption));
+  const series = [];
+  let xMax = 1, dirty = true, refLines = [];
+  const ctx = canvas.getContext('2d');
+  const plot = {
+    el: box,
+    addSeries(color, opts = {}) { const s = { color, data: [], ...opts }; series.push(s); return s; },
+    push(s, x, y) { s.data.push([x, y]); if (s.data.length > 4000) decimate(s); xMax = Math.max(xMax, x); dirty = true; },
+    clear() { for (const s of series) s.data.length = 0; xMax = 1; dirty = true; },
+    setXMax(x) { xMax = x; dirty = true; },
+    setRefLines(lines) { refLines = lines; dirty = true; },
+    invalidate() { dirty = true; },
+    draw() {
+      if (!dirty) return;
+      dirty = false;
+      const dpr = devicePixelRatio || 1;
+      const w = box.clientWidth, h = box.clientHeight;
+      if (!w) return;
+      if (canvas.width !== Math.round(w * dpr)) { canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      const l0 = Math.log10(yMin), l1 = Math.log10(yMax);
+      const pad = { l: 34, r: 8, t: 20, b: 14 };
+      const X = x => pad.l + (x / xMax) * (w - pad.l - pad.r);
+      const Y = y => {
+        const ly = Math.min(l1, Math.max(l0, Math.log10(Math.max(y, 1e-300))));
+        return pad.t + (1 - (ly - l0) / (l1 - l0)) * (h - pad.t - pad.b);
+      };
+      ctx.font = '9.5px ui-monospace, Menlo, monospace';
+      ctx.fillStyle = cssVar('--faint');
+      ctx.strokeStyle = cssVar('--grid-strong');
+      ctx.lineWidth = 1;
+      const stepDec = Math.max(1, Math.round((l1 - l0) / 4));
+      for (let e = Math.ceil(l0); e <= l1; e += stepDec) {
+        const y = Math.round(Y(Math.pow(10, e))) + 0.5;
+        ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+        ctx.fillText(`1e${e}`, 2, y + 3);
+      }
+      for (const r of refLines) {
+        ctx.setLineDash([3, 3]); ctx.strokeStyle = cssVar(r.color);
+        const y = Y(r.y); ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      for (const s of series) {
+        if (!s.data.length) continue;
+        ctx.strokeStyle = cssVar(s.color);
+        ctx.lineWidth = s.width ?? 1.4;
+        ctx.globalAlpha = s.alpha ?? 1;
+        ctx.beginPath();
+        s.data.forEach(([x, y], i) => i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)));
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+    },
+  };
+  new ResizeObserver(() => { dirty = true; plot.draw(); }).observe(box);
+  document.documentElement.addEventListener('psim-theme', () => { dirty = true; plot.draw(); });
+  return plot;
+}
+
+function decimate(s) {
+  // Keep the envelope: max of each pair (errors are what matter, so keep the worse one).
+  const out = [];
+  for (let i = 0; i < s.data.length; i += 2) {
+    const a = s.data[i], b = s.data[i + 1];
+    out.push(!b || a[1] >= b[1] ? a : b);
+  }
+  s.data = out;
+}
+
+// ---------- export ----------
+
+function download(filename, text, mime = 'text/plain') {
+  const url = URL.createObjectURL(new Blob([text], { type: mime }));
+  const a = el('a', { href: url, download: filename });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function readJsonScript(id) {
+  const node = document.getElementById(id);
+  if (!node) return null;
+  const text = node.textContent.trim();
+  return text ? JSON.parse(text) : null;
+}
+
+/**
+ * Status beacon read by scripts/psim.mjs check (headless Chrome).
+ * Pages set fields on it; it is mirrored into <html data-psim-*> attributes.
+ */
+function beacon() {
+  const root = document.documentElement;
+  const errors = [];
+  addEventListener('error', e => { errors.push(String(e.message)); root.dataset.psimErrors = JSON.stringify(errors); });
+  addEventListener('unhandledrejection', e => { errors.push(String(e.reason)); root.dataset.psimErrors = JSON.stringify(errors); });
+  root.dataset.psimErrors = '[]';
+  return {
+    set(key, value) { root.dataset[`psim${key[0].toUpperCase()}${key.slice(1)}`] = typeof value === 'string' ? value : JSON.stringify(value); },
+  };
+}
+
+return { el, ICONS, sci, fix, grade, initTheme, cssVar, section, row, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon };
+})();
+
+// ---- psim:ui/instrument-app.mjs
+__psim["ui/instrument-app.mjs"] = (() => {
+// Generic instrument shell for composed simulations (any domain).
+//
+// The page supplies a physics module that follows the simulation contract
+// (see references/compose.md) and a draw function; this shell provides the
+// header, trust tier, theme, transport, frame-rate-independent clock,
+// parameter controls, live diagnostics, verification report, model panel,
+// export and the window.psim hook used by automated checks.
+//
+// Simulation contract (returned by create(params)):
+//   sim.t                    physical time of the latest computed state
+//   sim.step()               advance by one integrator step (or one analytic tick)
+//   sim.sample?(t)           state at t between steps, for drawing (default: current state)
+//   sim.diagnostics()        [{ key, label, value, kind: 'error'|'value', unit?, good?, warn? }]
+//   sim.state()              JSON-serialisable state (export, tests)
+//   sim.record?()            { header: [...], rows: [[...], ...] } for CSV export
+//   sim.timeDependent        false for static analytic visualisations (no transport)
+const { el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon, cssVar } = __psim["ui/instrument.mjs"];
+const TIERS = {
+  validated: 'Validated numerical',
+  approximate: 'Approximate numerical',
+  analytical: 'Analytical',
+  conceptual: 'Conceptual illustration',
+};
+
+function createInstrument(spec) {
+  const {
+    title, subtitle = '', tier, tierReason, create, draw, params = [], model = {},
+    timeUnit = 'T', speed: speed0 = 1, controls, onPointer,
+  } = spec;
+  if (!TIERS[tier]) throw new Error(`tier must be one of ${Object.keys(TIERS).join(', ')}`);
+  const report = readJsonScript('psim-verification');
+  const status = beacon();
+  const query = new URLSearchParams(location.search);
+
+  document.title = title;
+  document.body.innerHTML = `
+  <div class="psim-app">
+    <header class="psim-head">
+      <div class="psim-mark" aria-hidden="true"></div>
+      <div class="psim-title"><h1></h1><p></p></div>
+      <div class="spacer"></div>
+      <button class="psim-tier" type="button"><i></i><span></span></button>
+      <button class="psim-iconbtn" type="button" aria-label="Toggle theme"></button>
+    </header>
+    <main class="psim-stage"><canvas></canvas>
+      <div class="psim-hud"><span class="dim">t</span><b>0</b><span class="h1"></span><span class="dim h2"></span><span class="flag"></span></div>
+      <div class="psim-legend"></div>
+    </main>
+    <aside class="psim-side"></aside>
+  </div>`;
+  const $ = s => document.querySelector(s);
+  $('.psim-title h1').textContent = title;
+  $('.psim-title p').textContent = subtitle;
+  const tierBtn = $('.psim-tier');
+  tierBtn.dataset.tier = tier;
+  tierBtn.querySelector('span').textContent = TIERS[tier];
+  initTheme($('.psim-iconbtn'));
+  const stage = $('.psim-stage'), canvas = stage.querySelector('canvas'), side = $('.psim-side');
+  const ctx = canvas.getContext('2d');
+  const hud = { t: $('.psim-hud b'), a: $('.psim-hud .h1'), b: $('.psim-hud .h2'), flag: $('.psim-hud .flag') };
+  if (model.legend) $('.psim-legend').append(...model.legend.map(t => el('span', {}, t)));
+
+  // ------------------------------------------------------------ state
+  const values = Object.fromEntries(params.map(p => [p.key, p.value]));
+  let sim, tDisplay = 0, limited = false;
+  const clock = createClock({ speed: speed0 });
+  const view = { W: 0, H: 0, dpr: 1, color: cssVar, opts: {}, pointer: null };
+
+  function rebuild() {
+    sim = create({ ...values });
+    tDisplay = sim.t ?? 0;
+    diagPlot.clear();
+    renderDiag(true);
+    status.set('params', values);
+  }
+
+  // ------------------------------------------------------------ transport
+  const timeDependent = spec.timeDependent !== false;
+  let tp = null;
+  if (timeDependent) {
+    tp = transport({
+      speed: speed0, speedLabel: s => `${sci(s, 2)} ${timeUnit}/s`,
+      onToggle: () => setPlaying(!clock.playing),
+      onStep: () => { setPlaying(false); sim.step(); tDisplay = sim.t; },
+      onRestart: () => rebuild(),
+      onFit: () => spec.onFit?.(view),
+      onSpeed: s => { clock.speed = s; },
+    });
+    stage.append(tp);
+  } else {
+    stage.querySelector('.psim-hud').querySelector('.dim').textContent = '';
+  }
+  function setPlaying(p) { clock.playing = p; tp?.setPlaying(p); }
+
+  // ------------------------------------------------------------ side panel
+  const secParams = section('Parameters');
+  if (params.length) {
+    secParams.body.append(el('p', { class: 'psim-hint' }, 'Changing a parameter recomputes the model from its initial state.'));
+    for (const p of params) {
+      if (p.options) {
+        secParams.body.append(el('div', { class: 'psim-field' }, el('div', { class: 'top' }, el('span', {}, p.label)),
+          select(p.options, p.value, v => { values[p.key] = isNaN(+v) ? v : +v; rebuild(); })));
+      } else {
+        secParams.body.append(slider({
+          label: p.label, min: p.min, max: p.max, value: p.value, log: p.log, unit: p.unit ?? '', digits: p.digits ?? 3,
+          onInput: v => { values[p.key] = v; rebuild(); },
+        }));
+      }
+      if (p.hint) secParams.body.append(el('p', { class: 'psim-hint', style: 'margin-top:-4px;font-size:11.5px' }, p.hint));
+    }
+  }
+  if (controls) controls(secParams.body, { values, rebuild });
+
+  const secDiag = section('Diagnostics', { aside: 'live' });
+  const diagPlot = logPlot({ caption: '', yMin: 1e-16, yMax: 1 });
+  const diagSeries = diagPlot.addSeries('--accent');
+  const diagRows = new Map();
+  secDiag.body.append(diagPlot.el);
+  let nextPlot = 0;
+  function renderDiag(reset = false) {
+    const d = sim.diagnostics();
+    if (reset) {
+      diagRows.forEach(r => r.remove());
+      diagRows.clear();
+      nextPlot = 0;
+      const firstErr = d.find(x => x.kind === 'error');
+      diagPlot.el.style.display = firstErr ? '' : 'none';
+      diagPlot.el.querySelector('.cap').textContent = firstErr ? `${firstErr.label}   vs   t` : '';
+      if (spec.duration) diagPlot.setXMax(spec.duration);
+    }
+    for (const x of d) {
+      let r = diagRows.get(x.key);
+      if (!r) { r = row(x.label); diagRows.set(x.key, r); secDiag.body.append(r); }
+      const text = x.text ?? (x.kind === 'error' ? sci(x.value) : `${sci(x.value, 4)}${x.unit ? ` ${x.unit}` : ''}`);
+      r.set(text, x.kind === 'error' && x.good != null ? grade(x.value, x.good, x.warn ?? x.good * 1000) : '');
+    }
+    const firstErr = d.find(x => x.kind === 'error');
+    if (firstErr && timeDependent && sim.t >= nextPlot) {
+      diagPlot.push(diagSeries, sim.t, Math.max(firstErr.value, 1e-17));
+      nextPlot = sim.t + (spec.duration ?? 10) / 800;
+    }
+    diagPlot.draw();
+    return d;
+  }
+
+  const secVerify = section('Verification', { aside: report ? 'report embedded' : 'no report' });
+  if (report?.checks) {
+    secVerify.body.append(el('p', { class: 'psim-hint' }, report.summary ?? `Measured when this page was built (${(report.generated ?? '').slice(0, 10)}):`));
+    for (const c of report.checks) {
+      secVerify.body.append(el('div', { class: 'psim-check' },
+        el('i', { class: c.pass === false ? 'bad' : c.state === 'warn' ? 'warn' : '' }),
+        el('span', {}, c.label), el('code', {}, c.value)));
+    }
+    if (report.notes) for (const n of report.notes) secVerify.body.append(el('p', { class: 'psim-hint' }, n));
+  } else {
+    secVerify.body.append(el('p', { class: 'psim-hint' }, 'No build-time verification report is embedded in this page.'));
+  }
+
+  const secModel = section('Model, assumptions & limits', { open: false });
+  secModel.body.append(
+    el('div', { class: 'psim-prose' }, el('p', {}, el('b', {}, `${TIERS[tier]}. `), tierReason ?? '')),
+    ...(model.equations ?? []).flatMap(eq => [
+      eq.caption ? el('p', { class: 'psim-hint' }, eq.caption) : null,
+      el('div', { class: 'psim-math', html: eq.mathml }),
+    ]),
+    model.assumptions ? el('div', { class: 'psim-prose' }, el('p', {}, el('b', {}, 'Assumptions and limits')), el('ul', {}, model.assumptions.map(a => el('li', {}, a)))) : null,
+    model.conventions ? el('div', { class: 'psim-prose' }, el('p', {}, el('b', {}, 'Visual conventions')), el('ul', {}, model.conventions.map(a => el('li', {}, a)))) : null,
+    model.references ? el('div', { class: 'psim-prose' }, el('p', {}, el('b', {}, 'References')), el('ul', {}, model.references.map(a => el('li', {}, el('cite', {}, a))))) : null,
+  );
+  tierBtn.addEventListener('click', () => { secModel.open = true; secModel.scrollIntoView({ behavior: 'smooth' }); });
+
+  const secExport = section('Export', { open: false });
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  secExport.body.append(el('div', { class: 'psim-btns' },
+    button('State JSON', () => download(`${slug}-state.json`, JSON.stringify({
+      generator: 'p-simtor', title, tier, params: values, t: sim.t, state: sim.state(), diagnostics: sim.diagnostics(), verification: report,
+    }, null, 2), 'application/json')),
+    button('Data CSV', () => {
+      const r = sim.record?.();
+      if (!r) { toast(stage, 'This model records no tabular data'); return; }
+      download(`${slug}-data.csv`, [`# p-simtor | ${title}`, r.header.join(','), ...r.rows.map(x => x.join(','))].join('\n'), 'text/csv');
+    }),
+    button('PNG image', () => canvas.toBlob(b => el('a', { href: URL.createObjectURL(b), download: `${slug}.png` }).click())),
+  ));
+
+  side.append(...[secParams, secDiag, secVerify, secModel, secExport].filter(s => s !== secParams || params.length || controls));
+  if (spec.extraSections) spec.extraSections(side, { section, el, row, slider, toggle, button, values, rebuild, view });
+
+  // ------------------------------------------------------------ canvas & loop
+  function resize() {
+    view.dpr = devicePixelRatio || 1;
+    view.W = canvas.clientWidth; view.H = canvas.clientHeight;
+    canvas.width = Math.round(view.W * view.dpr); canvas.height = Math.round(view.H * view.dpr);
+  }
+  new ResizeObserver(resize).observe(canvas);
+  resize();
+  if (onPointer) onPointer(canvas, view, () => sim);
+
+  let frames = 0, lastUi = 0;
+  function frame(now) {
+    if (timeDependent) {
+      const target = clock.tick(now, tDisplay);
+      if (target > tDisplay) {
+        const deadline = performance.now() + 9;
+        let k = 0;
+        while (sim.t < target) {
+          sim.step();
+          if ((++k & 63) === 0 && performance.now() > deadline) break;
+        }
+        limited = sim.t < target;
+        tDisplay = Math.min(target, sim.t);
+      }
+    }
+    ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
+    ctx.clearRect(0, 0, view.W, view.H);
+    draw(ctx, sim, view, tDisplay);
+    if (now - lastUi > 100) {
+      lastUi = now;
+      const d = renderDiag();
+      hud.t.textContent = timeDependent ? fix(tDisplay, 3) : '';
+      const firstErr = d.find(x => x.kind === 'error');
+      hud.a.textContent = firstErr ? `${firstErr.label} ${sci(firstErr.value)}` : '';
+      hud.b.textContent = spec.hudLine?.(sim) ?? '';
+      hud.flag.textContent = limited ? 'compute-limited: playback slowed to keep the calculation exact' : '';
+      status.set('t', timeDependent ? tDisplay : 1);
+      if (firstErr) status.set('drift', firstErr.value);
+    }
+    if (++frames % 30 === 0) status.set('frames', frames);
+    requestAnimationFrame(frame);
+  }
+
+  window.psim = {
+    model: 'generic',
+    get t() { return tDisplay; },
+    state: () => ({ t: sim.t, ...sim.state() }),
+    params: () => ({ ...values }),
+    advanceTo: t => { while (sim.t < t) sim.step(); tDisplay = Math.max(tDisplay, Math.min(t, sim.t)); return window.psim.state(); },
+    restart: () => rebuild(),
+    steps: n => { for (let i = 0; i < n; i++) sim.step(); tDisplay = sim.t; return window.psim.state(); },
+  };
+
+  rebuild();
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  setPlaying(timeDependent && (query.get('autoplay') ? query.get('autoplay') !== '0' : !reduced));
+  addEventListener('keydown', e => {
+    if (e.target.closest('input, select, textarea') || !timeDependent) return;
+    if (e.code === 'Space') { e.preventDefault(); setPlaying(!clock.playing); }
+    else if (e.key === '.') { setPlaying(false); sim.step(); tDisplay = sim.t; }
+    else if (e.key === 'r' || e.key === 'R') rebuild();
+  });
+  status.set('model', 'generic');
+  status.set('ready', true);
+  requestAnimationFrame(frame);
+  return { values, rebuild, view, get sim() { return sim; } };
+}
+
+return { createInstrument };
+})();
+
+// ---- psim:core/constants.mjs
+__psim["core/constants.mjs"] = (() => {
+// Physical constants, SI units. CODATA 2018 recommended values
+// (Tiesinga et al., Rev. Mod. Phys. 93, 025010, 2021). "exact" = defined by the 2019 SI.
+// Import from here instead of typing constants by hand; cite the source in the page.
+
+const CODATA = 'CODATA 2018';
+
+const c = 299792458;                 // m s^-1, exact
+const h = 6.62607015e-34;            // J s, exact
+const hbar = 1.054571817e-34;        // J s
+const e = 1.602176634e-19;           // C, exact
+const kB = 1.380649e-23;             // J K^-1, exact
+const NA = 6.02214076e23;            // mol^-1, exact
+const eps0 = 8.8541878128e-12;       // F m^-1
+const mu0 = 1.25663706212e-6;        // N A^-2
+const G = 6.67430e-11;               // m^3 kg^-1 s^-2 (relative uncertainty 2.2e-5)
+const me = 9.1093837015e-31;         // kg
+const mp = 1.67262192369e-27;        // kg
+const mn = 1.67492749804e-27;        // kg
+const u = 1.66053906660e-27;         // kg (atomic mass constant)
+const a0 = 5.29177210903e-11;        // m (Bohr radius)
+const alpha = 7.2973525693e-3;       // fine-structure constant
+const Eh = 4.3597447222071e-18;      // J (Hartree energy)
+const Ry = 13.605693122994;          // eV (Rydberg energy)
+const eV = 1.602176634e-19;          // J, exact
+const MeV = 1.602176634e-13;         // J, exact
+const mpc2MeV = 938.27208816;        // MeV (proton rest energy)
+const mec2MeV = 0.51099895000;       // MeV (electron rest energy)
+const hbarcMeVfm = 197.3269804;      // MeV fm
+
+// Astronomy (IAU 2012/2015 nominal values)
+const AU = 1.495978707e11;           // m, exact (IAU 2012)
+const GMsun = 1.3271244e20;          // m^3 s^-2 (IAU 2015 nominal)
+const Msun = 1.98847e30;             // kg (derived, G-limited)
+const yearJulian = 365.25 * 86400;   // s
+/** G in AU^3 Msun^-1 yr^-1 units: 4π² to the precision of Kepler's third law for the Sun. */
+const G_AU_MSUN_YR = 4 * Math.PI * Math.PI;
+
+return { CODATA, c, h, hbar, e, kB, NA, eps0, mu0, G, me, mp, mn, u, a0, alpha, Eh, Ry, eV, MeV, mpc2MeV, mec2MeV, hbarcMeVfm, AU, GMsun, Msun, yearJulian, G_AU_MSUN_YR };
+})();
+
+// ---- local:physics.mjs
+__psim["local:physics.mjs"] = (() => {
+// Proton in uniform static fields B = B ẑ, E = E ŷ (SI units).
+// Relativistic Boris pusher (Boris 1970; Birdsall & Langdon, "Plasma Physics via
+// Computer Simulation", §4-3, 4-7). Time exposed to the page in nanoseconds.
+//
+// Exact references used for verification:
+//   gyroradius   r = γ m v⊥ / (|q| B)          (E = 0)
+//   gyroperiod   T = 2π γ m / (|q| B)          (E = 0)
+//   E×B drift    v_d = E / B                    (E ≪ cB, guiding-centre average)
+// Boris rotates the velocity by θ = 2 atan(Ω Δt / 2) per step instead of Ω Δt, so its
+// discrete orbit is a circle of radius r·√(1 + (ΩΔt/2)²): a known, testable error.
+const { c, e: qe, mp, MeV } = __psim["core/constants.mjs"];
+const PARAMS = [
+  { key: 'B', label: 'Magnetic field B', min: 0.01, max: 10, value: 1, log: true, unit: 'T' },
+  { key: 'KE', label: 'Kinetic energy', min: 0.001, max: 10000, value: 1, log: true, unit: 'MeV',
+    hint: 'Above ~100 MeV the proton is relativistic: γ grows and the gyroperiod lengthens.' },
+  { key: 'pitch', label: 'Pitch angle to B', min: 1, max: 90, value: 70, unit: '°', digits: 2 },
+  { key: 'E', label: 'Electric field E (along y)', min: 0, max: 1e6, value: 0, unit: 'V/m', digits: 3,
+    hint: 'Non-zero E adds an E×B drift along x at v = E/B.' },
+  { key: 'stepsPerGyration', label: 'Steps per gyration', min: 8, max: 4096, value: 256, log: true, digits: 2 },
+];
+
+const NS = 1e9;
+
+function analytic({ B, KE, pitch }) {
+  const gamma = 1 + KE * MeV / (mp * c * c);
+  const beta = Math.sqrt(1 - 1 / (gamma * gamma));
+  const v = beta * c;
+  const vperp = v * Math.sin(pitch * Math.PI / 180);
+  const vpar = v * Math.cos(pitch * Math.PI / 180);
+  const omega = qe * B / (gamma * mp);          // relativistic gyrofrequency, rad/s
+  return { gamma, beta, v, vperp, vpar, omega, period: 2 * Math.PI / omega, radius: gamma * mp * vperp / (qe * B) };
+}
+
+/** Create the simulation. State in SI; sim.t exposed in ns. */
+function createSim(p) {
+  const a = analytic(p);
+  const dt = a.period / p.stepsPerGyration;
+  const qm = qe / mp;
+  // Start at the origin of the guiding-centre frame offset so the E = 0 orbit is centred on 0.
+  // q > 0 in B = +ẑ gyrates clockwise seen from +z: at (0, −r) it moves in −x, so the
+  // Lorentz force q v × B points to +y, towards the orbit centre at the origin.
+  const x = [0, -a.radius, 0];
+  const u = [-a.gamma * a.vperp, 0, a.gamma * a.vpar];  // u = γv
+  const E = [0, p.E, 0], Bv = [0, 0, p.B];
+  let tS = 0, steps = 0;
+  const gamma0 = a.gamma;
+  const trail = [[...x]];
+  const rows = [];
+
+  function gammaOf(u) { return Math.sqrt(1 + (u[0] ** 2 + u[1] ** 2 + u[2] ** 2) / (c * c)); }
+
+  function step() {
+    const h = qm * dt / 2;
+    const um = [u[0] + h * E[0], u[1] + h * E[1], u[2] + h * E[2]];
+    const g = gammaOf(um);
+    const t = [h * Bv[0] / g, h * Bv[1] / g, h * Bv[2] / g];
+    const t2 = t[0] ** 2 + t[1] ** 2 + t[2] ** 2;
+    const up = [um[0] + um[1] * t[2] - um[2] * t[1], um[1] + um[2] * t[0] - um[0] * t[2], um[2] + um[0] * t[1] - um[1] * t[0]];
+    const s = t.map(q => 2 * q / (1 + t2));
+    const uplus = [um[0] + up[1] * s[2] - up[2] * s[1], um[1] + up[2] * s[0] - up[0] * s[2], um[2] + up[0] * s[1] - up[1] * s[0]];
+    for (let k = 0; k < 3; k++) u[k] = uplus[k] + h * E[k];
+    const gn = gammaOf(u);
+    for (let k = 0; k < 3; k++) x[k] += u[k] / gn * dt;
+    tS += dt; steps++;
+    if (steps % Math.max(1, Math.round(p.stepsPerGyration / 128)) === 0) {
+      trail.push([...x]);
+      if (trail.length > 6000) trail.splice(0, trail.length - 6000);
+    }
+    if (rows.length < 100000 && steps % Math.max(1, Math.round(p.stepsPerGyration / 64)) === 0) {
+      rows.push([tS * NS, ...x, ...u.map(q => q / gn)]);
+    }
+  }
+
+  return {
+    get t() { return tS * NS; },
+    dt, analytic: a, x, u, trail, params: p,
+    step,
+    gamma: () => gammaOf(u),
+    diagnostics() {
+      const g = gammaOf(u);
+      const list = [];
+      if (!p.E) list.push({ key: 'dg', label: '|Δγ/γ₀| (energy)', value: Math.abs(g - gamma0) / gamma0, kind: 'error', good: 1e-12, warn: 1e-9 });
+      list.push(
+        { key: 'r', label: 'Gyroradius r = γmv⊥/(qB)', value: a.radius, kind: 'value', unit: 'm' },
+        { key: 'T', label: 'Gyroperiod T = 2πγm/(qB)', value: a.period * NS, kind: 'value', unit: 'ns' },
+        { key: 'g', label: 'Lorentz factor γ', value: g, kind: 'value' },
+        { key: 'beta', label: 'Speed v/c', value: Math.sqrt(1 - 1 / (g * g)), kind: 'value' },
+      );
+      if (p.E) list.push({ key: 'vd', label: 'E×B drift E/B', value: p.E / p.B, kind: 'value', unit: 'm/s' });
+      list.push({ key: 'steps', label: 'Steps', value: steps, kind: 'value', text: steps.toLocaleString() });
+      return list;
+    },
+    state: () => ({ x: [...x], v: u.map(q => q / gammaOf(u)), steps }),
+    record: () => ({ header: ['t_ns', 'x_m', 'y_m', 'z_m', 'vx_m_s', 'vy_m_s', 'vz_m_s'], rows }),
+  };
+}
+
+// ------------------------------------------------------------------ verification
+
+function run(p, gyrations) {
+  const sim = createSim(p);
+  const n = Math.round(gyrations * p.stepsPerGyration);
+  let rMax = 0, rMin = Infinity;
+  for (let i = 0; i < n; i++) {
+    sim.step();
+    const r = Math.hypot(sim.x[0], sim.x[1]);
+    rMax = Math.max(rMax, r); rMin = Math.min(rMin, r);
+  }
+  return { sim, rMax, rMin };
+}
+
+/** Phase error after one analytic period, as an angle (E = 0). */
+function phaseError(p) {
+  const { sim } = run(p, 1);
+  const ang = Math.atan2(sim.x[1], sim.x[0]);
+  return Math.abs(Math.atan2(Math.sin(ang + Math.PI / 2), Math.cos(ang + Math.PI / 2)));
+}
+
+function verify() {
+  const checks = [];
+  const base = { B: 1, KE: 1, pitch: 90, E: 0, stepsPerGyration: 256 };
+
+  // 1. Energy: a pure magnetic field does no work; Boris conserves |u| to round-off.
+  const e1 = run(base, 200);
+  const dg = Math.abs(e1.sim.gamma() - e1.sim.analytic.gamma) / e1.sim.analytic.gamma;
+  checks.push({ label: 'Energy conserved in pure B (200 gyrations)', value: `|Δγ/γ| = ${dg.toExponential(2)}`, pass: dg < 1e-13 });
+
+  // 2. Orbit radius matches Boris' known discrete radius r·√(1+(ΩΔt/2)²), and → r as Δt → 0.
+  const a = e1.sim.analytic, w = a.omega * e1.sim.dt;
+  const rPred = a.radius * Math.sqrt(1 + (w / 2) ** 2);
+  const rMeas = (e1.rMax + e1.rMin) / 2;
+  const relR = Math.abs(rMeas - rPred) / rPred;
+  checks.push({ label: 'Orbit radius vs exact discrete-Boris radius', value: `rel. diff ${relR.toExponential(2)}`, pass: relR < 1e-9 });
+  const rErr = Math.abs(rMeas - a.radius) / a.radius;
+  checks.push({ label: 'Orbit radius vs analytic γmv⊥/(qB), 256 steps/gyration', value: `rel. err ${rErr.toExponential(2)}`, pass: rErr < 1e-4 });
+
+  // 3. Convergence: phase error after one period scales as Δt² (2nd-order method).
+  const pe = [128, 256, 512].map(s => phaseError({ ...base, stepsPerGyration: s }));
+  const order = Math.log2(pe[1] / pe[2]);
+  checks.push({ label: 'Phase-error convergence order (expected 2)', value: order.toFixed(2), pass: Math.abs(order - 2) < 0.1 });
+
+  // 4. Relativistic gyroperiod at 1 GeV: measure the period from orbit crossings.
+  const rel = { ...base, KE: 1000, stepsPerGyration: 2048 };
+  const sim = createSim(rel);
+  let prevX = sim.x[0], crossings = [], tPrev = 0;
+  while (crossings.length < 6) {
+    tPrev = sim.t; prevX = sim.x[0];
+    sim.step();
+    if (prevX < 0 && sim.x[0] >= 0) crossings.push(tPrev + (sim.t - tPrev) * (-prevX) / (sim.x[0] - prevX));
+  }
+  const Tmeas = (crossings[5] - crossings[0]) / 5;
+  const Tex = sim.analytic.period * 1e9;
+  const relT = Math.abs(Tmeas - Tex) / Tex;
+  checks.push({ label: `Relativistic gyroperiod at 1 GeV (γ = ${sim.analytic.gamma.toFixed(4)})`, value: `${Tmeas.toFixed(4)} ns vs ${Tex.toFixed(4)} ns`, pass: relT < 1e-5 });
+
+  // 5. E×B drift: guiding-centre velocity averaged over whole gyrations equals E/B.
+  const drift = { B: 1, KE: 0.01, pitch: 90, E: 1e4, stepsPerGyration: 512 };
+  // Guiding centre R = x + (γm/(qB)) (w × B̂), with w = v − v_E the velocity in the drift
+  // frame: removes the gyration exactly, so ΔR/Δt is the drift velocity.
+  const ds = createSim(drift);
+  const vE = drift.E / drift.B;
+  const gc = () => {
+    const g = ds.gamma(), vx = ds.u[0] / g, vy = ds.u[1] / g;
+    const k = g * mp / (qe * drift.B);
+    // (w × ẑ) = (w_y, −w_x, 0), with w = (v_x − v_E, v_y)
+    return [ds.x[0] + k * vy, ds.x[1] - k * (vx - vE)];
+  };
+  const R0 = gc(), t0 = ds.t;
+  for (let i = 0; i < 50 * drift.stepsPerGyration; i++) ds.step();
+  const R1 = gc();
+  const vd = (R1[0] - R0[0]) / ((ds.t - t0) * 1e-9);
+  const relD = Math.abs(vd - drift.E / drift.B) / (drift.E / drift.B);
+  checks.push({ label: 'E×B drift speed vs E/B (non-relativistic)', value: `${vd.toFixed(1)} vs ${(drift.E / drift.B).toFixed(1)} m/s`, pass: relD < 1e-3 });
+
+  return {
+    summary: 'Relativistic Boris pusher checked against exact single-particle results:',
+    checks,
+    notes: ['Radiation reaction (synchrotron loss) is neglected; for protons below TeV energies in ≤10 T it is many orders of magnitude below the integration error.'],
+  };
+}
+
+return { PARAMS, analytic, createSim, verify };
+})();
+
+// ---- page
+const { createInstrument } = __psim["ui/instrument-app.mjs"];
+const { sci } = __psim["ui/instrument.mjs"];
+const { PARAMS, createSim } = __psim["local:physics.mjs"];
+const BOLD_B = '𝐁', BOLD_V = '𝐯', BOLD_E = '𝐄', BOLD_U = '𝐮';
+// yaw about B; elev = angle of the eye above the orbital plane (0: side-on, π/2: looking down B).
+const cam = { yaw: -0.55, elev: 0.42 };
+
+function project(view, p, scale, center) {
+  const x = p[0] - center[0], y = p[1] - center[1], z = p[2] - center[2];
+  const cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
+  const x1 = cy * x - sy * y, y1 = sy * x + cy * y;
+  const ce = Math.cos(cam.elev), se = Math.sin(cam.elev);
+  const up = ce * z + se * y1;            // +z (along B) points up the screen
+  return [view.W / 2 + x1 * scale, view.H / 2 - up * scale, ce * y1 - se * z];
+}
+
+function niceStep(raw) {
+  const e = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / e;
+  return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * e;
+}
+function fmtLen(m) {
+  if (m >= 1) return `${+m.toPrecision(3)} m`;
+  if (m >= 1e-2) return `${+(m * 100).toPrecision(3)} cm`;
+  if (m >= 1e-3) return `${+(m * 1000).toPrecision(3)} mm`;
+  return `${+(m * 1e6).toPrecision(3)} µm`;
+}
+
+function draw(ctx, sim, view) {
+  const C = view.color;
+  const a = sim.analytic, p = sim.params;
+  const r = a.radius;
+  const scale = 0.2 * Math.min(view.W, view.H) / r;
+  // Follow the particle along B and the guiding centre across it.
+  const vE = p.E / p.B;
+  const center = [p.E ? sim.x[0] - (sim.x[0] - vE * sim.t * 1e-9) : 0, 0, sim.x[2]];
+  if (p.E) center[0] = vE * sim.t * 1e-9;
+
+  // Field lines: B ∥ ẑ, uniform. Drawn as a lattice of parallel lines with direction ticks.
+  const step = niceStep(r * 1.1);
+  ctx.lineWidth = 1;
+  for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) {
+    const px = Math.round(center[0] / step) * step + i * step, py = j * step;
+    const zSpan = 3 * r;
+    const A = project(view, [px, py, center[2] - zSpan], scale, center);
+    const B = project(view, [px, py, center[2] + zSpan], scale, center);
+    ctx.strokeStyle = C('--grid-strong');
+    ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke();
+    // direction tick (chevron) at a z that scrolls with the field, not with time
+    const zt = Math.floor(center[2] / step) * step + step / 2;
+    const T0 = project(view, [px, py, zt], scale, center), T1 = project(view, [px, py, zt + step * 0.12], scale, center);
+    const ang = Math.atan2(T1[1] - T0[1], T1[0] - T0[0]);
+    ctx.fillStyle = C('--grid-strong');
+    ctx.beginPath(); ctx.moveTo(T1[0], T1[1]);
+    ctx.lineTo(T1[0] - 6 * Math.cos(ang - 0.5), T1[1] - 6 * Math.sin(ang - 0.5));
+    ctx.lineTo(T1[0] - 6 * Math.cos(ang + 0.5), T1[1] - 6 * Math.sin(ang + 0.5));
+    ctx.fill();
+  }
+
+  // Analytic gyro-circle (E = 0 only): exact reference the computed orbit should overlay.
+  if (!p.E) {
+    ctx.setLineDash([3, 5]); ctx.strokeStyle = C('--muted'); ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let k = 0; k <= 96; k++) {
+      const th = 2 * Math.PI * k / 96;
+      const Q = project(view, [r * Math.cos(th), r * Math.sin(th), sim.x[2]], scale, center);
+      k ? ctx.lineTo(Q[0], Q[1]) : ctx.moveTo(Q[0], Q[1]);
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  // Computed trajectory (integrator states only).
+  const tr = sim.trail;
+  const N = tr.length, CH = 24;
+  const col = C('--body-1');
+  ctx.strokeStyle = col; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const per = Math.max(1, Math.ceil(N / CH));
+  for (let c = 0; c * per < N - 1; c++) {
+    const i0 = c * per, i1 = Math.min(N - 1, (c + 1) * per);
+    const age = 1 - i1 / (N - 1);
+    ctx.globalAlpha = 0.08 + 0.92 * Math.pow(1 - age, 1.5);
+    ctx.lineWidth = 0.7 + 1.1 * (1 - age);
+    ctx.beginPath();
+    for (let i = i0; i <= i1; i++) { const Q = project(view, tr[i], scale, center); i === i0 ? ctx.moveTo(Q[0], Q[1]) : ctx.lineTo(Q[0], Q[1]); }
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  const last = project(view, tr[N - 1], scale, center), P = project(view, sim.x, scale, center);
+  ctx.beginPath(); ctx.moveTo(last[0], last[1]); ctx.lineTo(P[0], P[1]); ctx.stroke();
+
+  // Proton marker and velocity direction.
+  const g = sim.gamma(), v = sim.u.map(q => q / g), vn = Math.hypot(...v);
+  const V = project(view, [sim.x[0] + v[0] / vn * r * 0.45, sim.x[1] + v[1] / vn * r * 0.45, sim.x[2] + v[2] / vn * r * 0.45], scale, center);
+  ctx.strokeStyle = C('--ink-2'); ctx.lineWidth = 1.3;
+  ctx.beginPath(); ctx.moveTo(P[0], P[1]); ctx.lineTo(V[0], V[1]); ctx.stroke();
+  const glow = C('--glow') === '1';
+  if (glow) {
+    ctx.globalCompositeOperation = 'lighter';
+    const gr = ctx.createRadialGradient(P[0], P[1], 0, P[0], P[1], 34);
+    gr.addColorStop(0, 'rgba(255,111,154,0.55)'); gr.addColorStop(1, 'rgba(255,111,154,0)');
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(P[0], P[1], 34, 0, 7); ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  ctx.fillStyle = C('--body-2');
+  ctx.beginPath(); ctx.arc(P[0], P[1], 6, 0, 7); ctx.fill();
+  ctx.fillStyle = glow ? 'rgba(255,255,255,0.9)' : C('--panel');
+  ctx.font = '600 9px ui-sans-serif, system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('+', P[0], P[1] + 0.5);
+  ctx.textAlign = 'start'; ctx.textBaseline = 'alphabetic';
+
+  // Labels and scale bar.
+  ctx.fillStyle = C('--muted'); ctx.font = '11px ui-monospace, Menlo, monospace';
+  const lb = project(view, [Math.round(center[0] / step) * step + 2 * step, -2 * step, center[2] + 1.6 * r], scale, center);
+  ctx.fillText(`${BOLD_B} = ${p.B} T ẑ`, lb[0] + 6, lb[1]);
+  if (p.E) ctx.fillText(`${BOLD_E} = ${sci(p.E, 2)} V/m ŷ   drift → x̂`, 16, view.H - 64);
+  const bar = niceStep(r * 0.8);
+  ctx.strokeStyle = C('--muted'); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(16, view.H - 34); ctx.lineTo(16, view.H - 28); ctx.lineTo(16 + bar * scale, view.H - 28); ctx.lineTo(16 + bar * scale, view.H - 34); ctx.stroke();
+  ctx.fillText(fmtLen(bar), 16, view.H - 14);
+}
+
+function onPointer(canvas, view) {
+  let drag = null;
+  canvas.style.cursor = 'grab';
+  canvas.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, yaw: cam.yaw, elev: cam.elev }; canvas.setPointerCapture(e.pointerId); canvas.style.cursor = 'grabbing'; });
+  canvas.addEventListener('pointermove', e => {
+    if (!drag) return;
+    cam.yaw = drag.yaw + (e.clientX - drag.x) * 0.006;
+    cam.elev = Math.max(0, Math.min(Math.PI / 2, drag.elev + (e.clientY - drag.y) * 0.006));
+  });
+  const end = () => { drag = null; canvas.style.cursor = 'grab'; };
+  canvas.addEventListener('pointerup', end); canvas.addEventListener('pointercancel', end);
+  canvas.addEventListener('dblclick', () => { cam.yaw = -0.55; cam.elev = 0.42; });
+}
+
+const R = s => `<msub><mi>${s}</mi></msub>`;
+createInstrument({
+  title: 'Proton in a uniform magnetic field',
+  subtitle: 'Relativistic Lorentz-force motion · Boris pusher · SI units',
+  tier: 'validated',
+  tierReason: 'Exact single-particle electrodynamics in prescribed uniform fields, integrated with the relativistic Boris scheme. Energy conservation, gyroradius, gyroperiod, convergence order and E×B drift are checked against exact results (Verification).',
+  params: PARAMS,
+  create: createSim,
+  draw, onPointer,
+  timeUnit: 'ns',
+  speed: 30,
+  duration: 1000,
+  hudLine: sim => `r = ${sci(sim.analytic.radius, 3)} m · T = ${sci(sim.analytic.period * 1e9, 3)} ns · γ = ${sim.gamma().toFixed(5)}`,
+  model: {
+    legend: ['SI units · B along ẑ', 'dashed: analytic gyro-circle · solid: computed path'],
+    equations: [
+      { caption: 'Equation of motion (Lorentz force), with u = γv',
+        mathml: `<math display="block"><mfrac><mrow><mi>d</mi><mi>${BOLD_U}</mi></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac><mo>=</mo><mfrac><mi>q</mi><mi>m</mi></mfrac><mo>(</mo><mi>${BOLD_E}</mi><mo>+</mo><mfrac><mi>${BOLD_U}</mi><mi>γ</mi></mfrac><mo>×</mo><mi>${BOLD_B}</mi><mo>)</mo><mo>,</mo><mspace width="1em"/><mi>γ</mi><mo>=</mo><msqrt><mrow><mn>1</mn><mo>+</mo><msup><mi>u</mi><mn>2</mn></msup><mo>/</mo><msup><mi>c</mi><mn>2</mn></msup></mrow></msqrt></math>` },
+      { caption: 'Exact references (E = 0)',
+        mathml: `<math display="block"><mi>r</mi><mo>=</mo><mfrac><mrow><mi>γ</mi><mi>m</mi>${R('v')}<msub><mrow></mrow><mo>⊥</mo></msub></mrow><mrow><mo>|</mo><mi>q</mi><mo>|</mo><mi>B</mi></mrow></mfrac><mo>,</mo><mspace width="1em"/><mi>T</mi><mo>=</mo><mfrac><mrow><mn>2</mn><mi>π</mi><mi>γ</mi><mi>m</mi></mrow><mrow><mo>|</mo><mi>q</mi><mo>|</mo><mi>B</mi></mrow></mfrac><mo>,</mo><mspace width="1em"/><msub><mi>v</mi><mi>d</mi></msub><mo>=</mo><mfrac><mi>E</mi><mi>B</mi></mfrac></math>` },
+    ],
+    assumptions: [
+      'Single proton (CODATA 2018 mass and charge) in prescribed, uniform, static fields; no self-field.',
+      'Fully relativistic kinematics; radiation reaction neglected (negligible for protons at these energies and fields).',
+      'Boris scheme: 2nd order, conserves energy exactly in pure B; the orbit radius carries a known factor √(1+(ΩΔt/2)²).',
+      'The E×B drift formula E/B is the non-relativistic guiding-centre result (valid for E ≪ cB).',
+    ],
+    conventions: [
+      'Solid trail: integrator states only. Dashed circle: exact analytic gyro-orbit for comparison.',
+      'Lines parallel to ẑ show the uniform B field; chevrons point along B.',
+      'The camera follows the particle along B (and the guiding centre when E ≠ 0).',
+    ],
+    references: [
+      'J. P. Boris, Proc. 4th Conf. Numerical Simulation of Plasmas (1970).',
+      'C. K. Birdsall & A. B. Langdon, Plasma Physics via Computer Simulation (1991), §4-3, 4-7.',
+      'H. Qin et al., Phys. Plasmas 20, 084503 (2013): why the Boris algorithm conserves phase-space volume.',
+    ],
+  },
+});
+
+</script>
+</body>
+</html>

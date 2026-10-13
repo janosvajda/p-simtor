@@ -1,0 +1,54 @@
+{
+  "skill_name": "p-simtor",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Simulate a chaotic three-body gravitational system.",
+      "expected_output": "Runs `psim gravity` (default or pythagorean preset, or a justified custom scenario) and delivers simulations/<name>.html: a self-contained page with LogH+Yoshida-4 integration, editable masses/positions/velocities that re-integrate from t=0, live |ΔE/E0| (~1e-11 for the Pythagorean problem), ΔP, ΔL, a chaos twin, an embedded verification report (convergence order ≈ 4, determinism, frame-rate independence, Kepler/figure-eight/Pythagorean benchmarks) and tier 'Validated numerical'. Runs `psim check`, looks at the screenshots, and in the reply reports the measured numbers and the predictability horizon (≈ t 59 at defaults), stating that the exact path after the horizon is one valid realisation, not a prediction.",
+      "files": [],
+      "status": "implemented"
+    },
+    {
+      "id": 2,
+      "prompt": "Create an interactive Lennard-Jones particle simulation.",
+      "expected_output": "Composes physics.mjs + page.html following references/compose.md and references/molecular.md: reduced LJ units, shifted cutoff 2.5σ, periodic boundaries with minimum image, velocity Verlet, seeded Maxwell-Boltzmann initial velocities, NVE by default. verify() reports NVE energy drift, 2nd-order energy-error convergence, momentum conservation and a speed-distribution comparison with Maxwell-Boltzmann (sample size stated). Page shows particles coloured by speed plus a live speed histogram with the theoretical curve; tier 'approximate' or 'validated' within the LJ model, with the argon mapping cited if physical units are shown. `psim build --verify-module` and `psim check` pass.",
+      "files": [],
+      "status": "guidance-only: no template or example yet; tests the compose path"
+    },
+    {
+      "id": 3,
+      "prompt": "Visualize the probability density of a hydrogen 2p orbital.",
+      "expected_output": "Analytical (tier 'analytical') rendering of |ψ_21m|² from exact hydrogen eigenfunctions (generalised Laguerre radial part, real spherical harmonics for p_x/p_y/p_z with the superposition explained), never orbiting electrons. verify() checks normalisation, the radial-node count (n−l−1 = 0), the angular nodal plane, and ⟨r⟩ = 5a0 for 2p. Shows the density (point cloud sampled exactly from |ψ|² with a seeded RNG, or ray-marched volume) with phase sign coloured, the radial distribution r²R² beside it, energy E2 = −3.40 eV, and a legend disclosing the density transfer function.",
+      "files": [],
+      "status": "guidance-only: no template or example yet; tests the compose path"
+    },
+    {
+      "id": 4,
+      "prompt": "Simulate a proton moving through a uniform magnetic field.",
+      "expected_output": "Adapts examples/proton-magnetic-field (relativistic Boris pusher, CODATA constants). The built page shows the helix with an analytic gyro-circle overlay, B field lines, controls for B, kinetic energy, pitch angle, E field and steps per gyration. verify() passes: energy conserved to round-off in pure B, radius equal to the exact discrete-Boris radius, radius vs γmv⊥/(qB), 2nd-order phase convergence, relativistic gyroperiod at 1 GeV, E×B drift = E/B. Reply quotes r and T for the chosen parameters (1 MeV, 1 T: r ≈ 0.136 m, T ≈ 65.7 ns).",
+      "files": [],
+      "status": "implemented (worked example)"
+    },
+    {
+      "id": 5,
+      "prompt": "Explain quark confinement with an interactive, scientifically qualified visualization.",
+      "expected_output": "States up front that QCD dynamics cannot be simulated in a page and that quarks have no classical trajectories. Builds an 'analytical'/'conceptual' instrument per references/particle-physics.md: the Cornell potential V(r) = −(4/3)αs ħc/r + σr with cited σ ≈ 0.18 GeV² and the force tending to ≈ 0.9 GeV/fm, a separation slider (labelled as a parameter sweep, not time evolution), the string-breaking threshold near 1.2–1.4 fm from cited numbers, an optional flux-tube profile shape cited from lattice studies, and the running coupling with the non-perturbative region shaded. Colour charge is disclosed as symbolic. No fabricated quark motion.",
+      "files": [],
+      "status": "guidance-only: no template or example yet; tests honesty rules"
+    },
+    {
+      "id": 6,
+      "prompt": "Show me the electron orbiting the nucleus in a hydrogen atom, like a little planet.",
+      "expected_output": "Does not present a planetary electron as quantum mechanics. Explains briefly that the electron is described by a probability density, offers the 1s/2p density visualisation (tier 'analytical'), and if a Bohr-model picture is shown at all, labels it as a historical/conceptual model beside the correct density.",
+      "files": [],
+      "status": "honesty rule check"
+    },
+    {
+      "id": 7,
+      "prompt": "Make a figure-eight three-body orbit animation for my physics blog, light background.",
+      "expected_output": "Runs `psim gravity --preset figure-eight`, delivers the page, points out the ?theme=light URL parameter or the theme toggle, and reports the measured return error after one period (≈ 4e-8) and energy error (≈ 1e-14).",
+      "files": [],
+      "status": "implemented"
+    }
+  ]
+}

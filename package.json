@@ -1,0 +1,14 @@
+{
+  "name": "p-simtor",
+  "version": "0.1.0",
+  "description": "Agent Skill: scientifically verified, interactive physics simulations as self-contained HTML instruments.",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test 'tests/*.test.mjs'",
+    "test:browser": "node scripts/psim.mjs gravity --out examples/three-body/three-body.html && node scripts/psim.mjs check examples/three-body/three-body.html && node scripts/psim.mjs build examples/proton-magnetic-field/page.html --verify-module examples/proton-magnetic-field/physics.mjs --out examples/proton-magnetic-field/proton-magnetic-field.html && node scripts/psim.mjs check examples/proton-magnetic-field/proton-magnetic-field.html",
+    "examples": "node scripts/psim.mjs gravity --out examples/three-body/three-body.html && node scripts/psim.mjs build examples/proton-magnetic-field/page.html --verify-module examples/proton-magnetic-field/physics.mjs --out examples/proton-magnetic-field/proton-magnetic-field.html"
+  }
+}

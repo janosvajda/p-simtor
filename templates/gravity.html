@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="p-simtor">
+<title>Gravitational N-body simulation</title>
+<link rel="stylesheet" href="psim:ui/instrument.css">
+</head>
+<body>
+<!--
+  p-simtor gravity instrument.
+  Physics: core/nbody.mjs (Newtonian point masses, LogH/Yoshida integrators).
+  Every number on this page is computed by the integrator; the renderer only reads state.
+-->
+<div class="psim-app">
+  <header class="psim-head">
+    <div class="psim-mark" aria-hidden="true"></div>
+    <div class="psim-title"><h1 id="title"></h1><p id="subtitle"></p></div>
+    <div class="spacer"></div>
+    <button class="psim-tier" id="tier" type="button"><i></i><span></span></button>
+    <button class="psim-iconbtn" id="theme" type="button" aria-label="Toggle theme"></button>
+  </header>
+  <main class="psim-stage" id="stage">
+    <canvas id="view" aria-label="Orbit view. Drag to pan, shift-drag to tilt, scroll to zoom."></canvas>
+    <div class="psim-hud" aria-live="off">
+      <span class="dim">t</span><b id="hud-t">0</b>
+      <span id="hud-e"></span>
+      <span class="dim" id="hud-dt"></span>
+      <span class="flag" id="hud-flag"></span>
+    </div>
+    <div class="psim-legend" id="legend"></div>
+    <div class="psim-scalebar" id="scalebar"><span></span><em></em></div>
+  </main>
+  <aside class="psim-side" id="side"></aside>
+</div>
+
+<script type="application/json" id="psim-config">null</script>
+<script type="application/json" id="psim-verification">null</script>
+
+<script type="module">
+import * as nb from 'psim:core/nbody.mjs';
+import { convergenceStudy } from 'psim:core/nbody-verify.mjs';
+import {
+  el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast,
+  transport, createClock, logPlot, download, readJsonScript, beacon,
+} from 'psim:ui/instrument.mjs';
+import { createOrbitView } from 'psim:ui/orbit-view.mjs';
+
+const cfg = readJsonScript('psim-config');
+const report = readJsonScript('psim-verification');
+const status = beacon();
+const params = new URLSearchParams(location.search);
+const MAX_BODIES = 64;
+const COLORS = ['--body-0', '--body-1', '--body-2', '--body-3', '--body-4', '--body-5'];
+const TIERS = {
+  validated: 'Validated numerical',
+  approximate: 'Approximate numerical',
+  analytical: 'Analytical',
+  conceptual: 'Conceptual illustration',
+};
+const units = { G: 1, length: 'L', time: 'T', mass: 'M', system: 'Hénon N-body units (G = 1)', ...cfg.units };
+
+// ---------------------------------------------------------------- state
+const scenarios = cfg.scenarios;                 // { key: { title, note, source, bodies, duration, speed? } }
+let scenarioKey = cfg.initial;
+let ic;                                          // editable initial conditions [{ m, x, v, name }]
+let integrator = cfg.integrator ?? 'logh4';
+let stepsPerCrossing = cfg.stepsPerCrossing ?? 2000;
+let barycentric = true;
+let sys, st, ref, twin = null, twinSt = null;
+let tDisplay = 0, limited = false, custom = false;
+let perturb = 1e-8, twinOn = false;
+let trailTime = cfg.trailTime ?? 10;
+let record = [], recordDt = 0, nextRecord = 0;
+let plotEvery = 0, nextPlot = 0;
+let stepsThisSecond = 0, stepRate = 0, rateClock = performance.now();
+const xNow = new Float64Array(3 * MAX_BODIES), vNow = new Float64Array(3 * MAX_BODIES), xTwin = new Float64Array(3 * MAX_BODIES), vTwin = new Float64Array(3 * MAX_BODIES);
+const clock = createClock({ speed: 1 });
+const nextFrame = cb => requestAnimationFrame(cb);
+
+// ---------------------------------------------------------------- header
+document.title = cfg.title;
+document.getElementById('title').textContent = cfg.title;
+document.getElementById('subtitle').textContent = cfg.subtitle ?? '';
+const tierBtn = document.getElementById('tier');
+tierBtn.dataset.tier = cfg.tier;
+tierBtn.querySelector('span').textContent = TIERS[cfg.tier];
+tierBtn.title = 'What this label means';
+tierBtn.addEventListener('click', () => { secModel.open = true; secModel.scrollIntoView({ behavior: 'smooth' }); });
+initTheme(document.getElementById('theme'));
+
+// ---------------------------------------------------------------- view
+const stage = document.getElementById('stage');
+const canvas = document.getElementById('view');
+let view = null;
+const editable = {
+  canEdit: () => tDisplay === 0 && !clock.playing,
+  positions: () => sys.x,
+  move(i, x, y) {
+    ic[i].x = [x, y, ic[i].x[2]];
+    custom = true;
+    rebuild({ shift: false });
+    refreshBodyInputs(i);
+  },
+  commit() { rebuild(); refreshBodyInputs(); },
+};
+
+const tp = transport({
+  speed: 1,
+  speedLabel: s => `${sci(s, 2)} ${units.time}/s`,
+  onToggle: () => setPlaying(!clock.playing),
+  onStep: () => { setPlaying(false); stepOnce(); },
+  onRestart: () => { rebuild(); },
+  onFit: () => view.fit(xNow, { animate: true }),
+  onSpeed: s => { clock.speed = s; },
+});
+stage.append(tp);
+
+function setPlaying(p) {
+  clock.playing = p;
+  tp.setPlaying(p);
+}
+
+// ---------------------------------------------------------------- side panel
+const side = document.getElementById('side');
+
+const secScenario = section('Scenario');
+const scenarioSelect = select(
+  [...Object.entries(scenarios).map(([k, s]) => ({ value: k, label: s.title })), { value: '__custom', label: 'Custom (edited)' }],
+  scenarioKey, k => { if (k !== '__custom') loadScenario(k); });
+const scenarioNote = el('p', { class: 'psim-hint' });
+const scenarioSource = el('p', { class: 'psim-hint', style: 'font-size:11.5px' });
+secScenario.body.append(scenarioSelect, scenarioNote, scenarioSource);
+
+const secBodies = section('Bodies & initial conditions', { aside: '' });
+const bodiesWrap = el('div', { style: 'display:grid;gap:8px' });
+const baryToggle = toggle('Barycentric frame (remove centre-of-mass drift)', true, v => { barycentric = v; rebuild(); });
+secBodies.body.append(
+  el('p', { class: 'psim-hint' }, 'Editing any value re-integrates from ', el('b', {}, 't = 0'), '. At t = 0 and paused, drag a body on the stage to move it.'),
+  bodiesWrap, baryToggle);
+
+const secIntegrator = section('Integrator', { open: false });
+const integratorSelect = select(Object.entries(nb.INTEGRATORS).map(([k, s]) => ({ value: k, label: s.label })), integrator,
+  k => { integrator = k; integratorNote.textContent = nb.INTEGRATORS[k].note; rebuild(); });
+const integratorNote = el('p', { class: 'psim-hint' }, nb.INTEGRATORS[integrator].note);
+const accuracySlider = slider({
+  label: 'Steps per crossing time', min: 100, max: 64000, value: stepsPerCrossing, log: true, digits: 2,
+  onInput: v => { stepsPerCrossing = Math.round(v); rebuild(); },
+});
+const rH = row('Step parameter h'), rDt = row('Current physical Δt'), rSteps = row('Steps taken'), rRate = row('Steps / second');
+secIntegrator.body.append(integratorSelect, integratorNote, accuracySlider, rH, rDt, rSteps, rRate);
+
+const secDiag = section('Conservation diagnostics', { aside: 'live' });
+const ePlot = logPlot({ caption: '|ΔE/E₀|   vs   t', yMin: 1e-16, yMax: 1e-1 });
+const eSeries = ePlot.addSeries('--accent');
+const lSeries = ePlot.addSeries('--muted', { width: 1, alpha: 0.7 });
+const rE = row('Energy error |ΔE/E₀|'), rP = row('Momentum drift |ΔP|/Σm|v|'), rL = row('Angular momentum |ΔL|/Σm|r||v|');
+const rE0 = row('Total energy E₀'), rTU = row('Kinetic T  ·  potential −U');
+secDiag.body.append(ePlot.el, el('p', { class: 'psim-hint', style: 'font-size:11.5px' }, 'Blue: energy. Grey: angular momentum. Values are recomputed from the integrated state, not estimated.'),
+  rE, rP, rL, rE0, rTU);
+
+const secChaos = section('Sensitivity (chaos twin)', { open: false });
+const sepPlot = logPlot({ caption: 'phase-space separation |δ|   vs   t', yMin: 1e-14, yMax: 1e2 });
+const sepSeries = sepPlot.addSeries('--warn');
+const rSep = row('Separation |δ|'), rLyap = row('Growth rate (fit, last ⅓)');
+const twinToggle = toggle('Run a perturbed twin', false, v => { twinOn = v; rebuild(); });
+const perturbSlider = slider({
+  label: 'Perturbation of body 1, x', min: 1e-12, max: 1e-2, value: perturb, log: true, unit: units.length, digits: 2,
+  onInput: v => { perturb = v; if (twinOn) rebuild(); },
+});
+secChaos.body.append(
+  el('p', { class: 'psim-hint' }, 'Integrates a second copy with one coordinate shifted by δ₀. Exponential growth of the separation is the signature of chaos; it sets how long any single computed trajectory can be trusted.'),
+  twinToggle, perturbSlider, sepPlot.el, rSep, rLyap);
+
+const secVerify = section('Verification', { aside: report ? 'report embedded' : 'no report' });
+const verifyBody = el('div', { style: 'display:grid;gap:8px' });
+const studyOut = el('div', { style: 'display:grid;gap:6px' });
+const studyBtn = button('Run convergence study on current setup', () => runStudy());
+secVerify.body.append(verifyBody, el('div', { class: 'psim-btns' }, studyBtn), studyOut);
+
+const secModel = section('Model, assumptions & limits', { open: false });
+const secView = section('View', { open: false });
+const secExport = section('Export', { open: false });
+side.append(secScenario, secBodies, secDiag, secChaos, secVerify, secIntegrator, secModel, secView, secExport);
+
+// ---------------------------------------------------------------- model text
+function math(src) { return el('div', { class: 'psim-math', html: src }); }
+// MathML Core ignores mathvariant="bold"; use Unicode mathematical bold letters for vectors.
+const BOLD = { r: '𝐫', v: '𝐯' };
+const MI = (s, v) => `<mi>${v ? BOLD[s] : s}</mi>`;
+const SUB = (b, s) => `<msub>${b}<mi>${s}</mi></msub>`;
+const R = i => SUB(MI('r', true), i);
+function renderModel() {
+  const soft = (cfg.softening ?? 0) > 0;
+  const denom = soft
+    ? `<msup><mrow><mo>(</mo><msup><mrow><mo>|</mo>${R('j')}<mo>−</mo>${R('i')}<mo>|</mo></mrow><mn>2</mn></msup><mo>+</mo><msup><mi>ε</mi><mn>2</mn></msup><mo>)</mo></mrow><mrow><mn>3</mn><mo>/</mo><mn>2</mn></mrow></msup>`
+    : `<msup><mrow><mo>|</mo>${R('j')}<mo>−</mo>${R('i')}<mo>|</mo></mrow><mn>3</mn></msup>`;
+  const eom = `<math display="block"><msub><mover>${MI('r', true)}<mo>¨</mo></mover><mi>i</mi></msub><mo>=</mo><munder><mo>∑</mo><mrow><mi>j</mi><mo>≠</mo><mi>i</mi></mrow></munder><mfrac><mrow><mi>G</mi>${SUB(MI('m'), 'j')}<mo>(</mo>${R('j')}<mo>−</mo>${R('i')}<mo>)</mo></mrow>${denom}</mfrac></math>`;
+  const energy = `<math display="block"><mi>E</mi><mo>=</mo><munder><mo>∑</mo><mi>i</mi></munder><mfrac><mn>1</mn><mn>2</mn></mfrac>${SUB(MI('m'), 'i')}<msup><mrow><mo>|</mo>${SUB(MI('v', true), 'i')}<mo>|</mo></mrow><mn>2</mn></msup><mo>−</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>&lt;</mo><mi>j</mi></mrow></munder><mfrac><mrow><mi>G</mi>${SUB(MI('m'), 'i')}${SUB(MI('m'), 'j')}</mrow>${SUB(MI('r'), 'ij')}</mfrac></math>`;
+  const logh = `<math display="block"><mi>Γ</mi><mo>=</mo><mi>ln</mi><mo>(</mo><mi>T</mi><mo>+</mo><mi>B</mi><mo>)</mo><mo>−</mo><mi>ln</mi><mi>U</mi><mo>,</mo><mspace width="1em"/><mfrac><mrow><mi>d</mi><mi>t</mi></mrow><mrow><mi>d</mi><mi>s</mi></mrow></mfrac><mo>=</mo><mfrac><mn>1</mn><mrow><mi>T</mi><mo>+</mo><mi>B</mi></mrow></mfrac><mo>,</mo><mspace width="1em"/><mi>B</mi><mo>=</mo><mo>−</mo><msub><mi>E</mi><mn>0</mn></msub></math>`;
+  const usesLogh = integrator.startsWith('logh');
+  secModel.body.replaceChildren(
+    el('div', { class: 'psim-prose' },
+      el('p', {}, el('b', {}, TIERS[cfg.tier] + '. '), cfg.tierReason ?? 'Deterministic integration of Newton\'s equations for point masses. Accuracy is measured, not assumed: conservation laws, step-size convergence and published benchmarks are reported in the Verification panel.')),
+    el('p', { class: 'psim-hint' }, 'Equations of motion'), math(eom),
+    el('p', { class: 'psim-hint' }, 'Conserved energy (also P = Σ mᵢvᵢ and L = Σ mᵢ rᵢ × vᵢ)'), math(energy),
+    usesLogh ? el('p', { class: 'psim-hint' }, 'Time transformation used by the LogH integrator (fictitious time s)') : null,
+    usesLogh ? math(logh) : null,
+    el('div', { class: 'psim-prose' },
+      el('p', {}, el('b', {}, 'Assumptions and limits')),
+      el('ul', {},
+        el('li', {}, 'Newtonian gravity; no relativistic corrections. Invalid where v approaches c or near compact objects.'),
+        el('li', {}, soft ? `Plummer softening ε = ${cfg.softening}: forces are modified below separations ~ε.` : 'Point masses, no softening: no physical size, no collisions or tides. Bodies may pass arbitrarily close.'),
+        el('li', {}, 'IEEE double precision. Chaotic orbits have a finite predictability horizon; beyond it, individual trajectories depend on round-off, although statistical outcomes remain meaningful.'),
+        el('li', {}, `Units: ${units.system}. Length ${units.length}, time ${units.time}, mass ${units.mass}.`),
+        ...(cfg.notes ?? []).map(t => el('li', {}, t)))),
+    el('div', { class: 'psim-prose' },
+      el('p', {}, el('b', {}, 'Visual conventions')),
+      el('ul', {},
+        el('li', {}, 'Trails connect integrator states only: no splines or smoothing.'),
+        el('li', {}, 'Marker size ∝ m^(1/3) for legibility; it is not a physical radius.'),
+        el('li', {}, 'Orthographic projection: in-plane lengths are to scale (see scale bar). Colours only identify bodies.'),
+        el('li', {}, 'Between integrator steps, positions are drawn by cubic Hermite interpolation of computed states (error O(Δt⁴)).'))),
+  );
+}
+
+// ---------------------------------------------------------------- view section
+function renderViewSection() {
+  secView.body.replaceChildren(
+    toggle('Reference grid', view.opts.grid, v => { view.opts.grid = v; }),
+    toggle('Velocity vectors', view.opts.vectors, v => { view.opts.vectors = v; }),
+    toggle('Barycentre marker', view.opts.barycentre, v => { view.opts.barycentre = v; }),
+    toggle('Labels', view.opts.labels, v => { view.opts.labels = v; }),
+    slider({ label: 'Trail length', min: 0.1, max: 2000, value: trailTime, log: true, unit: units.time, digits: 2, onInput: v => { trailTime = v; view.setTrailTime(v); } }),
+    el('p', { class: 'psim-hint' }, 'Drag to pan · shift- or right-drag to tilt into 3D · scroll to zoom · double-click to face the orbital plane.'),
+  );
+}
+
+// ---------------------------------------------------------------- export
+secExport.body.append(
+  el('p', { class: 'psim-hint' }, 'Trajectory samples are recorded at uniform physical-time intervals by interpolating computed states.'),
+  el('div', { class: 'psim-btns' },
+    button('Trajectory CSV', exportCsv),
+    button('Run JSON', exportJson),
+    button('PNG image', () => { canvas.toBlob(b => { const a = el('a', { href: URL.createObjectURL(b), download: `${slug()}.png` }); a.click(); }); })));
+
+function slug() { return (cfg.title || 'simulation').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+
+function exportCsv() {
+  const n = ic.length;
+  const head = ['t', ...ic.flatMap((b, i) => ['x', 'y', 'z', 'vx', 'vy', 'vz'].map(c => `${c}_${i + 1}`)), 'E'];
+  const lines = [`# p-simtor | ${cfg.title} | ${units.system} | integrator ${nb.INTEGRATORS[integrator].label} h=${st.h}`, `# masses: ${ic.map(b => b.m).join(', ')}`, head.join(',')];
+  for (const r of record) lines.push(r.map(v => v.toPrecision(15)).join(','));
+  download(`${slug()}-trajectory.csv`, lines.join('\n'), 'text/csv');
+  toast(stage, `${record.length} samples × ${n} bodies exported`);
+}
+
+function exportJson() {
+  const d = nb.drift(sys, ref);
+  download(`${slug()}-run.json`, JSON.stringify({
+    generator: 'p-simtor', title: cfg.title, units, tier: cfg.tier,
+    model: 'Newtonian point-mass gravity', integrator, h: st.h, stepsPerCrossing, softening: cfg.softening ?? 0,
+    initialConditions: ic, barycentric, t: sys.t, steps: sys.steps,
+    diagnostics: { dE: d.dE, dP: d.dP, dL: d.dL, E0: ref.E },
+    finalState: { x: Array.from(sys.x.subarray(0, 3 * ic.length)), v: Array.from(sys.v.subarray(0, 3 * ic.length)) },
+    buildTimeVerification: report?.[scenarioKey] ?? null,
+  }, null, 2), 'application/json');
+}
+
+// ---------------------------------------------------------------- bodies UI
+let bodyInputs = [];
+function renderBodies() {
+  bodiesWrap.replaceChildren();
+  bodyInputs = ic.map((b, i) => {
+    const vecRow = (label, key) => {
+      const inputs = [0, 1, 2].map(k => el('input', { type: 'number', step: 'any', value: +b[key][k].toPrecision(10), 'aria-label': `${label} ${'xyz'[k]} of ${b.name}` }));
+      inputs.forEach((inp, k) => inp.addEventListener('change', () => {
+        const v = +inp.value; if (!Number.isFinite(v)) return;
+        ic[i][key][k] = v; custom = true; rebuild();
+      }));
+      return { row: el('div', { class: 'psim-vec' }, el('span', {}, label), ...inputs), inputs };
+    };
+    const pos = vecRow('r', 'x'), vel = vecRow('v', 'v');
+    const massEl = el('span', { class: 'm' });
+    const massSlider = slider({
+      label: `Mass`, min: 0.01, max: 100, value: b.m, log: true, unit: units.mass, digits: 3,
+      onInput: v => { ic[i].m = Math.max(1e-12, v); custom = true; rebuild(); },
+    });
+    const card = el('div', { class: 'psim-bodycard' },
+      el('header', {}, el('i', { style: `background:var(${COLORS[i % COLORS.length]});color:var(${COLORS[i % COLORS.length]})` }), b.name, massEl),
+      massSlider, pos.row, vel.row);
+    bodiesWrap.append(card);
+    return { pos: pos.inputs, vel: vel.inputs, massSlider, massEl };
+  });
+  secBodies.aside.textContent = `${ic.length} bodies`;
+  refreshBodyInputs();
+}
+function refreshBodyInputs(only) {
+  bodyInputs.forEach((bi, i) => {
+    if (only != null && only !== i) return;
+    bi.pos.forEach((inp, k) => { if (document.activeElement !== inp) inp.value = +ic[i].x[k].toPrecision(10); });
+    bi.vel.forEach((inp, k) => { if (document.activeElement !== inp) inp.value = +ic[i].v[k].toPrecision(10); });
+    bi.massEl.textContent = `m = ${+ic[i].m.toPrecision(4)}`;
+  });
+}
+
+// ---------------------------------------------------------------- simulation lifecycle
+function loadScenario(key) {
+  scenarioKey = key;
+  custom = false;
+  const s = scenarios[key];
+  ic = s.bodies.map((b, i) => ({ name: b.name ?? `m${'₁₂₃₄₅₆'[i]}`, m: b.m, x: [...b.x], v: [...b.v] }));
+  scenarioSelect.value = key;
+  scenarioNote.textContent = s.note ?? '';
+  scenarioSource.textContent = s.source ? `Source: ${s.source}` : '';
+  const sp = s.speed ?? (s.duration ? s.duration / 30 : 1);
+  clock.speed = sp;
+  tp.querySelector('input[type=range]').value = Math.log10(sp);
+  tp.querySelector('output').textContent = `${sci(sp, 2)} ${units.time}/s`;
+  if (view) view.resetTrails(ic.length);
+  renderBodies();
+  rebuild({ refit: true });
+}
+
+function rebuild({ shift = barycentric, refit = false } = {}) {
+  if (custom) scenarioSelect.value = '__custom';
+  const opts = { G: units.G, softening: cfg.softening ?? 0 };
+  sys = nb.createSystem(ic, opts);
+  if (shift) {
+    nb.toBarycentric(sys);
+    // Store the barycentric values back so the inputs show what is integrated.
+    ic.forEach((b, i) => { for (let k = 0; k < 3; k++) { b.x[k] = sys.x[3 * i + k]; b.v[k] = sys.v[3 * i + k]; } });
+  }
+  st = nb.createStepper(sys, { integrator, stepsPerCrossing });
+  ref = st.ref;
+  twin = twinSt = null;
+  if (twinOn) {
+    twin = nb.cloneSystem(sys);
+    twin.x[0] += perturb;
+    twinSt = nb.createStepper(twin, { integrator, h: st.h });
+  }
+  const n = ic.length;
+  if (!view) {
+    view = createOrbitView(canvas, { n, colors: COLORS, masses: ic.map(b => b.m), editable });
+    view.onReset = () => view.fit(sys.x, { animate: true });
+    renderViewSection();
+  }
+  view.resetTrails(n);
+  view.setMasses(ic.map(b => b.m));
+  view.setTrailTime(trailTime);
+  const size = Math.max(...ic.map(b => Math.hypot(...b.x))) || 1;
+  view.setMinSegment(size * 4e-4);
+  tDisplay = 0; limited = false;
+  xNow.set(sys.x); vNow.set(sys.v);
+  view.pushTrail(sys.x, 0);
+  if (twin) view.pushTwinTrail(twin.x, 0);
+  const dur = scenarios[scenarioKey]?.duration ?? 50;
+  record = []; recordDt = dur / 4000;
+  sampleRecord(0, sys.x, sys.v);
+  nextRecord = recordDt;
+  plotEvery = dur / 1200; nextPlot = 0;
+  ePlot.clear(); ePlot.setXMax(dur); sepPlot.clear(); sepPlot.setXMax(dur);
+  if (refit) view.fit(sys.x);
+  rH.set(`${sci(st.h, 3)}${nb.INTEGRATORS[integrator].adaptive ? ' (fictitious time)' : ` ${units.time}`}`);
+  rE0.set(sci(ref.E, 6));
+  renderModel();
+  renderVerification();
+  studyOut.replaceChildren();
+}
+
+const recX = new Float64Array(3 * MAX_BODIES), recV = new Float64Array(3 * MAX_BODIES);
+/** One CSV row: t, then x,y,z,vx,vy,vz per body, then E at the nearest computed step. */
+function sampleRecord(t, x, v) {
+  const out = [t];
+  for (let i = 0; i < ic.length; i++) {
+    for (let k = 0; k < 3; k++) out.push(x[3 * i + k]);
+    for (let k = 0; k < 3; k++) out.push(v[3 * i + k]);
+  }
+  out.push(nb.totalEnergy(sys));
+  record.push(out);
+}
+
+function onStepTaken() {
+  view.pushTrail(sys.x, sys.t);
+  stepsThisSecond++;
+  while (nextRecord <= sys.t && record.length < 200000) {
+    st.sampleAt(nextRecord, recX, recV);
+    sampleRecord(nextRecord, recX, recV);
+    nextRecord += recordDt;
+  }
+  if (sys.t >= nextPlot) {
+    const d = nb.drift(sys, ref);
+    ePlot.push(eSeries, sys.t, Math.max(d.dE, 1e-17));
+    ePlot.push(lSeries, sys.t, Math.max(d.dL, 1e-17));
+    nextPlot = sys.t + plotEvery;
+  }
+}
+
+function stepOnce() {
+  st.step();
+  onStepTaken();
+  if (twinSt) { twinSt.advanceTo(sys.t); view.pushTwinTrail(twin.x, twin.t); }
+  tDisplay = sys.t;
+}
+
+/** Advance physics to the clock's target time within a per-frame compute budget. */
+function advance(target) {
+  const deadline = performance.now() + 9;
+  let k = 0;
+  while (sys.t < target) {
+    st.step();
+    onStepTaken();
+    if ((++k & 127) === 0 && performance.now() > deadline) break;
+  }
+  limited = sys.t < target;
+  const reached = Math.min(target, sys.t);
+  if (twinSt) {
+    while (twin.t < reached) { twinSt.step(); view.pushTwinTrail(twin.x, twin.t); }
+  }
+  return reached;
+}
+
+// ---------------------------------------------------------------- verification panel
+function check(label, value, state) {
+  return el('div', { class: 'psim-check' }, el('i', { class: state === 'good' ? '' : state }), el('span', {}, label), el('code', {}, value));
+}
+
+function renderVerification() {
+  const rep = !custom && report ? report[scenarioKey] : null;
+  if (!rep) {
+    verifyBody.replaceChildren(el('p', { class: 'psim-hint' },
+      custom ? 'The initial conditions have been edited, so the build-time report does not apply. Run the convergence study below to verify this configuration.'
+        : 'No build-time report is embedded for this scenario. Run the convergence study below.'));
+    return;
+  }
+  const c = rep.conservation, cv = rep.convergence;
+  const orderOk = cv.observedOrder != null && Math.abs(cv.observedOrder - cv.expectedOrder) < 0.6;
+  verifyBody.replaceChildren(
+    el('p', { class: 'psim-hint' }, `Measured when this page was built (${rep.generated.slice(0, 10)}), ${rep.integratorLabel}, t = 0 → ${rep.duration}:`),
+    check('Energy conservation |ΔE/E₀|', sci(c.dE), grade(c.dE, 1e-8, 1e-5)),
+    check('Momentum drift', sci(c.dP), grade(c.dP, 1e-10, 1e-6)),
+    check('Angular momentum drift', sci(c.dL), grade(c.dL, 1e-10, 1e-6)),
+    check(`Convergence order (expected ${cv.expectedOrder})`, cv.observedOrder == null ? 'unresolved' : fix(cv.observedOrder, 2), orderOk ? 'good' : 'warn'),
+    check('Trajectory converged (10⁻³ of size) until', cv.converged ? `t = ${fix(cv.horizon, 1)} (whole run)` : `t ≈ ${fix(cv.horizon, 1)}`, cv.converged ? 'good' : 'warn'),
+    check('Bit-identical rerun', rep.determinism.identical ? 'yes' : 'no', rep.determinism.identical ? 'good' : 'bad'),
+    check('Independent of frame rate', rep.frameIndependence.identical ? 'yes' : 'no', rep.frameIndependence.identical ? 'good' : 'bad'),
+    ...rep.benchmarks.map(b => b.positionError != null
+      ? check(b.name, `pos. err ${sci(b.positionError)}`, grade(b.positionError, 1e-3, 1e-2))
+      : b.returnError != null ? check(b.name, `return err ${sci(b.returnError)}`, grade(b.returnError, 1e-6, 1e-3))
+        : check(b.name, b.matchesLiterature ? 'matches literature' : 'MISMATCH', b.matchesLiterature ? 'good' : 'bad')),
+    cv.converged ? null : el('p', { class: 'psim-hint' },
+      `This system is chaotic: step-size refinement agrees only until t ≈ ${fix(cv.horizon, 1)}. After that, the drawn trajectory is one valid realisation; its qualitative outcome, not its exact path, is what the model predicts.`),
+  );
+}
+
+function runStudy() {
+  studyBtn.disabled = true;
+  studyBtn.textContent = 'Running…';
+  setTimeout(() => {
+    const tEnd = Math.max(sys.t, scenarios[scenarioKey]?.duration ?? 10);
+    const t0 = performance.now();
+    const r = convergenceStudy(ic, { integrator, G: units.G, softening: cfg.softening ?? 0, stepsPerCrossing }, tEnd, { samples: 120 });
+    const ms = performance.now() - t0;
+    const orderOk = r.observedOrder != null && Math.abs(r.observedOrder - r.expectedOrder) < 0.6;
+    studyOut.replaceChildren(
+      el('p', { class: 'psim-hint' }, `Runs at h, h/2, h/4 to t = ${fix(tEnd, 2)} (${r.steps.map(s => s.toLocaleString()).join(' / ')} steps, ${ms.toFixed(0)} ms):`),
+      check(`Observed order (expected ${r.expectedOrder})`, r.observedOrder == null ? 'unresolved' : fix(r.observedOrder, 2), orderOk ? 'good' : 'warn'),
+      check('Converged until', r.converged ? `t = ${fix(r.horizon, 2)} (whole run)` : `t ≈ ${fix(r.horizon, 2)}`, r.converged ? 'good' : 'warn'),
+      check('Final h/2 vs h/4 difference', sci(r.finalDifference), grade(r.finalDifference, 1e-6, 1e-3)),
+      r.converged ? null : el('p', { class: 'psim-hint' },
+        `Refinement stops agreeing at t ≈ ${fix(r.horizon, 1)}: the system amplifies tiny differences (chaos). Increase "Steps per crossing time" to push this horizon out; it cannot be removed.`),
+    );
+    studyBtn.disabled = false;
+    studyBtn.textContent = 'Run convergence study on current setup';
+  }, 30);
+}
+
+// ---------------------------------------------------------------- frame loop
+const hudT = document.getElementById('hud-t'), hudE = document.getElementById('hud-e');
+const hudDt = document.getElementById('hud-dt'), hudFlag = document.getElementById('hud-flag');
+const scalebar = document.getElementById('scalebar');
+let frames = 0, lastUi = 0;
+
+function frame(now) {
+  const target = clock.tick(now, tDisplay);
+  if (target > tDisplay) tDisplay = advance(target);
+  // Invariant: st.prev.t <= tDisplay <= sys.t, so this is an interpolation, never an extrapolation.
+  st.sampleAt(tDisplay, xNow, vNow);
+  if (twinSt) twinSt.sampleAt(Math.min(tDisplay, twin.t), xTwin, vTwin);
+
+  view.draw({ x: xNow, v: vNow, t: tDisplay, twinX: twinSt ? xTwin : null, labels: ic.map(b => b.name) });
+
+  if (now - lastUi > 100) { lastUi = now; updateReadouts(now); }
+  if (++frames % 30 === 0) status.set('frames', frames);
+  nextFrame(frame);
+}
+
+function updateReadouts(now) {
+  const d = nb.drift(sys, ref);
+  hudT.textContent = fix(tDisplay, 3);
+  hudE.textContent = `|ΔE/E₀| ${sci(d.dE)}`;
+  const dtNow = sys.t - st.prev.t;
+  hudDt.textContent = `Δt ${sci(dtNow, 2)} · ${sys.steps.toLocaleString()} steps`;
+  hudFlag.textContent = limited ? 'compute-limited: playback slowed to keep the integration exact' : '';
+  rE.set(sci(d.dE), grade(d.dE, 1e-8, 1e-5));
+  rP.set(sci(d.dP), grade(d.dP, 1e-10, 1e-6));
+  rL.set(sci(d.dL), grade(d.dL, 1e-10, 1e-6));
+  rTU.set(`${sci(d.now.T, 4)} · ${sci(-d.now.U, 4)}`);
+  rDt.set(`${sci(dtNow, 3)} ${units.time}`);
+  rSteps.set(sys.steps.toLocaleString());
+  if (now - rateClock > 1000) { stepRate = stepsThisSecond * 1000 / (now - rateClock); stepsThisSecond = 0; rateClock = now; }
+  rRate.set(Math.round(stepRate).toLocaleString());
+  ePlot.draw();
+  if (twinSt) {
+    let s2 = 0;
+    for (let i = 0; i < 3 * ic.length; i++) s2 += (xNow[i] - xTwin[i]) ** 2 + (vNow[i] - vTwin[i]) ** 2;
+    const sep = Math.sqrt(s2);
+    rSep.set(sci(sep));
+    if (tDisplay > 0) sepPlot.push(sepSeries, tDisplay, sep);
+    const pts = sepSeries.data.filter(p => p[1] > 0);
+    if (pts.length > 12) {
+      const tail = pts.slice(Math.floor(pts.length * 2 / 3));
+      rLyap.set(`${sci(slope(tail), 3)} / ${units.time}`);
+    }
+    sepPlot.draw();
+  } else { rSep.set('—'); rLyap.set('—'); }
+  // Scale bar
+  const step = view.gridStep;
+  scalebar.querySelector('span').style.width = `${step * view.cam.scale}px`;
+  scalebar.querySelector('em').textContent = `${+step.toPrecision(3)} ${units.length}`;
+  status.set('t', tDisplay);
+  status.set('drift', d.dE);
+  status.set('steps', sys.steps);
+}
+
+function slope(pts) {
+  // Least-squares slope of ln|δ| vs t.
+  let sx = 0, sy = 0, sxx = 0, sxy = 0;
+  for (const [t, y] of pts) { const ly = Math.log(y); sx += t; sy += ly; sxx += t * t; sxy += t * ly; }
+  const n = pts.length;
+  return (n * sxy - sx * sy) / (n * sxx - sx * sx);
+}
+
+// ---------------------------------------------------------------- legend & keys
+document.getElementById('legend').append(
+  el('span', {}, `${units.system}`),
+  el('span', {}, 'trails: computed states · marker size ∝ m¹ᐟ³'));
+
+addEventListener('keydown', e => {
+  if (e.target.closest('input, select, textarea')) return;
+  if (e.code === 'Space') { e.preventDefault(); setPlaying(!clock.playing); }
+  else if (e.key === '.') { setPlaying(false); stepOnce(); }
+  else if (e.key === 'r' || e.key === 'R') rebuild();
+  else if (e.key === 'f' || e.key === 'F') view.fit(xNow, { animate: true });
+});
+
+// ---------------------------------------------------------------- boot
+if (cfg.integrator) integratorSelect.value = cfg.integrator;
+loadScenario(scenarioKey);
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+setPlaying(params.get('autoplay') ? params.get('autoplay') !== '0' : !reduced);
+if (params.get('speed')) clock.speed = +params.get('speed');
+// Scripting hook for automated checks (scripts/psim.mjs check) and power users.
+window.psim = {
+  model: 'nbody',
+  get t() { return tDisplay; },
+  state: () => ({ t: sys.t, x: Array.from(sys.x.subarray(0, 3 * ic.length)), v: Array.from(sys.v.subarray(0, 3 * ic.length)), steps: sys.steps }),
+  setup: () => ({ bodies: JSON.parse(JSON.stringify(ic)), integrator, stepsPerCrossing, G: units.G, softening: cfg.softening ?? 0, barycentric, h: st.h }),
+  drift: () => nb.drift(sys, ref),
+  play: p => setPlaying(p),
+  advanceTo: t => { st.advanceTo(t); tDisplay = Math.max(tDisplay, Math.min(t, sys.t)); return window.psim.state(); },
+  scenarios: () => Object.keys(scenarios),
+  load: k => loadScenario(k),
+};
+status.set('model', 'nbody');
+status.set('ready', true);
+nextFrame(frame);
+</script>
+</body>
+</html>
