@@ -27,7 +27,7 @@ The page gives: play, pause, step, restart and speed; per-body mass, position an
   "subtitle": "Newtonian three-body, AU–M☉–yr units",
   "note": "One-line description shown under the scenario picker",
   "source": "Citation for the initial conditions",
-  "units": { "G": 39.47841760435743, "system": "AU, M☉, yr (G = 4π²)", "length": "AU", "time": "yr", "mass": "M☉" },
+  "units": { "G": 39.476926, "system": "AU, M☉, Julian yr (G = GM☉·yr²/AU³)", "length": "AU", "time": "yr", "mass": "M☉" },
   "integrator": "logh4",
   "stepsPerCrossing": 2000,
   "softening": 0,
@@ -46,7 +46,7 @@ The page gives: play, pause, step, restart and speed; per-body mass, position an
 - `duration`: physical time verified at build time, and the playback scale (default speed is duration/30 per second).
 - `stepsPerCrossing`: accuracy knob. Raise it (8000–32000) for longer predictability horizons in chaotic systems.
 - `softening > 0` sets the tier to `approximate` automatically. Explain it in `notes`.
-- Units: the template is unit-agnostic. Choose G and labels consistently (G = 4π² for AU, M☉, yr; G = 1 for Hénon units). Circular speed: v = √(G M / r).
+- Units: the template is unit-agnostic. Choose G and labels consistently (G = 39.476926 ≈ 4π² for AU, M☉, Julian years, exported as `G_AU_MSUN_YR` from `core/constants.mjs`; G = 1 for Hénon units). Circular speed: v = √(G M / r).
 - Planetary data: take values from JPL Horizons or a cited ephemeris if the user wants real positions. Never invent "realistic" orbital elements. If idealised (circular, coplanar), say so in `note`.
 
 ## Integrator guidance
@@ -62,9 +62,9 @@ LogH needs a non-degenerate system: B = −E₀ must keep T + B > 0, which holds
 
 ## Reading the verification report
 
-- Energy error ≲ 1e-10 with `logh4` at defaults; the Pythagorean run gives ~2e-11 through all its encounters.
+- Reports show the maximum conservation error over every computed step, plus the final error. The Pythagorean recipe uses 16000 steps per crossing and stays below 1e-8 through its close encounters; Lagrange uses 4000. Other recipes retain 2000 unless their scenario specifies otherwise.
 - Convergence order ≈ 4 (`logh4`, `yoshida4`) or 2 (`logh`, `leapfrog`).
-- **Predictability horizon**: chaotic presets (Pythagorean ≈ 59, Lagrange ≈ 22 at defaults) diverge between step sizes after this time. Say this in the reply. The qualitative outcome (ejection, binary formation) is the prediction, not the exact path after the horizon.
+- **Predictability horizon**: read the measured horizon from the current report; it depends on timestep and initial conditions. Chaotic presets diverge between step sizes after this time. Say this in the reply. The qualitative outcome (ejection, binary formation) is the prediction, not the exact path after the horizon.
 - Determinism and frame-rate independence must both be `true`.
 
 ## Visual notes

@@ -41,6 +41,7 @@
 <script type="module">
 import * as nb from 'psim:core/nbody.mjs';
 import { convergenceStudy } from 'psim:core/nbody-verify.mjs';
+import { gravityReportMatches, gravityReportProblems } from 'psim:core/verification.mjs';
 import {
   el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast,
   transport, createClock, logPlot, download, readJsonScript, beacon,
@@ -202,7 +203,7 @@ function renderModel() {
   const usesLogh = integrator.startsWith('logh');
   secModel.body.replaceChildren(
     el('div', { class: 'psim-prose' },
-      el('p', {}, el('b', {}, TIERS[cfg.tier] + '. '), cfg.tierReason ?? 'Deterministic integration of Newton\'s equations for point masses. Accuracy is measured, not assumed: conservation laws, step-size convergence and published benchmarks are reported in the Verification panel.')),
+      el('p', {}, el('b', {}, `${tierBtn.querySelector('span').textContent}. `), cfg.tierReason ?? 'Deterministic integration of Newton\'s equations for point masses. Accuracy is measured, not assumed: conservation laws, step-size convergence and published benchmarks are reported in the Verification panel.')),
     el('p', { class: 'psim-hint' }, 'Equations of motion'), math(eom),
     el('p', { class: 'psim-hint' }, 'Conserved energy (also P = Σ mᵢvᵢ and L = Σ mᵢ rᵢ × vᵢ)'), math(energy),
     usesLogh ? el('p', { class: 'psim-hint' }, 'Time transformation used by the LogH integrator (fictitious time s)') : null,
@@ -259,12 +260,12 @@ function exportCsv() {
 function exportJson() {
   const d = nb.drift(sys, ref);
   download(`${slug()}-run.json`, JSON.stringify({
-    generator: 'p-simtor', title: cfg.title, units, tier: cfg.tier,
+    generator: 'p-simtor', title: cfg.title, units, tier: tierBtn.dataset.tier,
     model: 'Newtonian point-mass gravity', integrator, h: st.h, stepsPerCrossing, softening: cfg.softening ?? 0,
     initialConditions: ic, barycentric, t: sys.t, steps: sys.steps,
     diagnostics: { dE: d.dE, dP: d.dP, dL: d.dL, E0: ref.E },
     finalState: { x: Array.from(sys.x.subarray(0, 3 * ic.length)), v: Array.from(sys.v.subarray(0, 3 * ic.length)) },
-    buildTimeVerification: report?.[scenarioKey] ?? null,
+    buildTimeVerification: currentVerification(),
   }, null, 2), 'application/json');
 }
 
@@ -276,7 +277,13 @@ function renderBodies() {
     const vecRow = (label, key) => {
       const inputs = [0, 1, 2].map(k => el('input', { type: 'number', step: 'any', value: +b[key][k].toPrecision(10), 'aria-label': `${label} ${'xyz'[k]} of ${b.name}` }));
       inputs.forEach((inp, k) => inp.addEventListener('change', () => {
-        const v = +inp.value; if (!Number.isFinite(v)) return;
+        const raw = +inp.value;
+        // keep edits within 100× the scenario's own scales: beyond that the system is a
+        // different problem (and a typo like 1e15 would make every number overflow)
+        const lim = 100 * (key === 'x' ? scales.r : scales.v);
+        const v = Number.isFinite(raw) ? Math.max(-lim, Math.min(lim, raw)) : ic[i][key][k];
+        if (v !== raw) toast(stage, `${label}${'xyz'[k]} limited to ±${+lim.toPrecision(3)} ${key === 'x' ? units.length : `${units.length}/${units.time}`}`);
+        inp.value = +v.toPrecision(10);
         ic[i][key][k] = v; custom = true; rebuild();
       }));
       return { row: el('div', { class: 'psim-vec' }, el('span', {}, label), ...inputs), inputs };
@@ -284,7 +291,7 @@ function renderBodies() {
     const pos = vecRow('r', 'x'), vel = vecRow('v', 'v');
     const massEl = el('span', { class: 'm' });
     const massSlider = slider({
-      label: `Mass`, min: 0.01, max: 100, value: b.m, log: true, unit: units.mass, digits: 3,
+      label: 'Mass', min: Math.min(0.01, b.m / 100), max: Math.max(100, b.m * 100), value: b.m, log: true, unit: units.mass, digits: 3,
       onInput: v => { ic[i].m = Math.max(1e-12, v); custom = true; rebuild(); },
     });
     const card = el('div', { class: 'psim-bodycard' },
@@ -306,10 +313,17 @@ function refreshBodyInputs(only) {
 }
 
 // ---------------------------------------------------------------- simulation lifecycle
+let scales = { r: 1, v: 1 };
 function loadScenario(key) {
   scenarioKey = key;
   custom = false;
   const s = scenarios[key];
+  stepsPerCrossing = s.stepsPerCrossing ?? cfg.stepsPerCrossing ?? 2000;
+  accuracySlider.setValue(stepsPerCrossing);
+  // characteristic size and speed of this scenario: limits for typed edits
+  const rMax = Math.max(...s.bodies.map(b => Math.hypot(...b.x)), 1e-12);
+  const Mtot = s.bodies.reduce((a, b) => a + b.m, 0);
+  scales = { r: rMax, v: Math.max(...s.bodies.map(b => Math.hypot(...b.v)), Math.sqrt(units.G * Mtot / rMax)) };
   ic = s.bodies.map((b, i) => ({ name: b.name ?? `m${'₁₂₃₄₅₆'[i]}`, m: b.m, x: [...b.x], v: [...b.v] }));
   scenarioSelect.value = key;
   scenarioNote.textContent = s.note ?? '';
@@ -319,6 +333,7 @@ function loadScenario(key) {
   tp.querySelector('input[type=range]').value = Math.log10(sp);
   tp.querySelector('output').textContent = `${sci(sp, 2)} ${units.time}/s`;
   if (view) view.resetTrails(ic.length);
+  if (s.trailTime) { trailTime = s.trailTime; view?.setTrailTime(trailTime); }
   renderBodies();
   rebuild({ refit: true });
 }
@@ -326,13 +341,21 @@ function loadScenario(key) {
 function rebuild({ shift = barycentric, refit = false } = {}) {
   if (custom) scenarioSelect.value = '__custom';
   const opts = { G: units.G, softening: cfg.softening ?? 0 };
+  const previous = sys;
   sys = nb.createSystem(ic, opts);
   if (shift) {
     nb.toBarycentric(sys);
     // Store the barycentric values back so the inputs show what is integrated.
     ic.forEach((b, i) => { for (let k = 0; k < 3; k++) { b.x[k] = sys.x[3 * i + k]; b.v[k] = sys.v[3 * i + k]; } });
   }
-  st = nb.createStepper(sys, { integrator, stepsPerCrossing });
+  try {
+    st = nb.createStepper(sys, { integrator, stepsPerCrossing });
+  } catch (err) {
+    // e.g. two bodies at the same point: keep running the last valid setup and say why
+    toast(stage, `Cannot integrate this setup: ${err.message.replace(/^createStepper: /, '')}`);
+    sys = previous;
+    return;
+  }
   ref = st.ref;
   twin = twinSt = null;
   if (twinOn) {
@@ -364,8 +387,8 @@ function rebuild({ shift = barycentric, refit = false } = {}) {
   if (refit) view.fit(sys.x);
   rH.set(`${sci(st.h, 3)}${nb.INTEGRATORS[integrator].adaptive ? ' (fictitious time)' : ` ${units.time}`}`);
   rE0.set(sci(ref.E, 6));
-  renderModel();
   renderVerification();
+  renderModel();
   studyOut.replaceChildren();
 }
 
@@ -398,10 +421,17 @@ function onStepTaken() {
 }
 
 function stepOnce() {
-  st.step();
-  onStepTaken();
-  if (twinSt) { twinSt.advanceTo(sys.t); view.pushTwinTrail(twin.x, twin.t); }
+  try {
+    st.step();
+    onStepTaken();
+    if (twinSt) { twinSt.advanceTo(sys.t); view.pushTwinTrail(twin.x, twin.t); }
+  } catch (err) { stopOnFailure(err); }
   tDisplay = sys.t;
+}
+
+function stopOnFailure(err) {
+  setPlaying(false);
+  toast(stage, `Integration paused: ${err.message}. Increase accuracy or revise the initial conditions.`);
 }
 
 /** Advance physics to the clock's target time within a per-frame compute budget. */
@@ -409,14 +439,13 @@ function advance(target) {
   const deadline = performance.now() + 9;
   let k = 0;
   while (sys.t < target) {
-    st.step();
-    onStepTaken();
+    try { st.step(); onStepTaken(); } catch (err) { stopOnFailure(err); break; }
     if ((++k & 127) === 0 && performance.now() > deadline) break;
   }
   limited = sys.t < target;
   const reached = Math.min(target, sys.t);
   if (twinSt) {
-    while (twin.t < reached) { twinSt.step(); view.pushTwinTrail(twin.x, twin.t); }
+    try { while (twin.t < reached) { twinSt.step(); view.pushTwinTrail(twin.x, twin.t); } } catch (err) { stopOnFailure(err); }
   }
   return reached;
 }
@@ -426,22 +455,32 @@ function check(label, value, state) {
   return el('div', { class: 'psim-check' }, el('i', { class: state === 'good' ? '' : state }), el('span', {}, label), el('code', {}, value));
 }
 
-function renderVerification() {
+function currentVerification() {
   const rep = !custom && report ? report[scenarioKey] : null;
+  return gravityReportMatches(rep, { integrator, h: st.h, G: units.G, softening: cfg.softening ?? 0, stepsPerCrossing }) ? rep : null;
+}
+
+function renderVerification() {
+  const rep = currentVerification();
+  const verified = rep && gravityReportProblems(rep).length === 0;
+  tierBtn.dataset.tier = verified ? cfg.tier : 'unverified';
+  tierBtn.querySelector('span').textContent = verified ? TIERS[cfg.tier] : 'Verification needed';
   if (!rep) {
     verifyBody.replaceChildren(el('p', { class: 'psim-hint' },
       custom ? 'The initial conditions have been edited, so the build-time report does not apply. Run the convergence study below to verify this configuration.'
-        : 'No build-time report is embedded for this scenario. Run the convergence study below.'));
+        : report?.[scenarioKey] ? 'The integrator or accuracy settings have changed, so the build-time report does not apply. Run the convergence study below to check the current setup.'
+          : 'No build-time report is embedded for this scenario. Run the convergence study below.'));
     return;
   }
   const c = rep.conservation, cv = rep.convergence;
   const orderOk = cv.observedOrder != null && Math.abs(cv.observedOrder - cv.expectedOrder) < 0.6;
   verifyBody.replaceChildren(
     el('p', { class: 'psim-hint' }, `Measured when this page was built (${rep.generated.slice(0, 10)}), ${rep.integratorLabel}, t = 0 → ${rep.duration}:`),
-    check('Energy conservation |ΔE/E₀|', sci(c.dE), grade(c.dE, 1e-8, 1e-5)),
+    check('Maximum energy error |ΔE/E₀|', sci(c.dE), grade(c.dE, 1e-8, 1e-5)),
     check('Momentum drift', sci(c.dP), grade(c.dP, 1e-10, 1e-6)),
     check('Angular momentum drift', sci(c.dL), grade(c.dL, 1e-10, 1e-6)),
     check(`Convergence order (expected ${cv.expectedOrder})`, cv.observedOrder == null ? 'unresolved' : fix(cv.observedOrder, 2), orderOk ? 'good' : 'warn'),
+    cv.orderH > c.h * (1 + 1e-12) ? el('p', { class: 'psim-hint' }, `Order measured at coarser h = ${sci(cv.orderH, 4)} to resolve truncation above round-off. Conservation and the predictability horizon use the finer production step h = ${sci(c.h, 4)}.`) : null,
     check('Trajectory converged (10⁻³ of size) until', cv.converged ? `t = ${fix(cv.horizon, 1)} (whole run)` : `t ≈ ${fix(cv.horizon, 1)}`, cv.converged ? 'good' : 'warn'),
     check('Bit-identical rerun', rep.determinism.identical ? 'yes' : 'no', rep.determinism.identical ? 'good' : 'bad'),
     check('Independent of frame rate', rep.frameIndependence.identical ? 'yes' : 'no', rep.frameIndependence.identical ? 'good' : 'bad'),
@@ -466,6 +505,7 @@ function runStudy() {
     studyOut.replaceChildren(
       el('p', { class: 'psim-hint' }, `Runs at h, h/2, h/4 to t = ${fix(tEnd, 2)} (${r.steps.map(s => s.toLocaleString()).join(' / ')} steps, ${ms.toFixed(0)} ms):`),
       check(`Observed order (expected ${r.expectedOrder})`, r.observedOrder == null ? 'unresolved' : fix(r.observedOrder, 2), orderOk ? 'good' : 'warn'),
+      r.orderH > r.h * (1 + 1e-12) ? el('p', { class: 'psim-hint' }, `Order measured at coarser h = ${sci(r.orderH, 4)}; the horizon and final difference use production h = ${sci(r.h, 4)}.`) : null,
       check('Converged until', r.converged ? `t = ${fix(r.horizon, 2)} (whole run)` : `t ≈ ${fix(r.horizon, 2)}`, r.converged ? 'good' : 'warn'),
       check('Final h/2 vs h/4 difference', sci(r.finalDifference), grade(r.finalDifference, 1e-6, 1e-3)),
       r.converged ? null : el('p', { class: 'psim-hint' },
@@ -522,9 +562,9 @@ function updateReadouts(now) {
     if (pts.length > 12) {
       const tail = pts.slice(Math.floor(pts.length * 2 / 3));
       rLyap.set(`${sci(slope(tail), 3)} / ${units.time}`);
-    }
+    } else rLyap.set('collecting…');
     sepPlot.draw();
-  } else { rSep.set('—'); rLyap.set('—'); }
+  } else { rSep.set('twin off'); rLyap.set('twin off'); }
   // Scale bar
   const step = view.gridStep;
   scalebar.querySelector('span').style.width = `${step * view.cam.scale}px`;
@@ -569,8 +609,10 @@ window.psim = {
   setup: () => ({ bodies: JSON.parse(JSON.stringify(ic)), integrator, stepsPerCrossing, G: units.G, softening: cfg.softening ?? 0, barycentric, h: st.h }),
   drift: () => nb.drift(sys, ref),
   play: p => setPlaying(p),
-  advanceTo: t => { st.advanceTo(t); tDisplay = Math.max(tDisplay, Math.min(t, sys.t)); return window.psim.state(); },
+  // same path as playback (trails, plots, CSV records), just without waiting for frames
+  advanceTo: t => { while (sys.t < t) { st.step(); onStepTaken(); if (twinSt) twinSt.advanceTo(sys.t); } tDisplay = Math.max(tDisplay, Math.min(t, sys.t)); return window.psim.state(); },
   scenarios: () => Object.keys(scenarios),
+  fit: () => { st.sampleAt(tDisplay, xNow, vNow); view.fit(xNow); },
   load: k => loadScenario(k),
 };
 status.set('model', 'nbody');

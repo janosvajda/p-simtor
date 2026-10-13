@@ -2,7 +2,7 @@
 // Pure functions: used by scripts/psim.mjs (baked reports), tests, and in-page checks.
 
 import {
-  createSystem, createStepper, toBarycentric, integrateTo, stateDistance, drift, INTEGRATORS,
+  createSystem, createStepper, toBarycentric, integrateTo, stateDistance, drift, defaultStep, INTEGRATORS,
 } from './nbody.mjs';
 import { keplerBodies, keplerRelative } from './kepler.mjs';
 import { THREE_BODY_PRESETS } from './presets.mjs';
@@ -19,7 +19,7 @@ function systemSize(bodies) {
  * samples, before chaos amplifies differences) and the predictability horizon:
  * the last time at which the h/2 and h/4 runs still agree to `tol` × system size.
  */
-export function convergenceStudy(bodies, opts, tEnd, { samples = 200, tol = 1e-3 } = {}) {
+export function convergenceStudy(bodies, opts, tEnd, { samples = 200, tol = 1e-3, calibrateOrder = true } = {}) {
   let base;
   const runs = [1, 0.5, 0.25].map(f => {
     const sys = createSystem(bodies, opts);
@@ -30,6 +30,10 @@ export function convergenceStudy(bodies, opts, tEnd, { samples = 200, tol = 1e-3
     return { st, x: new Float64Array(3 * sys.n) };
   });
   const size = systemSize(bodies);
+  // At very fine production steps, round-off dominates the refinement ratios.
+  // Choose an order-calibration step from the initial dynamical scales, before
+  // seeing any errors. Accuracy and the horizon always use the production step.
+  const orderH = calibrateOrder ? Math.max(base, defaultStep(runs[0].st.sys, opts.integrator, 2000)) : base;
   const rows = [];
   let horizon = tEnd, horizonFound = false;
   for (let k = 1; k <= samples; k++) {
@@ -41,7 +45,10 @@ export function convergenceStudy(bodies, opts, tEnd, { samples = 200, tol = 1e-3
     if (!horizonFound && e2 > tol * size) { horizon = rows.length > 1 ? rows[rows.length - 2].t : 0; horizonFound = true; }
   }
   // Observed order from samples where errors are resolved above round-off and still small.
-  const orders = rows
+  const orderRows = orderH > base * (1 + 1e-12)
+    ? convergenceStudy(bodies, { ...opts, h: orderH }, tEnd, { samples, tol, calibrateOrder: false }).rows
+    : rows;
+  const orders = orderRows
     .filter(r => r.e2 > 1e-13 * size && r.e1 < 1e-2 * size)
     .slice(0, 20)
     .map(r => Math.log2(r.e1 / r.e2));
@@ -50,6 +57,7 @@ export function convergenceStudy(bodies, opts, tEnd, { samples = 200, tol = 1e-3
     integrator: opts.integrator,
     expectedOrder: INTEGRATORS[opts.integrator].order,
     observedOrder: order,
+    orderH,
     horizon,
     converged: !horizonFound,
     finalDifference: rows[rows.length - 1].e2 / size,
@@ -73,9 +81,11 @@ export function determinismCheck(bodies, opts, tEnd) {
 }
 
 /**
- * Advance the same system with two very different "frame" schedules (60 Hz and
- * irregular 7–41 ms frames at different playback speeds). The physical state at
- * a common time must be bit-identical: rendering never alters the step sequence.
+ * Regression guard for frame-rate independence: advance the same system with two different
+ * target-time schedules (uniform, and irregular 0.2–2.5× steps), as a page's clock would.
+ * The state at a common time must be bit-identical. This holds by design (steps never adapt
+ * to the target time); the check fails if a change ever makes them, e.g. by clipping the
+ * last step to land exactly on a frame time.
  */
 export function frameIndependenceCheck(bodies, opts, tEnd) {
   const final = schedule => {
@@ -146,15 +156,16 @@ export function verifyScenario(scenario) {
   };
   const tEnd = scenario.duration;
   const t0 = Date.now();
-  const main = integrateTo(scenario.bodies, opts, tEnd);
+  const main = integrateTo(scenario.bodies, { ...opts, trackConservation: true }, tEnd);
   const conv = convergenceStudy(scenario.bodies, opts, tEnd);
   delete conv.rows;
   return {
     generated: new Date().toISOString(),
     integrator: opts.integrator,
     integratorLabel: INTEGRATORS[opts.integrator].label,
+    settings: { ...opts },
     duration: tEnd,
-    conservation: { dE: main.dE, dP: main.dP, dL: main.dL, steps: main.steps, h: main.h },
+    conservation: { ...main.maxDrift, scope: 'maximum over every computed step', final: { dE: main.dE, dP: main.dP, dL: main.dL }, steps: main.steps, h: main.h },
     convergence: conv,
     determinism: determinismCheck(scenario.bodies, opts, tEnd),
     frameIndependence: frameIndependenceCheck(scenario.bodies, opts, tEnd),

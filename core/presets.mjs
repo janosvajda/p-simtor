@@ -19,6 +19,7 @@ export const THREE_BODY_PRESETS = {
     source: 'Burrau (1913); Szebehely & Peters (1967), Astron. J. 72, 876.',
     note: 'Masses 3, 4, 5 start at rest on a 3-4-5 triangle. A long chaotic dance of close encounters ends near t ≈ 60–70 with body 3 ejected and bodies 4 and 5 bound as a binary.',
     duration: 80,
+    stepsPerCrossing: 16000, // resolves the energy-error spike during the closest encounter
     bodies: [
       { m: 3, x: [1, 3, 0], v: [0, 0, 0] },
       { m: 4, x: [-2, -1, 0], v: [0, 0, 0] },
@@ -30,6 +31,7 @@ export const THREE_BODY_PRESETS = {
     source: 'Lagrange (1772). Linear stability requires (m1+m2+m3)² > 27(m1m2+m2m3+m3m1) (Routh 1875).',
     note: 'Equal masses on a rotating equilateral triangle. An exact solution, but unstable for equal masses: round-off grows until the configuration breaks up.',
     duration: 60,
+    stepsPerCrossing: 4000,
     bodies: lagrangeTriangle([1, 1, 1], 1),
   },
   'hierarchical': {
@@ -53,7 +55,7 @@ export const THREE_BODY_PRESETS = {
 };
 
 /** Equilateral triangle in the plane rotating rigidly about the barycentre. */
-export function lagrangeTriangle(m, side) {
+export function lagrangeTriangle(m, side, G = 1) {
   const M = m[0] + m[1] + m[2];
   const pts = [0, 1, 2].map(k => {
     const th = Math.PI / 2 + k * 2 * Math.PI / 3;
@@ -61,7 +63,7 @@ export function lagrangeTriangle(m, side) {
   });
   const c = [0, 1, 2].map(i => pts.reduce((s, p, j) => s + m[j] * p[i], 0) / M);
   // Angular velocity of the rigid rotation: Ω² = G M / side³.
-  const omega = Math.sqrt(M / (side * side * side));
+  const omega = Math.sqrt(G * M / (side * side * side));
   return m.map((mi, j) => {
     const r = [pts[j][0] - c[0], pts[j][1] - c[1], 0];
     return { m: mi, x: r, v: [-omega * r[1], omega * r[0], 0] };

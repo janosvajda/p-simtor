@@ -1,0 +1,2655 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="p-simtor">
+<title>Black hole</title>
+<style>/* psim:ui/instrument.css */
+/* p-simtor instrument shell.
+   A simulation page is a scientific instrument: a large stage for the physics,
+   a quiet control column, and numbers you can trust at a glance.
+   Colours are tokens so every domain view (orbits, fields, densities) can read them. */
+
+:root {
+  --bg: #07090d;
+  --stage: #0a0d13;
+  --panel: #0e1219;
+  --raise: #141923;
+  --line: rgba(196, 214, 255, 0.09);
+  --line-strong: rgba(196, 214, 255, 0.18);
+  --ink: #e6e9ef;
+  --ink-2: #b6bdcb;
+  --muted: #7b8396;
+  --faint: #4a5163;
+  --accent: #8cc8ff;
+  --accent-ink: #06121f;
+  --good: #7fd8a4;
+  --warn: #f2c46d;
+  --bad: #ff7a85;
+  --grid: rgba(150, 175, 230, 0.06);
+  --grid-strong: rgba(150, 175, 230, 0.13);
+  --glow: 1;
+  --body-0: #ffb35c;
+  --body-1: #68c3ff;
+  --body-2: #ff6f9a;
+  --body-3: #9be08a;
+  --body-4: #c49bff;
+  --body-5: #ffe07a;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --sans: ui-sans-serif, -apple-system, "Segoe UI", "Inter", system-ui, sans-serif;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --radius: 10px;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg: #efede7;
+  --stage: #f7f5f0;
+  --panel: #fbfaf7;
+  --raise: #ffffff;
+  --line: rgba(30, 34, 46, 0.09);
+  --line-strong: rgba(30, 34, 46, 0.18);
+  --ink: #171a21;
+  --ink-2: #3a3f4b;
+  --muted: #6b7180;
+  --faint: #a4a8b2;
+  --accent: #1c6fd1;
+  --accent-ink: #ffffff;
+  --good: #23864f;
+  --warn: #a8700f;
+  --bad: #c43b4a;
+  --grid: rgba(30, 40, 70, 0.055);
+  --grid-strong: rgba(30, 40, 70, 0.12);
+  --glow: 0;
+  --body-0: #d4731c;
+  --body-1: #1a78bf;
+  --body-2: #cf2f63;
+  --body-3: #3a8f33;
+  --body-4: #7a48cf;
+  --body-5: #a88600;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 13px/1.45 var(--sans);
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
+
+.psim-app {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 372px;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* ---------- header ---------- */
+.psim-head {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.psim-mark {
+  width: 22px; height: 22px; flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  position: relative;
+}
+.psim-mark::before, .psim-mark::after {
+  content: ""; position: absolute; border-radius: 50%;
+}
+.psim-mark::before { inset: 5px; border: 1px solid var(--accent); transform: scaleX(1.6) rotate(-25deg); opacity: .8; }
+.psim-mark::after { width: 4px; height: 4px; left: 9px; top: 9px; background: var(--ink); }
+.psim-title { min-width: 0; flex: 0 1 auto; }
+.psim-title h1 {
+  margin: 0; font: 600 15px/1.2 var(--sans); letter-spacing: .01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.psim-title p { margin: 2px 0 0; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.psim-head .spacer { flex: 1; }
+
+.psim-tier {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 4px 10px 4px 8px; border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  font: 500 11px/1 var(--sans); letter-spacing: .04em; text-transform: uppercase;
+  color: var(--ink-2); background: transparent; cursor: pointer; white-space: nowrap;
+}
+.psim-tier i { width: 7px; height: 7px; border-radius: 50%; background: var(--good); }
+.psim-tier[data-tier="approximate"] i { background: var(--warn); }
+.psim-tier[data-tier="unverified"] i { background: var(--warn); }
+.psim-tier[data-tier="analytical"] i { background: var(--accent); }
+.psim-tier[data-tier="conceptual"] i { background: var(--muted); }
+
+.psim-iconbtn {
+  width: 32px; height: 32px; display: grid; place-items: center;
+  border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink-2);
+  cursor: pointer;
+}
+.psim-iconbtn:hover { border-color: var(--line-strong); color: var(--ink); }
+.psim-iconbtn svg { width: 16px; height: 16px; }
+
+/* ---------- stage ---------- */
+.psim-stage {
+  position: relative; min-height: 0; overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 92%, var(--accent) 8%) 0%, var(--stage) 60%);
+}
+.psim-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.psim-stage canvas.grab { cursor: grab; }
+.psim-stage canvas.grabbing { cursor: grabbing; }
+.psim-stage canvas.move { cursor: move; }
+
+.psim-hud {
+  position: absolute; left: 16px; top: 14px;
+  display: grid; gap: 2px; pointer-events: none;
+  font: 12px/1.35 var(--mono); color: var(--ink-2);
+}
+.psim-hud b { font-weight: 500; color: var(--ink); font-size: 20px; letter-spacing: -.01em; }
+.psim-hud .dim { color: var(--muted); }
+.psim-hud .flag { color: var(--warn); }
+
+.psim-legend {
+  position: absolute; right: 16px; top: 14px; display: grid; gap: 4px; justify-items: end;
+  font: 11px/1.3 var(--sans); color: var(--muted); pointer-events: none; text-align: right;
+}
+
+.psim-transport {
+  position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 4px;
+  padding: 5px; border-radius: 12px;
+  background: color-mix(in srgb, var(--panel) 86%, transparent);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  max-width: calc(100% - 32px);
+}
+.psim-transport button {
+  height: 32px; min-width: 32px; padding: 0 9px; border-radius: 8px;
+  border: 0; background: transparent; color: var(--ink-2); cursor: pointer;
+  display: inline-grid; place-items: center; font: 500 12px var(--sans);
+}
+.psim-transport button:hover { background: var(--raise); color: var(--ink); }
+.psim-transport button.primary { background: var(--ink); color: var(--bg); width: 40px; }
+.psim-transport svg { width: 15px; height: 15px; }
+.psim-transport .sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
+.psim-transport label { display: flex; align-items: center; gap: 8px; padding: 0 8px; color: var(--muted); font-size: 11px; }
+.psim-transport input[type=range] { width: 110px; }
+.psim-transport output { font: 12px var(--mono); color: var(--ink-2); min-width: 64px; }
+
+.psim-scalebar {
+  position: absolute; left: 16px; bottom: 22px; pointer-events: none;
+  font: 11px var(--mono); color: var(--muted);
+}
+.psim-scalebar span { display: block; height: 6px; border: 1px solid var(--muted); border-top: 0; margin-bottom: 4px; }
+
+/* ---------- side column ---------- */
+.psim-side {
+  min-height: 0; overflow: auto;
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+  scrollbar-width: thin;
+}
+.psim-sec { border-bottom: 1px solid var(--line); }
+.psim-sec > summary {
+  list-style: none; cursor: pointer; user-select: none;
+  display: flex; align-items: center; gap: 8px;
+  padding: 13px 18px;
+  font: 600 11px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+}
+.psim-sec > summary::-webkit-details-marker { display: none; }
+.psim-sec > summary::after {
+  content: ""; margin-left: auto; width: 6px; height: 6px;
+  border-right: 1.5px solid var(--faint); border-bottom: 1.5px solid var(--faint);
+  transform: rotate(-45deg); transition: transform .15s;
+}
+.psim-sec[open] > summary::after { transform: rotate(45deg); }
+.psim-sec > summary .aside { margin-left: auto; text-transform: none; letter-spacing: 0; font: 11px var(--mono); color: var(--faint); }
+.psim-sec > summary .aside + ::after { margin-left: 8px; }
+.psim-body { padding: 2px 18px 16px; display: grid; gap: 10px; }
+
+.psim-row { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 10px; }
+.psim-row .k { color: var(--muted); }
+.psim-row .v { font: 12px var(--mono); color: var(--ink); text-align: right; }
+.psim-row .v.good { color: var(--good); }
+.psim-row .v.warn { color: var(--warn); }
+.psim-row .v.bad { color: var(--bad); }
+
+.psim-field { display: grid; gap: 6px; }
+.psim-field .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.psim-field .top span { color: var(--ink-2); }
+.psim-field .top input[type=number], .psim-num {
+  width: 108px; text-align: right;
+  font: 12px var(--mono); color: var(--ink);
+  background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 2px 6px;
+}
+.psim-field .top input[type=number]:hover, .psim-num:hover { border-color: var(--line); }
+.psim-field .top input[type=number]:focus, .psim-num:focus { outline: none; border-color: var(--accent); }
+.psim-hint { color: var(--muted); font-size: 12px; margin: 0; }
+.psim-limit { color: var(--warn); font: 11px var(--mono); }
+.psim-limit:empty { display: none; }
+.psim-hint b { color: var(--ink-2); font-weight: 500; }
+
+select.psim-select {
+  width: 100%; height: 34px; padding: 0 10px; border-radius: 8px;
+  background: var(--raise); color: var(--ink); border: 1px solid var(--line);
+  font: 13px var(--sans);
+}
+
+input[type=range] {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 18px; background: transparent; margin: 0;
+}
+input[type=range]::-webkit-slider-runnable-track { height: 2px; background: var(--line-strong); border-radius: 2px; }
+input[type=range]::-moz-range-track { height: 2px; background: var(--line-strong); border-radius: 2px; }
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 12px; height: 12px; margin-top: -5px; border-radius: 50%;
+  background: var(--ink); border: 2px solid var(--panel); box-shadow: 0 0 0 1px var(--line-strong);
+}
+input[type=range]::-moz-range-thumb {
+  width: 10px; height: 10px; border-radius: 50%; background: var(--ink); border: 2px solid var(--panel);
+}
+input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 40%, transparent); }
+
+.psim-btn {
+  height: 32px; padding: 0 12px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--line-strong); background: transparent; color: var(--ink);
+  font: 500 12px var(--sans);
+}
+.psim-btn:hover { background: var(--raise); }
+.psim-btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.psim-btn:disabled { opacity: .5; cursor: progress; }
+.psim-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.psim-toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--ink-2); cursor: pointer; }
+.psim-toggle input { appearance: none; -webkit-appearance: none; width: 28px; height: 16px; border-radius: 99px; background: var(--line-strong); position: relative; cursor: pointer; margin: 0; flex: none; transition: background .15s; }
+.psim-toggle input::after { content: ""; position: absolute; left: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--ink); transition: transform .15s; }
+.psim-toggle input:checked { background: var(--accent); }
+.psim-toggle input:checked::after { transform: translateX(12px); background: var(--accent-ink); }
+
+/* body cards */
+.psim-bodycard { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; display: grid; gap: 8px; }
+.psim-bodycard header { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.psim-bodycard header i { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 10px currentColor; }
+.psim-bodycard header .m { margin-left: auto; font: 12px var(--mono); color: var(--muted); font-weight: 400; }
+.psim-vec { display: grid; grid-template-columns: 22px repeat(3, minmax(0, 1fr)); gap: 4px; align-items: center; }
+.psim-vec span { color: var(--muted); font: 11px var(--mono); }
+.psim-vec input { width: 100%; min-width: 0; text-align: right; font: 11.5px var(--mono); color: var(--ink); background: var(--raise); border: 1px solid var(--line); border-radius: 6px; padding: 4px 5px; }
+.psim-vec input:focus { outline: none; border-color: var(--accent); }
+
+/* plots */
+.psim-plot { position: relative; height: 112px; border-radius: 8px; background: color-mix(in srgb, var(--stage) 70%, transparent); border: 1px solid var(--line); }
+.psim-plot canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.psim-plot .cap { position: absolute; left: 8px; top: 6px; font: 10.5px var(--mono); color: var(--muted); pointer-events: none; }
+
+/* model / maths */
+.psim-math { overflow-x: auto; padding: 10px 12px; border-radius: 8px; background: color-mix(in srgb, var(--stage) 60%, transparent); border: 1px solid var(--line); }
+.psim-math math { font-size: 15px; color: var(--ink); }
+.psim-prose { color: var(--ink-2); font-size: 12.5px; }
+.psim-prose p { margin: 0 0 8px; }
+.psim-prose ul { margin: 0; padding-left: 18px; }
+.psim-prose li { margin: 3px 0; }
+.psim-prose cite { font-style: normal; color: var(--muted); }
+
+.psim-check { display: grid; grid-template-columns: 16px 1fr; column-gap: 8px; row-gap: 2px; align-items: baseline; }
+.psim-check code { grid-column: 2; overflow-wrap: anywhere; }
+.psim-check i { width: 8px; height: 8px; border-radius: 50%; background: var(--good); transform: translateY(-1px); }
+.psim-check i.warn { background: var(--warn); }
+.psim-check i.bad { background: var(--bad); }
+.psim-check span { color: var(--ink-2); }
+.psim-check code { font: 11.5px var(--mono); color: var(--ink); }
+
+.psim-toast {
+  position: absolute; left: 50%; top: 16px; transform: translate(-50%, -8px); opacity: 0;
+  padding: 8px 12px; border-radius: 8px; background: var(--ink); color: var(--bg); font-size: 12px;
+  transition: opacity .2s, transform .2s; pointer-events: none;
+}
+.psim-toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (max-width: 860px) {
+  .psim-app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 64vh auto; height: auto; }
+  .psim-head { gap: 10px; }
+  .psim-title { flex: 1; }
+  .psim-tier { padding: 6px; }
+  .psim-tier span { display: none; }
+  .psim-side { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+  .psim-head { padding: 10px 16px; }
+  .psim-title p { display: none; }
+  .psim-transport label.speed { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+
+/* ---------- figures (ui/plot.mjs) ---------- */
+.psim-figure { margin: 0; display: grid; gap: 6px; min-width: 0; }
+.psim-plot-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.psim-plot-head .t { font: 600 12px/1.3 var(--sans); color: var(--ink-2); }
+.psim-plot-head .l { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.psim-plot-head .k { display: inline-flex; align-items: center; gap: 6px; font: 11px var(--sans); color: var(--muted); cursor: default; }
+.psim-plot-head .k.on { color: var(--ink); }
+.psim-plot-head .k i { width: 12px; height: 2.5px; border-radius: 2px; }
+.psim-plot2 { position: relative; border-radius: 10px; background: color-mix(in srgb, var(--stage) 75%, transparent); border: 1px solid var(--line); }
+.psim-plot2 canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* ---------- equations split into terms (ui/equation.mjs) ---------- */
+.psim-equation { display: grid; gap: 10px; }
+.psim-equation h3, .psim-derivation h3 { margin: 0; font: 600 11px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.psim-eqrow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 6px; }
+.psim-eqrow .op { align-self: center; font: 20px var(--serif); color: var(--muted); padding: 0 2px; }
+.psim-term {
+  display: grid; grid-template-rows: auto 3px auto auto; justify-items: center; align-content: start; gap: 5px;
+  padding: 10px 12px 9px; border-radius: 10px; min-width: 88px;
+  background: color-mix(in srgb, var(--stage) 70%, transparent); border: 1px solid var(--line);
+  transition: opacity .15s, border-color .15s; outline: none;
+}
+.psim-term[data-id]:not([data-id=""]) { cursor: default; }
+.psim-term:hover, .psim-term:focus-visible { border-color: var(--line-strong); }
+.psim-term.dim { opacity: .35; }
+.psim-term.lhs { background: transparent; border-style: dashed; }
+.psim-term .mx { font-size: 19px; line-height: 1.2; color: var(--ink); min-height: 30px; display: grid; place-items: center; }
+.psim-term .mx math { font-size: 19px; }
+.psim-term .bar { width: 100%; height: 3px; border-radius: 2px; background: var(--line); }
+.psim-term .lb { font: 11px/1.25 var(--sans); color: var(--muted); text-align: center; max-width: 150px; }
+.psim-term .v { font: 12px var(--mono); color: var(--ink-2); white-space: nowrap; }
+.psim-where { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: baseline; padding: 8px 12px; border-left: 2px solid var(--line-strong); }
+.psim-where .kw { grid-column: 1 / -1; font: italic 12px var(--serif); color: var(--muted); }
+.psim-where .w { display: contents; }
+.psim-where .mx math { font-size: 15px; color: var(--ink); }
+.psim-where .mean { color: var(--ink-2); font-size: 12.5px; }
+.psim-where .v { font: 12px var(--mono); color: var(--ink); text-align: right; }
+.psim-derivation ol { margin: 8px 0 0; padding: 0; list-style: none; counter-reset: step; display: grid; gap: 8px; }
+.psim-derivation li { counter-increment: step; display: grid; grid-template-columns: 22px 1fr; column-gap: 8px; align-items: center; }
+.psim-derivation li::before { content: counter(step); grid-row: span 2; align-self: start; margin-top: 8px; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--line-strong); font: 10.5px/18px var(--mono); text-align: center; color: var(--muted); }
+.psim-derivation .mx { overflow-x: auto; padding: 4px 0; }
+.psim-derivation .mx math { font-size: 17px; color: var(--ink); }
+.psim-derivation .why { font-size: 12px; color: var(--muted); }
+
+/* ---------- workbench layout: stage + figures + equations (instrument-app layout: 'workbench') ---------- */
+.psim-app.workbench .psim-stage { overflow: auto; background: var(--stage); }
+.psim-bench { position: relative; display: grid; gap: 18px; padding: 18px 18px 84px; min-height: 100%; }
+.psim-bench .psim-canvaswrap { position: relative; height: clamp(300px, 52vh, 620px); border-radius: 12px; overflow: hidden; border: 1px solid var(--line);
+  background: radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 90%, var(--accent) 10%) 0%, var(--stage) 65%); }
+.psim-bench .psim-canvaswrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+.psim-bench .psim-figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+.psim-bench .psim-eqs { display: grid; gap: 18px; }
+.psim-app.workbench .psim-transport { position: fixed; left: calc((100vw - 372px) / 2); }
+.psim-app.workbench .psim-hud { left: 30px; top: 30px; }
+.psim-app.workbench .psim-legend { right: 30px; top: 30px; }
+@media (max-width: 860px) {
+  .psim-app.workbench .psim-transport { left: 50%; }
+  .psim-bench { padding: 12px 12px 84px; }
+}
+
+@media (max-width: 860px) {
+  /* phones: legend bottom-right, clear of HUD (top-left), scale bars (bottom-left) and transport */
+  .psim-legend { top: auto; bottom: 70px; left: auto; right: 14px; max-width: 58%; justify-items: end; text-align: right; font-size: 10.5px; }
+  .psim-app.workbench { grid-template-rows: auto auto auto; }
+  .psim-app.workbench .psim-stage { overflow: visible; }
+  .psim-app.workbench .psim-transport { position: absolute; }
+  .psim-app.workbench .psim-legend { top: auto; bottom: 14px; left: auto; right: 26px; }
+  .psim-bench .psim-canvaswrap { height: 70vh; }
+}
+</style>
+</head>
+<body>
+<script type="application/json" id="psim-verification">{
+ "summary": "Geodesics, orbits and redshift checked against exact general-relativistic results:",
+ "checks": [
+  {
+   "label": "Light bending at b = 6M: RK4 tracer vs exact quadrature",
+   "value": "1.719388310 vs 1.719388310 rad",
+   "pass": true
+  },
+  {
+   "label": "Light bending at b = 10M: RK4 tracer vs exact quadrature",
+   "value": "0.590395788 vs 0.590395788 rad",
+   "pass": true
+  },
+  {
+   "label": "Light bending at b = 30M: RK4 tracer vs exact quadrature",
+   "value": "0.148248087 vs 0.148248087 rad",
+   "pass": true
+  },
+  {
+   "label": "Weak field b = 1000M vs 4M/b + (15π/4)(M/b)² + (128/3)(M/b)³",
+   "value": "rel. diff 4.0e-8",
+   "pass": true
+  },
+  {
+   "label": "Capture threshold vs 3√3 M (shadow edge)",
+   "value": "5.1961524227 vs 5.1961524227",
+   "pass": true
+  },
+  {
+   "label": "Starlight grazing the Sun (4GM/bc²)",
+   "value": "1.751″ (Eddington 1919: 1.75″)",
+   "pass": true
+  },
+  {
+   "label": "ISCO at 6M (marginal stability, V″ = 0)",
+   "value": "V″ = -7.8e-10",
+   "pass": true
+  },
+  {
+   "label": "Binding efficiency 1 − √(8/9)",
+   "value": "5.719 %",
+   "pass": true
+  },
+  {
+   "label": "Redshift of a face-on emitter at 10M: √(1 − 3M/r)",
+   "value": "0.836660026534",
+   "pass": true
+  }
+ ],
+ "notes": [
+  "Disk emission uses the Shakura–Sunyaev temperature profile (Newtonian zero-torque form) as a modelling approximation; geodesics and redshifts are exact.",
+  "The GPU image is checked in the browser against the exact shadow radius (psim check)."
+ ],
+ "generated": "2026-10-13T16:38:59.922Z",
+ "runtimeMs": 116
+}</script>
+<script type="module">
+const __psim = {};
+// ---- psim:ui/instrument.mjs
+__psim["ui/instrument.mjs"] = (() => {
+// Reusable instrument UI: DOM helpers, controls, log-scale plots, the simulation
+// clock, number formatting, theme handling and data export.
+// Domain-agnostic: orbit, field and density views all build on these pieces.
+
+function el(tag, attrs = {}, ...children) {
+  const node = document.createElementNS(
+    tag === 'svg' || attrs.xmlns === 'svg' ? 'http://www.w3.org/2000/svg' : 'http://www.w3.org/1999/xhtml', tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false || k === 'xmlns') continue;
+    if (k.startsWith('on') && typeof v === 'function') node.addEventListener(k.slice(2), v);
+    else if (k === 'class') node.className = v;
+    else if (k === 'html') node.innerHTML = v;
+    else if (k in node && typeof v !== 'string') node[k] = v;
+    else node.setAttribute(k, v === true ? '' : v);
+  }
+  for (const c of children.flat()) if (c != null && c !== false) node.append(c.nodeType ? c : document.createTextNode(String(c)));
+  return node;
+}
+
+const ICONS = {
+  play: '<svg viewBox="0 0 16 16"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg>',
+  pause: '<svg viewBox="0 0 16 16"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg>',
+  step: '<svg viewBox="0 0 16 16"><path d="M3 2.5v11l7-5.5zM11 2.5h2v11h-2z" fill="currentColor"/></svg>',
+  restart: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8a5 5 0 1 0 1.6-3.7"/><path d="M3 2.5v3h3"/></svg>',
+  fit: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg>',
+  sun: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6L13 13M3 13l1.4-1.4M11.6 4.4L13 3"/></svg>',
+  moon: '<svg viewBox="0 0 16 16"><path d="M13.5 10A6 6 0 0 1 6 2.5a6 6 0 1 0 7.5 7.5z" fill="currentColor"/></svg>',
+  info: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 7v4.5M8 4.6v.1"/></svg>',
+};
+
+// ---------- formatting ----------
+
+const SUP = { '-': '⁻', 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹' };
+
+/** 2.44e-11 -> "2.4×10⁻¹¹". */
+function sci(x, digits = 2) {
+  if (x == null || Number.isNaN(x)) return '—';
+  if (x === 0) return '0';
+  if (!Number.isFinite(x)) return x > 0 ? '∞' : '−∞';
+  const e = Math.floor(Math.log10(Math.abs(x)));
+  if (e >= -2 && e < 4) return fix(x, Math.max(0, digits - 1 - e));
+  const m = x / Math.pow(10, e);
+  return `${m.toFixed(digits - 1)}×10${String(e).split('').map(c => SUP[c]).join('')}`;
+}
+
+function fix(x, d = 3) {
+  if (x == null || Number.isNaN(x)) return '—';
+  return x.toFixed(d).replace('-', '−');
+}
+
+/** Classify a relative error against thresholds -> 'good' | 'warn' | 'bad'. */
+function grade(x, good, warn) {
+  if (!(x <= warn)) return 'bad';
+  return x <= good ? 'good' : 'warn';
+}
+
+// ---------- theme ----------
+
+function initTheme(toggleButton) {
+  const root = document.documentElement;
+  let stored = null;
+  try { stored = localStorage.getItem('psim-theme'); } catch { /* storage unavailable */ }
+  const query = new URLSearchParams(location.search).get('theme');
+  const sys = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  const apply = t => {
+    root.dataset.theme = t;
+    if (toggleButton) toggleButton.innerHTML = t === 'dark' ? ICONS.sun : ICONS.moon;
+    if (toggleButton) toggleButton.title = t === 'dark' ? 'Light theme' : 'Dark theme';
+    root.dispatchEvent(new CustomEvent('psim-theme', { detail: t }));
+  };
+  apply(query || stored || root.dataset.theme || sys);
+  toggleButton?.addEventListener('click', () => {
+    const t = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    try { localStorage.setItem('psim-theme', t); } catch { /* ignore */ }
+    apply(t);
+  });
+}
+
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+// ---------- layout pieces ----------
+
+function section(title, { open = true, aside } = {}) {
+  const body = el('div', { class: 'psim-body' });
+  const asideEl = aside != null ? el('span', { class: 'aside' }, aside) : null;
+  const sec = el('details', { class: 'psim-sec', open }, el('summary', {}, title, asideEl), body);
+  sec.body = body;
+  sec.aside = asideEl;
+  return sec;
+}
+
+function row(label, value = '—', cls = '') {
+  const v = el('span', { class: `v ${cls}` }, value);
+  const r = el('div', { class: 'psim-row' }, el('span', { class: 'k' }, label), v);
+  r.set = (text, c) => { v.textContent = text; v.className = `v ${c ?? ''}`; };
+  return r;
+}
+
+/** Value for a numeric input: short, exact enough, scientific notation for small or huge numbers. */
+const inputValue = v => {
+  const a = Math.abs(v);
+  return a !== 0 && (a < 1e-3 || a >= 1e7) ? v.toExponential(4) : String(+Number(v).toPrecision(6));
+};
+
+/**
+ * Slider + exact numeric entry, linear or logarithmic. onInput receives the number.
+ * Typed values are clamped to `limits` (default: the slider's [min, max]) and rounded when
+ * `integer` is set, so a typo like 100000000 can never freeze the page. Pass wider `limits`
+ * when a quantity may legitimately exceed the slider's range.
+ */
+function slider({ label, min, max, step = 'any', value, log = false, unit = '', digits = 3, integer = false, limits = [min, max], onInput }) {
+  const toS = v => log ? Math.log10(v) : v;
+  const fromS = s => log ? Math.pow(10, s) : s;
+  const [lo, hi] = limits;
+  const tidy = v => {
+    const c = Math.min(hi, Math.max(lo, v));
+    return integer ? Math.round(c) : c;
+  };
+  const range = el('input', { type: 'range', min: toS(min), max: toS(max), step: log ? 'any' : step, value: toS(value), 'aria-label': label });
+  const num = el('input', { type: 'number', step: integer ? 1 : 'any', min: lo, max: hi, value: inputValue(value), 'aria-label': `${label} value` });
+  const unitEl = unit ? el('span', { style: 'color:var(--muted);font:11px var(--mono)' }, unit) : null;
+  const note = el('span', { class: 'psim-limit', role: 'status' });
+  const field = el('label', { class: 'psim-field' },
+    el('div', { class: 'top' }, el('span', {}, label), el('div', { style: 'display:flex;align-items:baseline;gap:4px' }, num, unitEl)),
+    range, note);
+  range.addEventListener('input', () => {
+    const v = tidy(+(+fromS(+range.value)).toPrecision(digits + 1));
+    num.value = inputValue(v);
+    note.textContent = '';
+    onInput?.(v);
+  });
+  num.addEventListener('change', () => {
+    const raw = +num.value;
+    if (!Number.isFinite(raw)) { num.value = inputValue(tidy(fromS(+range.value))); return; }
+    const v = tidy(raw);
+    note.textContent = v !== raw ? `limited to ${inputValue(v)} (allowed ${inputValue(lo)}–${inputValue(hi)})` : '';
+    num.value = inputValue(v);
+    range.value = toS(v);
+    onInput?.(v);
+  });
+  field.setValue = v => { range.value = toS(v); num.value = inputValue(v); };
+  return field;
+}
+
+function toggle(label, checked, onChange) {
+  const input = el('input', { type: 'checkbox', checked });
+  input.addEventListener('change', () => onChange(input.checked));
+  const t = el('label', { class: 'psim-toggle' }, el('span', {}, label), input);
+  t.input = input;
+  return t;
+}
+
+function select(options, value, onChange) {
+  const s = el('select', { class: 'psim-select' },
+    options.map(o => el('option', { value: o.value, selected: o.value === value }, o.label)));
+  s.addEventListener('change', () => onChange(s.value));
+  return s;
+}
+
+function button(label, onClick, cls = '') {
+  return el('button', { class: `psim-btn ${cls}`, type: 'button', onclick: onClick }, label);
+}
+
+function toast(stage, text) {
+  let t = stage.querySelector('.psim-toast');
+  if (!t) { t = el('div', { class: 'psim-toast', role: 'status' }); stage.append(t); }
+  t.textContent = text;
+  t.classList.add('on');
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove('on'), 1800);
+}
+
+// ---------- transport ----------
+
+function transport({ onToggle, onStep, onRestart, onFit, speed, speedLabel, onSpeed }) {
+  const play = el('button', { class: 'primary', title: 'Play / pause (Space)', 'aria-label': 'Play or pause', html: ICONS.play, onclick: onToggle });
+  const out = el('output', {}, speedLabel(speed));
+  const range = el('input', { type: 'range', min: -2, max: 2, step: 'any', value: Math.log10(speed), 'aria-label': 'Playback speed' });
+  range.addEventListener('input', () => { const s = Math.pow(10, +range.value); out.textContent = speedLabel(s); onSpeed(s); });
+  const bar = el('div', { class: 'psim-transport' },
+    el('button', { title: 'Restart from initial conditions (R)', 'aria-label': 'Restart', html: ICONS.restart, onclick: onRestart }),
+    play,
+    el('button', { title: 'Advance one integrator step (.)', 'aria-label': 'Step', html: ICONS.step, onclick: onStep }),
+    el('span', { class: 'sep' }),
+    el('label', { class: 'speed' }, 'speed', range, out),
+    el('span', { class: 'sep' }),
+    el('button', { title: 'Fit view to bodies (F)', 'aria-label': 'Fit view', html: ICONS.fit, onclick: onFit }));
+  bar.setPlaying = p => { play.innerHTML = p ? ICONS.pause : ICONS.play; };
+  return bar;
+}
+
+/**
+ * Simulation clock. Converts wall-clock frames into a target *physical* time.
+ * The integrator then advances to that target with its own step sequence, so
+ * the physics never depends on frame rate. Long frames (background tabs) are capped.
+ */
+function createClock({ speed = 1 } = {}) {
+  return {
+    speed, playing: false, last: null,
+    tick(now, t) {
+      if (this.last == null || !this.playing) { this.last = now; return t; }
+      const dt = Math.min(0.1, (now - this.last) / 1000);
+      this.last = now;
+      return t + dt * this.speed;
+    },
+  };
+}
+
+// ---------- plots ----------
+
+/**
+ * Lightweight log-y line plot for diagnostics (energy error, separations).
+ * series: [{ color: cssVarName, data: [[x, y], ...] }]
+ */
+function logPlot({ caption, yMin = 1e-16, yMax = 1, height = 112 }) {
+  const canvas = el('canvas');
+  const box = el('div', { class: 'psim-plot', style: `height:${height}px` }, canvas, el('span', { class: 'cap' }, caption));
+  const series = [];
+  let xMax = 1, dirty = true, refLines = [];
+  const ctx = canvas.getContext('2d');
+  const plot = {
+    el: box,
+    addSeries(color, opts = {}) { const s = { color, data: [], ...opts }; series.push(s); return s; },
+    push(s, x, y) { s.data.push([x, y]); if (s.data.length > 4000) decimate(s); xMax = Math.max(xMax, x); dirty = true; },
+    clear() { for (const s of series) s.data.length = 0; xMax = 1; dirty = true; },
+    setXMax(x) { xMax = x; dirty = true; },
+    setRefLines(lines) { refLines = lines; dirty = true; },
+    invalidate() { dirty = true; },
+    draw() {
+      if (!dirty) return;
+      dirty = false;
+      const dpr = devicePixelRatio || 1;
+      const w = box.clientWidth, h = box.clientHeight;
+      if (!w) return;
+      if (canvas.width !== Math.round(w * dpr)) { canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      const l0 = Math.log10(yMin), l1 = Math.log10(yMax);
+      const pad = { l: 34, r: 8, t: 20, b: 14 };
+      const X = x => pad.l + (x / xMax) * (w - pad.l - pad.r);
+      const Y = y => {
+        const ly = Math.min(l1, Math.max(l0, Math.log10(Math.max(y, 1e-300))));
+        return pad.t + (1 - (ly - l0) / (l1 - l0)) * (h - pad.t - pad.b);
+      };
+      ctx.font = '9.5px ui-monospace, Menlo, monospace';
+      ctx.fillStyle = cssVar('--faint');
+      ctx.strokeStyle = cssVar('--grid-strong');
+      ctx.lineWidth = 1;
+      const stepDec = Math.max(1, Math.round((l1 - l0) / 4));
+      for (let e = Math.ceil(l0); e <= l1; e += stepDec) {
+        const y = Math.round(Y(Math.pow(10, e))) + 0.5;
+        ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+        ctx.fillText(`1e${e}`, 2, y + 3);
+      }
+      for (const r of refLines) {
+        ctx.setLineDash([3, 3]); ctx.strokeStyle = cssVar(r.color);
+        const y = Y(r.y); ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      for (const s of series) {
+        if (!s.data.length) continue;
+        ctx.strokeStyle = cssVar(s.color);
+        ctx.lineWidth = s.width ?? 1.4;
+        ctx.globalAlpha = s.alpha ?? 1;
+        ctx.beginPath();
+        s.data.forEach(([x, y], i) => i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)));
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+    },
+  };
+  new ResizeObserver(() => { dirty = true; plot.draw(); }).observe(box);
+  document.documentElement.addEventListener('psim-theme', () => { dirty = true; plot.draw(); });
+  return plot;
+}
+
+function decimate(s) {
+  // Keep the envelope: max of each pair (errors are what matter, so keep the worse one).
+  const out = [];
+  for (let i = 0; i < s.data.length; i += 2) {
+    const a = s.data[i], b = s.data[i + 1];
+    out.push(!b || a[1] >= b[1] ? a : b);
+  }
+  s.data = out;
+}
+
+// ---------- export ----------
+
+function download(filename, text, mime = 'text/plain') {
+  const url = URL.createObjectURL(new Blob([text], { type: mime }));
+  const a = el('a', { href: url, download: filename });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function readJsonScript(id) {
+  const node = document.getElementById(id);
+  if (!node) return null;
+  const text = node.textContent.trim();
+  return text ? JSON.parse(text) : null;
+}
+
+/**
+ * Status beacon read by scripts/psim.mjs check (headless Chrome).
+ * Pages set fields on it; it is mirrored into <html data-psim-*> attributes.
+ */
+function beacon() {
+  const root = document.documentElement;
+  const errors = [];
+  addEventListener('error', e => { errors.push(String(e.message)); root.dataset.psimErrors = JSON.stringify(errors); });
+  addEventListener('unhandledrejection', e => { errors.push(String(e.reason)); root.dataset.psimErrors = JSON.stringify(errors); });
+  root.dataset.psimErrors = '[]';
+  return {
+    set(key, value) { root.dataset[`psim${key[0].toUpperCase()}${key.slice(1)}`] = typeof value === 'string' ? value : JSON.stringify(value); },
+  };
+}
+
+return { el, ICONS, sci, fix, grade, initTheme, cssVar, section, row, inputValue, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon };
+})();
+
+// ---- psim:ui/plot.mjs
+__psim["ui/plot.mjs"] = (() => {
+// Scientific 2D plot: linear or log axes with 1-2-5 ticks, function and data
+// series, shaded validity bands, reference lines, markers, a draggable cursor,
+// and highlighting linked to equation terms. Theme-aware (reads CSS tokens).
+//
+//   const p = createPlot({ title: 'Spectral radiance', x: { label: 'λ', unit: 'nm', min: 100, max: 3000 },
+//                          y: { label: 'B_λ', unit: 'W sr⁻¹ m⁻³', log: false } });
+//   p.fn('planck', λ => B(λ, T), { color: '--body-0', label: 'T = 5772 K' });
+//   p.vline(λmax, { label: 'λ_max' });  p.draw();
+const { el, cssVar, sci } = __psim["ui/instrument.mjs"];
+function niceTicks(min, max, target = 5) {
+  const span = max - min;
+  if (!(span > 0)) return [min];
+  const raw = span / target, e = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / e;
+  const step = (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * e;
+  const out = [];
+  for (let v = Math.ceil(min / step) * step; v <= max + step * 1e-9; v += step) out.push(Math.abs(v) < step * 1e-9 ? 0 : v);
+  return out;
+}
+
+const SUPS = { '-': '⁻', 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹' };
+/** Powers of ten on log axes read as 10ⁿ. */
+function fmtPow10(v) {
+  const e = Math.round(Math.log10(v));
+  if (e >= 0 && e <= 3) return String(10 ** e);
+  return `10${String(e).split('').map(ch => SUPS[ch]).join('')}`;
+}
+
+function fmtTick(v) {
+  const a = Math.abs(v);
+  if (a !== 0 && (a < 1e-3 || a >= 1e5)) return sci(v, 2);
+  return String(+v.toPrecision(6)).replace('-', '−');
+}
+
+function createPlot({ title = '', x = {}, y = {}, height = 220, legend = true, onCursor } = {}) {
+  const canvas = el('canvas');
+  const head = el('div', { class: 'psim-plot-head' }, el('span', { class: 't' }, title), el('span', { class: 'l' }));
+  const box = el('div', { class: 'psim-plot2', style: `height:${height}px` }, canvas);
+  const root = el('figure', { class: 'psim-figure' }, head, box);
+  const ctx = canvas.getContext('2d');
+  const items = new Map();
+  let order = [], focus = null, cursor = null, dirty = true;
+  const ax = { x: { min: 0, max: 1, log: false, ...x }, y: { min: 0, max: 1, log: false, auto: y.min == null || y.max == null, ...y } };
+  const pad = { l: 60, r: 14, t: 10, b: 34 };
+  let W = 0, H = 0;
+
+  const tr = (a, v) => a.log ? Math.log10(v) : v;
+  const X = v => pad.l + (tr(ax.x, v) - tr(ax.x, ax.x.min)) / (tr(ax.x, ax.x.max) - tr(ax.x, ax.x.min)) * (W - pad.l - pad.r);
+  const Y = v => H - pad.b - (tr(ax.y, v) - tr(ax.y, ax.y.min)) / (tr(ax.y, ax.y.max) - tr(ax.y, ax.y.min)) * (H - pad.t - pad.b);
+  const invX = px => {
+    const f = (px - pad.l) / (W - pad.l - pad.r);
+    const v = tr(ax.x, ax.x.min) + f * (tr(ax.x, ax.x.max) - tr(ax.x, ax.x.min));
+    return ax.x.log ? Math.pow(10, v) : v;
+  };
+
+  const add = (id, item) => { if (!items.has(id)) order.push(id); items.set(id, item); dirty = true; return api; };
+
+  const api = {
+    el: root,
+    /** Plot a function y = f(x), sampled per pixel column. */
+    fn(id, f, opts = {}) { return add(id, { kind: 'fn', f, ...opts }); },
+    /** Plot data points [[x, y], ...] as a line (or dots with { dots: true }). */
+    data(id, pts, opts = {}) { return add(id, { kind: 'data', pts, ...opts }); },
+    /** Shaded x-range, e.g. where a formula is invalid. */
+    band(id, x0, x1, opts = {}) { return add(id, { kind: 'band', x0, x1, ...opts }); },
+    hline(id, yv, opts = {}) { return add(id, { kind: 'hline', y: yv, ...opts }); },
+    vline(id, xv, opts = {}) { return add(id, { kind: 'vline', x: xv, ...opts }); },
+    marker(id, xv, yv, opts = {}) { return add(id, { kind: 'marker', x: xv, y: yv, ...opts }); },
+    remove(id) { items.delete(id); order = order.filter(o => o !== id); dirty = true; return api; },
+    setX(o) { Object.assign(ax.x, o); dirty = true; return api; },
+    setY(o) { Object.assign(ax.y, o); dirty = true; return api; },
+    /** Highlight one series (dims the others); null clears. Used by equation terms. */
+    highlight(id) { focus = id; dirty = true; api.draw(); },
+    /** Show a draggable vertical cursor at x; drag calls onCursor(x). */
+    cursor(xv) { cursor = xv; dirty = true; return api; },
+    invalidate() { dirty = true; },
+    draw,
+  };
+
+  function autoY() {
+    let lo = Infinity, hi = -Infinity;
+    for (const it of items.values()) {
+      if (it.kind === 'fn' && !it.ignoreScale) {
+        for (let i = 0; i <= 200; i++) {
+          const xv = ax.x.log ? Math.pow(10, Math.log10(ax.x.min) + i / 200 * (Math.log10(ax.x.max) - Math.log10(ax.x.min))) : ax.x.min + i / 200 * (ax.x.max - ax.x.min);
+          const v = it.f(xv);
+          if (Number.isFinite(v) && (!ax.y.log || v > 0)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+        }
+      } else if (it.kind === 'data' && !it.ignoreScale) {
+        for (const [, v] of it.pts) if (Number.isFinite(v) && (!ax.y.log || v > 0)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+      }
+    }
+    if (!Number.isFinite(lo)) return;
+    if (ax.y.log) { ax.y.min = Math.pow(10, Math.floor(Math.log10(lo))); ax.y.max = Math.pow(10, Math.ceil(Math.log10(hi))); }
+    else {
+      const span = hi - lo || Math.abs(hi) || 1;
+      ax.y.min = ax.y.zero !== false && lo >= 0 ? 0 : lo - 0.06 * span;
+      ax.y.max = hi + 0.08 * span;
+    }
+  }
+
+  function draw() {
+    if (!dirty) return;
+    dirty = false;
+    const dpr = devicePixelRatio || 1;
+    W = box.clientWidth; H = box.clientHeight;
+    if (!W) return;
+    if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) { canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr); }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    if (ax.y.auto) autoY();
+    const C = cssVar;
+    ctx.font = '10.5px ui-monospace, Menlo, monospace';
+
+    // bands (behind everything)
+    for (const id of order) {
+      const it = items.get(id);
+      if (it.kind !== 'band') continue;
+      const x0 = Math.max(pad.l, X(it.x0)), x1 = Math.min(W - pad.r, X(it.x1));
+      ctx.fillStyle = C(it.color ?? '--grid-strong');
+      ctx.globalAlpha = it.alpha ?? 0.5;
+      ctx.fillRect(x0, pad.t, x1 - x0, H - pad.t - pad.b);
+      ctx.globalAlpha = 1;
+      if (it.label) { ctx.fillStyle = C('--muted'); ctx.fillText(it.label, x0 + 6, pad.t + 14); }
+    }
+
+    // grid + ticks
+    ctx.strokeStyle = C('--grid'); ctx.fillStyle = C('--faint'); ctx.lineWidth = 1;
+    const xt = ax.x.log ? logTicks(ax.x.min, ax.x.max) : niceTicks(ax.x.min, ax.x.max, Math.max(3, Math.floor(W / 90)));
+    const yt = ax.y.log ? logTicks(ax.y.min, ax.y.max) : niceTicks(ax.y.min, ax.y.max, Math.max(3, Math.floor(H / 45)));
+    ctx.textAlign = 'center';
+    for (const v of xt) { const px = Math.round(X(v)) + 0.5; ctx.beginPath(); ctx.moveTo(px, pad.t); ctx.lineTo(px, H - pad.b); ctx.stroke(); ctx.fillText(ax.x.log ? fmtPow10(v) : fmtTick(v), px, H - pad.b + 14); }
+    ctx.textAlign = 'right';
+    for (const v of yt) { const py = Math.round(Y(v)) + 0.5; ctx.beginPath(); ctx.moveTo(pad.l, py); ctx.lineTo(W - pad.r, py); ctx.stroke(); ctx.fillText(ax.y.log ? fmtPow10(v) : fmtTick(v), pad.l - 6, py + 3.5); }
+    ctx.textAlign = 'start';
+    ctx.strokeStyle = C('--line-strong');
+    ctx.beginPath(); ctx.moveTo(pad.l + 0.5, pad.t); ctx.lineTo(pad.l + 0.5, H - pad.b + 0.5); ctx.lineTo(W - pad.r, H - pad.b + 0.5); ctx.stroke();
+    // axis labels
+    ctx.fillStyle = C('--muted'); ctx.font = '11px ui-sans-serif, -apple-system, system-ui, sans-serif';
+    const xl = `${ax.x.label ?? ''}${ax.x.unit ? ` (${ax.x.unit})` : ''}`;
+    ctx.textAlign = 'right'; ctx.fillText(xl, W - pad.r, H - 4); ctx.textAlign = 'start';
+    const yl = `${ax.y.label ?? ''}${ax.y.unit ? ` (${ax.y.unit})` : ''}`;
+    ctx.save(); ctx.translate(11, pad.t); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'right'; ctx.fillText(yl, 0, 0); ctx.restore();
+
+    // clip to plot area
+    ctx.save();
+    ctx.beginPath(); ctx.rect(pad.l, pad.t - 2, W - pad.l - pad.r, H - pad.t - pad.b + 4); ctx.clip();
+    const legendItems = [];
+    for (const id of order) {
+      const it = items.get(id);
+      const dim = focus && focus !== id && it.kind !== 'band' ? 0.18 : 1;
+      const col = C(it.color ?? '--accent');
+      ctx.globalAlpha = dim * (it.alpha ?? 1);
+      ctx.strokeStyle = col; ctx.fillStyle = col;
+      ctx.lineWidth = (it.width ?? 1.8) * (focus === id ? 1.6 : 1);
+      ctx.setLineDash(it.dash ? [5, 4] : it.dot ? [1.5, 3.5] : []);
+      if (it.kind === 'fn') {
+        ctx.beginPath();
+        let pen = false;
+        const n = Math.max(2, Math.round((W - pad.l - pad.r) * (it.oversample ?? 1)));
+        for (let i = 0; i <= n; i++) {
+          const px = pad.l + i / n * (W - pad.l - pad.r);
+          const v = it.f(invX(px));
+          if (!Number.isFinite(v) || (ax.y.log && v <= 0)) { pen = false; continue; }
+          const py = Y(v);
+          pen ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+          pen = true;
+        }
+        ctx.stroke();
+        if (it.fill) { ctx.globalAlpha = 0.12 * dim; ctx.lineTo(W - pad.r, Y(Math.max(ax.y.min, 0))); ctx.lineTo(pad.l, Y(Math.max(ax.y.min, 0))); ctx.fill(); }
+      } else if (it.kind === 'data') {
+        if (it.dots) {
+          for (const [a, b] of it.pts) { ctx.beginPath(); ctx.arc(X(a), Y(b), it.r ?? 2.4, 0, 7); ctx.fill(); }
+          if (it.errors) {for (let i = 0; i < it.pts.length; i++) {
+            const [a, b] = it.pts[i], e = it.errors[i];
+            ctx.beginPath(); ctx.moveTo(X(a), Y(b - e)); ctx.lineTo(X(a), Y(b + e)); ctx.stroke();
+          }}
+        } else {
+          ctx.beginPath();
+          it.pts.forEach(([a, b], i) => i ? ctx.lineTo(X(a), Y(b)) : ctx.moveTo(X(a), Y(b)));
+          ctx.stroke();
+        }
+      } else if (it.kind === 'hline' || it.kind === 'vline') {
+        ctx.lineWidth = 1; ctx.setLineDash(it.solid ? [] : [3, 4]);
+        ctx.beginPath();
+        if (it.kind === 'hline') { ctx.moveTo(pad.l, Y(it.y)); ctx.lineTo(W - pad.r, Y(it.y)); }
+        else { ctx.moveTo(X(it.x), pad.t); ctx.lineTo(X(it.x), H - pad.b); }
+        ctx.stroke();
+        if (it.label) {
+          ctx.setLineDash([]); ctx.font = '10.5px ui-monospace, Menlo, monospace';
+          if (it.kind === 'hline') ctx.fillText(it.label, W - pad.r - ctx.measureText(it.label).width - 4, Y(it.y) - 5);
+          else ctx.fillText(it.label, X(it.x) + 5, pad.t + 12);
+        }
+      } else if (it.kind === 'marker') {
+        ctx.setLineDash([]);
+        ctx.beginPath(); ctx.arc(X(it.x), Y(it.y), it.r ?? 4.5, 0, 7); ctx.fill();
+        ctx.strokeStyle = C('--panel'); ctx.lineWidth = 1.5; ctx.stroke();
+        if (it.label) { ctx.fillStyle = C('--ink-2'); ctx.font = '10.5px ui-monospace, Menlo, monospace'; ctx.fillText(it.label, X(it.x) + 8, Y(it.y) - 7); }
+      }
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+      if (it.label && (it.kind === 'fn' || it.kind === 'data') && legend) legendItems.push([col, it.label, it.dash, id]);
+    }
+    if (cursor != null) {
+      ctx.strokeStyle = C('--ink'); ctx.lineWidth = 1; ctx.setLineDash([2, 3]);
+      ctx.beginPath(); ctx.moveTo(X(cursor), pad.t); ctx.lineTo(X(cursor), H - pad.b); ctx.stroke(); ctx.setLineDash([]);
+    }
+    ctx.restore();
+    const l = head.querySelector('.l');
+    l.replaceChildren(...legendItems.map(([c, t, dash, id]) => el('span', {
+      class: `k${focus === id ? ' on' : ''}`, onmouseenter: () => api.highlight(id), onmouseleave: () => api.highlight(null),
+    }, el('i', { style: `background:${c};${dash ? 'opacity:.6' : ''}` }), t)));
+  }
+
+  function logTicks(min, max) {
+    const out = [], e0 = Math.ceil(Math.log10(min) - 1e-9), e1 = Math.floor(Math.log10(max) + 1e-9);
+    const stride = Math.max(1, Math.ceil((e1 - e0 + 1) / 6));
+    for (let e = e0; e <= e1; e += stride) out.push(Math.pow(10, e));
+    return out;
+  }
+
+  // cursor dragging
+  let dragging = false;
+  const setFromEvent = e => {
+    if (cursor == null || !onCursor) return;
+    const r = canvas.getBoundingClientRect();
+    const xv = Math.min(ax.x.max, Math.max(ax.x.min, invX(e.clientX - r.left)));
+    cursor = xv; dirty = true; onCursor(xv); draw();
+  };
+  canvas.addEventListener('pointerdown', e => { if (cursor == null || !onCursor) return; dragging = true; canvas.setPointerCapture(e.pointerId); setFromEvent(e); });
+  canvas.addEventListener('pointermove', e => { if (dragging) setFromEvent(e); });
+  canvas.addEventListener('pointerup', () => { dragging = false; });
+  if (onCursor) canvas.style.cursor = 'ew-resize';
+
+  new ResizeObserver(() => { dirty = true; draw(); }).observe(box);
+  document.documentElement.addEventListener('psim-theme', () => { dirty = true; draw(); });
+  return api;
+}
+
+return { createPlot };
+})();
+
+// ---- psim:ui/equation.mjs
+__psim["ui/equation.mjs"] = (() => {
+// Equations split into their physical terms.
+//
+// An equation is shown as a row of term cards. Each card holds one term's maths,
+// its name, its live numerical value with units, and a colour that matches the
+// curve or element it produces in the plots. Hovering a term highlights its curve.
+// A "where" block defines every symbol with its value; a derivation lists steps.
+//
+//   const eq = createEquation({
+//     lhs: { mathml: '<mi>V</mi><mo>(</mo><mi>r</mi><mo>)</mo>', label: 'potential', value: () => V, unit: 'GeV' },
+//     terms: [
+//       { id: 'coul', mathml: '<mo>−</mo><mfrac>…</mfrac>', label: 'Coulomb (gluon exchange)', color: '--body-1', value: () => Vc, unit: 'GeV' },
+//       { id: 'lin', sign: '+', mathml: '<mi>σ</mi><mi>r</mi>', label: 'string (confinement)', color: '--body-0', value: () => s * r, unit: 'GeV' },
+//     ],
+//     where: [{ mathml: '<mi>σ</mi>', meaning: 'string tension', value: () => 0.926, unit: 'GeV/fm' }],
+//     link: plot,
+//   });
+//   eq.update();   // refresh live values (call every UI tick)
+const { el, sci } = __psim["ui/instrument.mjs"];
+const m = inner => `<math display="inline">${inner}</math>`;
+
+function fmt(v, digits = 4) {
+  if (typeof v === 'string') return v;
+  if (v == null || Number.isNaN(v)) return '—';
+  const a = Math.abs(v);
+  if (a !== 0 && (a < 1e-3 || a >= 1e5)) return sci(v, digits - 1);
+  return (+v.toPrecision(digits)).toString().replace('-', '−');
+}
+
+function createEquation({ title, lhs, op = '=', terms = [], where = [], note, link, onFocus } = {}) {
+  const valueEls = [];
+  const focusTerm = id => {
+    for (const c of root.querySelectorAll('.psim-term')) c.classList.toggle('dim', id != null && c.dataset.id !== id);
+    const targets = Array.isArray(link) ? link : link ? [link] : [];
+    targets.forEach(p => p.highlight(id));
+    onFocus?.(id);
+  };
+
+  const card = (t, kind) => {
+    const v = el('span', { class: 'v' });
+    if (t.value) valueEls.push([v, t]);
+    const c = el('div', {
+      class: `psim-term ${kind}`, 'data-id': t.id ?? '', tabindex: t.id ? 0 : null,
+      onmouseenter: () => t.id && focusTerm(t.id), onmouseleave: () => t.id && focusTerm(null),
+      onfocus: () => t.id && focusTerm(t.id), onblur: () => t.id && focusTerm(null),
+    },
+    el('div', { class: 'mx', html: m(t.mathml) }),
+    el('i', { class: 'bar', style: t.color ? `background:var(${t.color})` : '' }),
+    t.label ? el('span', { class: 'lb' }, t.label) : null,
+    v);
+    return c;
+  };
+
+  const row = el('div', { class: 'psim-eqrow' });
+  if (lhs) row.append(card(lhs, 'lhs'), el('span', { class: 'op' }, op));
+  terms.forEach((t, i) => {
+    if (i > 0) row.append(el('span', { class: 'op' }, t.sign ?? '+'));
+    row.append(card(t, 'rhs'));
+  });
+
+  const whereEl = where.length ? el('div', { class: 'psim-where' },
+    el('span', { class: 'kw' }, 'where'),
+    ...where.map(w => {
+      const v = el('span', { class: 'v' });
+      if (w.value) valueEls.push([v, w]);
+      return el('div', { class: 'w' }, el('span', { class: 'mx', html: m(w.mathml) }), el('span', { class: 'mean' }, w.meaning), v);
+    })) : null;
+
+  const root = el('section', { class: 'psim-equation' },
+    title ? el('h3', {}, title) : null, row, whereEl, note ? el('p', { class: 'psim-hint' }, note) : null);
+
+  const api = {
+    el: root,
+    update() {
+      for (const [node, t] of valueEls) {
+        let v;
+        try { v = t.value(); } catch { v = NaN; }
+        node.textContent = `${fmt(v, t.digits)}${t.unit ? ` ${t.unit}` : ''}`;
+      }
+    },
+    focus: focusTerm,
+  };
+  api.update();
+  return api;
+}
+
+/** Numbered derivation: each step is one line of maths plus the reason for it. */
+function createDerivation(steps, { title } = {}) {
+  return el('section', { class: 'psim-derivation' },
+    title ? el('h3', {}, title) : null,
+    el('ol', {}, steps.map(s => el('li', {},
+      el('div', { class: 'mx', html: `<math display="inline">${s.mathml}</math>` }),
+      s.note ? el('span', { class: 'why' }, s.note) : null))));
+}
+
+/** Helpers for writing MathML compactly. */
+const M = {
+  i: s => `<mi>${s}</mi>`,
+  n: s => `<mn>${s}</mn>`,
+  o: s => `<mo>${s}</mo>`,
+  sub: (b, s) => `<msub>${b}${s}</msub>`,
+  sup: (b, s) => `<msup>${b}${s}</msup>`,
+  frac: (a, b) => `<mfrac><mrow>${a}</mrow><mrow>${b}</mrow></mfrac>`,
+  sqrt: a => `<msqrt>${a}</msqrt>`,
+  row: (...a) => `<mrow>${a.join('')}</mrow>`,
+  paren: a => `<mo>(</mo>${a}<mo>)</mo>`,
+  /** Vector symbol: Unicode mathematical bold (MathML Core ignores mathvariant). */
+  vec: s => `<mi>${{ r: '𝐫', v: '𝐯', E: '𝐄', B: '𝐁', u: '𝐮', F: '𝐅', p: '𝐩', k: '𝐤', x: '𝐱', a: '𝐚' }[s] ?? s}</mi>`,
+};
+
+return { createEquation, createDerivation, M };
+})();
+
+// ---- psim:core/verification.mjs
+__psim["core/verification.mjs"] = (() => {
+// Shared verification gates for the CLI and browser. Reports are evidence only
+// when every check is explicit and the tested settings still match the simulation.
+
+function validateModuleReport(report) {
+  if (!report || !Array.isArray(report.checks) || !report.checks.length) throw new Error('verification: need a non-empty checks array');
+  for (const [i, check] of report.checks.entries()) {
+    const where = `verification check ${i + 1}`;
+    if (!check || typeof check.label !== 'string' || !check.label.trim()) throw new Error(`${where}: label is required`);
+    if (typeof check.pass !== 'boolean') throw new Error(`${where}: pass must be explicitly true or false`);
+    if (typeof check.value === 'number') {
+      if (!Number.isFinite(check.value)) throw new Error(`${where}: measured value must be finite`);
+    } else if (typeof check.value !== 'string' || !check.value.trim() || /NaN|Infinity|∞|^\s*—\s*$/.test(check.value)) {
+      throw new Error(`${where}: measured value must be finite and present`);
+    }
+    if (check.state != null && check.state !== 'warn') throw new Error(`${where}: optional state must be 'warn'`);
+  }
+  return report;
+}
+
+/** Reasons a gravity report cannot support a successful verification claim. */
+function gravityReportProblems(report) {
+  const problems = [];
+  const finiteError = (value, limit, label) => {
+    if (!(Number.isFinite(value) && value >= 0)) problems.push(`${label} is missing or non-finite`);
+    else if (value > limit) problems.push(`${label} ${value.toExponential(2)} exceeds ${limit.toExponential(0)}`);
+  };
+  const c = report?.conservation, cv = report?.convergence;
+  finiteError(c?.dE, report?.settings?.softening > 0 ? 1e-4 : 1e-8, 'energy error');
+  finiteError(c?.dP, 1e-10, 'momentum drift');
+  finiteError(c?.dL, 1e-10, 'angular momentum drift');
+  if (!(Number.isFinite(c?.h) && c.h > 0)) problems.push('step parameter is missing or non-finite');
+  if (!(Number.isFinite(report?.duration) && report.duration > 0)) problems.push('verification duration is invalid');
+  if (!(Number.isFinite(cv?.observedOrder) && Number.isFinite(cv?.expectedOrder) && cv.expectedOrder > 0)) problems.push('convergence order is unresolved or non-finite');
+  else if (Math.abs(cv.observedOrder - cv.expectedOrder) > 0.6) problems.push('observed convergence order differs from theory');
+  if (!(Number.isFinite(cv?.horizon) && cv.horizon >= 0 && cv.horizon <= report.duration && typeof cv.converged === 'boolean')) problems.push('convergence horizon is invalid');
+  finiteError(cv?.finalDifference, Infinity, 'final refinement difference');
+  if (report?.determinism?.identical !== true || report?.frameIndependence?.identical !== true) problems.push('reproducibility check failed');
+  if (!Array.isArray(report?.benchmarks) || !report.benchmarks.length) problems.push('benchmarks are missing');
+  else {for (const b of report.benchmarks) {
+    const name = b?.name ?? 'unnamed benchmark';
+    finiteError(b?.dE, 1e-9, `${name}: energy error`);
+    if (b && Object.hasOwn(b, 'positionError')) finiteError(b.positionError, 1e-3, `${name}: position error`);
+    else if (b && Object.hasOwn(b, 'returnError')) finiteError(b.returnError, 1e-6, `${name}: return error`);
+    else if (b?.matchesLiterature !== true) problems.push(`benchmark failed: ${name}`);
+  }}
+  return problems;
+}
+
+/** Match solver settings, allowing only round-off in the computed step parameter. */
+function gravityReportMatches(report, settings) {
+  if (!report?.settings || report.integrator !== settings.integrator) return false;
+  for (const key of ['integrator', 'G', 'softening', 'stepsPerCrossing']) {
+    if (report.settings[key] !== settings[key]) return false;
+  }
+  const h = report.conservation?.h;
+  return Number.isFinite(h) && h > 0 && Number.isFinite(settings.h) && Math.abs(h - settings.h) <= 1e-12 * Math.abs(h);
+}
+
+return { validateModuleReport, gravityReportProblems, gravityReportMatches };
+})();
+
+// ---- psim:ui/instrument-app.mjs
+__psim["ui/instrument-app.mjs"] = (() => {
+// Generic instrument shell for composed simulations (any domain).
+//
+// The page supplies a physics module that follows the simulation contract
+// (see references/compose.md) and a draw function; this shell provides the
+// header, trust tier, theme, transport, frame-rate-independent clock,
+// parameter controls, live diagnostics, verification report, model panel,
+// export and the window.psim hook used by automated checks.
+//
+// Simulation contract (returned by create(params)):
+//   sim.t                    physical time of the latest computed state
+//   sim.step()               advance by one integrator step (or one analytic tick)
+//   sim.sample?(t)           state at t between steps, for drawing (default: current state)
+//   sim.diagnostics()        [{ key, label, value, kind: 'error'|'value', unit?, good?, warn? }]
+//   sim.state()              JSON-serialisable state (export, tests)
+//   sim.record?()            { header: [...], rows: [[...], ...] } for CSV export
+//   sim.timeDependent        false for static analytic visualisations (no transport)
+const { el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon, cssVar } = __psim["ui/instrument.mjs"];
+const { createPlot } = __psim["ui/plot.mjs"];
+const { createEquation, createDerivation, M } = __psim["ui/equation.mjs"];
+const { validateModuleReport } = __psim["core/verification.mjs"];
+const TIERS = {
+  validated: 'Validated numerical',
+  approximate: 'Approximate numerical',
+  analytical: 'Analytical',
+  conceptual: 'Conceptual illustration',
+};
+
+function createInstrument(spec) {
+  const {
+    title, subtitle = '', tier, tierReason, create, draw, params = [], model = {},
+    timeUnit = 'T', speed: speed0 = 1, controls, onPointer, layout = 'stage', bench,
+  } = spec;
+  if (!TIERS[tier]) throw new Error(`tier must be one of ${Object.keys(TIERS).join(', ')}`);
+  const report = readJsonScript('psim-verification');
+  if (report) validateModuleReport(report);
+  const verified = report?.checks.every(c => c.pass === true) === true;
+  const trustLabel = verified ? TIERS[tier] : 'Verification needed';
+  const status = beacon();
+  const query = new URLSearchParams(location.search);
+
+  document.title = title;
+  document.body.innerHTML = `
+  <div class="psim-app ${layout === 'workbench' ? 'workbench' : ''}">
+    <header class="psim-head">
+      <div class="psim-mark" aria-hidden="true"></div>
+      <div class="psim-title"><h1></h1><p></p></div>
+      <div class="spacer"></div>
+      <button class="psim-tier" type="button"><i></i><span></span></button>
+      <button class="psim-iconbtn" type="button" aria-label="Toggle theme"></button>
+    </header>
+    <main class="psim-stage"><canvas></canvas>
+      <div class="psim-hud"><span class="dim">t</span><b>0</b><span class="h1"></span><span class="dim h2"></span><span class="flag"></span></div>
+      <div class="psim-legend"></div>
+    </main>
+    <aside class="psim-side"></aside>
+  </div>`;
+  const $ = s => document.querySelector(s);
+  $('.psim-title h1').textContent = title;
+  $('.psim-title p').textContent = subtitle;
+  const tierBtn = $('.psim-tier');
+  tierBtn.dataset.tier = verified ? tier : 'unverified';
+  tierBtn.querySelector('span').textContent = trustLabel;
+  initTheme($('.psim-iconbtn'));
+  const stage = $('.psim-stage'), side = $('.psim-side');
+  // Workbench layout: the live canvas on top, then term-split equations and figures that
+  // update with the model (spec.bench builds them; see references/compose.md).
+  let benchParts = null;
+  if (layout === 'workbench') {
+    const wrap = el('div', { class: 'psim-canvaswrap' }, stage.querySelector('canvas'), stage.querySelector('.psim-hud'), stage.querySelector('.psim-legend'));
+    const eqs = el('div', { class: 'psim-eqs' }), figs = el('div', { class: 'psim-figs' });
+    stage.prepend(el('div', { class: 'psim-bench' }, wrap, eqs, figs));
+    benchParts = { wrap, eqs, figs };
+  }
+  const canvas = stage.querySelector('canvas');
+  const ctx = canvas.getContext('2d');
+  const hud = { t: $('.psim-hud b'), a: $('.psim-hud .h1'), b: $('.psim-hud .h2'), flag: $('.psim-hud .flag') };
+  if (model.legend) $('.psim-legend').append(...model.legend.map(t => el('span', {}, t)));
+
+  // ------------------------------------------------------------ state
+  const values = Object.fromEntries(params.map(p => [p.key, p.value]));
+  let sim, tDisplay = 0, limited = false;
+  const clock = createClock({ speed: speed0 });
+  const view = { W: 0, H: 0, dpr: 1, color: cssVar, opts: {}, pointer: null };
+
+  let benchApi = null;
+  function rebuild() {
+    sim = create({ ...values });
+    tDisplay = sim.t ?? 0;
+    diagPlot.clear();
+    renderDiag(true);
+    benchApi?.update?.(sim, tDisplay, { rebuilt: true });
+    status.set('params', values);
+  }
+
+  // ------------------------------------------------------------ transport
+  const timeDependent = spec.timeDependent !== false;
+  let tp = null;
+  if (timeDependent) {
+    tp = transport({
+      speed: speed0, speedLabel: s => `${sci(s, 2)} ${timeUnit}/s`,
+      onToggle: () => setPlaying(!clock.playing),
+      onStep: () => { setPlaying(false); sim.step(); tDisplay = sim.t; },
+      onRestart: () => rebuild(),
+      onFit: () => spec.onFit?.(view),
+      onSpeed: s => { clock.speed = s; },
+    });
+    stage.append(tp);
+  } else {
+    stage.querySelector('.psim-hud').querySelector('.dim').textContent = '';
+  }
+  function setPlaying(p) { clock.playing = p; tp?.setPlaying(p); }
+
+  // ------------------------------------------------------------ side panel
+  const secParams = section('Parameters');
+  const paramInputs = new Map();
+  if (params.length) {
+    secParams.body.append(el('p', { class: 'psim-hint' }, 'Changing a parameter recomputes the model from its initial state.'));
+    for (const p of params) {
+      if (p.options) {
+        secParams.body.append(el('div', { class: 'psim-field' }, el('div', { class: 'top' }, el('span', {}, p.label)),
+          select(p.options, p.value, v => { values[p.key] = isNaN(+v) ? v : +v; rebuild(); })));
+      } else {
+        const sl = slider({
+          label: p.label, min: p.min, max: p.max, value: p.value, log: p.log, unit: p.unit ?? '', digits: p.digits ?? 3,
+          integer: p.integer, limits: p.limits,
+          onInput: v => { values[p.key] = v; rebuild(); },
+        });
+        paramInputs.set(p.key, sl);
+        secParams.body.append(sl);
+      }
+      if (p.hint) secParams.body.append(el('p', { class: 'psim-hint', style: 'margin-top:-4px;font-size:11.5px' }, p.hint));
+    }
+  }
+  if (controls) controls(secParams.body, { values, rebuild });
+
+  const secDiag = section('Diagnostics', { aside: 'live' });
+  const diagPlot = logPlot({ caption: '', yMin: 1e-16, yMax: 1 });
+  const diagSeries = diagPlot.addSeries('--accent');
+  const diagRows = new Map();
+  secDiag.body.append(diagPlot.el);
+  let nextPlot = 0;
+  function renderDiag(reset = false) {
+    const d = sim.diagnostics();
+    if (reset) {
+      diagRows.forEach(r => r.remove());
+      diagRows.clear();
+      nextPlot = 0;
+      const firstErr = d.find(x => x.kind === 'error');
+      diagPlot.el.style.display = firstErr ? '' : 'none';
+      diagPlot.el.querySelector('.cap').textContent = firstErr ? `${firstErr.label}   vs   t` : '';
+      if (spec.duration) diagPlot.setXMax(spec.duration);
+    }
+    for (const x of d) {
+      let r = diagRows.get(x.key);
+      if (!r) { r = row(x.label); diagRows.set(x.key, r); secDiag.body.append(r); }
+      const text = x.text ?? (x.kind === 'error' ? sci(x.value) : `${sci(x.value, 4)}${x.unit ? ` ${x.unit}` : ''}`);
+      r.set(text, x.kind === 'error' && x.good != null ? grade(x.value, x.good, x.warn ?? x.good * 1000) : '');
+    }
+    const firstErr = d.find(x => x.kind === 'error');
+    if (firstErr && timeDependent && sim.t >= nextPlot) {
+      diagPlot.push(diagSeries, sim.t, Math.max(firstErr.value, 1e-17));
+      nextPlot = sim.t + (spec.duration ?? 10) / 800;
+    }
+    diagPlot.draw();
+    return d;
+  }
+
+  const secVerify = section('Verification', { aside: report ? 'report embedded' : 'no report' });
+  if (report?.checks) {
+    secVerify.body.append(el('p', { class: 'psim-hint' }, report.summary ?? `Measured when this page was built (${(report.generated ?? '').slice(0, 10)}):`));
+    for (const c of report.checks) {
+      secVerify.body.append(el('div', { class: 'psim-check' },
+        el('i', { class: c.pass !== true ? 'bad' : c.state === 'warn' ? 'warn' : '' }),
+        el('span', {}, c.label), el('code', {}, c.value)));
+    }
+    if (report.notes) for (const n of report.notes) secVerify.body.append(el('p', { class: 'psim-hint' }, n));
+  } else {
+    secVerify.body.append(el('p', { class: 'psim-hint' }, 'No build-time verification report is embedded in this page.'));
+  }
+
+  const secModel = section('Model, assumptions & limits', { open: false });
+  secModel.body.append(
+    el('div', { class: 'psim-prose' }, el('p', {}, el('b', {}, `${trustLabel}. `), tierReason ?? '')),
+    ...(model.equations ?? []).flatMap(eq => [
+      eq.caption ? el('p', { class: 'psim-hint' }, eq.caption) : null,
+      el('div', { class: 'psim-math', html: eq.mathml }),
+    ]),
+    model.assumptions ? el('div', { class: 'psim-prose' }, el('p', {}, el('b', {}, 'Assumptions and limits')), el('ul', {}, model.assumptions.map(a => el('li', {}, a)))) : null,
+    model.conventions ? el('div', { class: 'psim-prose' }, el('p', {}, el('b', {}, 'Visual conventions')), el('ul', {}, model.conventions.map(a => el('li', {}, a)))) : null,
+    model.references ? el('div', { class: 'psim-prose' }, el('p', {}, el('b', {}, 'References')), el('ul', {}, model.references.map(a => el('li', {}, el('cite', {}, a))))) : null,
+  );
+  tierBtn.addEventListener('click', () => { secModel.open = true; secModel.scrollIntoView({ behavior: 'smooth' }); });
+
+  const secExport = section('Export', { open: false });
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  secExport.body.append(el('div', { class: 'psim-btns' },
+    button('State JSON', () => download(`${slug}-state.json`, JSON.stringify({
+      generator: 'p-simtor', title, tier: tierBtn.dataset.tier, params: values, t: sim.t, state: sim.state(), diagnostics: sim.diagnostics(), verification: report,
+    }, null, 2), 'application/json')),
+    button('Data CSV', () => {
+      const r = sim.record?.();
+      if (!r) { toast(stage, 'This model records no tabular data'); return; }
+      download(`${slug}-data.csv`, [`# p-simtor | ${title}`, r.header.join(','), ...r.rows.map(x => x.join(','))].join('\n'), 'text/csv');
+    }),
+    button('PNG image', () => canvas.toBlob(b => el('a', { href: URL.createObjectURL(b), download: `${slug}.png` }).click())),
+  ));
+
+  side.append(...[secParams, secDiag, secVerify, secModel, secExport].filter(s => s !== secParams || params.length || controls));
+  if (spec.extraSections) spec.extraSections(side, { section, el, row, slider, toggle, button, values, rebuild, view });
+
+  // ------------------------------------------------------------ canvas & loop
+  function resize() {
+    view.dpr = devicePixelRatio || 1;
+    view.W = canvas.clientWidth; view.H = canvas.clientHeight;
+    canvas.width = Math.round(view.W * view.dpr); canvas.height = Math.round(view.H * view.dpr);
+  }
+  new ResizeObserver(resize).observe(canvas);
+  resize();
+  if (onPointer) onPointer(canvas, view, () => sim);
+
+  let frames = 0, lastUi = 0;
+  function frame(now) {
+    if (timeDependent) {
+      const target = clock.tick(now, tDisplay);
+      if (target > tDisplay) {
+        const deadline = performance.now() + 9;
+        let k = 0;
+        while (sim.t < target) {
+          sim.step();
+          if ((++k & 63) === 0 && performance.now() > deadline) break;
+        }
+        limited = sim.t < target;
+        tDisplay = Math.min(target, sim.t);
+      }
+    }
+    ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
+    ctx.clearRect(0, 0, view.W, view.H);
+    draw(ctx, sim, view, tDisplay);
+    if (now - lastUi > 100) {
+      lastUi = now;
+      const d = renderDiag();
+      hud.t.textContent = timeDependent ? fix(tDisplay, 3) : '';
+      const firstErr = d.find(x => x.kind === 'error');
+      hud.a.textContent = firstErr ? `${firstErr.label} ${sci(firstErr.value)}` : '';
+      hud.b.textContent = spec.hudLine?.(sim) ?? '';
+      hud.flag.textContent = limited ? 'compute-limited: playback slowed to keep the calculation exact' : '';
+      benchApi?.update?.(sim, tDisplay, { rebuilt: false });
+      status.set('t', timeDependent ? tDisplay : 1);
+      if (firstErr) status.set('drift', firstErr.value);
+    }
+    if (++frames % 30 === 0) status.set('frames', frames);
+    requestAnimationFrame(frame);
+  }
+
+  window.psim = {
+    model: 'generic',
+    get t() { return tDisplay; },
+    state: () => ({ t: sim.t, ...sim.state() }),
+    params: () => ({ ...values }),
+    advanceTo: t => { while (sim.t < t) sim.step(); tDisplay = Math.max(tDisplay, Math.min(t, sim.t)); return window.psim.state(); },
+    restart: () => rebuild(),
+    steps: n => { if (typeof sim.step === "function") for (let i = 0; i < n; i++) sim.step(); tDisplay = sim.t ?? 0; return window.psim.state(); },
+  };
+
+  if (bench && benchParts) {
+    benchApi = bench({
+      ...benchParts, createPlot, createEquation, createDerivation, M, values,
+      setParam: (k, v) => { values[k] = v; paramInputs.get(k)?.setValue?.(v); rebuild(); },
+      getSim: () => sim,
+    }) ?? null;
+  }
+  rebuild();
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  setPlaying(timeDependent && (query.get('autoplay') ? query.get('autoplay') !== '0' : !reduced));
+  addEventListener('keydown', e => {
+    if (e.target.closest('input, select, textarea') || !timeDependent) return;
+    if (e.code === 'Space') { e.preventDefault(); setPlaying(!clock.playing); }
+    else if (e.key === '.') { setPlaying(false); sim.step(); tDisplay = sim.t; }
+    else if (e.key === 'r' || e.key === 'R') rebuild();
+  });
+  status.set('model', 'generic');
+  status.set('ready', true);
+  requestAnimationFrame(frame);
+  return { values, rebuild, view, get sim() { return sim; } };
+}
+
+return { createInstrument };
+})();
+
+// ---- psim:core/numerics.mjs
+__psim["core/numerics.mjs"] = (() => {
+// General numerical toolkit: random numbers, FFT, ODE solvers, quadrature, root
+// finding, special functions, linear algebra. Pure functions, browser + Node.
+// Every routine is tested against known values in tests/numerics.test.mjs.
+// Import these instead of writing them again in a page.
+
+// ---------------------------------------------------------------- random numbers
+
+/** Seeded PRNG (mulberry32), uniform in [0, 1). Deterministic for a given seed. */
+function rng(seed = 1) {
+  let a = seed >>> 0;
+  const next = () => {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  let spare = null;
+  next.normal = () => {               // standard normal (Box–Muller, cached pair)
+    if (spare != null) { const s = spare; spare = null; return s; }
+    let u = 0; while (u === 0) u = next();
+    const v = next(), r = Math.sqrt(-2 * Math.log(u));
+    spare = r * Math.sin(2 * Math.PI * v);
+    return r * Math.cos(2 * Math.PI * v);
+  };
+  return next;
+}
+
+// ---------------------------------------------------------------- FFT
+
+/** In-place radix-2 complex FFT. re/im: Float64Array, length a power of two.
+ *  Forward: X_k = Σ x_n e^{−2πikn/N}. Inverse (inverse = true) includes the 1/N factor. */
+function fft(re, im, inverse = false) {
+  const n = re.length;
+  if (n & (n - 1)) throw new Error('fft: length must be a power of two');
+  for (let i = 1, j = 0; i < n; i++) {
+    let bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; }
+  }
+  const sign = inverse ? 1 : -1;
+  for (let len = 2; len <= n; len <<= 1) {
+    const ang = sign * 2 * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang);
+    for (let i = 0; i < n; i += len) {
+      let cr = 1, ci = 0;
+      for (let k = 0; k < len / 2; k++) {
+        const a = i + k, b = a + len / 2;
+        const xr = re[b] * cr - im[b] * ci, xi = re[b] * ci + im[b] * cr;
+        re[b] = re[a] - xr; im[b] = im[a] - xi;
+        re[a] += xr; im[a] += xi;
+        const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t;
+      }
+    }
+  }
+  if (inverse) for (let i = 0; i < n; i++) { re[i] /= n; im[i] /= n; }
+}
+
+/** Angular wavenumbers k for an FFT grid of n points with spacing dx (FFT ordering). */
+function fftFreq(n, dx) {
+  const k = new Float64Array(n);
+  for (let i = 0; i < n; i++) k[i] = 2 * Math.PI * (i < n / 2 ? i : i - n) / (n * dx);
+  return k;
+}
+
+// ---------------------------------------------------------------- ODEs
+
+/** Classical RK4 step for y' = f(t, y). y: array; returns new array. */
+function rk4Step(f, t, y, h) {
+  const k1 = f(t, y);
+  const k2 = f(t + h / 2, y.map((v, i) => v + h / 2 * k1[i]));
+  const k3 = f(t + h / 2, y.map((v, i) => v + h / 2 * k2[i]));
+  const k4 = f(t + h, y.map((v, i) => v + h * k3[i]));
+  return y.map((v, i) => v + h / 6 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]));
+}
+
+// Dormand–Prince 5(4) coefficients (Dormand & Prince 1980; Hairer, Nørsett & Wanner, Table 5.2).
+const DP = {
+  c: [0, 1 / 5, 3 / 10, 4 / 5, 8 / 9, 1, 1],
+  a: [[], [1 / 5], [3 / 40, 9 / 40], [44 / 45, -56 / 15, 32 / 9],
+    [19372 / 6561, -25360 / 2187, 64448 / 6561, -212 / 729],
+    [9017 / 3168, -355 / 33, 46732 / 5247, 49 / 176, -5103 / 18656],
+    [35 / 384, 0, 500 / 1113, 125 / 192, -2187 / 6784, 11 / 84]],
+  b: [35 / 384, 0, 500 / 1113, 125 / 192, -2187 / 6784, 11 / 84, 0],
+  e: [71 / 57600, 0, -71 / 16695, 71 / 1920, -17253 / 339200, 22 / 525, -1 / 40],
+};
+
+/**
+ * Adaptive Dormand–Prince 5(4) integration of y' = f(t, y) from t0 to t1.
+ * Error control per component: |err_i| <= atol + rtol·max(|y_i|, |y_new_i|).
+ * onStep(t, y) is called after every accepted step (return false to stop early).
+ * Returns { t, y, steps, rejected, stopped }. Throws if tolerance cannot be met or
+ * the step budget is exhausted; stopped is reserved for an intentional onStep stop.
+ */
+function dopri5(f, t0, y0, t1, { rtol = 1e-9, atol = 1e-12, h0, hmax = Infinity, maxSteps = 1e6, onStep } = {}) {
+  if (!Number.isFinite(t0) || !Number.isFinite(t1) || !y0.length || !Array.from(y0).every(Number.isFinite)) throw new Error('dopri5: finite times and a non-empty finite state are required');
+  if (!(Number.isFinite(rtol) && rtol > 0 && Number.isFinite(atol) && atol > 0)) throw new Error('dopri5: tolerances must be finite and positive');
+  if (!(hmax > 0) || (hmax !== Infinity && !Number.isFinite(hmax)) || (h0 != null && !(Number.isFinite(h0) && h0 !== 0))) throw new Error('dopri5: step sizes must be non-zero and finite (hmax may be Infinity)');
+  if (!(Number.isSafeInteger(maxSteps) && maxSteps > 0)) throw new Error('dopri5: maxSteps must be a positive integer');
+  const n = y0.length, dir = Math.sign(t1 - t0) || 1;
+  let t = t0;
+  const y = Float64Array.from(y0);
+  let h = dir * Math.min(Math.abs(h0 ?? (t1 - t0) / 100), hmax);
+  const k = Array.from({ length: 7 }, () => new Float64Array(n));
+  const yt = new Float64Array(n), yn = new Float64Array(n);
+  let steps = 0, rejected = 0, stopped = false;
+  const maxAttempts = 4 * maxSteps;
+  k[0].set(f(t, y));
+  while (dir * (t1 - t) > 0 && steps < maxSteps && steps + rejected < maxAttempts) {
+    if (dir * (t + h - t1) > 0) h = t1 - t;
+    // This checks floating-point progress, not a dimensional time threshold. A
+    // femtosecond step can be perfectly resolvable and still need error control.
+    if (h === 0 || t + h === t) throw new Error(`dopri5: step underflow at t = ${t}; cannot meet tolerance`);
+    for (let s = 1; s < 7; s++) {
+      for (let i = 0; i < n; i++) {
+        let acc = y[i];
+        for (let j = 0; j < s; j++) acc += h * DP.a[s][j] * k[j][i];
+        yt[i] = acc;
+      }
+      k[s].set(f(t + DP.c[s] * h, yt));
+    }
+    let err = 0;
+    for (let i = 0; i < n; i++) {
+      let acc = y[i], e = 0;
+      for (let j = 0; j < 7; j++) { acc += h * DP.b[j] * k[j][i]; e += h * DP.e[j] * k[j][i]; }
+      yn[i] = acc;
+      const sc = atol + rtol * Math.max(Math.abs(y[i]), Math.abs(acc));
+      err = Math.max(err, Math.abs(e) / sc);
+    }
+    if (!Number.isFinite(err)) throw new Error(`dopri5: non-finite derivative or state at t = ${t}`);
+    if (err <= 1) {
+      t += h; y.set(yn); k[0].set(k[6]); steps++;      // FSAL: k7 of this step = k1 of the next
+      if (onStep && onStep(t, y) === false) { stopped = true; break; }
+    } else rejected++;
+    const fac = err === 0 ? 5 : Math.min(5, Math.max(0.2, 0.9 * Math.pow(err, -0.2)));
+    h = dir * Math.min(Math.abs(h * fac), hmax);
+  }
+  if (!stopped && dir * (t1 - t) > 0) throw new Error(`dopri5: step budget exhausted at t = ${t}, before t = ${t1}`);
+  return { t, y, steps, rejected, stopped };
+}
+
+// ---------------------------------------------------------------- quadrature
+
+const GL_CACHE = new Map();
+/** Gauss–Legendre nodes and weights on [−1, 1] (Newton iteration on P_n). */
+function gaussLegendreNodes(n) {
+  if (GL_CACHE.has(n)) return GL_CACHE.get(n);
+  const x = new Float64Array(n), w = new Float64Array(n);
+  for (let i = 0; i < Math.ceil(n / 2); i++) {
+    let z = Math.cos(Math.PI * (i + 0.75) / (n + 0.5)), dp = 0;
+    for (let it = 0; it < 100; it++) {
+      let p0 = 1, p1 = z;
+      for (let k = 2; k <= n; k++) { const p2 = ((2 * k - 1) * z * p1 - (k - 1) * p0) / k; p0 = p1; p1 = p2; }
+      const pn = n === 1 ? z : p1, pm = n === 1 ? 1 : p0;
+      dp = n * (z * pn - pm) / (z * z - 1);
+      const dz = pn / dp;
+      z -= dz;
+      if (Math.abs(dz) < 1e-16) break;
+    }
+    x[i] = -z; x[n - 1 - i] = z;
+    w[i] = w[n - 1 - i] = 2 / ((1 - z * z) * dp * dp);
+  }
+  const out = { x, w };
+  GL_CACHE.set(n, out);
+  return out;
+}
+
+/** ∫_a^b f(x) dx with n-point Gauss–Legendre (exact for polynomials of degree 2n−1). */
+function gaussLegendre(f, a, b, n = 32) {
+  const { x, w } = gaussLegendreNodes(n);
+  const m = (b - a) / 2, c = (a + b) / 2;
+  let s = 0;
+  for (let i = 0; i < n; i++) s += w[i] * f(m * x[i] + c);
+  return s * m;
+}
+
+/** Adaptive Simpson quadrature to absolute tolerance tol. */
+function adaptiveSimpson(f, a, b, tol = 1e-10, maxDepth = 50) {
+  const simpson = (fl, fmid, fr, lo, hi) => (hi - lo) / 6 * (fl + 4 * fmid + fr);
+  const recurse = (lo, hi, fl, fmid, fr, whole, eps, depth) => {
+    const mid = (lo + hi) / 2, lm = (lo + mid) / 2, rm = (mid + hi) / 2;
+    const flm = f(lm), frm = f(rm);
+    const left = simpson(fl, flm, fmid, lo, mid), right = simpson(fmid, frm, fr, mid, hi);
+    if (depth <= 0 || Math.abs(left + right - whole) <= 15 * eps) return left + right + (left + right - whole) / 15;
+    return recurse(lo, mid, fl, flm, fmid, left, eps / 2, depth - 1) + recurse(mid, hi, fmid, frm, fr, right, eps / 2, depth - 1);
+  };
+  const fa = f(a), fb = f(b), fm = f((a + b) / 2);
+  return recurse(a, b, fa, fm, fb, simpson(fa, fm, fb, a, b), tol, maxDepth);
+}
+
+/** ∫_0^∞ f(x) dx via the substitution x = t/(1−t) and Gauss–Legendre panels. */
+function integrateToInfinity(f, { panels = 16, n = 32 } = {}) {
+  const g = t => { const x = t / (1 - t); return f(x) / ((1 - t) * (1 - t)); };
+  let s = 0;
+  for (let p = 0; p < panels; p++) s += gaussLegendre(g, p / panels, (p + 1) / panels, n);   // nodes never hit t = 1
+  return s;
+}
+
+// ---------------------------------------------------------------- roots
+
+/** Brent's method: root of f in [a, b] where f(a)·f(b) < 0. */
+function brent(f, lo, hi, tol = 1e-14, maxIter = 200) {
+  let a = lo, b = hi;                      // b: best estimate; a: previous; c: bracket partner
+  let fa = f(a), fb = f(b);
+  if (fa * fb > 0) throw new Error('brent: root not bracketed');
+  let c = a, fc = fa, d = b - a, e = d;
+  for (let i = 0; i < maxIter; i++) {
+    if (fb * fc > 0) { c = a; fc = fa; d = e = b - a; }
+    if (Math.abs(fc) < Math.abs(fb)) { a = b; b = c; c = a; fa = fb; fb = fc; fc = fa; }
+    const tol1 = 2 * Number.EPSILON * Math.abs(b) + tol / 2, m = (c - b) / 2;
+    if (Math.abs(m) <= tol1 || fb === 0) return b;
+    if (Math.abs(e) >= tol1 && Math.abs(fa) > Math.abs(fb)) {
+      let p, q, r;
+      const s = fb / fa;
+      if (a === c) { p = 2 * m * s; q = 1 - s; }
+      else { q = fa / fc; r = fb / fc; p = s * (2 * m * q * (q - r) - (b - a) * (r - 1)); q = (q - 1) * (r - 1) * (s - 1); }
+      if (p > 0) q = -q; else p = -p;
+      if (2 * p < Math.min(3 * m * q - Math.abs(tol1 * q), Math.abs(e * q))) { e = d; d = p / q; }
+      else { d = m; e = d; }
+    } else { d = m; e = d; }
+    a = b; fa = fb;
+    b += Math.abs(d) > tol1 ? d : (m > 0 ? tol1 : -tol1);
+    fb = f(b);
+  }
+  return b;
+}
+
+// ---------------------------------------------------------------- special functions
+
+const LANCZOS = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313,
+  -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+
+/** ln Γ(x) for x > 0 (Lanczos, g = 7, n = 9; relative error ~1e-15). */
+function lgamma(z) {
+  if (z <= 0 && Number.isInteger(z)) return Infinity;   // poles of Γ
+  if (z < 0.5) return Math.log(Math.PI / Math.abs(Math.sin(Math.PI * z))) - lgamma(1 - z);
+  const x = z - 1;
+  let a = LANCZOS[0];
+  const t = x + 7.5;
+  for (let i = 1; i < 9; i++) a += LANCZOS[i] / (x + i);
+  return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a);
+}
+
+function gamma(x) {
+  if (x <= 0 && Number.isInteger(x)) return NaN;        // poles of Γ
+  if (x < 0.5) return Math.PI / (Math.sin(Math.PI * x) * gamma(1 - x));
+  return Math.exp(lgamma(x));
+}
+
+function factorial(n) {
+  let f = 1;
+  for (let i = 2; i <= n; i++) f *= i;
+  return f;
+}
+
+/** Error function (Abramowitz–Stegun 7.1.26 is too coarse; this uses a series / continued fraction, |err| < 1e-14). */
+function erf(x) {
+  const ax = Math.abs(x);
+  if (ax > 6) return Math.sign(x);                      // erfc(6) ≈ 2e-17 < double precision near 1
+  if (ax < 2.5) {
+    let sum = ax, term = ax;
+    for (let n = 1; n < 100; n++) {
+      term *= -ax * ax / n;
+      const add = term / (2 * n + 1);
+      sum += add;
+      if (Math.abs(add) < 1e-17 * Math.abs(sum)) break;
+    }
+    return Math.sign(x) * 2 / Math.sqrt(Math.PI) * sum;
+  }
+  // erfc continued fraction (Lentz)
+  let f = ax, C = ax, D = 0;
+  for (let n = 1; n < 200; n++) {
+    const an = n / 2;
+    D = ax + an * D; D = 1 / (D === 0 ? 1e-300 : D);
+    C = ax + an / C; if (C === 0) C = 1e-300;
+    const delta = C * D;
+    f *= delta;
+    if (Math.abs(delta - 1) < 1e-16) break;
+  }
+  const erfc = Math.exp(-ax * ax) / Math.sqrt(Math.PI) / f;
+  return Math.sign(x) * (1 - erfc);
+}
+
+/** Modified Bessel function of the first kind I_n(x), integer n ≥ 0 (power series; fine for x ≲ 50). */
+function besselI(n, x) {
+  let term = Math.pow(x / 2, n) / factorial(n), sum = term;
+  for (let k = 1; k < 500; k++) {
+    term *= (x * x / 4) / (k * (k + n));
+    sum += term;
+    if (Math.abs(term) < 1e-17 * Math.abs(sum)) break;
+  }
+  return sum;
+}
+
+/**
+ * Complete elliptic integral of the first kind K(m) = ∫₀^{π/2} dθ / √(1 − m sin²θ), parameter
+ * m = k² < 1, by the arithmetic–geometric mean: K = π / (2 AGM(1, √(1 − m))).
+ */
+function ellipticK(m) {
+  if (!(m < 1)) return m === 1 ? Infinity : NaN;
+  let a = 1, b = Math.sqrt(1 - m);
+  for (let i = 0; i < 40 && Math.abs(a - b) > 1e-16 * a; i++) [a, b] = [(a + b) / 2, Math.sqrt(a * b)];
+  return Math.PI / (2 * a);
+}
+
+/** Generalised Laguerre polynomial L_n^(α)(x) by three-term recurrence. */
+function laguerre(n, alpha, x) {
+  if (n === 0) return 1;
+  let l0 = 1, l1 = 1 + alpha - x;
+  for (let k = 1; k < n; k++) {
+    const l2 = ((2 * k + 1 + alpha - x) * l1 - (k + alpha) * l0) / (k + 1);
+    l0 = l1; l1 = l2;
+  }
+  return l1;
+}
+
+/** Associated Legendre P_l^m(x), m ≥ 0, with the Condon–Shortley phase (−1)^m. */
+function legendreP(l, m, x) {
+  let pmm = 1;
+  if (m > 0) {
+    const s = Math.sqrt((1 - x) * (1 + x));
+    let fact = 1;
+    for (let i = 1; i <= m; i++) { pmm *= -fact * s; fact += 2; }
+  }
+  if (l === m) return pmm;
+  let pmmp1 = x * (2 * m + 1) * pmm;
+  if (l === m + 1) return pmmp1;
+  let pll = 0;
+  for (let ll = m + 2; ll <= l; ll++) {
+    pll = ((2 * ll - 1) * x * pmmp1 - (ll + m - 1) * pmm) / (ll - m);
+    pmm = pmmp1; pmmp1 = pll;
+  }
+  return pll;
+}
+
+/**
+ * Fully normalised associated Legendre function P̄_l^m(x) = N_lm P_l^m(x) with
+ * N_lm = √((2l+1)/(4π) · (l−m)!/(l+m)!), Condon–Shortley phase included. Uses the standard
+ * stable recurrences (no factorials), so it is accurate for large l and m.
+ */
+function normalizedLegendre(l, m, x) {
+  const s = Math.sqrt(Math.max(0, (1 - x) * (1 + x)));
+  let pmm = 1 / Math.sqrt(4 * Math.PI);
+  for (let i = 1; i <= m; i++) pmm *= -Math.sqrt((2 * i + 1) / (2 * i)) * s;
+  if (l === m) return pmm;
+  let pm1 = x * Math.sqrt(2 * m + 3) * pmm;
+  if (l === m + 1) return pm1;
+  let pl = 0;
+  for (let ll = m + 2; ll <= l; ll++) {
+    const a = Math.sqrt((4 * ll * ll - 1) / (ll * ll - m * m));
+    const b = Math.sqrt(((ll - 1) ** 2 - m * m) / (4 * (ll - 1) ** 2 - 1));
+    pl = a * (x * pm1 - b * pmm);
+    pmm = pm1; pm1 = pl;
+  }
+  return pl;
+}
+
+/**
+ * Real (tesseral) spherical harmonic, orthonormal on the sphere.
+ * m > 0: √2 P̄_l^m cos(mφ); m < 0: √2 P̄_l^|m| sin(|m|φ); m = 0: P̄_l^0.
+ * The Condon–Shortley phase is removed, so p_x ∝ +x, p_y ∝ +y.
+ */
+function realYlm(l, m, theta, phi) {
+  const am = Math.abs(m);
+  const P = normalizedLegendre(l, am, Math.cos(theta)) * (am % 2 ? -1 : 1);
+  if (m === 0) return P;
+  return Math.SQRT2 * P * (m > 0 ? Math.cos(am * phi) : Math.sin(am * phi));
+}
+
+// ---------------------------------------------------------------- linear algebra
+
+/** Solve a tridiagonal system (Thomas algorithm). a: sub, b: diag, c: super, d: rhs. Works for complex via callers. */
+function solveTridiagonal(a, b, c, d) {
+  const n = b.length, cp = new Float64Array(n), dp = new Float64Array(n), x = new Float64Array(n);
+  cp[0] = c[0] / b[0]; dp[0] = d[0] / b[0];
+  for (let i = 1; i < n; i++) {
+    const m = b[i] - a[i] * cp[i - 1];
+    cp[i] = c[i] / m;
+    dp[i] = (d[i] - a[i] * dp[i - 1]) / m;
+  }
+  x[n - 1] = dp[n - 1];
+  for (let i = n - 2; i >= 0; i--) x[i] = dp[i] - cp[i] * x[i + 1];
+  return x;
+}
+
+/** Least-squares fit y ≈ a + b x. Returns { a, b, r2 }. */
+function linearFit(xs, ys) {
+  // two-pass (centred) sums: no cancellation when x has a large offset (e.g. timestamps)
+  const n = xs.length;
+  let mx = 0, my = 0;
+  for (let i = 0; i < n; i++) { mx += xs[i]; my += ys[i]; }
+  mx /= n; my /= n;
+  let sxx = 0, sxy = 0, syy = 0;
+  for (let i = 0; i < n; i++) { const dx = xs[i] - mx, dy = ys[i] - my; sxx += dx * dx; sxy += dx * dy; syy += dy * dy; }
+  const b = sxy / sxx, a = my - b * mx;
+  const r2 = syy === 0 ? 1 : (sxy * sxy) / (sxx * syy);
+  return { a, b, r2 };
+}
+
+/**
+ * Mean and standard error of a correlated series by binning (blocking) analysis. Returns the
+ * largest error over block sizes with ≥ minBins blocks: conservative (≈ 10 % high for
+ * uncorrelated data). Series too short for blocking fall back to the naive standard error.
+ */
+function meanWithError(xs, minBins = 16) {
+  const n = xs.length;
+  const mean = xs.reduce((s, v) => s + v, 0) / n;
+  if (n < minBins) {
+    const v = n > 1 ? xs.reduce((s, x) => s + (x - mean) ** 2, 0) / (n - 1) : NaN;
+    return { mean, error: Math.sqrt(v / n), naive: true };
+  }
+  let best = 0;
+  for (let size = 1; n / size >= minBins; size *= 2) {
+    const nb = Math.floor(n / size), means = [];
+    for (let b = 0; b < nb; b++) { let s = 0; for (let i = 0; i < size; i++) s += xs[b * size + i]; means.push(s / size); }
+    const m = means.reduce((s, v) => s + v, 0) / nb;
+    const v = means.reduce((s, x) => s + (x - m) ** 2, 0) / (nb - 1);
+    best = Math.max(best, Math.sqrt(v / nb));
+  }
+  return { mean, error: best };
+}
+
+return { rng, fft, fftFreq, rk4Step, dopri5, gaussLegendreNodes, gaussLegendre, adaptiveSimpson, integrateToInfinity, brent, lgamma, gamma, factorial, erf, besselI, ellipticK, laguerre, legendreP, normalizedLegendre, realYlm, solveTridiagonal, linearFit, meanWithError };
+})();
+
+// ---- psim:core/schwarzschild.mjs
+__psim["core/schwarzschild.mjs"] = (() => {
+// Light and matter around a non-rotating black hole (Schwarzschild metric).
+// Geometric units G = c = 1; lengths in units of the mass M (so r_s = 2).
+//
+// Photon orbits obey the exact orbit equation (u = 1/r, φ = orbital angle):
+//   (du/dφ)² = 1/b² − u²(1 − 2Mu)      ⇔      d²u/dφ² = −u + 3Mu²
+// with b the impact parameter. Everything here is exact GR for test particles;
+// the ray tracer in the black-hole page runs the same equation on the GPU.
+const { brent, gaussLegendre, ellipticK, dopri5 } = __psim["core/numerics.mjs"];
+const M = 1;
+const R_S = 2 * M;                          // event horizon
+const R_PHOTON = 3 * M;                     // unstable circular photon orbit
+const B_CRIT = 3 * Math.sqrt(3) * M;        // critical impact parameter (shadow edge)
+const R_ISCO = 6 * M;                       // innermost stable circular orbit
+
+/**
+ * Trace a photon coming in from infinity with impact parameter b, integrating
+ * d²u/dφ² = −u + 3Mu² with fixed-step RK4 in φ (the same scheme as the GPU shader).
+ * Returns { captured, deflection, rMin, steps }; deflection = Δφ − π for escaping rays.
+ */
+function tracePhoton(b, { dphi = 1e-3, maxPhi = 40 } = {}) {
+  let u = 0, w = 1 / b, phi = 0, rMin = Infinity, steps = 0;
+  const f = q => -q + 3 * M * q * q;          // d²u/dφ² as a function of u
+  while (phi < maxPhi) {
+    const k1u = w, k1w = f(u);
+    const k2u = w + dphi / 2 * k1w, k2w = f(u + dphi / 2 * k1u);
+    const k3u = w + dphi / 2 * k2w, k3w = f(u + dphi / 2 * k2u);
+    const k4u = w + dphi * k3w, k4w = f(u + dphi * k3u);
+    const un = u + dphi / 6 * (k1u + 2 * k2u + 2 * k3u + k4u);
+    const wn = w + dphi / 6 * (k1w + 2 * k2w + 2 * k3w + k4w);
+    steps++;
+    if (un >= 1 / R_S) return { captured: true, rMin: R_S, steps, phi };
+    if (un <= 0 && phi > 0) {
+      // linear interpolation to u = 0 for the exit angle
+      const t = u / (u - un);
+      return { captured: false, deflection: phi + t * dphi - Math.PI, rMin, steps };
+    }
+    u = un; w = wn; phi += dphi;
+    if (u > 0) rMin = Math.min(rMin, 1 / u);
+  }
+  return { captured: false, deflection: NaN, rMin, steps, trapped: true };
+}
+
+/** Closest approach for b > B_CRIT: largest root u₀ < 1/(3M) of 1/b² − u² + 2Mu³ = 0. */
+function turningPoint(b) {
+  if (!(b > B_CRIT)) return NaN;                    // captured: no turning point
+  // Solve for z = b u, which remains O(1) even in very weak fields. A fixed
+  // absolute tolerance on u would otherwise swamp the tiny deflection.
+  const z = brent(q => 1 - q * q + 2 * (M / b) * q * q * q, 1, Math.sqrt(3));
+  return z / b;
+}
+
+/**
+ * Exact deflection by quadrature (independent of the ODE tracer):
+ * α(b) = 2 ∫₀^{u₀} du / √(1/b² − u² + 2Mu³) − π, with u = u₀(1 − s²) removing the
+ * endpoint singularity. Factor the polynomial at its turning point and subtract
+ * the flat-space integrand algebraically, avoiding subtraction of two angles ≈ π.
+ */
+function deflectionExact(b, n = 64) {
+  if (!(b > B_CRIT)) return Infinity;               // the photon is captured
+  const u0 = turningPoint(b);
+  return 4 * gaussLegendre(s => {
+    const x = 1 - s * s;
+    const flat = 1 + x, delta = 2 * M * u0 * (1 + x + x * x);
+    const a = Math.sqrt(flat), curved = Math.sqrt(flat - delta);
+    return delta / (a * curved * (a + curved));
+  }, 0, 1, n);
+}
+
+/** Weak-field series α = 4M/b + (15π/4)(M/b)² + (128/3)(M/b)³ + … (Keeton & Petters 2005). */
+const deflectionWeak = (b, order = 3) => {
+  const x = M / b;
+  return 4 * x + (order >= 2 ? 15 * Math.PI / 4 * x * x : 0) + (order >= 3 ? 128 / 3 * x * x * x : 0);
+};
+
+/** Angular radius of the shadow seen by a static observer at r_o: sin α = (B_CRIT/r_o)√(1 − 2M/r_o). */
+const shadowAngle = ro => {
+  if (!(ro > R_S)) return NaN;                      // no static observers inside the horizon
+  const a = Math.asin(Math.min(1, B_CRIT / ro * Math.sqrt(1 - 2 * M / ro)));   // round-off can exceed 1 at r₀ = 3M
+  return ro < R_PHOTON ? Math.PI - a : a;           // inside the photon sphere the shadow exceeds 90°
+};
+
+/** Impact parameter of a ray leaving a static observer at r_o at angle α from the radial direction. */
+const impactFromAngle = (ro, alpha) => ro * Math.sin(alpha) / Math.sqrt(1 - 2 * M / ro);
+
+// ---------------------------------------------------------------- matter: circular orbits
+
+/** Coordinate angular velocity of a circular geodesic: Ω = √(M/r³) (exact in Schwarzschild). */
+const orbitalOmega = r => Math.sqrt(M / (r * r * r));
+/** u^t of a circular orbit: 1/√(1 − 3M/r). */
+const orbitalUt = r => 1 / Math.sqrt(1 - 3 * M / r);
+/** Specific energy and angular momentum of circular orbits. */
+const orbitalEnergy = r => (1 - 2 * M / r) / Math.sqrt(1 - 3 * M / r);
+const orbitalL = r => Math.sqrt(M * r) / Math.sqrt(1 - 3 * M / r);
+
+/**
+ * Redshift factor g = E_observed / E_emitted for light from a circular-orbit emitter at r,
+ * received by a static observer at r_o, for a photon with L_z/E = λ (along the orbit's axis):
+ *   g = 1 / ( u^t (1 − Ω λ) √(1 − 2M/r_o) )
+ * Combines gravitational redshift, transverse and longitudinal Doppler shifts exactly.
+ */
+const diskRedshift = (r, lambda, ro = Infinity) =>
+  1 / (orbitalUt(r) * (1 - orbitalOmega(r) * lambda) * (Number.isFinite(ro) ? Math.sqrt(1 - 2 * M / ro) : 1));
+
+/**
+ * Thin-disk temperature profile with zero torque at the ISCO (Shakura & Sunyaev 1973,
+ * Newtonian form): T(r) = T* (r/r_isco)^{−3/4} (1 − √(r_isco/r))^{1/4}, normalised so its
+ * maximum is T_max. A modelling approximation (the full relativistic Page–Thorne profile
+ * differs by tens of per cent near the ISCO): disclose it.
+ */
+function diskTemperature(r, Tmax) {
+  if (r < R_ISCO) return 0;
+  const shape = x => Math.pow(x, -0.75) * Math.pow(1 - Math.sqrt(1 / x), 0.25);
+  const xPeak = 49 / 36;                           // maximum of the shape function
+  return Tmax * shape(r / R_ISCO) / shape(xPeak);
+}
+
+/** Effective potential for massive particles, per unit mass: V² = (1 − 2M/r)(1 + L²/r²). */
+const effectivePotential = (r, L) => (1 - 2 * M / r) * (1 + L * L / (r * r));
+
+// ---------------------------------------------------------------- massive bodies: relativistic orbits
+//
+// Bound orbits of a test mass, described by semi-latus rectum p and eccentricity e (in units of
+// M = GM/c²): turning points r = p/(1 ± e). Exact relations from Cutler, Kennefick & Poisson,
+// Phys. Rev. D 50, 3816 (1994). Valid for p > 6 + 2e (outside the separatrix).
+
+/** Specific angular momentum² and energy² of the bound orbit (p, e). */
+function orbitConstants(p, e) {
+  const d = p - 3 - e * e;
+  return { L2: p * p / d, E2: ((p - 2) ** 2 - 4 * e * e) / (p * d) };
+}
+
+/**
+ * Exact periapsis advance per radial period (radians):
+ * Δφ = 4 √(p / (p − 6 + 2e)) K(4e / (p − 6 + 2e)) − 2π.
+ */
+function precessionPerOrbit(p, e) {
+  // separatrix p = 6 + 2e (where 4e/(p − 6 + 2e) reaches 1 and K diverges): no bound orbit there
+  if (!(p > 6 + 2 * e)) return Infinity;
+  const q = p - 6 + 2 * e;
+  return 4 * Math.sqrt(p / q) * ellipticK(Math.min(4 * e / q, 1)) - 2 * Math.PI;
+}
+
+/** Weak-field series 6π/p + (3π/2)(18 + e²)/p² (Damour & Schäfer 1988), p in units of M. */
+const precessionWeak = (p, e) => 6 * Math.PI / p + 1.5 * Math.PI * (18 + e * e) / (p * p);
+
+/**
+ * In SI-style inputs: precession per orbit (rad) for semi-major axis a, eccentricity e around a
+ * body with gravitational parameter GM. Weak or strong field alike (uses the exact formula).
+ */
+function precessionSI({ GM, a, e, c = 299792458 }) {
+  const Mgeo = GM / (c * c);
+  return precessionPerOrbit(a * (1 - e * e) / Mgeo, e);
+}
+
+/**
+ * Integrate the orbit equation d²u/dφ² = M/L² − u + 3Mu² (u = 1/r, M = 1) from periapsis,
+ * together with coordinate time: dt/dφ = (E/L) r² / (1 − 2M/r) (Newtonian: r²/L).
+ * Returns sampled points [φ, r, t], the angles and times of successive periapsis passages, and
+ * at(t) giving the position at any time (for animation). precessionPerOrbit gives the exact rate.
+ * Units: lengths in M = GM/c², times in GM/c³ (multiply by GM/c³ seconds for SI).
+ */
+function relativisticOrbit(p, e, { orbits = 3, samplesPerOrbit = 400, newtonian = false } = {}) {
+  if (!(Number.isFinite(e) && e >= 0 && e < 1 && Number.isFinite(p) && p > (newtonian ? 0 : 6 + 2 * e))) throw new Error('relativisticOrbit: need 0 ≤ e < 1 and p outside the bound-orbit separatrix');
+  if (!(Number.isSafeInteger(orbits) && orbits > 0 && Number.isSafeInteger(samplesPerOrbit) && samplesPerOrbit >= 8)) throw new Error('relativisticOrbit: positive integer orbits and at least 8 samples per orbit are required');
+  const { L2, E2 } = newtonian ? { L2: p, E2: 1 } : orbitConstants(p, e);
+  const L = Math.sqrt(L2), EoverL = Math.sqrt(E2) / L;
+  const k = newtonian ? 0 : 3;
+  const points = [[0, p / (1 + e), 0]], periapsides = [0], periapsisTimes = [0];
+  let last = null;
+  // Strong-field radial periods can cover many azimuthal revolutions. Use the
+  // actual radial period, with room to bracket the last periapsis crossing.
+  const radialAngle = newtonian ? 2 * Math.PI : 2 * Math.PI + precessionPerOrbit(p, e);
+  const hmax = 2 * Math.PI / samplesPerOrbit;
+  const phiEnd = orbits * radialAngle + 2 * hmax;
+  const dtdphi = u => (newtonian ? 1 / (L * u * u) : EoverL / (u * u * (1 - 2 * u)));
+  if (e === 0) {
+    // A circle has no radial periapsis; count complete azimuthal revolutions.
+    const dt = dtdphi(1 / p);
+    for (let i = 1; i <= orbits * samplesPerOrbit; i++) {
+      const phi = 2 * Math.PI * i / samplesPerOrbit;
+      points.push([phi, p, phi * dt]);
+    }
+    for (let i = 1; i <= orbits; i++) { periapsides.push(2 * Math.PI * i); periapsisTimes.push(2 * Math.PI * i * dt); }
+  } else {
+    dopri5((_phi, [u, w]) => [w, 1 / L2 - u + k * u * u, dtdphi(u)], 0, [(1 + e) / p, 0, 0], phiEnd, {
+      rtol: 1e-12, atol: 1e-16, hmax,
+      onStep(phi, y) {
+        points.push([phi, 1 / y[0], y[2]]);
+        if (last && last.w > 0 && y[1] <= 0) {
+          // Locate w = 0 within the accepted step using cubic Hermite output.
+          // A single Newton correction leaves an O(h³) event-angle error.
+          const h = phi - last.phi;
+          const interp = (a, da, b, db, s) => (2 * s ** 3 - 3 * s * s + 1) * a
+            + (s ** 3 - 2 * s * s + s) * h * da + (-2 * s ** 3 + 3 * s * s) * b + (s ** 3 - s * s) * h * db;
+          const f0 = 1 / L2 - last.u + k * last.u * last.u, f1 = 1 / L2 - y[0] + k * y[0] * y[0];
+          const s = brent(q => interp(last.w, f0, y[1], f1, q), 0, 1);
+          periapsides.push(last.phi + s * h);
+          periapsisTimes.push(interp(last.t, dtdphi(last.u), y[2], dtdphi(y[0]), s));
+          if (periapsides.length > orbits) return false;
+        }
+        last = { phi, u: y[0], w: y[1], t: y[2] };
+        return true;
+      },
+    });
+  }
+  if (periapsides.length !== orbits + 1) throw new Error('relativisticOrbit: failed to resolve every requested periapsis');
+  /** Position at coordinate time t (linear interpolation between samples: ~1e−5 relative in r, sub-pixel). */
+  const at = t => {
+    let lo = 0, hi = points.length - 1;
+    if (t <= 0) return { phi: 0, r: points[0][1], x: points[0][1], y: 0 };
+    if (t >= points[hi][2]) { const [phi, r] = points[hi]; return { phi, r, x: r * Math.cos(phi), y: r * Math.sin(phi) }; }
+    while (hi - lo > 1) { const mid = (lo + hi) >> 1; points[mid][2] <= t ? (lo = mid) : (hi = mid); }
+    const [p0, r0, t0] = points[lo], [p1, r1, t1] = points[hi], f = (t - t0) / (t1 - t0);
+    const phi = p0 + f * (p1 - p0), r = r0 + f * (r1 - r0);
+    return { phi, r, x: r * Math.cos(phi), y: r * Math.sin(phi) };
+  };
+  return { points, periapsides, periapsisTimes, at, duration: points[points.length - 1][2] };
+}
+
+return { M, R_S, R_PHOTON, B_CRIT, R_ISCO, tracePhoton, turningPoint, deflectionExact, deflectionWeak, shadowAngle, impactFromAngle, orbitalOmega, orbitalUt, orbitalEnergy, orbitalL, diskRedshift, diskTemperature, effectivePotential, orbitConstants, precessionPerOrbit, precessionWeak, precessionSI, relativisticOrbit };
+})();
+
+// ---- psim:core/constants.mjs
+__psim["core/constants.mjs"] = (() => {
+// Physical constants, SI units. CODATA 2018 recommended values
+// (Tiesinga et al., Rev. Mod. Phys. 93, 025010, 2021). "exact" = defined by the 2019 SI.
+// Import from here instead of typing constants by hand; cite the source in the page.
+
+const CODATA = 'CODATA 2018';
+
+const c = 299792458;                 // m s^-1, exact
+const h = 6.62607015e-34;            // J s, exact
+const hbar = 6.62607015e-34 / (2 * Math.PI);  // J s, exact (h/2π)
+const e = 1.602176634e-19;           // C, exact
+const kB = 1.380649e-23;             // J K^-1, exact
+const NA = 6.02214076e23;            // mol^-1, exact
+const eps0 = 8.8541878128e-12;       // F m^-1
+const mu0 = 1.25663706212e-6;        // N A^-2
+const G = 6.67430e-11;               // m^3 kg^-1 s^-2 (relative uncertainty 2.2e-5)
+const me = 9.1093837015e-31;         // kg
+const mp = 1.67262192369e-27;        // kg
+const mn = 1.67492749804e-27;        // kg
+const u = 1.66053906660e-27;         // kg (atomic mass constant)
+const a0 = 5.29177210903e-11;        // m (Bohr radius)
+const alpha = 7.2973525693e-3;       // fine-structure constant
+const Eh = 4.3597447222071e-18;      // J (Hartree energy)
+const Ry = 13.605693122994;          // eV (Rydberg energy)
+const eV = 1.602176634e-19;          // J, exact
+const MeV = 1.602176634e-13;         // J, exact
+const mpc2MeV = 938.27208816;        // MeV (proton rest energy)
+const mec2MeV = 0.51099895000;       // MeV (electron rest energy)
+const hbarcMeVfm = 197.3269804;      // MeV fm
+
+// Astronomy (IAU 2012/2015 nominal values)
+const AU = 1.495978707e11;           // m, exact (IAU 2012)
+const GMsun = 1.3271244e20;          // m^3 s^-2 (IAU 2015 nominal)
+const Msun = 1.3271244e20 / 6.67430e-11;     // kg, GM☉/G (G-limited, ±2.2e-5)
+const yearJulian = 365.25 * 86400;   // s
+/**
+ * G in AU³ M☉⁻¹ yr⁻² with the Julian year and IAU GM☉: 39.47693 (≈ 4π², which is exact only
+ * for the Gaussian year 2π/k). Using this value keeps AU–yr runs consistent with SI ones.
+ */
+const G_AU_MSUN_YR = 1.3271244e20 * (365.25 * 86400) ** 2 / 1.495978707e11 ** 3;
+
+return { CODATA, c, h, hbar, e, kB, NA, eps0, mu0, G, me, mp, mn, u, a0, alpha, Eh, Ry, eV, MeV, mpc2MeV, mec2MeV, hbarcMeVfm, AU, GMsun, Msun, yearJulian, G_AU_MSUN_YR };
+})();
+
+// ---- psim:core/radiation.mjs
+__psim["core/radiation.mjs"] = (() => {
+// Thermal (black-body) radiation and the colour of light.
+//
+// Planck's law, its integrals (Stefan–Boltzmann, photon statistics), Wien's
+// displacement law from the exact root, and the perceived colour of a spectrum
+// via CIE 1931 colour matching → sRGB. SI units throughout.
+const { h, c, kB } = __psim["core/constants.mjs"];
+const { brent, gaussLegendre } = __psim["core/numerics.mjs"];
+const c1L = 2 * h * c * c;                 // 2hc²  (W m² sr⁻¹), spectral radiance prefactor
+const c2 = h * c / kB;                     // hc/k  (m K), second radiation constant
+
+/** Spectral radiance per unit wavelength B_λ(λ, T), W sr⁻¹ m⁻³ (λ in m). */
+function planckLambda(lambda, T) {
+  return c1L / Math.pow(lambda, 5) / Math.expm1(c2 / (lambda * T));
+}
+
+/** Spectral radiance per unit frequency B_ν(ν, T), W sr⁻¹ m⁻² Hz⁻¹. */
+function planckNu(nu, T) {
+  return 2 * h * nu * nu * nu / (c * c) / Math.expm1(h * nu / (kB * T));
+}
+
+/** Rayleigh–Jeans limit (classical; diverges at short λ: the ultraviolet catastrophe). */
+const rayleighJeans = (lambda, T) => 2 * c * kB * T / Math.pow(lambda, 4);
+/** Wien approximation (valid for hc/λkT ≫ 1). */
+const wienApprox = (lambda, T) => c1L / Math.pow(lambda, 5) * Math.exp(-c2 / (lambda * T));
+
+/** x such that x = 5(1 − e^{−x}): the peak of B_λ is at λ_max = hc/(x k T). */
+const WIEN_X = brent(x => x - 5 * (1 - Math.exp(-x)), 1, 10);
+/** Wien displacement constant b = hc/(x k), m K. */
+const WIEN_B = c2 / WIEN_X;
+/** Peak of B_ν: x = 3(1 − e^{−x}); ν_max = x k T / h. */
+const WIEN_X_NU = brent(x => x - 3 * (1 - Math.exp(-x)), 1, 10);
+
+/** Stefan–Boltzmann constant from first principles: σ = 2π⁵k⁴ / (15 h³ c²). */
+const SIGMA_SB = 2 * Math.pow(Math.PI, 5) * Math.pow(kB, 4) / (15 * h * h * h * c * c);
+
+const peakWavelength = T => WIEN_B / T;
+/** Radiant exitance (power per area leaving a black surface), W m⁻². */
+const exitance = T => SIGMA_SB * T * T * T * T;
+/** Photon number density in a cavity, m⁻³: n = 16π ζ(3) (kT/hc)³. */
+const ZETA3 = 1.2020569031595942;
+const photonDensity = T => 16 * Math.PI * ZETA3 * Math.pow(kB * T / (h * c), 3);
+/** Mean photon energy in units of kT: π⁴/(30 ζ(3)) ≈ 2.701. */
+const MEAN_PHOTON_ENERGY_KT = Math.pow(Math.PI, 4) / (30 * ZETA3);
+
+/** ∫ B_λ dλ over [λ0, λ1] (m), by composite Gauss–Legendre in ln λ. W sr⁻¹ m⁻². */
+function bandRadiance(T, l0, l1, panels = 24) {
+  const a = Math.log(l0), b = Math.log(l1);
+  let s = 0;
+  for (let i = 0; i < panels; i++) {
+    s += gaussLegendre(u => { const l = Math.exp(u); return planckLambda(l, T) * l; }, a + (b - a) * i / panels, a + (b - a) * (i + 1) / panels, 24);
+  }
+  return s;
+}
+
+// ---------------------------------------------------------------- colour
+
+// CIE 1931 2° colour matching functions, multi-lobe Gaussian fit
+// (Wyman, Sloan & Shirley, J. Computer Graphics Techniques 2(2), 2013, eqs. 2–4). λ in nm.
+const g = (x, mu, s1, s2) => { const t = (x - mu) / (x < mu ? s1 : s2); return Math.exp(-0.5 * t * t); };
+function cieXYZbar(nm) {
+  // Beyond 700 nm the CIE 1931 spectral locus is a single point, x = 0.7347, y = 0.2653
+  // (x̄/ȳ = 2.769, z̄ = 0 in the tabulated data). The Gaussian fit's tails do not keep that
+  // ratio, which turns cold black bodies green; impose it, keeping the fit's ȳ fall-off.
+  if (nm > 700) {
+    const y = 0.821 * g(nm, 568.8, 46.9, 40.5) + 0.286 * g(nm, 530.9, 16.3, 31.1);
+    return [y * (0.734690 / 0.265310), y, 0];
+  }
+  return [
+    1.056 * g(nm, 599.8, 37.9, 31.0) + 0.362 * g(nm, 442.0, 16.0, 26.7) - 0.065 * g(nm, 501.1, 20.4, 26.2),
+    0.821 * g(nm, 568.8, 46.9, 40.5) + 0.286 * g(nm, 530.9, 16.3, 31.1),
+    1.217 * g(nm, 437.0, 11.8, 36.0) + 0.681 * g(nm, 459.0, 26.0, 13.8),
+  ];
+}
+
+/** CIE XYZ tristimulus of a spectral power distribution S(λ in nm), 360–830 nm. */
+function spectrumToXYZ(S, step = 1) {
+  let X = 0, Y = 0, Z = 0;
+  for (let nm = 360; nm <= 830; nm += step) {
+    const [x, y, z] = cieXYZbar(nm), s = S(nm);
+    X += s * x; Y += s * y; Z += s * z;
+  }
+  return [X * step, Y * step, Z * step];
+}
+
+function chromaticity([X, Y, Z]) {
+  const s = X + Y + Z;
+  return [X / s, Y / s];
+}
+
+/** XYZ → linear sRGB, D65 white (7-digit matrix derived from the sRGB primaries; IEC 61966-2-1 lists it to 4 digits). */
+function xyzToLinearSRGB([X, Y, Z]) {
+  return [
+    3.2404542 * X - 1.5371385 * Y - 0.4985314 * Z,
+    -0.9692660 * X + 1.8760108 * Y + 0.0415560 * Z,
+    0.0556434 * X - 0.2040259 * Y + 1.0572252 * Z,
+  ];
+}
+
+const srgbGamma = v => v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
+
+/**
+ * Displayable colour of a black body at temperature T: chromaticity is exact (within the
+ * CMF fit), brightness is normalised so the largest channel is 1 (disclose this: real
+ * brightness spans ~16 orders of magnitude over 1000–40000 K). Out-of-gamut colours (below
+ * ~1900 K) have negative channels clipped, which keeps their hue. Chromaticity accuracy vs the
+ * CIE Planckian locus: ≤ 0.001 above 2500 K, ≤ 0.008 at 1000 K (fit near 700 nm).
+ * Returns { rgb: [0–255]×3, xy, inGamut }.
+ */
+function blackbodyColor(T) {
+  // Chromaticity only depends on the spectrum's shape, so rescale it to avoid underflow for
+  // cold bodies (at 2.7 K, B_λ in the visible is ~10⁻²³⁰⁰: exactly 0 in floating point).
+  // B_λ ∝ λ⁻⁵ e^{−x}/(1 − e^{−x}) with x = c₂/(λT); multiply by e^{x₀}, x₀ at 830 nm.
+  const x0 = c2 / (830e-9 * T);
+  const xyz = spectrumToXYZ(nm => {
+    const x = c2 / (nm * 1e-9 * T);
+    return Math.pow(nm / 830, -5) * Math.exp(x0 - x) / -Math.expm1(-x);
+  });
+  let lin = xyzToLinearSRGB(xyz);
+  const inGamut = Math.min(...lin) >= 0;
+  lin = lin.map(v => Math.max(0, v));                // clip out-of-gamut channels: keeps the hue
+  const mx = Math.max(...lin);
+  const rgb = lin.map(v => Math.round(255 * srgbGamma(v / mx)));
+  return { rgb, xy: chromaticity(xyz), inGamut };
+}
+
+/** Colour of monochromatic light at λ (nm), for drawing a spectrum strip (normalised, disclosed). */
+function wavelengthColor(nm) {
+  const lin = xyzToLinearSRGB(cieXYZbar(nm)).map(v => Math.max(0, v));   // clip: keeps the hue
+  const mx = Math.max(...lin) || 1;
+  return lin.map(v => Math.round(255 * srgbGamma(v / mx)));
+}
+
+return { c1L, c2, planckLambda, planckNu, rayleighJeans, wienApprox, WIEN_X, WIEN_B, WIEN_X_NU, SIGMA_SB, peakWavelength, exitance, ZETA3, photonDensity, MEAN_PHOTON_ENERGY_KT, bandRadiance, cieXYZbar, spectrumToXYZ, chromaticity, xyzToLinearSRGB, srgbGamma, blackbodyColor, wavelengthColor };
+})();
+
+// ---- local:physics.mjs
+__psim["local:physics.mjs"] = (() => {
+// Schwarzschild black hole seen by a distant static observer: exact null geodesics
+// (ray traced on the GPU with the same RK4 scheme as core/schwarzschild.mjs), a thin
+// accretion disk emitting black-body light, and exact gravitational + Doppler redshift.
+// Geometric units G = c = 1, lengths in M.
+const { tracePhoton, deflectionExact, deflectionWeak, B_CRIT, R_ISCO, R_PHOTON, R_S, shadowAngle, orbitalEnergy, orbitalL, effectivePotential, diskRedshift, diskTemperature, impactFromAngle } = __psim["core/schwarzschild.mjs"];
+const { blackbodyColor, WIEN_B } = __psim["core/radiation.mjs"];
+const { G: Gsi, c: csi, Msun } = __psim["core/constants.mjs"];
+const PARAMS = [
+  { key: 'ro', label: 'Observer distance r₀', min: 8, max: 400, value: 60, log: true, unit: 'M', digits: 3 },
+  { key: 'incl', label: 'Inclination (0° = face-on)', min: 0, max: 89, value: 82, unit: '°', digits: 3 },
+  { key: 'rout', label: 'Disk outer radius', min: 8, max: 60, value: 20, unit: 'M', digits: 3 },
+  { key: 'Tmax', label: 'Peak disk temperature', min: 2000, max: 1e7, value: 5200, log: true, unit: 'K', digits: 3,
+    hint: 'Stellar-mass black-hole disks reach ~10⁷ K (X-rays) and look blue-white; lower values show the colour gradient.' },
+  { key: 'effects', label: 'Light shift', value: 'full', options: [
+    { value: 'full', label: 'Full: gravitational + Doppler shift and beaming' },
+    { value: 'grav', label: 'Gravitational redshift only (no disk rotation)' },
+    { value: 'none', label: 'None (geometry only, for comparison)' },
+  ] },
+  { key: 'massSun', label: 'Black-hole mass (for physical units)', min: 1, max: 1e10, value: 10, log: true, unit: 'M☉', digits: 3 },
+  { key: 'rings', label: 'Radius rings on the disk (every 2M)', value: 'on', options: [{ value: 'on', label: 'On: show disk geometry' }, { value: 'off', label: 'Off' }] },
+  { key: 'fov', label: 'Field of view', min: 10, max: 90, value: 30, unit: '°', digits: 3 },
+  { key: 'exposure', label: 'Display exposure (not physics)', min: 0.05, max: 20, value: 2.5, log: true, digits: 2 },
+];
+
+/** Blackbody colour lookup table for the shader: log-spaced T, sRGB-encoded bytes (brightest channel = 255). */
+function colorLUT(n = 256, T0 = 500, T1 = 2e5) {
+  const data = new Uint8Array(n * 4);
+  for (let i = 0; i < n; i++) {
+    const T = T0 * Math.pow(T1 / T0, i / (n - 1));
+    const { rgb } = blackbodyColor(T);
+    data.set([rgb[0], rgb[1], rgb[2], 255], i * 4);
+  }
+  return { data, n, T0, T1 };
+}
+
+function createSim(p) {
+  const shadow = shadowAngle(p.ro);
+  const metres = Gsi * p.massSun * Msun / (csi * csi);         // GM/c² in metres
+  return {
+    t: 0, params: p, timeDependent: false,
+    shadow, metres,
+    diagnostics() {
+      return [
+        { key: 'sh', label: 'Shadow angular radius (exact)', value: shadow * 180 / Math.PI, kind: 'value', unit: '°' },
+        { key: 'bc', label: 'Shadow edge impact parameter 3√3 M', value: B_CRIT, kind: 'value', unit: 'M' },
+        { key: 'rs', label: 'Event horizon r_s = 2GM/c²', value: 2 * metres / 1000, kind: 'value', unit: 'km' },
+        { key: 'rp', label: 'Photon sphere 3M', value: 3 * metres / 1000, kind: 'value', unit: 'km' },
+        { key: 'ri', label: 'Inner disk edge (ISCO) 6M', value: 6 * metres / 1000, kind: 'value', unit: 'km' },
+        { key: 'eff', label: 'Radiative efficiency 1 − E_isco', value: 1 - orbitalEnergy(6), kind: 'value', text: `${(100 * (1 - orbitalEnergy(6))).toFixed(2)} %` },
+        { key: 'lp', label: 'Disk peak emission λ_max = b/T', value: WIEN_B / p.Tmax * 1e9, kind: 'value', unit: 'nm' },
+      ];
+    },
+    state: () => ({ ro: p.ro, incl: p.incl, shadowDeg: shadow * 180 / Math.PI }),
+  };
+}
+
+function verify() {
+  const checks = [];
+  for (const b of [6, 10, 30]) {
+    const a = tracePhoton(b, { dphi: 1e-3 }).deflection, e = deflectionExact(b);
+    checks.push({ label: `Light bending at b = ${b}M: RK4 tracer vs exact quadrature`, value: `${a.toFixed(9)} vs ${e.toFixed(9)} rad`, pass: Math.abs(a - e) < 1e-8 });
+  }
+  const bw = 1000, aw = tracePhoton(bw).deflection;
+  checks.push({ label: 'Weak field b = 1000M vs 4M/b + (15π/4)(M/b)² + (128/3)(M/b)³', value: `rel. diff ${(Math.abs(aw - deflectionWeak(bw)) / aw).toExponential(1)}`, pass: Math.abs(aw - deflectionWeak(bw)) / aw < 1e-6 });
+  let lo = 5, hi = 5.5;
+  for (let i = 0; i < 48; i++) { const m = (lo + hi) / 2; tracePhoton(m, { dphi: 2e-4, maxPhi: 80 }).captured ? (lo = m) : (hi = m); }
+  checks.push({ label: 'Capture threshold vs 3√3 M (shadow edge)', value: `${lo.toFixed(10)} vs ${B_CRIT.toFixed(10)}`, pass: Math.abs(lo - B_CRIT) < 1e-8 });
+  // Sun deflection: 1.75 arcsec (Eddington 1919), from the exact deflection integral in solar units
+  const bSun = 6.957e8 / (Gsi * Msun / (csi * csi));
+  const arc = deflectionExact(bSun, 256) * 206264.806;
+  checks.push({ label: 'Starlight grazing the Sun (4GM/bc²)', value: `${arc.toFixed(3)}″ (Eddington 1919: 1.75″)`, pass: Math.abs(arc - 1.751) < 0.01 });
+  const L6 = orbitalL(6), h = 1e-3;
+  const d2 = (effectivePotential(6 + h, L6) - 2 * effectivePotential(6, L6) + effectivePotential(6 - h, L6)) / (h * h);
+  checks.push({ label: 'ISCO at 6M (marginal stability, V″ = 0)', value: `V″ = ${d2.toExponential(1)}`, pass: Math.abs(d2) < 1e-6 });
+  checks.push({ label: 'Binding efficiency 1 − √(8/9)', value: `${(100 * (1 - orbitalEnergy(6))).toFixed(3)} %`, pass: Math.abs(1 - orbitalEnergy(6) - (1 - Math.sqrt(8 / 9))) < 1e-15 });
+  const g0 = diskRedshift(10, 0);
+  checks.push({ label: 'Redshift of a face-on emitter at 10M: √(1 − 3M/r)', value: g0.toFixed(12), pass: Math.abs(g0 - Math.sqrt(0.7)) < 1e-15 });
+  return {
+    summary: 'Geodesics, orbits and redshift checked against exact general-relativistic results:',
+    checks,
+    notes: [
+      'Disk emission uses the Shakura–Sunyaev temperature profile (Newtonian zero-torque form) as a modelling approximation; geodesics and redshifts are exact.',
+      'The GPU image is checked in the browser against the exact shadow radius (psim check).',
+    ],
+  };
+}
+
+
+
+return { PARAMS, colorLUT, createSim, verify, B_CRIT, R_ISCO, R_PHOTON, R_S, diskTemperature, impactFromAngle };
+})();
+
+// ---- page
+const { createInstrument } = __psim["ui/instrument-app.mjs"];
+const { PARAMS, createSim, colorLUT } = __psim["local:physics.mjs"];
+// ------------------------------------------------------------------ GPU ray tracer
+// Each pixel: one photon traced backwards from the observer. Its orbit lies in the
+// plane spanned by the observer direction e₁ and the ray's transverse direction e₂;
+// in that plane u = 1/r obeys d²u/dφ² = −u + 3u² (M = 1), integrated with RK4 in φ,
+// exactly as core/schwarzschild.mjs tracePhoton() (tested against exact quadrature).
+const VERT = `#version 300 es
+in vec2 p; out vec2 v; void main() { v = p; gl_Position = vec4(p, 0., 1.); }`;
+const FRAG = `#version 300 es
+precision highp float;
+in vec2 v; out vec4 o;
+uniform vec2 uRes; uniform float uRo, uIncl, uTanHalf, uRout, uTmax, uExposure, uT0, uT1, uLutN;
+uniform int uDisk, uSky, uEffects, uRings;
+uniform sampler2D uLUT;
+const float PI = 3.141592653589793;
+float shapeT(float x) { return pow(x, -0.75) * pow(max(0., 1. - sqrt(1. / x)), 0.25); }
+vec3 toLin(vec3 c) { return pow(c, vec3(2.2)); }
+void main() {
+  vec3 N = vec3(0., 0., 1.);
+  vec3 e1 = vec3(sin(uIncl), 0., cos(uIncl));              // observer direction from the hole
+  vec3 f = -e1;
+  vec3 upHint = uIncl < 1e-3 ? vec3(-1., 0., 0.) : N;
+  vec3 right = normalize(cross(f, upHint)), up = cross(right, f);
+  float aspect = uRes.x / uRes.y;
+  vec3 d = normalize(f + v.x * uTanHalf * aspect * right + v.y * uTanHalf * up);
+  float cosA = clamp(dot(d, f), -1., 1.), sinA = sqrt(max(0., 1. - cosA * cosA));
+  float b = uRo * sinA / sqrt(1. - 2. / uRo);
+  vec3 tr = d - dot(d, e1) * e1;
+  vec3 e2 = length(tr) > 1e-7 ? normalize(tr) : right;
+  float u = 1. / uRo;
+  float w2 = 1. / (b * b) - u * u * (1. - 2. * u);
+  float w = (cosA > 0. ? 1. : -1.) * sqrt(max(0., w2));
+  float phi = 0., dphi = 0.012;
+  float zPrev = dot(e1, N);
+  vec3 col = vec3(0.);
+  bool done = false;
+  for (int i = 0; i < 1600; i++) {
+    float k1u = w, k1w = -u + 3. * u * u;
+    float u2 = u + .5 * dphi * k1u, w2_ = w + .5 * dphi * k1w;
+    float k2u = w2_, k2w = -u2 + 3. * u2 * u2;
+    float u3 = u + .5 * dphi * k2u, w3 = w + .5 * dphi * k2w;
+    float k3u = w3, k3w = -u3 + 3. * u3 * u3;
+    float u4 = u + dphi * k3u, w4 = w + dphi * k3w;
+    float k4u = w4, k4w = -u4 + 3. * u4 * u4;
+    float un = u + dphi / 6. * (k1u + 2. * k2u + 2. * k3u + k4u);
+    float wn = w + dphi / 6. * (k1w + 2. * k2w + 2. * k3w + k4w);
+    float phin = phi + dphi;
+    vec3 rhat = cos(phin) * e1 + sin(phin) * e2;
+    float z = dot(rhat, N);
+    if (uDisk == 1 && z * zPrev < 0. && un > 0.) {
+      float t = zPrev / (zPrev - z);
+      float r = 1. / mix(u, un, t);
+      if (r >= 6. && r <= uRout) {
+        float T = uTmax * shapeT(r / 6.) / shapeT(49. / 36.);
+        float lambda = -b * dot(cross(e1, e2), N);          // L_z / E of the physical photon
+        float g = 1.;
+        if (uEffects == 0) g = sqrt(1. - 3. / r) / (1. - pow(r, -1.5) * lambda) / sqrt(1. - 2. / uRo);
+        else if (uEffects == 1) g = sqrt(1. - 2. / r) / sqrt(1. - 2. / uRo);
+        float Tobs = g * T;
+        float s = clamp(log(Tobs / uT0) / log(uT1 / uT0), 0., 1.);
+        vec3 c = toLin(texture(uLUT, vec2((s * (uLutN - 1.) + .5) / uLutN, .5)).rgb);   // texel centres
+        float I = uExposure * pow(Tobs / uTmax, 4.);         // bolometric intensity ∝ g⁴T⁴
+        col = c * I / (1. + I);                              // Reinhard tone map (display only)
+        if (uRings == 1) {                                   // measurement aid: rings every 2M
+          float dr = abs(fract(r / 2. + .5) - .5) * 2.;
+          col *= 1. - .55 * smoothstep(.07, .0, dr);
+        }
+        done = true; break;
+      }
+    }
+    zPrev = z;
+    if (un >= .5) { done = true; break; }                    // crossed the event horizon
+    if (un <= 0.) {                                          // escaped to infinity
+      vec3 s = rhat;
+      if (uSky == 0) { col = vec3(1.); done = true; break; }
+      float lat = asin(clamp(s.z, -1., 1.)), lon = atan(s.y, s.x);
+      float g15 = radians(20.);
+      float dl = abs(fract(lat / g15 + .5) - .5) * g15, dn = abs(fract(lon / g15 + .5) - .5) * g15 * cos(lat);
+      float line = max(smoothstep(.006, .0, dl), smoothstep(.006, .0, dn));
+      float eq = smoothstep(.012, .0, abs(lat));
+      col = vec3(.010, .014, .028) + line * vec3(.10, .13, .20) + eq * vec3(.18, .14, .08);
+      done = true; break;
+    }
+    u = un; w = wn; phi = phin;
+  }
+  o = vec4(pow(col, vec3(1. / 2.2)), 1.);
+}`;
+
+function createTracer(wrap) {
+  const gc = document.createElement('canvas');
+  gc.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block';
+  wrap.prepend(gc);
+  const gl = gc.getContext('webgl2', { preserveDrawingBuffer: true, antialias: false });
+  if (!gl) return null;
+  const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
+  const prog = gl.createProgram();
+  gl.attachShader(prog, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FRAG));
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+  gl.useProgram(prog);
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(prog, 'p');
+  gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  const lut = colorLUT();
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, lut.n, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, lut.data);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  const U = n => gl.getUniformLocation(prog, n);
+  return {
+    gc, gl,
+    render(p, { scale = 1, disk = true, sky = true } = {}) {
+      const W = Math.max(2, Math.round(gc.clientWidth * scale)), H = Math.max(2, Math.round(gc.clientHeight * scale));
+      if (gc.width !== W || gc.height !== H) { gc.width = W; gc.height = H; }
+      gl.viewport(0, 0, W, H);
+      gl.uniform2f(U('uRes'), W, H);
+      gl.uniform1f(U('uRo'), p.ro);
+      gl.uniform1f(U('uIncl'), p.incl * Math.PI / 180);
+      gl.uniform1f(U('uTanHalf'), Math.tan(p.fov * Math.PI / 360));
+      gl.uniform1f(U('uRout'), p.rout);
+      gl.uniform1f(U('uTmax'), p.Tmax);
+      gl.uniform1f(U('uExposure'), p.exposure);
+      gl.uniform1f(U('uT0'), lut.T0); gl.uniform1f(U('uT1'), lut.T1); gl.uniform1f(U('uLutN'), lut.n);
+      gl.uniform1i(U('uDisk'), disk ? 1 : 0);
+      gl.uniform1i(U('uSky'), sky ? 1 : 0);
+      gl.uniform1i(U('uEffects'), { full: 0, grav: 1, none: 2 }[p.effects]);
+      gl.uniform1i(U('uRings'), p.rings === 'on' ? 1 : 0);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      return { W, H };
+    },
+  };
+}
+
+// ------------------------------------------------------------------ page
+let tracer = null, lastSim = null, lastSize = '', failed = null;
+
+function draw(ctx, sim, view) {
+  const p = sim.params;
+  if (!tracer && !failed) {
+    try { tracer = createTracer(ctx.canvas.parentNode); if (!tracer) failed = 'WebGL2 is not available in this browser.'; }
+    catch (e) { failed = `Shader error: ${e.message}`; }
+  }
+  if (failed) {
+    ctx.fillStyle = view.color('--bad'); ctx.font = '13px ui-sans-serif, system-ui';
+    ctx.fillText(failed, 24, view.H / 2);
+    return;
+  }
+  const size = `${view.W}x${view.H}`;
+  if (sim !== lastSim || size !== lastSize) {
+    tracer.render(p, { scale: Math.min(1.5, devicePixelRatio || 1) });
+    lastSim = sim; lastSize = size;
+  }
+  // Analytic overlay: exact shadow edge, sin α = 3√3 M/r₀ · √(1 − 2M/r₀).
+  const rpx = Math.tan(sim.shadow) / Math.tan(p.fov * Math.PI / 360) * (view.H / 2);
+  ctx.save();
+  ctx.setLineDash([3, 5]); ctx.strokeStyle = 'rgba(160,190,255,0.55)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(view.W / 2, view.H / 2, rpx, 0, 2 * Math.PI); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(190,210,255,0.8)'; ctx.font = '11px ui-monospace, Menlo, monospace';
+  const lx = view.W / 2 + rpx * Math.cos(-0.8) + 8, ly = view.H / 2 + rpx * Math.sin(-0.8) - 6;
+  ctx.fillText('exact shadow edge  b = 3√3 M', lx, ly);
+  ctx.restore();
+}
+
+const eqLens = `<math display="block"><mfrac><mrow><msup><mi>d</mi><mn>2</mn></msup><mi>u</mi></mrow><mrow><mi>d</mi><msup><mi>φ</mi><mn>2</mn></msup></mrow></mfrac><mo>=</mo><mo>−</mo><mi>u</mi><mo>+</mo><mn>3</mn><mi>M</mi><msup><mi>u</mi><mn>2</mn></msup><mo>,</mo><mspace width="1em"/><mi>u</mi><mo>=</mo><mfrac><mn>1</mn><mi>r</mi></mfrac></math>`;
+const eqShadow = `<math display="block"><mi>sin</mi><msub><mi>α</mi><mtext>sh</mtext></msub><mo>=</mo><mfrac><mrow><mn>3</mn><msqrt><mn>3</mn></msqrt><mi>M</mi></mrow><msub><mi>r</mi><mn>0</mn></msub></mfrac><msqrt><mrow><mn>1</mn><mo>−</mo><mfrac><mrow><mn>2</mn><mi>M</mi></mrow><msub><mi>r</mi><mn>0</mn></msub></mfrac></mrow></msqrt></math>`;
+const eqG = `<math display="block"><mi>g</mi><mo>=</mo><mfrac><msub><mi>E</mi><mtext>obs</mtext></msub><msub><mi>E</mi><mtext>em</mtext></msub></mfrac><mo>=</mo><mfrac><msqrt><mrow><mn>1</mn><mo>−</mo><mn>3</mn><mi>M</mi><mo>/</mo><mi>r</mi></mrow></msqrt><mrow><mo>(</mo><mn>1</mn><mo>−</mo><mi>Ω</mi><mi>λ</mi><mo>)</mo><msqrt><mrow><mn>1</mn><mo>−</mo><mn>2</mn><mi>M</mi><mo>/</mo><msub><mi>r</mi><mn>0</mn></msub></mrow></msqrt></mrow></mfrac><mo>,</mo><mspace width="0.8em"/><msub><mi>T</mi><mtext>obs</mtext></msub><mo>=</mo><mi>g</mi><mi>T</mi><mo>,</mo><mspace width="0.8em"/><msub><mi>I</mi><mtext>obs</mtext></msub><mo>∝</mo><msup><mi>g</mi><mn>4</mn></msup><msup><mi>T</mi><mn>4</mn></msup></math>`;
+
+const app = createInstrument({
+  title: 'Schwarzschild black hole',
+  subtitle: 'GPU-traced null geodesics · black-body accretion disk · exact gravitational and Doppler shifts',
+  tier: 'validated',
+  tierReason: 'Every pixel is a photon orbit integrated through the exact Schwarzschild geometry; the shadow edge, light bending and orbital redshifts are checked against exact general relativity. The disk temperature profile is a standard approximation (see assumptions).',
+  params: PARAMS,
+  create: createSim,
+  draw,
+  timeDependent: false,
+  hudLine: sim => `r₀ = ${sim.params.ro} M · i = ${sim.params.incl}° · shadow ${(2 * sim.shadow * 180 / Math.PI).toFixed(2)}° across`,
+  model: {
+    legend: ['G = c = 1, lengths in M · sky: coordinate grid on the distant sky', 'dashed: exact shadow edge · disk colour: black-body at the observed temperature'],
+    equations: [
+      { caption: 'Photon orbits (exact, Schwarzschild); traced per pixel with RK4 in φ', mathml: eqLens },
+      { caption: 'Shadow seen by a static observer at r₀ (drawn dashed)', mathml: eqShadow },
+      { caption: 'Light shift for a disk orbiting at Ω = √(M/r³), photon with λ = L_z/E', mathml: eqG },
+    ],
+    assumptions: [
+      'Non-rotating (Schwarzschild) black hole; test photons and a test disk (no self-gravity).',
+      'Geometrically thin, optically thick disk in the equatorial plane from the ISCO (6M) outward, on circular geodesics.',
+      'Disk temperature: Shakura–Sunyaev profile T ∝ r^(−3/4)(1 − √(6M/r))^(1/4) (Newtonian zero-torque form). The relativistic Page–Thorne profile differs by tens of per cent near the ISCO.',
+      'Emission is black-body at the local temperature; observed spectrum is black-body at gT and bolometric intensity scales as g⁴T⁴ (Liouville).',
+      'Observer is static at r₀; aberration is exact for a static observer.',
+    ],
+    conventions: [
+      'Dark lines on the disk mark r = 8M, 10M, 12M… (measurement aid). Brightness is tone-mapped (Reinhard) with a display exposure (not physics). Colour is the black-body colour at the observed temperature (CIE 1931 → sRGB).',
+      'The sky is a coordinate grid at infinity so lensing distortions are visible; it is not a star map.',
+      'Only the first crossing of the disk is drawn (opaque disk); higher-order images appear where the first crossing misses.',
+    ],
+    references: [
+      'J.-P. Luminet, Astron. Astrophys. 75, 228 (1979): first image of a black hole with a thin disk.',
+      'C. T. Cunningham, Astrophys. J. 202, 788 (1975): redshifts from disks around black holes.',
+      'N. I. Shakura & R. A. Sunyaev, Astron. Astrophys. 24, 337 (1973).',
+      'C. R. Keeton & A. O. Petters, Phys. Rev. D 72, 104006 (2005): weak-deflection series.',
+    ],
+  },
+});
+
+// GPU self-test, used by psim check: render without disk on a white sky and measure the
+// radius of the black region along the image's middle row against the exact formula.
+window.psim.selfTest = () => {
+  const sim = app.sim, p = sim.params;
+  const { W, H } = tracer.render(p, { scale: 1, disk: false, sky: false });
+  const gl = tracer.gl, row = new Uint8Array(W * 4);
+  gl.readPixels(0, Math.floor(H / 2), W, 1, gl.RGBA, gl.UNSIGNED_BYTE, row);
+  let edge = 0;
+  for (let x = Math.floor(W / 2); x < W; x++) { if (row[4 * x] > 127) { edge = x - W / 2; break; } }
+  const expected = Math.tan(sim.shadow) / Math.tan(p.fov * Math.PI / 360) * (H / 2);
+  lastSim = null;                                         // re-render the real image next frame
+  return { label: 'GPU shadow radius vs exact formula', measuredPx: edge, expectedPx: +expected.toFixed(2), pass: Math.abs(edge - expected) <= 1.5 };
+};
+
+</script>
+</body>
+</html>

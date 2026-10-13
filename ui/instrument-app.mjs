@@ -19,6 +19,9 @@ import {
   el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast,
   transport, createClock, logPlot, download, readJsonScript, beacon, cssVar,
 } from './instrument.mjs';
+import { createPlot } from './plot.mjs';
+import { createEquation, createDerivation, M } from './equation.mjs';
+import { validateModuleReport } from '../core/verification.mjs';
 
 const TIERS = {
   validated: 'Validated numerical',
@@ -30,16 +33,19 @@ const TIERS = {
 export function createInstrument(spec) {
   const {
     title, subtitle = '', tier, tierReason, create, draw, params = [], model = {},
-    timeUnit = 'T', speed: speed0 = 1, controls, onPointer,
+    timeUnit = 'T', speed: speed0 = 1, controls, onPointer, layout = 'stage', bench,
   } = spec;
   if (!TIERS[tier]) throw new Error(`tier must be one of ${Object.keys(TIERS).join(', ')}`);
   const report = readJsonScript('psim-verification');
+  if (report) validateModuleReport(report);
+  const verified = report?.checks.every(c => c.pass === true) === true;
+  const trustLabel = verified ? TIERS[tier] : 'Verification needed';
   const status = beacon();
   const query = new URLSearchParams(location.search);
 
   document.title = title;
   document.body.innerHTML = `
-  <div class="psim-app">
+  <div class="psim-app ${layout === 'workbench' ? 'workbench' : ''}">
     <header class="psim-head">
       <div class="psim-mark" aria-hidden="true"></div>
       <div class="psim-title"><h1></h1><p></p></div>
@@ -57,10 +63,20 @@ export function createInstrument(spec) {
   $('.psim-title h1').textContent = title;
   $('.psim-title p').textContent = subtitle;
   const tierBtn = $('.psim-tier');
-  tierBtn.dataset.tier = tier;
-  tierBtn.querySelector('span').textContent = TIERS[tier];
+  tierBtn.dataset.tier = verified ? tier : 'unverified';
+  tierBtn.querySelector('span').textContent = trustLabel;
   initTheme($('.psim-iconbtn'));
-  const stage = $('.psim-stage'), canvas = stage.querySelector('canvas'), side = $('.psim-side');
+  const stage = $('.psim-stage'), side = $('.psim-side');
+  // Workbench layout: the live canvas on top, then term-split equations and figures that
+  // update with the model (spec.bench builds them; see references/compose.md).
+  let benchParts = null;
+  if (layout === 'workbench') {
+    const wrap = el('div', { class: 'psim-canvaswrap' }, stage.querySelector('canvas'), stage.querySelector('.psim-hud'), stage.querySelector('.psim-legend'));
+    const eqs = el('div', { class: 'psim-eqs' }), figs = el('div', { class: 'psim-figs' });
+    stage.prepend(el('div', { class: 'psim-bench' }, wrap, eqs, figs));
+    benchParts = { wrap, eqs, figs };
+  }
+  const canvas = stage.querySelector('canvas');
   const ctx = canvas.getContext('2d');
   const hud = { t: $('.psim-hud b'), a: $('.psim-hud .h1'), b: $('.psim-hud .h2'), flag: $('.psim-hud .flag') };
   if (model.legend) $('.psim-legend').append(...model.legend.map(t => el('span', {}, t)));
@@ -71,11 +87,13 @@ export function createInstrument(spec) {
   const clock = createClock({ speed: speed0 });
   const view = { W: 0, H: 0, dpr: 1, color: cssVar, opts: {}, pointer: null };
 
+  let benchApi = null;
   function rebuild() {
     sim = create({ ...values });
     tDisplay = sim.t ?? 0;
     diagPlot.clear();
     renderDiag(true);
+    benchApi?.update?.(sim, tDisplay, { rebuilt: true });
     status.set('params', values);
   }
 
@@ -99,6 +117,7 @@ export function createInstrument(spec) {
 
   // ------------------------------------------------------------ side panel
   const secParams = section('Parameters');
+  const paramInputs = new Map();
   if (params.length) {
     secParams.body.append(el('p', { class: 'psim-hint' }, 'Changing a parameter recomputes the model from its initial state.'));
     for (const p of params) {
@@ -106,10 +125,13 @@ export function createInstrument(spec) {
         secParams.body.append(el('div', { class: 'psim-field' }, el('div', { class: 'top' }, el('span', {}, p.label)),
           select(p.options, p.value, v => { values[p.key] = isNaN(+v) ? v : +v; rebuild(); })));
       } else {
-        secParams.body.append(slider({
+        const sl = slider({
           label: p.label, min: p.min, max: p.max, value: p.value, log: p.log, unit: p.unit ?? '', digits: p.digits ?? 3,
+          integer: p.integer, limits: p.limits,
           onInput: v => { values[p.key] = v; rebuild(); },
-        }));
+        });
+        paramInputs.set(p.key, sl);
+        secParams.body.append(sl);
       }
       if (p.hint) secParams.body.append(el('p', { class: 'psim-hint', style: 'margin-top:-4px;font-size:11.5px' }, p.hint));
     }
@@ -153,7 +175,7 @@ export function createInstrument(spec) {
     secVerify.body.append(el('p', { class: 'psim-hint' }, report.summary ?? `Measured when this page was built (${(report.generated ?? '').slice(0, 10)}):`));
     for (const c of report.checks) {
       secVerify.body.append(el('div', { class: 'psim-check' },
-        el('i', { class: c.pass === false ? 'bad' : c.state === 'warn' ? 'warn' : '' }),
+        el('i', { class: c.pass !== true ? 'bad' : c.state === 'warn' ? 'warn' : '' }),
         el('span', {}, c.label), el('code', {}, c.value)));
     }
     if (report.notes) for (const n of report.notes) secVerify.body.append(el('p', { class: 'psim-hint' }, n));
@@ -163,7 +185,7 @@ export function createInstrument(spec) {
 
   const secModel = section('Model, assumptions & limits', { open: false });
   secModel.body.append(
-    el('div', { class: 'psim-prose' }, el('p', {}, el('b', {}, `${TIERS[tier]}. `), tierReason ?? '')),
+    el('div', { class: 'psim-prose' }, el('p', {}, el('b', {}, `${trustLabel}. `), tierReason ?? '')),
     ...(model.equations ?? []).flatMap(eq => [
       eq.caption ? el('p', { class: 'psim-hint' }, eq.caption) : null,
       el('div', { class: 'psim-math', html: eq.mathml }),
@@ -178,7 +200,7 @@ export function createInstrument(spec) {
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   secExport.body.append(el('div', { class: 'psim-btns' },
     button('State JSON', () => download(`${slug}-state.json`, JSON.stringify({
-      generator: 'p-simtor', title, tier, params: values, t: sim.t, state: sim.state(), diagnostics: sim.diagnostics(), verification: report,
+      generator: 'p-simtor', title, tier: tierBtn.dataset.tier, params: values, t: sim.t, state: sim.state(), diagnostics: sim.diagnostics(), verification: report,
     }, null, 2), 'application/json')),
     button('Data CSV', () => {
       const r = sim.record?.();
@@ -227,6 +249,7 @@ export function createInstrument(spec) {
       hud.a.textContent = firstErr ? `${firstErr.label} ${sci(firstErr.value)}` : '';
       hud.b.textContent = spec.hudLine?.(sim) ?? '';
       hud.flag.textContent = limited ? 'compute-limited: playback slowed to keep the calculation exact' : '';
+      benchApi?.update?.(sim, tDisplay, { rebuilt: false });
       status.set('t', timeDependent ? tDisplay : 1);
       if (firstErr) status.set('drift', firstErr.value);
     }
@@ -241,9 +264,16 @@ export function createInstrument(spec) {
     params: () => ({ ...values }),
     advanceTo: t => { while (sim.t < t) sim.step(); tDisplay = Math.max(tDisplay, Math.min(t, sim.t)); return window.psim.state(); },
     restart: () => rebuild(),
-    steps: n => { for (let i = 0; i < n; i++) sim.step(); tDisplay = sim.t; return window.psim.state(); },
+    steps: n => { if (typeof sim.step === "function") for (let i = 0; i < n; i++) sim.step(); tDisplay = sim.t ?? 0; return window.psim.state(); },
   };
 
+  if (bench && benchParts) {
+    benchApi = bench({
+      ...benchParts, createPlot, createEquation, createDerivation, M, values,
+      setParam: (k, v) => { values[k] = v; paramInputs.get(k)?.setValue?.(v); rebuild(); },
+      getSim: () => sim,
+    }) ?? null;
+  }
   rebuild();
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   setPlaying(timeDependent && (query.get('autoplay') ? query.get('autoplay') !== '0' : !reduced));

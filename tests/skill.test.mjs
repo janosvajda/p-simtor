@@ -70,3 +70,10 @@ test('evals file is well-formed', () => {
     assert.ok(Array.isArray(e.files));
   }
 });
+
+test('fact-check step is part of the workflow and its reference exists', () => {
+  assert.match(text, /Fact check:/);
+  assert.match(text, /references\/facts\.md/);
+  const facts = readFileSync(join(ROOT, 'references/facts.md'), 'utf8');
+  assert.match(facts, /Mercury or Venus has moons/);
+});

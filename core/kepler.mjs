@@ -1,8 +1,20 @@
 // Analytic two-body (Kepler) solution, used as a reference for numerical integrators.
 
 /** Solve Kepler's equation E − e sin E = M for elliptic orbits (Newton iteration). */
-export function solveKepler(M, e, tol = 1e-15) {
-  M = M % (2 * Math.PI);
+/**
+ * Eccentricities computed from state vectors carry round-off: a circular orbit can come out as
+ * e = −1e−16. Treat |e| below 1e−12 as 0; reject only physically impossible values.
+ */
+export function checkEccentricity(e, who) {
+  if (Math.abs(e) < 1e-12) return 0;
+  if (!(e > 0 && e < 1)) throw new Error(`${who}: elliptic orbits need 0 ≤ e < 1 (got ${e})`);
+  return e;
+}
+
+export function solveKepler(meanAnomaly, eIn, tol = 1e-15) {
+  const e = checkEccentricity(eIn, 'solveKepler');
+  // reduce to [0, 2π): with E₀ = π for high e, Newton converges monotonically only there
+  const M = ((meanAnomaly % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
   let E = e < 0.8 ? M : Math.PI;
   for (let k = 0; k < 100; k++) {
     const f = E - e * Math.sin(E) - M;
@@ -30,7 +42,8 @@ export function keplerRelative(a, e, mu, t) {
 }
 
 /** Bodies for a barycentric two-body orbit starting at pericentre. */
-export function keplerBodies(m1, m2, a, e, G = 1) {
+export function keplerBodies(m1, m2, a, eIn, G = 1) {
+  const e = checkEccentricity(eIn, 'keplerBodies');
   const mu = G * (m1 + m2);
   const r = a * (1 - e);
   const v = Math.sqrt(mu * (1 + e) / r);

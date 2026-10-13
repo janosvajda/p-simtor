@@ -1,0 +1,421 @@
+// General numerical toolkit: random numbers, FFT, ODE solvers, quadrature, root
+// finding, special functions, linear algebra. Pure functions, browser + Node.
+// Every routine is tested against known values in tests/numerics.test.mjs.
+// Import these instead of writing them again in a page.
+
+// ---------------------------------------------------------------- random numbers
+
+/** Seeded PRNG (mulberry32), uniform in [0, 1). Deterministic for a given seed. */
+export function rng(seed = 1) {
+  let a = seed >>> 0;
+  const next = () => {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  let spare = null;
+  next.normal = () => {               // standard normal (Box–Muller, cached pair)
+    if (spare != null) { const s = spare; spare = null; return s; }
+    let u = 0; while (u === 0) u = next();
+    const v = next(), r = Math.sqrt(-2 * Math.log(u));
+    spare = r * Math.sin(2 * Math.PI * v);
+    return r * Math.cos(2 * Math.PI * v);
+  };
+  return next;
+}
+
+// ---------------------------------------------------------------- FFT
+
+/** In-place radix-2 complex FFT. re/im: Float64Array, length a power of two.
+ *  Forward: X_k = Σ x_n e^{−2πikn/N}. Inverse (inverse = true) includes the 1/N factor. */
+export function fft(re, im, inverse = false) {
+  const n = re.length;
+  if (n & (n - 1)) throw new Error('fft: length must be a power of two');
+  for (let i = 1, j = 0; i < n; i++) {
+    let bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; }
+  }
+  const sign = inverse ? 1 : -1;
+  for (let len = 2; len <= n; len <<= 1) {
+    const ang = sign * 2 * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang);
+    for (let i = 0; i < n; i += len) {
+      let cr = 1, ci = 0;
+      for (let k = 0; k < len / 2; k++) {
+        const a = i + k, b = a + len / 2;
+        const xr = re[b] * cr - im[b] * ci, xi = re[b] * ci + im[b] * cr;
+        re[b] = re[a] - xr; im[b] = im[a] - xi;
+        re[a] += xr; im[a] += xi;
+        const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t;
+      }
+    }
+  }
+  if (inverse) for (let i = 0; i < n; i++) { re[i] /= n; im[i] /= n; }
+}
+
+/** Angular wavenumbers k for an FFT grid of n points with spacing dx (FFT ordering). */
+export function fftFreq(n, dx) {
+  const k = new Float64Array(n);
+  for (let i = 0; i < n; i++) k[i] = 2 * Math.PI * (i < n / 2 ? i : i - n) / (n * dx);
+  return k;
+}
+
+// ---------------------------------------------------------------- ODEs
+
+/** Classical RK4 step for y' = f(t, y). y: array; returns new array. */
+export function rk4Step(f, t, y, h) {
+  const k1 = f(t, y);
+  const k2 = f(t + h / 2, y.map((v, i) => v + h / 2 * k1[i]));
+  const k3 = f(t + h / 2, y.map((v, i) => v + h / 2 * k2[i]));
+  const k4 = f(t + h, y.map((v, i) => v + h * k3[i]));
+  return y.map((v, i) => v + h / 6 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]));
+}
+
+// Dormand–Prince 5(4) coefficients (Dormand & Prince 1980; Hairer, Nørsett & Wanner, Table 5.2).
+const DP = {
+  c: [0, 1 / 5, 3 / 10, 4 / 5, 8 / 9, 1, 1],
+  a: [[], [1 / 5], [3 / 40, 9 / 40], [44 / 45, -56 / 15, 32 / 9],
+    [19372 / 6561, -25360 / 2187, 64448 / 6561, -212 / 729],
+    [9017 / 3168, -355 / 33, 46732 / 5247, 49 / 176, -5103 / 18656],
+    [35 / 384, 0, 500 / 1113, 125 / 192, -2187 / 6784, 11 / 84]],
+  b: [35 / 384, 0, 500 / 1113, 125 / 192, -2187 / 6784, 11 / 84, 0],
+  e: [71 / 57600, 0, -71 / 16695, 71 / 1920, -17253 / 339200, 22 / 525, -1 / 40],
+};
+
+/**
+ * Adaptive Dormand–Prince 5(4) integration of y' = f(t, y) from t0 to t1.
+ * Error control per component: |err_i| <= atol + rtol·max(|y_i|, |y_new_i|).
+ * onStep(t, y) is called after every accepted step (return false to stop early).
+ * Returns { t, y, steps, rejected, stopped }. Throws if tolerance cannot be met or
+ * the step budget is exhausted; stopped is reserved for an intentional onStep stop.
+ */
+export function dopri5(f, t0, y0, t1, { rtol = 1e-9, atol = 1e-12, h0, hmax = Infinity, maxSteps = 1e6, onStep } = {}) {
+  if (!Number.isFinite(t0) || !Number.isFinite(t1) || !y0.length || !Array.from(y0).every(Number.isFinite)) throw new Error('dopri5: finite times and a non-empty finite state are required');
+  if (!(Number.isFinite(rtol) && rtol > 0 && Number.isFinite(atol) && atol > 0)) throw new Error('dopri5: tolerances must be finite and positive');
+  if (!(hmax > 0) || (hmax !== Infinity && !Number.isFinite(hmax)) || (h0 != null && !(Number.isFinite(h0) && h0 !== 0))) throw new Error('dopri5: step sizes must be non-zero and finite (hmax may be Infinity)');
+  if (!(Number.isSafeInteger(maxSteps) && maxSteps > 0)) throw new Error('dopri5: maxSteps must be a positive integer');
+  const n = y0.length, dir = Math.sign(t1 - t0) || 1;
+  let t = t0;
+  const y = Float64Array.from(y0);
+  let h = dir * Math.min(Math.abs(h0 ?? (t1 - t0) / 100), hmax);
+  const k = Array.from({ length: 7 }, () => new Float64Array(n));
+  const yt = new Float64Array(n), yn = new Float64Array(n);
+  let steps = 0, rejected = 0, stopped = false;
+  const maxAttempts = 4 * maxSteps;
+  k[0].set(f(t, y));
+  while (dir * (t1 - t) > 0 && steps < maxSteps && steps + rejected < maxAttempts) {
+    if (dir * (t + h - t1) > 0) h = t1 - t;
+    // This checks floating-point progress, not a dimensional time threshold. A
+    // femtosecond step can be perfectly resolvable and still need error control.
+    if (h === 0 || t + h === t) throw new Error(`dopri5: step underflow at t = ${t}; cannot meet tolerance`);
+    for (let s = 1; s < 7; s++) {
+      for (let i = 0; i < n; i++) {
+        let acc = y[i];
+        for (let j = 0; j < s; j++) acc += h * DP.a[s][j] * k[j][i];
+        yt[i] = acc;
+      }
+      k[s].set(f(t + DP.c[s] * h, yt));
+    }
+    let err = 0;
+    for (let i = 0; i < n; i++) {
+      let acc = y[i], e = 0;
+      for (let j = 0; j < 7; j++) { acc += h * DP.b[j] * k[j][i]; e += h * DP.e[j] * k[j][i]; }
+      yn[i] = acc;
+      const sc = atol + rtol * Math.max(Math.abs(y[i]), Math.abs(acc));
+      err = Math.max(err, Math.abs(e) / sc);
+    }
+    if (!Number.isFinite(err)) throw new Error(`dopri5: non-finite derivative or state at t = ${t}`);
+    if (err <= 1) {
+      t += h; y.set(yn); k[0].set(k[6]); steps++;      // FSAL: k7 of this step = k1 of the next
+      if (onStep && onStep(t, y) === false) { stopped = true; break; }
+    } else rejected++;
+    const fac = err === 0 ? 5 : Math.min(5, Math.max(0.2, 0.9 * Math.pow(err, -0.2)));
+    h = dir * Math.min(Math.abs(h * fac), hmax);
+  }
+  if (!stopped && dir * (t1 - t) > 0) throw new Error(`dopri5: step budget exhausted at t = ${t}, before t = ${t1}`);
+  return { t, y, steps, rejected, stopped };
+}
+
+// ---------------------------------------------------------------- quadrature
+
+const GL_CACHE = new Map();
+/** Gauss–Legendre nodes and weights on [−1, 1] (Newton iteration on P_n). */
+export function gaussLegendreNodes(n) {
+  if (GL_CACHE.has(n)) return GL_CACHE.get(n);
+  const x = new Float64Array(n), w = new Float64Array(n);
+  for (let i = 0; i < Math.ceil(n / 2); i++) {
+    let z = Math.cos(Math.PI * (i + 0.75) / (n + 0.5)), dp = 0;
+    for (let it = 0; it < 100; it++) {
+      let p0 = 1, p1 = z;
+      for (let k = 2; k <= n; k++) { const p2 = ((2 * k - 1) * z * p1 - (k - 1) * p0) / k; p0 = p1; p1 = p2; }
+      const pn = n === 1 ? z : p1, pm = n === 1 ? 1 : p0;
+      dp = n * (z * pn - pm) / (z * z - 1);
+      const dz = pn / dp;
+      z -= dz;
+      if (Math.abs(dz) < 1e-16) break;
+    }
+    x[i] = -z; x[n - 1 - i] = z;
+    w[i] = w[n - 1 - i] = 2 / ((1 - z * z) * dp * dp);
+  }
+  const out = { x, w };
+  GL_CACHE.set(n, out);
+  return out;
+}
+
+/** ∫_a^b f(x) dx with n-point Gauss–Legendre (exact for polynomials of degree 2n−1). */
+export function gaussLegendre(f, a, b, n = 32) {
+  const { x, w } = gaussLegendreNodes(n);
+  const m = (b - a) / 2, c = (a + b) / 2;
+  let s = 0;
+  for (let i = 0; i < n; i++) s += w[i] * f(m * x[i] + c);
+  return s * m;
+}
+
+/** Adaptive Simpson quadrature to absolute tolerance tol. */
+export function adaptiveSimpson(f, a, b, tol = 1e-10, maxDepth = 50) {
+  const simpson = (fl, fmid, fr, lo, hi) => (hi - lo) / 6 * (fl + 4 * fmid + fr);
+  const recurse = (lo, hi, fl, fmid, fr, whole, eps, depth) => {
+    const mid = (lo + hi) / 2, lm = (lo + mid) / 2, rm = (mid + hi) / 2;
+    const flm = f(lm), frm = f(rm);
+    const left = simpson(fl, flm, fmid, lo, mid), right = simpson(fmid, frm, fr, mid, hi);
+    if (depth <= 0 || Math.abs(left + right - whole) <= 15 * eps) return left + right + (left + right - whole) / 15;
+    return recurse(lo, mid, fl, flm, fmid, left, eps / 2, depth - 1) + recurse(mid, hi, fmid, frm, fr, right, eps / 2, depth - 1);
+  };
+  const fa = f(a), fb = f(b), fm = f((a + b) / 2);
+  return recurse(a, b, fa, fm, fb, simpson(fa, fm, fb, a, b), tol, maxDepth);
+}
+
+/** ∫_0^∞ f(x) dx via the substitution x = t/(1−t) and Gauss–Legendre panels. */
+export function integrateToInfinity(f, { panels = 16, n = 32 } = {}) {
+  const g = t => { const x = t / (1 - t); return f(x) / ((1 - t) * (1 - t)); };
+  let s = 0;
+  for (let p = 0; p < panels; p++) s += gaussLegendre(g, p / panels, (p + 1) / panels, n);   // nodes never hit t = 1
+  return s;
+}
+
+// ---------------------------------------------------------------- roots
+
+/** Brent's method: root of f in [a, b] where f(a)·f(b) < 0. */
+export function brent(f, lo, hi, tol = 1e-14, maxIter = 200) {
+  let a = lo, b = hi;                      // b: best estimate; a: previous; c: bracket partner
+  let fa = f(a), fb = f(b);
+  if (fa * fb > 0) throw new Error('brent: root not bracketed');
+  let c = a, fc = fa, d = b - a, e = d;
+  for (let i = 0; i < maxIter; i++) {
+    if (fb * fc > 0) { c = a; fc = fa; d = e = b - a; }
+    if (Math.abs(fc) < Math.abs(fb)) { a = b; b = c; c = a; fa = fb; fb = fc; fc = fa; }
+    const tol1 = 2 * Number.EPSILON * Math.abs(b) + tol / 2, m = (c - b) / 2;
+    if (Math.abs(m) <= tol1 || fb === 0) return b;
+    if (Math.abs(e) >= tol1 && Math.abs(fa) > Math.abs(fb)) {
+      let p, q, r;
+      const s = fb / fa;
+      if (a === c) { p = 2 * m * s; q = 1 - s; }
+      else { q = fa / fc; r = fb / fc; p = s * (2 * m * q * (q - r) - (b - a) * (r - 1)); q = (q - 1) * (r - 1) * (s - 1); }
+      if (p > 0) q = -q; else p = -p;
+      if (2 * p < Math.min(3 * m * q - Math.abs(tol1 * q), Math.abs(e * q))) { e = d; d = p / q; }
+      else { d = m; e = d; }
+    } else { d = m; e = d; }
+    a = b; fa = fb;
+    b += Math.abs(d) > tol1 ? d : (m > 0 ? tol1 : -tol1);
+    fb = f(b);
+  }
+  return b;
+}
+
+// ---------------------------------------------------------------- special functions
+
+const LANCZOS = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313,
+  -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+
+/** ln Γ(x) for x > 0 (Lanczos, g = 7, n = 9; relative error ~1e-15). */
+export function lgamma(z) {
+  if (z <= 0 && Number.isInteger(z)) return Infinity;   // poles of Γ
+  if (z < 0.5) return Math.log(Math.PI / Math.abs(Math.sin(Math.PI * z))) - lgamma(1 - z);
+  const x = z - 1;
+  let a = LANCZOS[0];
+  const t = x + 7.5;
+  for (let i = 1; i < 9; i++) a += LANCZOS[i] / (x + i);
+  return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a);
+}
+
+export function gamma(x) {
+  if (x <= 0 && Number.isInteger(x)) return NaN;        // poles of Γ
+  if (x < 0.5) return Math.PI / (Math.sin(Math.PI * x) * gamma(1 - x));
+  return Math.exp(lgamma(x));
+}
+
+export function factorial(n) {
+  let f = 1;
+  for (let i = 2; i <= n; i++) f *= i;
+  return f;
+}
+
+/** Error function (Abramowitz–Stegun 7.1.26 is too coarse; this uses a series / continued fraction, |err| < 1e-14). */
+export function erf(x) {
+  const ax = Math.abs(x);
+  if (ax > 6) return Math.sign(x);                      // erfc(6) ≈ 2e-17 < double precision near 1
+  if (ax < 2.5) {
+    let sum = ax, term = ax;
+    for (let n = 1; n < 100; n++) {
+      term *= -ax * ax / n;
+      const add = term / (2 * n + 1);
+      sum += add;
+      if (Math.abs(add) < 1e-17 * Math.abs(sum)) break;
+    }
+    return Math.sign(x) * 2 / Math.sqrt(Math.PI) * sum;
+  }
+  // erfc continued fraction (Lentz)
+  let f = ax, C = ax, D = 0;
+  for (let n = 1; n < 200; n++) {
+    const an = n / 2;
+    D = ax + an * D; D = 1 / (D === 0 ? 1e-300 : D);
+    C = ax + an / C; if (C === 0) C = 1e-300;
+    const delta = C * D;
+    f *= delta;
+    if (Math.abs(delta - 1) < 1e-16) break;
+  }
+  const erfc = Math.exp(-ax * ax) / Math.sqrt(Math.PI) / f;
+  return Math.sign(x) * (1 - erfc);
+}
+
+/** Modified Bessel function of the first kind I_n(x), integer n ≥ 0 (power series; fine for x ≲ 50). */
+export function besselI(n, x) {
+  let term = Math.pow(x / 2, n) / factorial(n), sum = term;
+  for (let k = 1; k < 500; k++) {
+    term *= (x * x / 4) / (k * (k + n));
+    sum += term;
+    if (Math.abs(term) < 1e-17 * Math.abs(sum)) break;
+  }
+  return sum;
+}
+
+/**
+ * Complete elliptic integral of the first kind K(m) = ∫₀^{π/2} dθ / √(1 − m sin²θ), parameter
+ * m = k² < 1, by the arithmetic–geometric mean: K = π / (2 AGM(1, √(1 − m))).
+ */
+export function ellipticK(m) {
+  if (!(m < 1)) return m === 1 ? Infinity : NaN;
+  let a = 1, b = Math.sqrt(1 - m);
+  for (let i = 0; i < 40 && Math.abs(a - b) > 1e-16 * a; i++) [a, b] = [(a + b) / 2, Math.sqrt(a * b)];
+  return Math.PI / (2 * a);
+}
+
+/** Generalised Laguerre polynomial L_n^(α)(x) by three-term recurrence. */
+export function laguerre(n, alpha, x) {
+  if (n === 0) return 1;
+  let l0 = 1, l1 = 1 + alpha - x;
+  for (let k = 1; k < n; k++) {
+    const l2 = ((2 * k + 1 + alpha - x) * l1 - (k + alpha) * l0) / (k + 1);
+    l0 = l1; l1 = l2;
+  }
+  return l1;
+}
+
+/** Associated Legendre P_l^m(x), m ≥ 0, with the Condon–Shortley phase (−1)^m. */
+export function legendreP(l, m, x) {
+  let pmm = 1;
+  if (m > 0) {
+    const s = Math.sqrt((1 - x) * (1 + x));
+    let fact = 1;
+    for (let i = 1; i <= m; i++) { pmm *= -fact * s; fact += 2; }
+  }
+  if (l === m) return pmm;
+  let pmmp1 = x * (2 * m + 1) * pmm;
+  if (l === m + 1) return pmmp1;
+  let pll = 0;
+  for (let ll = m + 2; ll <= l; ll++) {
+    pll = ((2 * ll - 1) * x * pmmp1 - (ll + m - 1) * pmm) / (ll - m);
+    pmm = pmmp1; pmmp1 = pll;
+  }
+  return pll;
+}
+
+/**
+ * Fully normalised associated Legendre function P̄_l^m(x) = N_lm P_l^m(x) with
+ * N_lm = √((2l+1)/(4π) · (l−m)!/(l+m)!), Condon–Shortley phase included. Uses the standard
+ * stable recurrences (no factorials), so it is accurate for large l and m.
+ */
+export function normalizedLegendre(l, m, x) {
+  const s = Math.sqrt(Math.max(0, (1 - x) * (1 + x)));
+  let pmm = 1 / Math.sqrt(4 * Math.PI);
+  for (let i = 1; i <= m; i++) pmm *= -Math.sqrt((2 * i + 1) / (2 * i)) * s;
+  if (l === m) return pmm;
+  let pm1 = x * Math.sqrt(2 * m + 3) * pmm;
+  if (l === m + 1) return pm1;
+  let pl = 0;
+  for (let ll = m + 2; ll <= l; ll++) {
+    const a = Math.sqrt((4 * ll * ll - 1) / (ll * ll - m * m));
+    const b = Math.sqrt(((ll - 1) ** 2 - m * m) / (4 * (ll - 1) ** 2 - 1));
+    pl = a * (x * pm1 - b * pmm);
+    pmm = pm1; pm1 = pl;
+  }
+  return pl;
+}
+
+/**
+ * Real (tesseral) spherical harmonic, orthonormal on the sphere.
+ * m > 0: √2 P̄_l^m cos(mφ); m < 0: √2 P̄_l^|m| sin(|m|φ); m = 0: P̄_l^0.
+ * The Condon–Shortley phase is removed, so p_x ∝ +x, p_y ∝ +y.
+ */
+export function realYlm(l, m, theta, phi) {
+  const am = Math.abs(m);
+  const P = normalizedLegendre(l, am, Math.cos(theta)) * (am % 2 ? -1 : 1);
+  if (m === 0) return P;
+  return Math.SQRT2 * P * (m > 0 ? Math.cos(am * phi) : Math.sin(am * phi));
+}
+
+// ---------------------------------------------------------------- linear algebra
+
+/** Solve a tridiagonal system (Thomas algorithm). a: sub, b: diag, c: super, d: rhs. Works for complex via callers. */
+export function solveTridiagonal(a, b, c, d) {
+  const n = b.length, cp = new Float64Array(n), dp = new Float64Array(n), x = new Float64Array(n);
+  cp[0] = c[0] / b[0]; dp[0] = d[0] / b[0];
+  for (let i = 1; i < n; i++) {
+    const m = b[i] - a[i] * cp[i - 1];
+    cp[i] = c[i] / m;
+    dp[i] = (d[i] - a[i] * dp[i - 1]) / m;
+  }
+  x[n - 1] = dp[n - 1];
+  for (let i = n - 2; i >= 0; i--) x[i] = dp[i] - cp[i] * x[i + 1];
+  return x;
+}
+
+/** Least-squares fit y ≈ a + b x. Returns { a, b, r2 }. */
+export function linearFit(xs, ys) {
+  // two-pass (centred) sums: no cancellation when x has a large offset (e.g. timestamps)
+  const n = xs.length;
+  let mx = 0, my = 0;
+  for (let i = 0; i < n; i++) { mx += xs[i]; my += ys[i]; }
+  mx /= n; my /= n;
+  let sxx = 0, sxy = 0, syy = 0;
+  for (let i = 0; i < n; i++) { const dx = xs[i] - mx, dy = ys[i] - my; sxx += dx * dx; sxy += dx * dy; syy += dy * dy; }
+  const b = sxy / sxx, a = my - b * mx;
+  const r2 = syy === 0 ? 1 : (sxy * sxy) / (sxx * syy);
+  return { a, b, r2 };
+}
+
+/**
+ * Mean and standard error of a correlated series by binning (blocking) analysis. Returns the
+ * largest error over block sizes with ≥ minBins blocks: conservative (≈ 10 % high for
+ * uncorrelated data). Series too short for blocking fall back to the naive standard error.
+ */
+export function meanWithError(xs, minBins = 16) {
+  const n = xs.length;
+  const mean = xs.reduce((s, v) => s + v, 0) / n;
+  if (n < minBins) {
+    const v = n > 1 ? xs.reduce((s, x) => s + (x - mean) ** 2, 0) / (n - 1) : NaN;
+    return { mean, error: Math.sqrt(v / n), naive: true };
+  }
+  let best = 0;
+  for (let size = 1; n / size >= minBins; size *= 2) {
+    const nb = Math.floor(n / size), means = [];
+    for (let b = 0; b < nb; b++) { let s = 0; for (let i = 0; i < size; i++) s += xs[b * size + i]; means.push(s / size); }
+    const m = means.reduce((s, v) => s + v, 0) / nb;
+    const v = means.reduce((s, x) => s + (x - m) ** 2, 0) / (nb - 1);
+    best = Math.max(best, Math.sqrt(v / nb));
+  }
+  return { mean, error: best };
+}

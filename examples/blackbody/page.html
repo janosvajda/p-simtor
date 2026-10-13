@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="p-simtor">
+<title>Black-body radiation</title>
+<link rel="stylesheet" href="psim:ui/instrument.css">
+</head>
+<body>
+<script type="application/json" id="psim-verification">null</script>
+<script type="module">
+import { createInstrument } from 'psim:ui/instrument-app.mjs';
+import { sci } from 'psim:ui/instrument.mjs';
+import { wavelengthColor } from 'psim:core/radiation.mjs';
+import {
+  PARAMS, PRESETS, VISIBLE, createSim, WIEN_B, SIGMA_SB, c1L, c2, exitance, rayleighJeans, wienApprox, planckLambda,
+} from './physics.mjs';
+
+// ------------------------------------------------------------------ stage: the glowing body and its spectrum
+const fmtL = l => (l >= 1e-3 ? `${+(l * 1e3).toPrecision(3)} mm` : l >= 1e-6 ? `${+(l * 1e6).toPrecision(3)} µm` : `${+(l * 1e9).toPrecision(3)} nm`);
+const band = l => (l < 380e-9 ? 'ultraviolet' : l <= 750e-9 ? 'visible light' : l < 1e-3 ? 'the infrared' : 'microwaves');
+function draw(ctx, sim, view) {
+  const { W, H } = view, C = view.color;
+  const T = sim.T, [r, g, b] = sim.color.rgb;
+  // Side by side on wide screens, stacked on narrow ones.
+  const narrow = W < 640;
+  const cx = narrow ? W / 2 : Math.min(W * 0.27, 260), cy = narrow ? H * 0.27 : H * 0.5;
+  const R = narrow ? Math.min(W * 0.2, H * 0.12) : Math.min(H * 0.3, W * 0.17);
+  // Glow brightness follows the VISIBLE power on a log scale (display convention, disclosed):
+  // a 310 K body is dark to the eye, a candle dim, the Sun bright.
+  const visiblePower = exitance(T) * sim.visibleFraction;
+  const lum = Math.max(0, Math.min(1, (Math.log10(Math.max(visiblePower, 1e-300)) - 1) / 6.5));
+  const halo = ctx.createRadialGradient(cx, cy, R * 0.6, cx, cy, R * 2.6);
+  halo.addColorStop(0, `rgba(${r},${g},${b},${0.55 * lum})`);
+  halo.addColorStop(1, `rgba(${r},${g},${b},0)`);
+  ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(cx, cy, R * 2.6, 0, 7); ctx.fill();
+  const body = ctx.createRadialGradient(cx - R * 0.3, cy - R * 0.3, R * 0.1, cx, cy, R);
+  body.addColorStop(0, `rgba(${Math.min(255, r + 40)},${Math.min(255, g + 40)},${Math.min(255, b + 40)},${0.25 + 0.75 * lum})`);
+  body.addColorStop(1, `rgba(${r},${g},${b},${0.15 + 0.85 * lum})`);
+  ctx.fillStyle = body; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fill();
+  ctx.strokeStyle = C('--line-strong'); ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = C('--ink'); ctx.font = '600 22px ui-monospace, Menlo, monospace'; ctx.textAlign = 'center';
+  ctx.fillText(`${+T.toPrecision(5)} K`, cx, cy + R + (narrow ? 32 : 44));
+  ctx.font = '11px ui-sans-serif, system-ui'; ctx.fillStyle = C('--muted');
+  ctx.fillText(sim.color.inGamut ? 'colour of the light (CIE 1931 → sRGB)' : 'colour of the light (outside sRGB: nearest displayable)', cx, cy + R + (narrow ? 50 : 64));
+  ctx.textAlign = 'start';
+
+  // Infrared emitters: say so on the body itself, with a dashed "thermal glow" ring.
+  if (lum < 0.05) {
+    ctx.setLineDash([4, 5]); ctx.strokeStyle = C('--bad'); ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(cx, cy, R * 1.1, 0, 7); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = C('--ink-2'); ctx.font = '12px ui-sans-serif, system-ui'; ctx.textAlign = 'center';
+    ctx.fillText(`invisible to the eye: it glows in ${band(sim.lmax)}`, cx, cy - 4);
+    ctx.fillStyle = C('--muted'); ctx.font = '11px ui-monospace, Menlo, monospace';
+    ctx.fillText(`peak ${fmtL(sim.lmax)}`, cx, cy + 14);
+    ctx.textAlign = 'start';
+  }
+
+  // Spectrum strip on a log axis that always contains the peak and the visible band; each
+  // column is coloured by its wavelength (UV and IR grey), height ∝ B_λ normalised to the peak.
+  const x0 = narrow ? 28 : Math.min(W * 0.52, cx + R * 2.6), x1 = W - 28;
+  const top = narrow ? H * 0.56 : H * 0.24, bottom = narrow ? H * 0.8 : H * 0.76;
+  const l0 = Math.min(200e-9, sim.lmax / 4), l1 = Math.max(3e-6, sim.lmax * 12);
+  const X = l => x0 + Math.log(l / l0) / Math.log(l1 / l0) * (x1 - x0);
+  const peak = planckLambda(sim.lmax, T);
+  for (let px = Math.floor(x0); px < x1; px++) {
+    const l = l0 * Math.pow(l1 / l0, (px - x0) / (x1 - x0)), nm = l * 1e9;
+    const v = planckLambda(l, T) / peak;
+    const hgt = (bottom - top) * Math.min(1, v);
+    const inVis = l >= VISIBLE[0] && l <= VISIBLE[1];
+    const [cr, cg, cb] = inVis ? wavelengthColor(nm) : [120, 128, 145];
+    ctx.fillStyle = `rgba(${cr},${cg},${cb},${inVis ? 0.95 : 0.35})`;
+    ctx.fillRect(px, bottom - hgt, 1, hgt);
+  }
+  // visible band, always marked even when the curve there is invisibly small
+  ctx.fillStyle = C('--grid-strong');
+  ctx.fillRect(X(VISIBLE[0]), bottom + 2, X(VISIBLE[1]) - X(VISIBLE[0]), 3);
+  ctx.strokeStyle = C('--line-strong'); ctx.beginPath(); ctx.moveTo(x0, bottom + 0.5); ctx.lineTo(x1, bottom + 0.5); ctx.stroke();
+  ctx.fillStyle = C('--muted'); ctx.font = '10.5px ui-monospace, Menlo, monospace'; ctx.textAlign = 'center';
+  const ticks = [];
+  for (let e = Math.ceil(Math.log10(l0)); e <= Math.floor(Math.log10(l1)); e++) ticks.push(10 ** e);
+  for (const l of ticks) ctx.fillText(fmtL(l), X(l), bottom + 18);
+  ctx.fillText('visible', (X(VISIBLE[0]) + X(VISIBLE[1])) / 2, bottom + (ticks.length ? 32 : 18));
+  ctx.fillText('wavelength, log scale', (x0 + x1) / 2, bottom + 48);
+  ctx.strokeStyle = C('--ink'); ctx.setLineDash([3, 4]);
+  ctx.beginPath(); ctx.moveTo(X(sim.lmax), top - 8); ctx.lineTo(X(sim.lmax), bottom); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = C('--ink'); ctx.fillText(`λ_max = ${fmtL(sim.lmax)}`, X(sim.lmax), top - 14);
+  ctx.fillStyle = C('--muted'); ctx.textAlign = 'start';
+  const vf = 100 * sim.visibleFraction;
+  ctx.fillText(vf === 0 ? 'essentially none of the power is visible light (< 10⁻³⁰⁰ %)' : `${vf >= 1e-3 ? vf.toPrecision(3) : sci(vf, 2)} % of the power is visible light`, x0, bottom + 66);
+}
+
+// ------------------------------------------------------------------ workbench: equations + figures
+function bench({ eqs, figs, createPlot, createEquation, createDerivation, M, setParam }) {
+  const nm = l => l * 1e9;
+  const spec = createPlot({
+    title: 'Spectral radiance B_λ(λ, T)', height: 300,
+    x: { label: 'wavelength λ', unit: 'nm', min: 50, max: 1e6, log: true },
+    y: { label: 'B_λ', unit: 'W sr⁻¹ m⁻³', log: true, min: 1e-10, max: 1e17 },
+  });
+  const sb = createPlot({
+    title: 'Radiant exitance M = σT⁴', height: 300,
+    x: { label: 'temperature T', unit: 'K', min: 1, max: 1e5, log: true },
+    y: { label: 'M', unit: 'W m⁻²', log: true, min: 1e-8, max: 1e13 },
+    onCursor: T => setParam('T', +T.toPrecision(4)),
+  });
+  figs.append(spec.el, sb.el);
+
+  // Live values are read from `cur`, refreshed on every update.
+  const cur = { T: 5772, lm: WIEN_B / 5772 };
+  // Planck's law split into its two physical factors.
+  const lam = M.i('λ'), T_ = M.i('T');
+  const planck = createEquation({
+    title: 'Planck’s law, term by term (values at the peak λ_max)',
+    lhs: { mathml: `${M.sub(M.i('B'), lam)}${M.paren(`${lam}<mo>,</mo>${T_}`)}`, label: 'spectral radiance', unit: 'W sr⁻¹ m⁻³', value: () => planckLambda(cur.lm, cur.T) },
+    op: '=',
+    terms: [
+      { id: 'modes', mathml: M.frac(`${M.n(2)}${M.i('h')}${M.sup(M.i('c'), M.n(2))}`, M.sup(lam, M.n(5))), label: 'density of light modes × energy scale (classical part)', color: '--body-1', unit: 'W sr⁻¹ m⁻³', value: () => c1L / cur.lm ** 5 },
+      { id: 'occ', sign: '×', mathml: M.frac(M.n(1), `${M.sup(M.i('e'), M.row(M.frac(`${M.i('h')}${M.i('c')}`, `${lam}${M.i('k')}${T_}`)))}<mo>−</mo>${M.n(1)}`), label: 'photon occupation (Bose–Einstein): the quantum cut-off', color: '--body-0', digits: 4, value: () => 1 / Math.expm1(c2 / (cur.lm * cur.T)) },
+    ],
+    where: [
+      { mathml: M.i('h'), meaning: 'Planck constant (exact, SI 2019)', value: () => 6.62607015e-34, unit: 'J s' },
+      { mathml: M.i('k'), meaning: 'Boltzmann constant (exact)', value: () => 1.380649e-23, unit: 'J/K' },
+      { mathml: `${M.i('h')}${M.i('c')}<mo>/</mo>${M.i('k')}`, meaning: 'second radiation constant c₂', value: () => c2, unit: 'm K' },
+    ],
+    link: spec,
+  });
+  const wien = createEquation({
+    title: 'Wien’s displacement law',
+    lhs: { mathml: M.sub(lam, M.i('max')), label: 'peak wavelength', unit: 'nm', value: () => cur.lm * 1e9, digits: 5 },
+    terms: [{ id: 'wien', mathml: M.frac(M.i('b'), T_), label: 'b = hc / (4.965… k)', color: '--warn', unit: 'nm', value: () => WIEN_B / cur.T * 1e9, digits: 5 }],
+    link: spec,
+  });
+  const stefan = createEquation({
+    title: 'Stefan–Boltzmann law',
+    lhs: { mathml: `${M.i('M')}<mo>=</mo><mi>π</mi><mo>∫</mo>${M.sub(M.i('B'), lam)}<mi>d</mi>${lam}`, label: 'power per area', unit: 'W/m²', value: () => exitance(cur.T) },
+    terms: [{ id: 'sb', mathml: `${M.i('σ')}${M.sup(T_, M.n(4))}`, label: 'σ = 2π⁵k⁴/(15h³c²)', color: '--body-2', unit: 'W/m²', value: () => SIGMA_SB * cur.T ** 4 }],
+    link: sb,
+  });
+  const steps = createDerivation([
+    { mathml: `<mfrac><mi>∂</mi><mrow><mi>∂</mi>${lam}</mrow></mfrac>${M.sub(M.i('B'), lam)}<mo>=</mo><mn>0</mn>`, note: 'The peak is where the slope of the spectrum vanishes.' },
+    { mathml: `${M.i('x')}<mo>=</mo><mn>5</mn>${M.paren(`<mn>1</mn><mo>−</mo>${M.sup(M.i('e'), `<mo>−</mo>${M.i('x')}`)}`)}<mo>,</mo><mspace width="0.6em"/>${M.i('x')}<mo>=</mo><mfrac><mrow>${M.i('h')}${M.i('c')}</mrow><mrow>${lam}${M.i('k')}${T_}</mrow></mfrac>`, note: 'Substituting x turns it into one transcendental equation, independent of T.' },
+    { mathml: `${M.i('x')}<mo>=</mo><mn>4.965114231744276…</mn>`, note: 'Solved with Brent’s method (core/numerics.mjs) to machine precision.' },
+    { mathml: `${M.sub(lam, M.i('max'))}${T_}<mo>=</mo><mfrac><mrow>${M.i('h')}${M.i('c')}</mrow><mrow>${M.i('x')}${M.i('k')}</mrow></mfrac><mo>=</mo><mn>2.897771955</mn><mo>×</mo><msup><mn>10</mn><mn>−3</mn></msup><mtext> m K</mtext>`, note: 'Equals the CODATA 2018 value to all 10 digits.' },
+  ], { title: 'Where Wien’s constant comes from' });
+  eqs.append(planck.el, wien.el, stefan.el, steps);
+
+  const presetsEl = document.createElement('div');
+  presetsEl.className = 'psim-btns';
+  for (const p of PRESETS) {
+    const b = document.createElement('button');
+    b.className = 'psim-btn'; b.type = 'button'; b.textContent = `${p.label} · ${p.T} K`;
+    b.title = p.note ?? '';
+    b.onclick = () => setParam('T', p.T);
+    presetsEl.append(b);
+  }
+  eqs.prepend(presetsEl);
+
+  let lastT = null, lastScale = null;
+  return {
+    update(sim) {
+      const T = sim.T, lm = sim.lmax;
+      cur.T = T; cur.lm = lm;
+      planck.update(); wien.update(); stefan.update();
+      if (T === lastT && sim.params.scale === lastScale) { spec.draw(); sb.draw(); return; }
+      lastT = T; lastScale = sim.params.scale;
+      const linear = sim.params.scale === 'lin';
+      if (linear) spec.setX({ min: Math.min(50, nm(lm) / 10), max: nm(lm) * 6, log: false }).setY({ log: false, auto: true, min: 0, max: 1 });
+      else spec.setX({ min: Math.min(50, nm(lm) / 10), max: Math.max(1e6, nm(lm) * 10), log: true }).setY({ log: true, auto: false, min: Math.max(1e-10, planckLambda(lm, T) * 1e-12), max: planckLambda(lm, T) * 20 });
+      spec.band('vis', 380, 750, { color: '--grid-strong', alpha: 0.7, label: 'visible' });
+      spec.fn('modes', l => rayleighJeans(l * 1e-9, T), { color: '--body-1', dash: true, label: 'Rayleigh–Jeans (classical: diverges)', ignoreScale: true, width: 1.4 });
+      spec.fn('wienapprox', l => wienApprox(l * 1e-9, T), { color: '--muted', dot: true, label: 'Wien approximation', ignoreScale: true, width: 1.4 });
+      spec.fn('occ', l => planckLambda(l * 1e-9, T), { color: '--body-0', label: `Planck, T = ${+T.toPrecision(5)} K`, width: 2.2 });
+      spec.vline('wien', nm(lm), { color: '--warn', label: `λ_max = ${+nm(lm).toPrecision(4)} nm` });
+      sb.fn('sb', t => SIGMA_SB * t ** 4, { color: '--body-2', label: 'σT⁴' });
+      sb.marker('now', T, exitance(T), { color: '--body-0', label: `${sci(exitance(T), 3)} W/m²` });
+      sb.cursor(T);
+      for (const p of PRESETS) sb.marker(`p-${p.T}`, p.T, exitance(p.T), { color: '--muted', r: 2.5 });
+      spec.invalidate(); sb.invalidate(); spec.draw(); sb.draw();
+    },
+  };
+}
+
+createInstrument({
+  title: 'Black-body radiation',
+  subtitle: 'Planck’s law, Wien’s displacement and Stefan–Boltzmann, with the colour of thermal light',
+  tier: 'analytical',
+  tierReason: 'Planck’s law and its integrals are evaluated exactly with CODATA constants; numerical integration, the Wien root and the colour pipeline are verified against CODATA, the Sun and the cosmic microwave background (Verification).',
+  layout: 'workbench',
+  params: PARAMS,
+  create: createSim,
+  draw, bench,
+  timeDependent: false,
+  hudLine: sim => `λ_max = ${fmtL(sim.lmax)} · σT⁴ = ${sci(exitance(sim.T), 3)} W/m²`,
+  model: {
+    legend: ['colour: exact chromaticity, brightness normalised (display)', 'glow strength: log of the visible power (display)'],
+    assumptions: [
+      'Ideal black body: perfect absorber in thermal equilibrium (emissivity 1 at all wavelengths).',
+      'Real objects (stars, lamps, skin) are close to, not exactly, black bodies; their spectra have lines and emissivity < 1.',
+      'Colour uses the CIE 1931 2° standard observer (analytic fit, ±0.002 in chromaticity) and the sRGB display gamut.',
+    ],
+    conventions: [
+      'Colours of very hot or very cool bodies fall outside sRGB; they are moved to the nearest displayable colour.',
+      'Displayed brightness is normalised: real brightness spans more than 20 orders of magnitude over this temperature range.',
+      'In the spectrum strip, ultraviolet and infrared are drawn grey (no visible colour).',
+    ],
+    references: [
+      'M. Planck, Ann. Phys. 309, 553 (1901).',
+      'E. Tiesinga et al., CODATA 2018, Rev. Mod. Phys. 93, 025010 (2021).',
+      'D. J. Fixsen, Astrophys. J. 707, 916 (2009): CMB temperature 2.7255 K.',
+      'C. Wyman, P.-P. Sloan, P. Shirley, JCGT 2(2) (2013): CIE colour-matching fit.',
+    ],
+  },
+});
+</script>
+</body>
+</html>

@@ -11,10 +11,10 @@ import {
 import { solveKepler, keplerRelative } from '../core/kepler.mjs';
 
 test('Kepler solver satisfies E − e sin E = M', () => {
-  for (const e of [0, 0.3, 0.9, 0.99]) for (const M of [0.1, 1, 3, 6]) {
+  for (const e of [0, 0.3, 0.9, 0.99]) {for (const M of [0.1, 1, 3, 6]) {
     const E = solveKepler(M, e);
     assert.ok(Math.abs(E - e * Math.sin(E) - M) < 1e-12, `e=${e} M=${M}`);
-  }
+  }}
 });
 
 test('analytic Kepler orbit conserves energy', () => {

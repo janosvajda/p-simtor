@@ -15,6 +15,43 @@ import { join, dirname, normalize, resolve, relative } from 'node:path';
 
 const IMPORT_RE = /^\s*import\s+(?:\*\s+as\s+(\w+)|\{([^}]*)\})\s+from\s+['"]([^'"]+)['"];?\s*$/gm;
 const EXPORT_RE = /^export\s+(?:async\s+)?(function\*?|const|let|class)\s+([A-Za-z_$][\w$]*)/gm;
+const EXPORT_DECL_RE = /^export\s+(const|let)\s+/gm;
+
+/**
+ * Names declared by `export const a = …, b = …;` (several declarators). Scans the statement
+ * at bracket depth 0, skipping strings, comments and template literals, splitting on commas.
+ */
+function declaratorNames(code, start) {
+  const names = [];
+  let depth = 0, i = start, expectName = true;
+  while (i < code.length) {
+    const ch = code[i];
+    if (expectName) {
+      const m = /^\s*([A-Za-z_$][\w$]*)/.exec(code.slice(i));
+      if (!m) break;
+      names.push(m[1]); i += m[0].length; expectName = false; continue;
+    }
+    if (ch === '"' || ch === "'" || ch === '`') {
+      const q = ch; i++;
+      while (i < code.length && code[i] !== q) { if (code[i] === '\\') i++; i++; }
+      i++; continue;
+    }
+    if (ch === '/' && code[i + 1] === '/') { while (i < code.length && code[i] !== '\n') i++; continue; }
+    if (ch === '/' && code[i + 1] === '*') { i = code.indexOf('*/', i + 2) + 2; continue; }
+    if ('([{'.includes(ch)) depth++;
+    else if (')]}'.includes(ch)) depth--;
+    else if (ch === ',' && depth === 0) expectName = true;
+    else if ((ch === ';' || ch === '\n') && depth === 0) {
+      // a newline ends the statement unless the expression clearly continues
+      if (ch === ';') break;
+      const rest = code.slice(i + 1).trimStart();
+      const prev = code.slice(0, i).trimEnd().slice(-1);
+      if (!/^[,.+\-*/%&|?:=]/.test(rest) && !/[,=+\-*/%&|?:(]$/.test(prev)) break;
+    }
+    i++;
+  }
+  return names;
+}
 
 function parseImports(code) {
   const out = [];
@@ -70,7 +107,19 @@ export function bundleModules(entryCode, skillDir, srcDir) {
       visit(dep, [...stack, mod.file]);
       body = body.replace(imp.text, bindingFor(imp, dep.key));
     }
-    const names = [...body.matchAll(EXPORT_RE)].map(m => m[2]);
+    const names = [...new Set([
+      ...[...body.matchAll(EXPORT_RE)].map(m => m[2]),
+      ...[...body.matchAll(EXPORT_DECL_RE)].flatMap(m => declaratorNames(body, m.index + m[0].length)),
+    ])];
+    // export { a, b as c };  (re-exports of local or imported bindings)
+    body = body.replace(/^export\s*\{([^}]*)\};?[ \t]*$/gm, (_, list) => {
+      for (const part of list.split(',').map(x => x.trim()).filter(Boolean)) {
+        const m = part.match(/^([\w$]+)(?:\s+as\s+([\w$]+))?$/);
+        if (!m) throw new Error(`${mod.key}: cannot parse export list entry "${part}"`);
+        names.push(m[2] ? `${m[2]}: ${m[1]}` : m[1]);
+      }
+      return '';
+    });
     body = body.replace(/^export\s+(?=(?:async\s+)?(?:function|const|let|class)\b)/gm, '');
     if (/^export\b/m.test(body)) throw new Error(`${mod.key}: unsupported export form (use export function/const/let/class)`);
     seen.add(mod.file);
@@ -89,8 +138,8 @@ function jsonForScript(value) {
   return JSON.stringify(value, null, 1).replace(/<\//g, '<\\/');
 }
 
-export function bundleHtml(html, { skillDir, srcDir, config, verification } = {}) {
-  html = html.replace(/<link\s+rel="stylesheet"\s+href="psim:([^"]+)"\s*\/?>/g, (_, p) =>
+export function bundleHtml(source, { skillDir, srcDir, config, verification } = {}) {
+  let html = source.replace(/<link\s+rel="stylesheet"\s+href="psim:([^"]+)"\s*\/?>/g, (_, p) =>
     `<style>/* psim:${p} */\n${readFileSync(join(skillDir, p), 'utf8')}</style>`);
   html = html.replace(/<script type="module">([\s\S]*?)<\/script>/g, (whole, code) =>
     /from\s+['"](?:psim:|\.\.?\/)/.test(code) ? `<script type="module">\n${bundleModules(code, skillDir, srcDir)}\n</script>` : whole);

@@ -72,10 +72,10 @@ export function kineticEnergy(s) {
 export function forceFunction(s) {
   const { n, x, m, G, eps2 } = s;
   let U = 0;
-  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+  for (let i = 0; i < n; i++) {for (let j = i + 1; j < n; j++) {
     const dx = x[3 * j] - x[3 * i], dy = x[3 * j + 1] - x[3 * i + 1], dz = x[3 * j + 2] - x[3 * i + 2];
     U += G * m[i] * m[j] / Math.sqrt(dx * dx + dy * dy + dz * dz + eps2);
-  }
+  }}
   return U;
 }
 
@@ -113,10 +113,10 @@ export function centerOfMass(s) {
 /** Shift to the barycentric frame: centre of mass at rest at the origin. */
 export function toBarycentric(s) {
   const { x: c, v: u } = centerOfMass(s);
-  for (let i = 0; i < s.n; i++) for (let k = 0; k < 3; k++) {
+  for (let i = 0; i < s.n; i++) {for (let k = 0; k < 3; k++) {
     s.x[3 * i + k] -= c[k];
     s.v[3 * i + k] -= u[k];
-  }
+  }}
   return s;
 }
 
@@ -138,7 +138,8 @@ export function drift(s, ref) {
   const dP = Math.hypot(now.P[0] - ref.P[0], now.P[1] - ref.P[1], now.P[2] - ref.P[2]);
   const dL = Math.hypot(now.L[0] - ref.L[0], now.L[1] - ref.L[1], now.L[2] - ref.L[2]);
   return {
-    dE: Math.abs((now.E - ref.E) / ref.E),
+    // relative to |E₀|, or to T₀ + U₀ when the system is (nearly) marginally bound
+    dE: Math.abs(now.E - ref.E) / (Math.abs(ref.E) > 1e-9 * (ref.T + ref.U) ? Math.abs(ref.E) : (ref.T + ref.U)),
     dP: dP / scaleP,
     dL: dL / scaleL,
     now,
@@ -261,18 +262,26 @@ export const INTEGRATORS = {
  * simulation independent of display frame rate: the step sequence depends only
  * on the initial value problem and h, never on when frames are drawn.
  */
-export function createStepper(sys, { integrator = 'logh4', h, stepsPerCrossing = 2000 } = {}) {
+export function createStepper(sys, { integrator = 'logh4', h: hGiven, stepsPerCrossing = 2000 } = {}) {
   const spec = INTEGRATORS[integrator];
   if (!spec) throw new Error(`Unknown integrator "${integrator}"`);
   const ctx = { B: -totalEnergy(sys) };
-  if (h == null) h = defaultStep(sys, integrator, stepsPerCrossing);
+  const h = hGiven ?? defaultStep(sys, integrator, stepsPerCrossing);
+  if (!(Number.isFinite(h) && h !== 0)) throw new Error(`createStepper: step ${h} is not usable (coincident bodies or zero energy scale?)`);
   const prev = { t: sys.t, x: sys.x.slice(), v: sys.v.slice() };
   const ref = invariants(sys);
   return {
     sys, integrator, spec, h, ctx, prev, ref,
     step() {
       prev.t = sys.t; prev.x.set(sys.x); prev.v.set(sys.v);
+      const steps0 = sys.steps;
       spec.step(sys, this.h, ctx);
+      if (!Number.isFinite(sys.t) || (sys.t - prev.t) * Math.sign(this.h) <= 0
+        || !sys.x.every(Number.isFinite) || !sys.v.every(Number.isFinite) || !Number.isFinite(totalEnergy(sys))) {
+        sys.t = prev.t; sys.x.set(prev.x); sys.v.set(prev.v); sys.steps = steps0;
+        computeAccelerations(sys);
+        throw new Error('createStepper: numerical step failed; reduce the step size or resolve the collision');
+      }
     },
     /** Advance until sys.t >= tTarget. Returns false if maxSteps was hit first. */
     advanceTo(tTarget, maxSteps = Infinity) {
@@ -291,12 +300,36 @@ export function createStepper(sys, { integrator = 'logh4', h, stepsPerCrossing =
 }
 
 /**
- * A sensible default step. Fixed-step methods: dt = t_cross / 2000.
- * LogH methods: h chosen so that, at the initial configuration, dt ≈ t_cross / 2000;
- * because dt = h/U adapts, close encounters automatically get shorter steps.
+ * Shortest pairwise dynamical time min √(r_ij³ / G(m_i + m_j)). Unlike the crossing
+ * time, it stays meaningful for extreme mass ratios (a planet around a star), where
+ * the total energy, and hence the crossing time, is dominated by the light body.
+ */
+export function pairTime(s) {
+  let t = Infinity;
+  for (let i = 0; i < s.n; i++) {for (let j = i + 1; j < s.n; j++) {
+    const r = Math.hypot(s.x[3 * j] - s.x[3 * i], s.x[3 * j + 1] - s.x[3 * i + 1], s.x[3 * j + 2] - s.x[3 * i + 2]);
+    t = Math.min(t, Math.sqrt(r * r * r / (s.G * (s.m[i] + s.m[j]))));
+  }}
+  return t;
+}
+
+/** Shortest pair crossing time r_ij / |v_i − v_j|; resolves fast unbound flybys. */
+export function pairCrossingTime(s) {
+  let t = Infinity;
+  for (let i = 0; i < s.n; i++) {for (let j = i + 1; j < s.n; j++) {
+    const speed = Math.hypot(s.v[3 * j] - s.v[3 * i], s.v[3 * j + 1] - s.v[3 * i + 1], s.v[3 * j + 2] - s.v[3 * i + 2]);
+    if (speed > 0) t = Math.min(t, Math.hypot(s.x[3 * j] - s.x[3 * i], s.x[3 * j + 1] - s.x[3 * i + 1], s.x[3 * j + 2] - s.x[3 * i + 2]) / speed);
+  }}
+  return t;
+}
+
+/**
+ * A sensible default step: dt = t_char / stepsPerCrossing with t_char = min(crossing
+ * time, 2π × shortest pair orbital or crossing time). LogH methods: h chosen so that dt ≈ that value at the
+ * initial configuration; because dt = h/U adapts, close encounters get shorter steps.
  */
 export function defaultStep(sys, integrator, stepsPerCrossing = 2000) {
-  const tc = crossingTime(sys);
+  const tc = Math.min(crossingTime(sys), 2 * Math.PI * pairTime(sys), 2 * Math.PI * pairCrossingTime(sys));
   const dt = tc / stepsPerCrossing;
   if (!INTEGRATORS[integrator].adaptive) return dt;
   return dt * forceFunction(sys);
@@ -326,17 +359,26 @@ export function hermite(t0, x0, v0, t1, x1, v1, t, outX, outV) {
 
 /**
  * Integrate a copy of the system to time tEnd and return final state and drift.
- * Used by verification scripts and by in-page convergence checks.
+ * Used by verification scripts and by in-page convergence checks. With
+ * trackConservation, maxDrift records the worst error at every computed step.
  */
 export function integrateTo(bodies, opts, tEnd) {
   const sys = createSystem(bodies, opts);
   if (opts.barycentric !== false) toBarycentric(sys);
   const st = createStepper(sys, opts);
   const x = new Float64Array(3 * sys.n), v = new Float64Array(3 * sys.n);
-  st.advanceTo(tEnd);
+  let maxDrift;
+  if (opts.trackConservation) {
+    maxDrift = { dE: 0, dP: 0, dL: 0 };
+    while (sys.t < tEnd) {
+      st.step();
+      const errors = drift(sys, st.ref);
+      for (const key of ['dE', 'dP', 'dL']) maxDrift[key] = Math.max(maxDrift[key], errors[key]);
+    }
+  } else st.advanceTo(tEnd);
   st.sampleAt(tEnd, x, v);
   const d = drift(sys, st.ref);
-  return { x, v, steps: sys.steps, h: st.h, dE: d.dE, dP: d.dP, dL: d.dL, sys };
+  return { x, v, steps: sys.steps, h: st.h, dE: d.dE, dP: d.dP, dL: d.dL, maxDrift, sys };
 }
 
 /** Max position difference between two flat state vectors. */

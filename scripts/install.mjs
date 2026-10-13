@@ -25,7 +25,7 @@ const TARGETS = {
 };
 
 // Repository files that are not part of the installed skill.
-const EXCLUDE = new Set(['.git', '.github', 'node_modules', '.DS_Store', 'specification.md']);
+const EXCLUDE = new Set(['.git', '.github', 'node_modules', '.DS_Store', 'specification.md', 'docs']);
 
 const args = process.argv.slice(2);
 const opt = k => { const i = args.indexOf(k); return i < 0 ? null : (args[i + 1] && !args[i + 1].startsWith('--') ? args[i + 1] : true); };

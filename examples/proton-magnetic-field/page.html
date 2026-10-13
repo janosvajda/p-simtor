@@ -14,7 +14,7 @@ import { createInstrument } from 'psim:ui/instrument-app.mjs';
 import { sci } from 'psim:ui/instrument.mjs';
 import { PARAMS, createSim } from './physics.mjs';
 
-const BOLD_B = '𝐁', BOLD_V = '𝐯', BOLD_E = '𝐄', BOLD_U = '𝐮';
+const BOLD_B = '𝐁', BOLD_E = '𝐄', BOLD_U = '𝐮';
 // yaw about B; elev = angle of the eye above the orbital plane (0: side-on, π/2: looking down B).
 const cam = { yaw: -0.55, elev: 0.42 };
 
@@ -51,7 +51,7 @@ function draw(ctx, sim, view) {
   // Field lines: B ∥ ẑ, uniform. Drawn as a lattice of parallel lines with direction ticks.
   const step = niceStep(r * 1.1);
   ctx.lineWidth = 1;
-  for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) {
+  for (let i = -2; i <= 2; i++) {for (let j = -2; j <= 2; j++) {
     const px = Math.round(center[0] / step) * step + i * step, py = j * step;
     const zSpan = 3 * r;
     const A = project(view, [px, py, center[2] - zSpan], scale, center);
@@ -67,7 +67,7 @@ function draw(ctx, sim, view) {
     ctx.lineTo(T1[0] - 6 * Math.cos(ang - 0.5), T1[1] - 6 * Math.sin(ang - 0.5));
     ctx.lineTo(T1[0] - 6 * Math.cos(ang + 0.5), T1[1] - 6 * Math.sin(ang + 0.5));
     ctx.fill();
-  }
+  }}
 
   // Analytic gyro-circle (E = 0 only): exact reference the computed orbit should overlay.
   if (!p.E) {
@@ -131,7 +131,7 @@ function draw(ctx, sim, view) {
   ctx.fillText(fmtLen(bar), 16, view.H - 14);
 }
 
-function onPointer(canvas, view) {
+function onPointer(canvas) {
   let drag = null;
   canvas.style.cursor = 'grab';
   canvas.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, yaw: cam.yaw, elev: cam.elev }; canvas.setPointerCapture(e.pointerId); canvas.style.cursor = 'grabbing'; });

@@ -38,18 +38,22 @@ export function createSim(p) {
   const a = analytic(p);
   const dt = a.period / p.stepsPerGyration;
   const qm = qe / mp;
-  // Start at the origin of the guiding-centre frame offset so the E = 0 orbit is centred on 0.
   // q > 0 in B = +ẑ gyrates clockwise seen from +z: at (0, −r) it moves in −x, so the
   // Lorentz force q v × B points to +y, towards the orbit centre at the origin.
-  const x = [0, -a.radius, 0];
-  const u = [-a.gamma * a.vperp, 0, a.gamma * a.vpar];  // u = γv
+  // Boris is a leapfrog: u lives at half steps, rotating by θ = 2·atan(ΩΔt/2) per step on a
+  // discrete circle of radius r·√(1 + (ΩΔt/2)²). Starting x on that circle and u half a step
+  // back (rotated by +θ/2) centres the E = 0 orbit exactly on the origin.
+  const half = a.omega * dt / 2, theta = 2 * Math.atan(half);
+  const x = [0, -a.radius * Math.sqrt(1 + half * half), 0];
+  const ux0 = -a.gamma * a.vperp;
+  const u = [ux0 * Math.cos(theta / 2), ux0 * Math.sin(theta / 2), a.gamma * a.vpar];  // u = γv at t = −Δt/2
   const E = [0, p.E, 0], Bv = [0, 0, p.B];
   let tS = 0, steps = 0;
   const gamma0 = a.gamma;
   const trail = [[...x]];
   const rows = [];
 
-  function gammaOf(u) { return Math.sqrt(1 + (u[0] ** 2 + u[1] ** 2 + u[2] ** 2) / (c * c)); }
+  function gammaOf(w) { return Math.sqrt(1 + (w[0] ** 2 + w[1] ** 2 + w[2] ** 2) / (c * c)); }
 
   function step() {
     const h = qm * dt / 2;
@@ -136,6 +140,18 @@ export function verify() {
   const rErr = Math.abs(rMeas - a.radius) / a.radius;
   checks.push({ label: 'Orbit radius vs analytic γmv⊥/(qB), 256 steps/gyration', value: `rel. err ${rErr.toExponential(2)}`, pass: rErr < 1e-4 });
 
+  // 2b. Orbit centred on the origin (half-step start): extremes of the discrete circle.
+  {
+    const cs = createSim({ ...base, stepsPerGyration: 32 });
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (let i = 0; i < 32 * 100; i++) {
+      cs.step();
+      x0 = Math.min(x0, cs.x[0]); x1 = Math.max(x1, cs.x[0]); y0 = Math.min(y0, cs.x[1]); y1 = Math.max(y1, cs.x[1]);
+    }
+    const off = Math.hypot((x0 + x1) / 2, (y0 + y1) / 2) / cs.analytic.radius;
+    checks.push({ label: 'Orbit centred on the guiding centre (32 steps/gyration)', value: `offset ${off.toExponential(1)} r`, pass: off < 1e-4 });
+  }
+
   // 3. Convergence: phase error after one period scales as Δt² (2nd-order method).
   const pe = [128, 256, 512].map(s => phaseError({ ...base, stepsPerGyration: s }));
   const order = Math.log2(pe[1] / pe[2]);
@@ -144,7 +160,8 @@ export function verify() {
   // 4. Relativistic gyroperiod at 1 GeV: measure the period from orbit crossings.
   const rel = { ...base, KE: 1000, stepsPerGyration: 2048 };
   const sim = createSim(rel);
-  let prevX = sim.x[0], crossings = [], tPrev = 0;
+  const crossings = [];
+  let prevX = sim.x[0], tPrev = 0;
   while (crossings.length < 6) {
     tPrev = sim.t; prevX = sim.x[0];
     sim.step();
