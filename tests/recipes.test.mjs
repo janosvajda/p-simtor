@@ -17,10 +17,14 @@ test('every compose recipe has physics.mjs, page.html and a built page', () => {
   }
 });
 
-test('README lists every gallery demo with a live link and never links to source-view pages', () => {
+test('README links the live gallery, only to demos that exist, and never to source-view pages', () => {
   const readme = readFileSync(join(ROOT, 'README.md'), 'utf8');
-  const { demos } = JSON.parse(readFileSync(join(ROOT, 'docs', 'demos.json'), 'utf8'));
-  for (const d of demos) assert.ok(readme.includes(`https://janosvajda.github.io/p-simtor/${d.id}.html`), `README links the live ${d.id} demo`);
+  const ids = new Set(JSON.parse(readFileSync(join(ROOT, 'docs', 'demos.json'), 'utf8')).demos.map(d => d.id));
+  assert.ok(readme.includes('](https://janosvajda.github.io/p-simtor/)'), 'gallery link');
+  const linked = [...readme.matchAll(/janosvajda\.github\.io\/p-simtor\/([\w-]+)\.html/g)].map(m => m[1]);
+  assert.ok(linked.length >= 6, 'featured demos are linked');
+  for (const id of linked) assert.ok(ids.has(id), `README links ${id}, which is not in the gallery`);
+  for (const id of linked) assert.ok(existsSync(join(ROOT, 'docs', 'thumbs', `${id}.jpg`)), `thumbnail for ${id}`);
   assert.equal(readme.match(/\]\(examples\/[^)]*\.html\)/g), null, 'no links to examples/*.html (GitHub shows them as source)');
 });
 

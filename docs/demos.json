@@ -1,6 +1,76 @@
 {
   "demos": [
     {
+      "id": "galaxy-collision",
+      "title": "Two galaxies colliding",
+      "prompt": "/p-simtor simulate two galaxies colliding",
+      "about": "Two disk galaxies, 48 000 GPU-rendered stars: the prograde disk is torn into tidal tails, the retrograde one survives — Toomre & Toomre's classic result.",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/galaxy-collision.html",
+      "checks": {
+        "total": 9,
+        "passed": 9
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "hydrogen-orbitals-3d",
+      "title": "Hydrogen orbitals in 3D",
+      "prompt": "/p-simtor visualize the 3D probability clouds of hydrogen orbitals",
+      "about": "All 55 hydrogen orbitals up to n = 5 as exact 3D probability clouds: a glowing |ψ|² volume plus sampled measurements coloured by the sign of ψ.",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/hydrogen-orbitals-3d.html",
+      "checks": {
+        "total": 15,
+        "passed": 15
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "black-hole-inspiral-3d",
+      "title": "Black-hole binary inspiral in 3D",
+      "prompt": "/p-simtor show two black holes spiralling together in 3D",
+      "about": "Two spinning black holes spiral together while their orbit precesses; the computed gravitational wave spreads out as a spiral. The merger itself is marked not computed.",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/black-hole-inspiral-3d.html",
+      "checks": {
+        "total": 11,
+        "passed": 11
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "dark-matter-galaxy-3d",
+      "title": "Why galaxies need dark matter",
+      "prompt": "/p-simtor show why galaxies need dark matter, with a 3D galaxy of 100 000 stars",
+      "about": "100 000 stars orbit a Milky-Way model in 3D. Switch off the dark-matter halo and the disk swells from 10 to 39 kpc as stars escape.",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/dark-matter-galaxy-3d.html",
+      "checks": {
+        "total": 14,
+        "passed": 14
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "wave-packet-tunnelling",
+      "title": "Electron wave packet tunnelling in 2D",
+      "prompt": "/p-simtor show an electron wave packet tunnelling through a barrier in 2D",
+      "about": "An electron's probability wave hits a barrier: most reflects, a quarter tunnels through, matching the exact quantum result.",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/wave-packet-tunnelling.html",
+      "checks": {
+        "total": 17,
+        "passed": 17
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
       "id": "black-body",
       "title": "Black-body radiation",
       "prompt": "/p-simtor simulate black body radiation",
@@ -27,20 +97,6 @@
       "thumb": true,
       "skillVersion": "0.3.0",
       "about": "Two black holes spiral together and chirp (post-Newtonian inspiral); the merger itself is honestly marked as not computed."
-    },
-    {
-      "id": "dark-matter-galaxy",
-      "title": "Dark matter and galaxy rotation",
-      "prompt": "/p-simtor show why galaxies need dark matter",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/dark-matter-galaxy.html",
-      "checks": {
-        "total": 8,
-        "passed": 8
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0",
-      "about": "Thousands of stars orbit a Milky-Way model. Switch off the dark-matter halo and the outer disk lets go."
     },
     {
       "id": "quark-confinement",
@@ -83,34 +139,6 @@
       "thumb": true,
       "skillVersion": "0.3.0",
       "about": "Boltzmann populations of three energy levels as the temperature rises, with the heat-capacity peaks they cause."
-    },
-    {
-      "id": "hydrogen-2p",
-      "title": "Hydrogen 2p orbital",
-      "prompt": "/p-simtor visualize the probability density of a hydrogen 2p orbital",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/hydrogen-2p.html",
-      "checks": {
-        "total": 16,
-        "passed": 16
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0",
-      "about": "The exact 2p orbital as a probability cloud of 20 000 sampled positions, in 3D and as a slice."
-    },
-    {
-      "id": "tunnelling-2d",
-      "title": "Quantum tunnelling in 2D",
-      "prompt": "/p-simtor simulate a quantum wave packet tunnelling through a barrier in 2D",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/tunnelling-2d.html",
-      "checks": {
-        "total": 13,
-        "passed": 13
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0",
-      "about": "An electron wave packet hits a barrier and splits; the transmitted part matches the exact quantum result."
     },
     {
       "id": "lennard-jones",

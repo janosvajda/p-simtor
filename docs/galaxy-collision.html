@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="generator" content="p-simtor">
-<title>Dark matter and galaxy rotation</title>
+<title>Two galaxies colliding</title>
 <style>/* psim:ui/instrument.css */
 /* p-simtor instrument shell.
    A simulation page is a scientific instrument: a large stage for the physics,
@@ -400,59 +400,68 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
   .psim-app.workbench .psim-legend { top: auto; bottom: 14px; left: auto; right: 26px; }
   .psim-bench .psim-canvaswrap { height: 70vh; }
 }
+
+/* GPU layer (ui/gl.mjs): under the 2D canvas, which keeps labels and pointer events */
+.psim-gl { pointer-events: none; }
 </style>
 </head>
 <body>
 <script type="application/json" id="psim-verification">{
- "summary": "Mass model, forces and integrator checked against exact identities, Bovy (2015) and the measured Milky Way:",
+ "summary": "Encounter checked against the exact two-body orbit, isolated circular orbits, Δt refinement and Toomre & Toomre’s prograde/retrograde result.",
  "checks": [
   {
-   "label": "Normalisation: v_c(8 kpc) = 220 km/s, force fractions 5/60/35 % (MWPotential2014)",
-   "value": "220.000000 km/s",
+   "label": "Conic solver: energy and angular momentum identities (e = 0.6, 1, 1.4)",
+   "value": "max rel. error 4.34e-16",
    "pass": true
   },
   {
-   "label": "Disk mass vs Bovy (2015) 6.8×10¹⁰ M☉",
-   "value": "6.82×10¹⁰ M☉",
+   "label": "Conic solver: e → 1 from both sides matches Barker’s parabola",
+   "value": "|Δr|/r_p = 1.64e-6",
    "pass": true
   },
   {
-   "label": "Analytic forces = −∇Φ (bulge + Miyamoto–Nagai + NFW)",
-   "value": "max rel. diff 3.3e-10",
+   "label": "Core orbit vs exact two-body solution, Δt = 0.25 Myr (e = 0.6, 1, 1.4; to pericentre + 1.2 Gyr)",
+   "value": "max |Δr|/r_p = 9.26e-6",
    "pass": true
   },
   {
-   "label": "NFW M(<30 kpc): formula vs ∫4πr²ρ dr",
-   "value": "rel. diff 2.2e-16",
+   "label": "Isolated disk, 1 Gyr: per-star energy error (2000 stars; bounded, O(Δt²))",
+   "value": "max |ΔE/E| = 7.37e-6",
    "pass": true
   },
   {
-   "label": "Model vs measured rotation curve 5–25 kpc (Eilers et al. 2019)",
-   "value": "max deviation 5.9 %",
-   "pass": true,
-   "state": "warn"
-  },
-  {
-   "label": "Without dark matter, v_c(20 kpc) falls far below the measurement",
-   "value": "123 vs 209 km/s measured",
+   "label": "Isolated disk, 1 Gyr: per-star angular momentum (exact for leapfrog in a central force)",
+   "value": "max |ΔL/L| = 1.85e-14",
    "pass": true
   },
   {
-   "label": "Leapfrog energy error order (expected 2)",
-   "value": "1.96",
+   "label": "Δt refinement 0.5 → 0.25 → 0.125 Myr, median star position at pericentre + 300 Myr",
+   "value": "order 2.00 (leapfrog: 2)",
    "pass": true
   },
   {
-   "label": "L_z conserved (axisymmetric potential, 245 Myr)",
-   "value": "5.1e-15",
+   "label": "Production Δt = 0.25 Myr: median star position error (vs Δt/2)",
+   "value": "5.55e-3 kpc",
+   "pass": true
+  },
+  {
+   "label": "Toomre & Toomre 1972: prograde disk loses far more stars than retrograde (pericentre + 600 Myr)",
+   "value": "prograde 21.6 %, retrograde 0.0 %",
+   "pass": true
+  },
+  {
+   "label": "Determinism and frame-rate independence (two frame schedules)",
+   "value": "bit-identical",
    "pass": true
   }
  ],
  "notes": [
-  "The model is normalised to 220 km/s at 8 kpc (MWPotential2014); modern measurements give ≈229 km/s, so it runs 4–8 % low."
+  "Refinement errors (median, kpc): Δt 1→0.5: 9.03e-2, 0.5→0.25: 2.22e-2, 0.25→0.125: 5.55e-3. Stars that pass within a few ε of a core are chaotic; the median describes the bulk of the tidal features.",
+  "Default encounter, 3000 tracers per galaxy, pericentre + 600 Myr: 20.9 % of A’s stars and 9.8 % of B’s stars captured or unbound.",
+  "Model scope: restricted three-body (Toomre & Toomre 1972). Stars are test particles; no self-gravity, dark-matter halos, dynamical friction, gas or star formation. The cores therefore never merge, unlike real equal-mass pairs."
  ],
- "generated": "2026-10-14T08:41:20.903Z",
- "runtimeMs": 7
+ "generated": "2026-10-14T16:39:02.411Z",
+ "runtimeMs": 1174
 }</script>
 <script type="module">
 const __psim = {};
@@ -1036,6 +1045,421 @@ function createPlot({ title = '', x = {}, y = {}, height = 220, legend = true, o
 return { createPlot };
 })();
 
+// ---- psim:ui/gl.mjs
+__psim["ui/gl.mjs"] = (() => {
+// GPU rendering (WebGL2) for any subject, organised by what is drawn, not by topic:
+//
+//   createGLLayer(canvas2d)       a WebGL2 canvas behind the shell's 2D canvas (labels stay in 2D)
+//   orbitCamera({...})            3D camera with drag-to-rotate and wheel zoom; project() for 2D labels
+//   createPointRenderer(gl)       glowing point sprites: 10⁵–10⁶ bodies, stars, samples, molecules
+//   createFieldRenderer(gl)       2D scalar field as a colour-mapped image (heat maps, |ψ|², density)
+//   createVolumeRenderer(gl)      3D scalar field by ray marching (orbital clouds, densities, gas)
+//   colormap(name, t)             scientific colour maps (perceptually uniform), also for 2D canvas
+//
+// The renderers only READ arrays the simulation computed; they never change physics. Every
+// mapping (range, log scale, colour map, opacity, glow) is a representation choice: state it
+// in the legend. Matrices are column-major Float32Array(16), as WebGL expects.
+
+// ---------------------------------------------------------------- matrix maths (pure; tested in Node)
+
+function perspective(fovy, aspect, near, far) {
+  const f = 1 / Math.tan(fovy / 2), nf = 1 / (near - far);
+  return new Float32Array([f / aspect, 0, 0, 0, 0, f, 0, 0, 0, 0, (far + near) * nf, -1, 0, 0, 2 * far * near * nf, 0]);
+}
+
+function lookAt(eye, target, up) {
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const unit = a => { const l = Math.hypot(...a) || 1; return a.map(v => v / l); };
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const z = unit(sub(eye, target)), x = unit(cross(up, z)), y = cross(z, x);
+  return new Float32Array([x[0], y[0], z[0], 0, x[1], y[1], z[1], 0, x[2], y[2], z[2], 0, -dot(x, eye), -dot(y, eye), -dot(z, eye), 1]);
+}
+
+function multiply(a, b) {
+  const out = new Float32Array(16);
+  for (let c = 0; c < 4; c++) {for (let r = 0; r < 4; r++) {
+    let s = 0;
+    for (let k = 0; k < 4; k++) s += a[k * 4 + r] * b[c * 4 + k];
+    out[c * 4 + r] = s;
+  }}
+  return out;
+}
+
+/** Inverse of a 4×4 matrix (cofactor expansion, in float64). */
+function invert(m) {
+  const a = Array.from(m), inv = new Array(16);
+  inv[0] = a[5] * a[10] * a[15] - a[5] * a[11] * a[14] - a[9] * a[6] * a[15] + a[9] * a[7] * a[14] + a[13] * a[6] * a[11] - a[13] * a[7] * a[10];
+  inv[4] = -a[4] * a[10] * a[15] + a[4] * a[11] * a[14] + a[8] * a[6] * a[15] - a[8] * a[7] * a[14] - a[12] * a[6] * a[11] + a[12] * a[7] * a[10];
+  inv[8] = a[4] * a[9] * a[15] - a[4] * a[11] * a[13] - a[8] * a[5] * a[15] + a[8] * a[7] * a[13] + a[12] * a[5] * a[11] - a[12] * a[7] * a[9];
+  inv[12] = -a[4] * a[9] * a[14] + a[4] * a[10] * a[13] + a[8] * a[5] * a[14] - a[8] * a[6] * a[13] - a[12] * a[5] * a[10] + a[12] * a[6] * a[9];
+  inv[1] = -a[1] * a[10] * a[15] + a[1] * a[11] * a[14] + a[9] * a[2] * a[15] - a[9] * a[3] * a[14] - a[13] * a[2] * a[11] + a[13] * a[3] * a[10];
+  inv[5] = a[0] * a[10] * a[15] - a[0] * a[11] * a[14] - a[8] * a[2] * a[15] + a[8] * a[3] * a[14] + a[12] * a[2] * a[11] - a[12] * a[3] * a[10];
+  inv[9] = -a[0] * a[9] * a[15] + a[0] * a[11] * a[13] + a[8] * a[1] * a[15] - a[8] * a[3] * a[13] - a[12] * a[1] * a[11] + a[12] * a[3] * a[9];
+  inv[13] = a[0] * a[9] * a[14] - a[0] * a[10] * a[13] - a[8] * a[1] * a[14] + a[8] * a[2] * a[13] + a[12] * a[1] * a[10] - a[12] * a[2] * a[9];
+  inv[2] = a[1] * a[6] * a[15] - a[1] * a[7] * a[14] - a[5] * a[2] * a[15] + a[5] * a[3] * a[14] + a[13] * a[2] * a[7] - a[13] * a[3] * a[6];
+  inv[6] = -a[0] * a[6] * a[15] + a[0] * a[7] * a[14] + a[4] * a[2] * a[15] - a[4] * a[3] * a[14] - a[12] * a[2] * a[7] + a[12] * a[3] * a[6];
+  inv[10] = a[0] * a[5] * a[15] - a[0] * a[7] * a[13] - a[4] * a[1] * a[15] + a[4] * a[3] * a[13] + a[12] * a[1] * a[7] - a[12] * a[3] * a[5];
+  inv[14] = -a[0] * a[5] * a[14] + a[0] * a[6] * a[13] + a[4] * a[1] * a[14] - a[4] * a[2] * a[13] - a[12] * a[1] * a[6] + a[12] * a[2] * a[5];
+  inv[3] = -a[1] * a[6] * a[11] + a[1] * a[7] * a[10] + a[5] * a[2] * a[11] - a[5] * a[3] * a[10] - a[9] * a[2] * a[7] + a[9] * a[3] * a[6];
+  inv[7] = a[0] * a[6] * a[11] - a[0] * a[7] * a[10] - a[4] * a[2] * a[11] + a[4] * a[3] * a[10] + a[8] * a[2] * a[7] - a[8] * a[3] * a[6];
+  inv[11] = -a[0] * a[5] * a[11] + a[0] * a[7] * a[9] + a[4] * a[1] * a[11] - a[4] * a[3] * a[9] - a[8] * a[1] * a[7] + a[8] * a[3] * a[5];
+  inv[15] = a[0] * a[5] * a[10] - a[0] * a[6] * a[9] - a[4] * a[1] * a[10] + a[4] * a[2] * a[9] + a[8] * a[1] * a[6] - a[8] * a[2] * a[5];
+  const det = a[0] * inv[0] + a[1] * inv[4] + a[2] * inv[8] + a[3] * inv[12];
+  if (!det) throw new Error('invert: singular matrix');
+  return new Float32Array(inv.map(v => v / det));
+}
+
+/**
+ * Orbit camera around `target`, z up (physics convention). yaw/pitch in radians.
+ * matrices(aspect) → { view, proj, viewProj, eye }; project([x,y,z], W, H) → CSS-pixel position
+ * (and depth) for 2D labels drawn over the GL scene; attach(element) adds drag-rotate and
+ * wheel-zoom and returns a detach function.
+ */
+function orbitCamera({ target = [0, 0, 0], distance = 5, yaw = 0.6, pitch = 0.45, fov = 0.8, near, far } = {}) {
+  const cam = {
+    target: [...target], distance, yaw, pitch, fov,
+    eye() {
+      const cp = Math.cos(cam.pitch);
+      return [cam.target[0] + cam.distance * cp * Math.cos(cam.yaw), cam.target[1] + cam.distance * cp * Math.sin(cam.yaw), cam.target[2] + cam.distance * Math.sin(cam.pitch)];
+    },
+    matrices(aspect) {
+      const eye = cam.eye();
+      const view = lookAt(eye, cam.target, [0, 0, 1]);
+      const proj = perspective(cam.fov, aspect, near ?? cam.distance * 1e-3, far ?? cam.distance * 1e3);
+      return { view, proj, viewProj: multiply(proj, view), eye };
+    },
+    project(p, W, H) {
+      const m = cam.matrices(W / H).viewProj;
+      const x = m[0] * p[0] + m[4] * p[1] + m[8] * p[2] + m[12], y = m[1] * p[0] + m[5] * p[1] + m[9] * p[2] + m[13];
+      const w = m[3] * p[0] + m[7] * p[1] + m[11] * p[2] + m[15];
+      return { x: (x / w * 0.5 + 0.5) * W, y: (1 - (y / w * 0.5 + 0.5)) * H, depth: w, visible: w > 0 };
+    },
+    attach(el) {
+      let last = null;
+      const down = e => { last = [e.clientX, e.clientY]; el.setPointerCapture?.(e.pointerId); };
+      const move = e => {
+        if (!last) return;
+        cam.yaw -= (e.clientX - last[0]) * 0.006;
+        cam.pitch = Math.max(-1.55, Math.min(1.55, cam.pitch + (e.clientY - last[1]) * 0.006));
+        last = [e.clientX, e.clientY];
+      };
+      const up = () => { last = null; };
+      const wheel = e => { e.preventDefault(); cam.distance *= Math.exp(e.deltaY * 0.001); };
+      el.addEventListener('pointerdown', down); el.addEventListener('pointermove', move);
+      el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+      el.addEventListener('wheel', wheel, { passive: false });
+      return () => { el.removeEventListener('pointerdown', down); el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up); el.removeEventListener('wheel', wheel); };
+    },
+  };
+  return cam;
+}
+
+// ---------------------------------------------------------------- colour maps
+
+// Anchors sampled from matplotlib's perceptually uniform maps (van der Walt & Smith, CC0) and
+// Moreland's diverging "cool-warm". Linear interpolation between anchors.
+const MAPS = {
+  viridis: ['#440154', '#482878', '#3e4989', '#31688e', '#26828e', '#1f9e89', '#35b779', '#6ece58', '#b5de2b', '#fde725'],
+  inferno: ['#000004', '#1b0c41', '#4a0c6b', '#781c6d', '#a52c60', '#cf4446', '#ed6925', '#fb9b06', '#f7d13d', '#fcffa4'],
+  magma: ['#000004', '#180f3d', '#440f76', '#721f81', '#9e2f7f', '#cd4071', '#f1605d', '#fd9668', '#feca8d', '#fcfdbf'],
+  coolwarm: ['#3b4cc0', '#6282ea', '#8db0fe', '#b8d0f9', '#dddddd', '#f5c4ad', '#f49a7b', '#de604d', '#b40426'],
+};
+const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
+const COLORMAPS = Object.keys(MAPS);
+
+/** Colour of map `name` at t ∈ [0, 1] (clamped): [r, g, b] in [0, 1]. */
+function colormap(name, t) {
+  const a = MAPS[name];
+  if (!a) throw new Error(`colormap: unknown map "${name}" (${COLORMAPS.join(', ')})`);
+  const x = Math.min(1, Math.max(0, Number.isFinite(t) ? t : 0)) * (a.length - 1), i = Math.min(a.length - 2, Math.floor(x)), f = x - i;
+  const p = hex(a[i]), q = hex(a[i + 1]);
+  return [p[0] + f * (q[0] - p[0]), p[1] + f * (q[1] - p[1]), p[2] + f * (q[2] - p[2])];
+}
+
+/** Map a value to [0, 1] for a colour map: linear or log10 between range[0] and range[1]. */
+function normalize(v, [lo, hi], log = false) {
+  if (log) { if (!(v > 0 && lo > 0)) return 0; return (Math.log10(v) - Math.log10(lo)) / (Math.log10(hi) - Math.log10(lo)); }
+  return (v - lo) / (hi - lo);
+}
+
+// ---------------------------------------------------------------- GL plumbing
+
+function compile(gl, vs, fs) {
+  const shader = (type, src) => {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(`GL shader: ${gl.getShaderInfoLog(s)}`);
+    return s;
+  };
+  const p = gl.createProgram();
+  gl.attachShader(p, shader(gl.VERTEX_SHADER, vs)); gl.attachShader(p, shader(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(`GL program: ${gl.getProgramInfoLog(p)}`);
+  const u = {};
+  for (let i = 0; i < gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS); i++) { const n = gl.getActiveUniform(p, i).name; u[n] = gl.getUniformLocation(p, n); }
+  return { p, u };
+}
+
+const cmapTextures = new WeakMap();
+function cmapTexture(gl, name) {
+  let cache = cmapTextures.get(gl);
+  if (!cache) cmapTextures.set(gl, cache = {});
+  if (cache[name]) return cache[name];
+  const data = new Uint8Array(256 * 4);
+  for (let i = 0; i < 256; i++) { const c = colormap(name, i / 255); data.set([c[0] * 255, c[1] * 255, c[2] * 255, 255].map(Math.round), 4 * i); }
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 256, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  return (cache[name] = tex);
+}
+const rgb = c => (typeof c === 'string' ? hex(c.length === 4 ? `#${c[1]}${c[1]}${c[2]}${c[2]}${c[3]}${c[3]}` : c) : c);
+
+/**
+ * A WebGL2 canvas stacked under `canvas2d` (same box, same device-pixel ratio). The 2D canvas
+ * stays on top for labels, axes and pointer events. Returns { gl, canvas, ok, reason, sync() };
+ * when WebGL2 is unavailable, ok is false and reason says why (show it; draw a 2D fallback).
+ */
+function createGLLayer(canvas2d) {
+  const canvas = document.createElement('canvas');
+  canvas.className = 'psim-gl';
+  canvas.setAttribute('aria-hidden', 'true');
+  canvas2d.parentNode.insertBefore(canvas, canvas2d);
+  const gl = canvas.getContext('webgl2', { alpha: true, premultipliedAlpha: true, antialias: true, preserveDrawingBuffer: true });
+  const layer = {
+    gl, canvas, ok: !!gl, reason: gl ? '' : 'WebGL2 is not available in this browser',
+    /** Match the 2D canvas size; set the viewport and clear to transparent. */
+    sync(dpr = devicePixelRatio || 1) {
+      const w = Math.round(canvas2d.clientWidth * dpr), h = Math.round(canvas2d.clientHeight * dpr);
+      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+      if (!gl) return;
+      gl.viewport(0, 0, w, h); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    },
+  };
+  return layer;
+}
+
+// ---------------------------------------------------------------- points
+
+/**
+ * Point sprites. update(positions [x,y,z,…], { values, colors }) uploads up to any count;
+ * draw(camera, { aspect, size, sizeUnit: 'px' | 'world', color, colormap, range, log, blend,
+ * opacity }) with blend 'additive' (glow on dark backgrounds) or 'alpha' (light backgrounds).
+ * values + colormap colour each point by a computed quantity; otherwise colors (r,g,b per point)
+ * or a single color. Sizes in 'world' units shrink with distance (true perspective).
+ */
+function createPointRenderer(gl) {
+  const { p, u } = compile(gl, `#version 300 es
+in vec3 aPos; in float aVal; in vec3 aCol;
+uniform mat4 uVP; uniform float uSize, uWorld, uScale, uLog; uniform vec2 uRange;
+out float vVal; out vec3 vCol;
+void main() {
+  gl_Position = uVP * vec4(aPos, 1.0);
+  float px = uWorld > 0.5 ? uSize * uScale / max(gl_Position.w, 1e-6) : uSize;
+  gl_PointSize = clamp(px, 1.0, 256.0);
+  float v = uLog > 0.5 ? (log(max(aVal, 1e-30)) / log(10.0) - uRange.x) / (uRange.y - uRange.x) : (aVal - uRange.x) / (uRange.y - uRange.x);
+  vVal = clamp(v, 0.0, 1.0); vCol = aCol;
+}`, `#version 300 es
+precision highp float;
+in float vVal; in vec3 vCol;
+uniform sampler2D uMap; uniform float uMode, uGlow, uOpacity; uniform vec3 uColor;
+out vec4 frag;
+void main() {
+  vec2 d = gl_PointCoord * 2.0 - 1.0; float r2 = dot(d, d);
+  if (r2 > 1.0) discard;
+  vec3 c = uMode < 0.5 ? uColor : uMode < 1.5 ? texture(uMap, vec2(vVal, 0.5)).rgb : vCol;
+  float a = uGlow > 0.5 ? exp(-r2 * 5.0) + 0.6 * smoothstep(0.25, 0.0, r2) : smoothstep(1.0, 0.75, r2);
+  a *= uOpacity;
+  frag = vec4(c * a, a);
+}`);
+  const vao = gl.createVertexArray(), bufs = {};
+  gl.bindVertexArray(vao);
+  for (const [name, size] of [['aPos', 3], ['aVal', 1], ['aCol', 3]]) {
+    const loc = gl.getAttribLocation(p, name);
+    bufs[name] = { buf: gl.createBuffer(), loc, size };
+    if (loc < 0) continue;
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufs[name].buf);
+    gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0);
+  }
+  gl.bindVertexArray(null);
+  let count = 0, has = { values: false, colors: false };
+  const upload = (name, data) => {
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufs[name].buf);
+    gl.bufferData(gl.ARRAY_BUFFER, data instanceof Float32Array ? data : Float32Array.from(data), gl.DYNAMIC_DRAW);
+  };
+  return {
+    get count() { return count; },
+    update(positions, { values, colors } = {}) {
+      count = Math.floor(positions.length / 3);
+      upload('aPos', positions);
+      has = { values: !!values, colors: !!colors };
+      upload('aVal', values ?? new Float32Array(count));
+      upload('aCol', colors ?? new Float32Array(3 * count));
+    },
+    draw(camera, { aspect, size = 3, sizeUnit = 'px', color = '#ffd27a', colormap: map = 'inferno', range = [0, 1], log = false, blend = 'additive', opacity = 1 } = {}) {
+      if (!count) return;
+      const { viewProj, proj } = camera.matrices(aspect ?? gl.drawingBufferWidth / gl.drawingBufferHeight);
+      gl.useProgram(p); gl.bindVertexArray(vao);
+      gl.uniformMatrix4fv(u.uVP, false, viewProj);
+      gl.uniform1f(u.uSize, size * (sizeUnit === 'px' ? (devicePixelRatio || 1) : 1));
+      gl.uniform1f(u.uWorld, sizeUnit === 'world' ? 1 : 0);
+      gl.uniform1f(u.uScale, proj[5] * gl.drawingBufferHeight / 2);
+      gl.uniform1f(u.uLog, log ? 1 : 0);
+      gl.uniform2f(u.uRange, ...(log ? range.map(Math.log10) : range));
+      gl.uniform1f(u.uMode, has.values ? 1 : has.colors ? 2 : 0);
+      gl.uniform3f(u.uColor, ...rgb(color));
+      gl.uniform1f(u.uGlow, blend === 'additive' ? 1 : 0);
+      gl.uniform1f(u.uOpacity, opacity);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, cmapTexture(gl, map)); gl.uniform1i(u.uMap, 0);
+      gl.enable(gl.BLEND); gl.disable(gl.DEPTH_TEST);
+      if (blend === 'additive') gl.blendFunc(gl.ONE, gl.ONE); else gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      gl.drawArrays(gl.POINTS, 0, count);
+      gl.bindVertexArray(null);
+    },
+  };
+}
+
+// ---------------------------------------------------------------- 2D fields
+
+/**
+ * A 2D scalar field (index i + nx·j, as in core/fields.mjs) drawn as a colour-mapped image.
+ * update(values, nx, ny, { range, log }) normalises on the CPU (NaN or masked cells are
+ * transparent); draw({ rect: [x, y, w, h] in CSS px (default: whole canvas), colormap, smooth,
+ * opacity }) with smooth false showing the grid cells honestly.
+ */
+function createFieldRenderer(gl) {
+  const { p, u } = compile(gl, `#version 300 es
+in vec2 aXY; uniform vec4 uRect; out vec2 vUV;
+void main() { vUV = aXY; vec2 xy = uRect.xy + aXY * uRect.zw; gl_Position = vec4(xy, 0.0, 1.0); }`, `#version 300 es
+precision highp float;
+in vec2 vUV; uniform sampler2D uField, uMap; uniform float uOpacity; out vec4 frag;
+void main() { float v = texture(uField, vUV).r; if (v < 0.0) discard; vec3 c = texture(uMap, vec2(v, 0.5)).rgb; frag = vec4(c * uOpacity, uOpacity); }`);
+  const vao = gl.createVertexArray(), buf = gl.createBuffer(), tex = gl.createTexture();
+  gl.bindVertexArray(vao); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(p, 'aXY'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  gl.bindVertexArray(null);
+  let ready = false;
+  return {
+    update(values, nx, ny, { range, log = false } = {}) {
+      if (values.length !== nx * ny) throw new Error('fieldRenderer: values must have nx·ny entries');
+      let lo = range?.[0], hi = range?.[1];
+      if (lo == null || hi == null) {
+        lo = Infinity; hi = -Infinity;
+        for (const v of values) if (Number.isFinite(v) && (!log || v > 0)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+        if (!(hi > lo)) hi = lo + 1;
+      }
+      const data = Float32Array.from(values, v => (Number.isFinite(v) ? Math.min(1, Math.max(0, normalize(v, [lo, hi], log))) : -1));
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.R16F, nx, ny, 0, gl.RED, gl.FLOAT, data);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      ready = true;
+      return { range: [lo, hi] };
+    },
+    draw({ rect, colormap: map = 'viridis', smooth = true, opacity = 1 } = {}) {
+      if (!ready) return;
+      const W = gl.drawingBufferWidth / (devicePixelRatio || 1), H = gl.drawingBufferHeight / (devicePixelRatio || 1);
+      const [x, y, w, h] = rect ?? [0, 0, W, H];
+      gl.useProgram(p); gl.bindVertexArray(vao);
+      // CSS px (y down) → clip space; the texture's row j = 0 is drawn at the bottom (y up, physics)
+      gl.uniform4f(u.uRect, 2 * x / W - 1, 1 - 2 * (y + h) / H, 2 * w / W, 2 * h / H);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex);
+      const f = smooth ? gl.LINEAR : gl.NEAREST;
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, f); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, f);
+      gl.uniform1i(u.uField, 0);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, cmapTexture(gl, map)); gl.uniform1i(u.uMap, 1);
+      gl.uniform1f(u.uOpacity, opacity);
+      gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.disable(gl.DEPTH_TEST);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.bindVertexArray(null);
+    },
+  };
+}
+
+// ---------------------------------------------------------------- 3D volumes
+
+/**
+ * A 3D scalar field (index i + nx·(j + ny·k)) rendered by ray marching through its box.
+ * update(values, nx, ny, nz, { range, log }); draw(camera, { box: [[x0,y0,z0],[x1,y1,z1]],
+ * colormap, opacity, steps, mode }) with mode 'emission' (glowing gas: colour ∝ density, adds up)
+ * or 'absorption' (emission–absorption: nearer matter hides farther). Opacity is a display
+ * transfer function, not a physical optical depth unless you derive it from one: say which.
+ */
+function createVolumeRenderer(gl) {
+  const { p, u } = compile(gl, `#version 300 es
+in vec2 aXY; out vec2 vNDC;
+void main() { vNDC = aXY * 2.0 - 1.0; gl_Position = vec4(vNDC, 0.0, 1.0); }`, `#version 300 es
+precision highp float; precision highp sampler3D;
+in vec2 vNDC;
+uniform mat4 uInvVP; uniform vec3 uMin, uMax; uniform sampler3D uVol; uniform sampler2D uMap;
+uniform float uOpacity, uSteps, uMode;
+out vec4 frag;
+void main() {
+  vec4 a = uInvVP * vec4(vNDC, -1.0, 1.0), b = uInvVP * vec4(vNDC, 1.0, 1.0);
+  vec3 ro = a.xyz / a.w, rd = normalize(b.xyz / b.w - ro);
+  vec3 t0 = (uMin - ro) / rd, t1 = (uMax - ro) / rd;
+  vec3 tn = min(t0, t1), tf = max(t0, t1);
+  float near = max(max(tn.x, tn.y), max(tn.z, 0.0)), far = min(min(tf.x, tf.y), tf.z);
+  if (far <= near) discard;
+  float dt = (far - near) / uSteps, len = length(uMax - uMin);
+  vec3 col = vec3(0.0); float alpha = 0.0;
+  for (float s = 0.5; s < 1024.0; s += 1.0) {
+    if (s > uSteps) break;
+    vec3 pos = ro + rd * (near + s * dt);
+    float v = texture(uVol, (pos - uMin) / (uMax - uMin)).r;
+    if (v <= 0.0) continue;
+    vec3 c = texture(uMap, vec2(v, 0.5)).rgb;
+    float k = uOpacity * v * dt / len * 8.0;
+    if (uMode < 0.5) { col += c * k; alpha += k; }
+    else { float ak = 1.0 - exp(-k); col += (1.0 - alpha) * c * ak; alpha += (1.0 - alpha) * ak; if (alpha > 0.99) break; }
+  }
+  alpha = clamp(alpha, 0.0, 1.0);
+  frag = vec4(min(col, vec3(1.0)), alpha);
+}`);
+  const vao = gl.createVertexArray(), buf = gl.createBuffer(), tex = gl.createTexture();
+  gl.bindVertexArray(vao); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(p, 'aXY'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  gl.bindVertexArray(null);
+  let ready = false;
+  return {
+    update(values, nx, ny, nz, { range, log = false } = {}) {
+      if (values.length !== nx * ny * nz) throw new Error('volumeRenderer: values must have nx·ny·nz entries');
+      let lo = range?.[0], hi = range?.[1];
+      if (lo == null || hi == null) {
+        lo = Infinity; hi = -Infinity;
+        for (const v of values) if (Number.isFinite(v) && (!log || v > 0)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+        if (!(hi > lo)) hi = lo + 1;
+      }
+      const data = Float32Array.from(values, v => (Number.isFinite(v) ? Math.min(1, Math.max(0, normalize(v, [lo, hi], log))) : 0));
+      gl.bindTexture(gl.TEXTURE_3D, tex);
+      gl.texImage3D(gl.TEXTURE_3D, 0, gl.R16F, nx, ny, nz, 0, gl.RED, gl.FLOAT, data);
+      for (const w of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T, gl.TEXTURE_WRAP_R]) gl.texParameteri(gl.TEXTURE_3D, w, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      ready = true;
+      return { range: [lo, hi] };
+    },
+    draw(camera, { aspect, box = [[-1, -1, -1], [1, 1, 1]], colormap: map = 'inferno', opacity = 1, steps = 160, mode = 'emission' } = {}) {
+      if (!ready) return;
+      const { viewProj } = camera.matrices(aspect ?? gl.drawingBufferWidth / gl.drawingBufferHeight);
+      gl.useProgram(p); gl.bindVertexArray(vao);
+      gl.uniformMatrix4fv(u.uInvVP, false, invert(viewProj));
+      gl.uniform3f(u.uMin, ...box[0]); gl.uniform3f(u.uMax, ...box[1]);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_3D, tex); gl.uniform1i(u.uVol, 0);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, cmapTexture(gl, map)); gl.uniform1i(u.uMap, 1);
+      gl.uniform1f(u.uOpacity, opacity); gl.uniform1f(u.uSteps, Math.min(1000, steps)); gl.uniform1f(u.uMode, mode === 'emission' ? 0 : 1);
+      gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.disable(gl.DEPTH_TEST);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.bindVertexArray(null);
+    },
+  };
+}
+
+return { perspective, lookAt, multiply, invert, orbitCamera, COLORMAPS, colormap, normalize, createGLLayer, createPointRenderer, createFieldRenderer, createVolumeRenderer };
+})();
+
 // ---- psim:ui/equation.mjs
 __psim["ui/equation.mjs"] = (() => {
 // Equations split into their physical terms.
@@ -1234,6 +1658,7 @@ __psim["ui/instrument-app.mjs"] = (() => {
 //   sim.timeDependent        false for static analytic visualisations (no transport)
 const { el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon, cssVar } = __psim["ui/instrument.mjs"];
 const { createPlot } = __psim["ui/plot.mjs"];
+const { createGLLayer } = __psim["ui/gl.mjs"];
 const { createEquation, createDerivation, M } = __psim["ui/equation.mjs"];
 const { validateModuleReport } = __psim["core/verification.mjs"];
 const TIERS = {
@@ -1246,7 +1671,7 @@ const TIERS = {
 function createInstrument(spec) {
   const {
     title, subtitle = '', tier, tierReason, create, draw, params = [], model = {},
-    timeUnit = 'T', timeLabel = 'simulated time', speed: speed0 = 1, controls, onPointer, layout = 'stage', bench,
+    timeUnit = 'T', timeLabel = 'simulated time', speed: speed0 = 1, gl: wantGL = false, drawGL, controls, onPointer, layout = 'stage', bench,
   } = spec;
   if (!TIERS[tier]) throw new Error(`tier must be one of ${Object.keys(TIERS).join(', ')}`);
   const report = readJsonScript('psim-verification');
@@ -1291,6 +1716,8 @@ function createInstrument(spec) {
   }
   const canvas = stage.querySelector('canvas');
   const ctx = canvas.getContext('2d');
+  // optional GPU layer under the 2D canvas (ui/gl.mjs): drawGL renders the scene, draw adds labels
+  const glLayer = wantGL ? createGLLayer(canvas) : null;
   $('.psim-hud .dim').textContent = timeLabel;
   const hud = { t: $('.psim-hud b'), a: $('.psim-hud .h1'), b: $('.psim-hud .h2'), flag: $('.psim-hud .flag') };
   if (model.legend) $('.psim-legend').append(...model.legend.map(t => el('span', {}, t)));
@@ -1299,7 +1726,7 @@ function createInstrument(spec) {
   const values = Object.fromEntries(params.map(p => [p.key, p.value]));
   let sim, tDisplay = 0, limited = false;
   const clock = createClock({ speed: speed0 });
-  const view = { W: 0, H: 0, dpr: 1, color: cssVar, opts: {}, pointer: null };
+  const view = { W: 0, H: 0, dpr: 1, color: cssVar, opts: {}, pointer: null, gl: glLayer?.gl ?? null, glError: glLayer && !glLayer.ok ? glLayer.reason : '' };
 
   let benchApi = null;
   function rebuild() {
@@ -1421,7 +1848,15 @@ function createInstrument(spec) {
       if (!r) { toast(stage, 'This model records no tabular data'); return; }
       download(`${slug}-data.csv`, [`# p-simtor | ${title}`, r.header.join(','), ...r.rows.map(x => x.join(','))].join('\n'), 'text/csv');
     }),
-    button('PNG image', () => canvas.toBlob(b => el('a', { href: URL.createObjectURL(b), download: `${slug}.png` }).click())),
+    button('PNG image', () => {
+      // composite the GPU layer (if any) under the 2D overlay
+      const out = document.createElement('canvas');
+      out.width = canvas.width; out.height = canvas.height;
+      const c = out.getContext('2d');
+      if (glLayer?.ok) c.drawImage(glLayer.canvas, 0, 0);
+      c.drawImage(canvas, 0, 0);
+      out.toBlob(b => el('a', { href: URL.createObjectURL(b), download: `${slug}.png` }).click());
+    }),
   ));
 
   side.append(...[secParams, secDiag, secVerify, secModel, secExport].filter(s => s !== secParams || params.length || controls));
@@ -1452,8 +1887,10 @@ function createInstrument(spec) {
         tDisplay = Math.min(target, sim.t);
       }
     }
+    if (glLayer?.ok) { glLayer.sync(view.dpr); drawGL?.(glLayer.gl, sim, view, tDisplay); }
     ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
     ctx.clearRect(0, 0, view.W, view.H);
+    if (glLayer && !glLayer.ok) { ctx.fillStyle = cssVar('--muted'); ctx.font = '13px system-ui, sans-serif'; ctx.fillText(`${glLayer.reason}: the 3D view cannot be shown.`, 16, view.H - 20); }
     draw(ctx, sim, view, tDisplay);
     if (now - lastUi > 100) {
       lastUi = now;
@@ -1674,6 +2111,67 @@ function angularMomenta(d) {
 }
 
 return { G, TIME_UNIT_MYR, R0, normalise, MW, potential, acceleration, circularSpeed, haloMass, NFW_SCALE, haloDensity, eilers2019, createDisk, stepDisk, energies, angularMomenta, V0 };
+})();
+
+// ---- psim:core/kepler.mjs
+__psim["core/kepler.mjs"] = (() => {
+// Analytic two-body (Kepler) solution, used as a reference for numerical integrators.
+
+/** Solve Kepler's equation E − e sin E = M for elliptic orbits (Newton iteration). */
+/**
+ * Eccentricities computed from state vectors carry round-off: a circular orbit can come out as
+ * e = −1e−16. Treat |e| below 1e−12 as 0; reject only physically impossible values.
+ */
+function checkEccentricity(e, who) {
+  if (Math.abs(e) < 1e-12) return 0;
+  if (!(e > 0 && e < 1)) throw new Error(`${who}: elliptic orbits need 0 ≤ e < 1 (got ${e})`);
+  return e;
+}
+
+function solveKepler(meanAnomaly, eIn, tol = 1e-15) {
+  const e = checkEccentricity(eIn, 'solveKepler');
+  // reduce to [0, 2π): with E₀ = π for high e, Newton converges monotonically only there
+  const M = ((meanAnomaly % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+  let E = e < 0.8 ? M : Math.PI;
+  for (let k = 0; k < 100; k++) {
+    const f = E - e * Math.sin(E) - M;
+    const dE = f / (1 - e * Math.cos(E));
+    E -= dE;
+    if (Math.abs(dE) < tol) break;
+  }
+  return E;
+}
+
+/**
+ * Relative position of body 2 with respect to body 1 at time t, for an orbit
+ * that starts at pericentre on the +x axis and moves counter-clockwise.
+ * mu = G (m1 + m2).
+ */
+function keplerRelative(a, e, mu, t) {
+  const n = Math.sqrt(mu / (a * a * a));
+  const E = solveKepler(n * t, e);
+  const x = a * (Math.cos(E) - e);
+  const y = a * Math.sqrt(1 - e * e) * Math.sin(E);
+  const r = a * (1 - e * Math.cos(E));
+  const vx = -Math.sqrt(mu * a) / r * Math.sin(E);
+  const vy = Math.sqrt(mu * a) / r * Math.sqrt(1 - e * e) * Math.cos(E);
+  return { x, y, vx, vy, period: 2 * Math.PI / n };
+}
+
+/** Bodies for a barycentric two-body orbit starting at pericentre. */
+function keplerBodies(m1, m2, a, eIn, G = 1) {
+  const e = checkEccentricity(eIn, 'keplerBodies');
+  const mu = G * (m1 + m2);
+  const r = a * (1 - e);
+  const v = Math.sqrt(mu * (1 + e) / r);
+  const f1 = m2 / (m1 + m2), f2 = m1 / (m1 + m2);
+  return [
+    { m: m1, x: [-f1 * r, 0, 0], v: [0, -f1 * v, 0] },
+    { m: m2, x: [f2 * r, 0, 0], v: [0, f2 * v, 0] },
+  ];
+}
+
+return { checkEccentricity, solveKepler, keplerRelative, keplerBodies };
 })();
 
 // ---- psim:core/numerics.mjs
@@ -2227,280 +2725,653 @@ return { rng, fft, fftFreq, rk4Step, DORMAND_PRINCE, dopri5, gaussLegendreNodes,
 
 // ---- local:physics.mjs
 __psim["local:physics.mjs"] = (() => {
-// Disk galaxy with and without a dark-matter halo: thousands of stars integrated in a
-// Milky-Way mass model (core/galaxy.mjs), plus the rotation curve that reveals dark matter.
-const { createDisk, stepDisk, energies, angularMomenta, circularSpeed, potential, acceleration, haloMass, haloDensity, eilers2019, MW, G, R0, V0, TIME_UNIT_MYR, NFW_SCALE } = __psim["core/galaxy.mjs"];
-const { rng, gaussLegendre } = __psim["core/numerics.mjs"];
-const DT = 2.5e-4;                          // time units (0.244 Myr): ~900 steps per solar orbit
+// Two disk galaxies colliding: the restricted three-body model of Toomre & Toomre (1972).
+//
+// Scientific aim: show how a close gravitational encounter between two disk galaxies pulls
+// stars out into tidal bridges and tails, and measure where the stars end up (still bound to
+// their own galaxy, captured by the companion, or unbound) as orbit geometry, disk spin
+// orientation (prograde / retrograde) and mass ratio change.
+//
+// Model (state, law, inputs):
+//   Galaxy cores A, B: two point masses M_A, M_B on an exact Newtonian two-body orbit
+//     (pericentre r_p, eccentricity e: elliptic, parabolic or hyperbolic).
+//   Stars: massless test particles, initially on circular orbits in a thin cold disk around
+//     their own core. Each star feels both cores through Plummer-softened potentials
+//         Φ_k(r) = −G M_k / √(|r − R_k|² + ε²)
+//     r̈ᵢ = −Σ_k G M_k (rᵢ − R_k) / (|rᵢ − R_k|² + ε²)^{3/2}
+//   Stars do not attract each other or the cores (no self-gravity), there is no dark-matter
+//   halo, hence no dynamical friction: the cores follow the Kepler orbit and never merge.
+// Units: kpc, Myr, M☉ (velocities shown in km/s). G from core/galaxy.mjs (IAU/CODATA).
+// Method: kick–drift–kick leapfrog (symplectic, 2nd order), fixed Δt, cores and stars together.
+// Observables: core separation; per star the two-body specific energy relative to each galaxy,
+//   E_k = ½|v − V_k|² + Φ_k, classifying it as bound to its own galaxy, captured by the other
+//   (most negative E_k) or unbound (both E_k ≥ 0); fractions per galaxy of origin.
+// Benchmark: exact conic (Kepler/Barker/hyperbolic) solution for the cores; isolated circular
+//   orbits; timestep refinement; Toomre & Toomre's prograde-vs-retrograde result.
+//
+// Toolkit gap: core/kepler.mjs covers elliptic orbits only; parabolic (Barker's equation) and
+// hyperbolic Kepler solutions are implemented here (conicRelative).
+const { G: G_KPC_KMS, TIME_UNIT_MYR } = __psim["core/galaxy.mjs"];
+const { keplerRelative } = __psim["core/kepler.mjs"];
+const { rng, brent } = __psim["core/numerics.mjs"];
+const KMS = 1 / TIME_UNIT_MYR;                   // 1 km/s in kpc/Myr
+const G = G_KPC_KMS * KMS * KMS;                // kpc³ / (M☉ Myr²)
+const DEG = Math.PI / 180;
 
 const PARAMS = [
-  { key: 'halo', label: 'Dark-matter halo', value: 'on', options: [
-    { value: 'on', label: 'On: bulge + disk + dark halo' },
-    { value: 'off', label: 'Off: only visible matter (bulge + disk)' },
-  ] },
-  { key: 'velocities', label: 'Initial star velocities', value: 'observed', options: [
-    { value: 'observed', label: 'Full-model circular speeds' },
-    { value: 'equilibrium', label: 'Circular for the chosen potential' },
-  ], hint: 'With the halo off and full-model starting velocities, the disk expands and some outer stars escape; most stars remain bound.' },
-  { key: 'n', label: 'Number of stars', min: 500, max: 8000, value: 3000, log: true, digits: 2, integer: true },
-  { key: 'seed', label: 'Random seed', min: 1, max: 99, value: 7, digits: 2, integer: true },
+  { key: 'massA', label: 'Mass of galaxy A', min: 2e10, max: 5e11, value: 1e11, log: true, unit: 'M☉', hint: 'Point mass that sets the disk’s orbital speeds (no dark halo in this model).' },
+  { key: 'q', label: 'Mass ratio M_B / M_A', min: 0.1, max: 1, value: 1, digits: 2 },
+  { key: 'rp', label: 'Pericentre distance', min: 8, max: 60, value: 20, unit: 'kpc' },
+  { key: 'e', label: 'Orbit eccentricity e', min: 0.5, max: 1.5, value: 1, digits: 3, hint: 'e < 1 bound (repeated passages), e = 1 parabolic (Toomre’s choice), e > 1 hyperbolic fly-by.' },
+  { key: 'iA', label: 'Disk A tilt i_A', min: 0, max: 180, value: 15, unit: '°', hint: '0° = spinning with the orbit (prograde), 180° = against it (retrograde).' },
+  { key: 'wA', label: 'Disk A node angle ω_A', min: -180, max: 180, value: -30, unit: '°' },
+  { key: 'iB', label: 'Disk B tilt i_B', min: 0, max: 180, value: 60, unit: '°' },
+  { key: 'wB', label: 'Disk B node angle ω_B', min: -180, max: 180, value: -30, unit: '°' },
+  { key: 'Rdisk', label: 'Disk A outer radius', min: 4, max: 30, value: 15, unit: 'kpc', hint: 'Disk B radius = R_A·√(M_B/M_A) (illustrative scaling).' },
+  { key: 'eps', label: 'Softening length ε', min: 0.2, max: 3, value: 1, unit: 'kpc' },
+  { key: 'n', label: 'Tracer stars per galaxy', min: 1000, max: 40000, value: 24000, log: true, integer: true },
+  { key: 'dt', label: 'Time step Δt', min: 0.05, max: 1, value: 0.25, log: true, unit: 'Myr' },
+  { key: 'seed', label: 'Random seed', min: 1, max: 9999, value: 7, integer: true },
 ];
 
-const comps = p => ({ bulge: true, disk: true, halo: p.halo === 'on' });
+// ---------------------------------------------------------------- exact two-body orbits
 
-function createSim(p) {
-  const n = Math.round(p.n);
-  const c = comps(p);
-  const disk = createDisk({ n, comps: c, velocityModel: p.velocities, rand: rng(Math.round(p.seed)) });
-  const sim = {
-    params: p, disk, comps: c,
-    get t() { return disk.t * TIME_UNIT_MYR; },
-    step: () => stepDisk(disk, DT),
-    /** Mean tangential speed of the simulated stars in radial bins (the "measured" curve). */
-    measuredCurve(bins = 24, Rmax = 24) {
-      const sum = new Float64Array(bins), cnt = new Float64Array(bins);
-      for (let i = 0; i < disk.n; i++) {
-        const x = disk.x[3 * i], y = disk.x[3 * i + 1], R = Math.hypot(x, y);
-        const k = Math.floor(R / Rmax * bins);
-        if (k < 0 || k >= bins) continue;
-        sum[k] += (x * disk.v[3 * i + 1] - y * disk.v[3 * i]) / R; cnt[k]++;
+/**
+ * Relative position/velocity of B with respect to A at time t after pericentre, for any conic:
+ * pericentre on +x, motion counter-clockwise (angular momentum along +z). mu = G(M_A + M_B).
+ * Elliptic: core/kepler.mjs. Parabolic: Barker's equation (closed-form cubic). Hyperbolic:
+ * Newton on M = e sinh H − H.
+ */
+function conicRelative(rp, e, mu, t) {
+  if (e < 1 - 1e-9) {
+    const k = keplerRelative(rp / (1 - e), e, mu, t);
+    return { x: k.x, y: k.y, vx: k.vx, vy: k.vy };
+  }
+  const p = rp * (1 + e);
+  let nu;
+  if (Math.abs(e - 1) <= 1e-9) {
+    const W = 3 * t / Math.sqrt(2 * rp ** 3 / mu), s = Math.sign(W), w = Math.abs(W);
+    const Y = Math.cbrt(w / 2 + Math.sqrt(1 + w * w / 4));
+    const D = s * (Y - 1 / Y);
+    nu = 2 * Math.atan(D);
+  } else {
+    const a = rp / (e - 1), M = Math.sqrt(mu / a ** 3) * t;
+    let H = Math.asinh(M / e);
+    for (let k = 0; k < 100; k++) {
+      const dH = (e * Math.sinh(H) - H - M) / (e * Math.cosh(H) - 1);
+      H -= dH;
+      if (Math.abs(dH) < 1e-15 * Math.max(1, Math.abs(H))) break;
+    }
+    nu = 2 * Math.atan(Math.sqrt((e + 1) / (e - 1)) * Math.tanh(H / 2));
+  }
+  const r = p / (1 + e * Math.cos(nu)), c = Math.sqrt(mu / p);
+  return { x: r * Math.cos(nu), y: r * Math.sin(nu), vx: -c * Math.sin(nu), vy: c * (e + Math.cos(nu)) };
+}
+
+/** Time before pericentre at which the run starts: separation d0, or apocentre if closer. */
+function startTime(rp, e, mu, d0) {
+  if (e < 1 - 1e-9 && rp * (1 + e) / (1 - e) <= d0) return Math.PI * Math.sqrt((rp / (1 - e)) ** 3 / mu);
+  const r = t => { const s = conicRelative(rp, e, mu, t); return Math.hypot(s.x, s.y) - d0; };
+  let hi = Math.sqrt(rp ** 3 / mu);
+  while (r(hi) < 0) hi *= 2;
+  return brent(r, 0, hi, 1e-10);
+}
+
+// ---------------------------------------------------------------- the encounter
+
+function diskNormal(i, w, peri) {
+  // Line of nodes: the pericentre direction rotated by −ω in the orbital plane;
+  // normal: ẑ tilted by i about that line (i = 0 prograde, 180° retrograde).
+  const a = Math.atan2(peri[1], peri[0]) - w;
+  const nx = Math.cos(a), ny = Math.sin(a);
+  return [ny * Math.sin(i), -nx * Math.sin(i), Math.cos(i)];
+}
+
+function basis(n) {
+  const ref = Math.abs(n[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0];
+  let e1 = [ref[1] * n[2] - ref[2] * n[1], ref[2] * n[0] - ref[0] * n[2], ref[0] * n[1] - ref[1] * n[0]];
+  const l = Math.hypot(...e1); e1 = e1.map(v => v / l);
+  const e2 = [n[1] * e1[2] - n[2] * e1[1], n[2] * e1[0] - n[0] * e1[2], n[0] * e1[1] - n[1] * e1[0]];
+  return [e1, e2];                                       // e1 × e2 = n: rotation sense +n
+}
+
+/** Circular speed (kpc/Myr) at radius R in a softened point-mass potential. */
+const vCirc = (M, R, eps) => Math.sqrt(G * M * R * R / Math.pow(R * R + eps * eps, 1.5));
+
+/**
+ * Build and integrate an encounter. opts are PARAMS values (any subset) plus, for tests,
+ * massB (overrides q·massA; 0 = isolated galaxy) and nB.
+ */
+function createEncounter(opts = {}) {
+  const P = Object.fromEntries(PARAMS.map(p => [p.key, p.value]));
+  Object.assign(P, opts);
+  const MA = P.massA, MB = P.massB ?? P.q * P.massA, Mt = MA + MB, mu = G * Mt;
+  const eps2 = P.eps * P.eps, dt = P.dt;
+  const RA = P.Rdisk, RB = Math.max(3 * P.eps, P.Rdisk * Math.sqrt(MB / MA));
+  const nA = P.n, nB = P.nB ?? (MB > 0 ? P.n : 0), N = nA + nB;
+  const isolated = MB === 0;
+  const d0 = Math.max(3 * P.rp, 2.5 * (RA + RB));
+  const tPeri = isolated ? 0 : startTime(P.rp, P.e, mu, d0);
+  const rand = rng(P.seed);
+
+  // cores (barycentric)
+  const core = new Float64Array(12);                     // xA,yA,zA, xB,yB,zB, vA…, vB…
+  if (!isolated) {
+    const s = conicRelative(P.rp, P.e, mu, -tPeri);
+    const fA = -MB / Mt, fB = MA / Mt;
+    core.set([fA * s.x, fA * s.y, 0, fB * s.x, fB * s.y, 0, fA * s.vx, fA * s.vy, 0, fB * s.vx, fB * s.vy, 0]);
+  }
+  const coreAcc = new Float64Array(6);
+  const accCores = () => {
+    if (isolated) return;
+    const dx = core[3] - core[0], dy = core[4] - core[1], dz = core[5] - core[2];
+    const r2 = dx * dx + dy * dy + dz * dz, ir3 = 1 / (r2 * Math.sqrt(r2));
+    coreAcc[0] = G * MB * dx * ir3; coreAcc[1] = G * MB * dy * ir3; coreAcc[2] = G * MB * dz * ir3;
+    coreAcc[3] = -G * MA * dx * ir3; coreAcc[4] = -G * MA * dy * ir3; coreAcc[5] = -G * MA * dz * ir3;
+  };
+
+  // stars: cold exponential disks (Σ ∝ e^{−R/h}, h = R_disk/3), circular velocities
+  const x = new Float64Array(3 * N), v = new Float64Array(3 * N), a = new Float64Array(3 * N);
+  const origin = new Uint8Array(N), R0 = new Float32Array(N);
+  const setup = [
+    { M: MA, Rd: RA, n: nA, off: 0, c: 0, normal: diskNormal(P.iA * DEG, P.wA * DEG, [1, 0]) },
+    { M: MB, Rd: RB, n: nB, off: nA, c: 3, normal: diskNormal(P.iB * DEG, P.wB * DEG, [-1, 0]) },
+  ];
+  for (const g of setup) {
+    const [e1, e2] = basis(g.normal), h = g.Rd / 3, Rin = Math.min(0.5 * g.Rd, Math.max(0.08 * g.Rd, 1.5 * P.eps));
+    for (let j = 0; j < g.n; j++) {
+      let R;
+      do { R = -h * Math.log(rand() * rand()); } while (R < Rin || R > g.Rd);
+      const ph = 2 * Math.PI * rand(), z = 0.01 * g.Rd * rand.normal(), vc = vCirc(g.M, R, P.eps);
+      const cp = Math.cos(ph), sp = Math.sin(ph), i = g.off + j;
+      for (let k = 0; k < 3; k++) {
+        x[3 * i + k] = core[g.c + k] + R * (cp * e1[k] + sp * e2[k]) + z * g.normal[k];
+        v[3 * i + k] = core[6 + g.c + k] + vc * (-sp * e1[k] + cp * e2[k]);
       }
-      const pts = [];
-      for (let k = 1; k < bins; k++) if (cnt[k] >= 8) pts.push([(k + 0.5) * Rmax / bins, sum[k] / cnt[k]]);
-      return pts;
+      origin[i] = g === setup[0] ? 0 : 1; R0[i] = R;
+    }
+  }
+  const GMA = G * MA, GMB = G * MB;
+  const accStars = () => {
+    const ax = core[0], ay = core[1], az = core[2], bx = core[3], by = core[4], bz = core[5];
+    for (let i = 0, k = 0; i < N; i++, k += 3) {
+      let dx = x[k] - ax, dy = x[k + 1] - ay, dz = x[k + 2] - az;
+      let r2 = dx * dx + dy * dy + dz * dz + eps2, f = -GMA / (r2 * Math.sqrt(r2));
+      let gx = f * dx, gy = f * dy, gz = f * dz;
+      if (GMB > 0) {
+        dx = x[k] - bx; dy = x[k + 1] - by; dz = x[k + 2] - bz;
+        r2 = dx * dx + dy * dy + dz * dz + eps2; f = -GMB / (r2 * Math.sqrt(r2));
+        gx += f * dx; gy += f * dy; gz += f * dz;
+      }
+      a[k] = gx; a[k + 1] = gy; a[k + 2] = gz;
+    }
+  };
+  accCores(); accStars();
+
+  // observation: two-body energy classification (0 own, 1 captured, 2 unbound)
+  const status = new Uint8Array(N);
+  const energyWrt = (i, c, GM) => {
+    const k = 3 * i;
+    const dx = x[k] - core[c], dy = x[k + 1] - core[c + 1], dz = x[k + 2] - core[c + 2];
+    const ux = v[k] - core[6 + c], uy = v[k + 1] - core[7 + c], uz = v[k + 2] - core[8 + c];
+    return 0.5 * (ux * ux + uy * uy + uz * uz) - GM / Math.sqrt(dx * dx + dy * dy + dz * dz + eps2);
+  };
+  const counts = [[0, 0, 0], [0, 0, 0]];
+  const classify = () => {
+    counts[0].fill(0); counts[1].fill(0);
+    for (let i = 0; i < N; i++) {
+      const Ea = energyWrt(i, 0, GMA), Eb = GMB > 0 ? energyWrt(i, 3, GMB) : Infinity;
+      const own = origin[i] === 0 ? Ea : Eb, other = origin[i] === 0 ? Eb : Ea;
+      const s = Math.min(Ea, Eb) >= 0 ? 2 : own <= other ? 0 : 1;
+      status[i] = s; counts[origin[i]][s]++;
+    }
+  };
+  classify();
+
+  const sim = {
+    params: P, N, nA, nB, MA, MB, RA, RB, tPeri, mu, isolated, x, v, origin, status, R0, core,
+    t: 0, steps: 0, statusVersion: 0,
+    history: [], paths: [[], []],
+    fractions() {
+      return [0, 1].map(g => { const n = g ? nB : nA; return counts[g].map(c => (n ? c / n : 0)); });
     },
-    escaped() {
-      let e = 0;
-      for (let i = 0; i < disk.n; i++) if (Math.hypot(disk.x[3 * i], disk.x[3 * i + 1], disk.x[3 * i + 2]) > 40) e++;
-      return e / disk.n;
+    separation() { return Math.hypot(core[3] - core[0], core[4] - core[1], core[5] - core[2]); },
+    /** Exact barycentric core positions at simulation time t. */
+    exactCores(t) {
+      if (isolated) return [[0, 0, 0], [0, 0, 0]];
+      const s = conicRelative(P.rp, P.e, mu, t - tPeri), fA = -MB / Mt, fB = MA / Mt;
+      return [[fA * s.x, fA * s.y, 0], [fB * s.x, fB * s.y, 0]];
+    },
+    orbitError() {
+      if (isolated) return 0;
+      const s = conicRelative(P.rp, P.e, mu, sim.t - tPeri);
+      return Math.hypot(core[3] - core[0] - s.x, core[4] - core[1] - s.y, core[5] - core[2]) / P.rp;
+    },
+    step() {
+      const h = dt / 2;
+      for (let k = 0; k < 6; k++) core[6 + k] += h * coreAcc[k];
+      for (let k = 0; k < 3 * N; k++) v[k] += h * a[k];
+      for (let k = 0; k < 6; k++) core[k] += dt * core[6 + k];
+      for (let k = 0; k < 3 * N; k++) x[k] += dt * v[k];
+      accCores(); accStars();
+      for (let k = 0; k < 6; k++) core[6 + k] += h * coreAcc[k];
+      for (let k = 0; k < 3 * N; k++) v[k] += h * a[k];
+      sim.steps++;
+      sim.t = sim.steps * dt;
+      if (sim.steps % Math.max(1, Math.round(5 / dt)) === 0) sim.observe();
+    },
+    observe() {
+      classify(); sim.statusVersion++;
+      const f = sim.fractions();
+      sim.history.push([sim.t, sim.separation(), ...f[0], ...f[1]]);
+      sim.paths[0].push([core[0], core[1], core[2]]); sim.paths[1].push([core[3], core[4], core[5]]);
     },
     diagnostics() {
-      const E = energies(disk), L = angularMomenta(disk);
-      let dE = 0, dL = 0;
-      for (let i = 0; i < disk.n; i++) {
-        // normalise by max(|E₀|, ½V₀²): unbound stars have E₀ ≈ 0, which would inflate a relative error
-        dE = Math.max(dE, Math.abs(E[i] - disk.E0[i]) / Math.max(Math.abs(disk.E0[i]), 0.5 * V0 * V0));
-        dL = Math.max(dL, Math.abs(L[i] - disk.L0[i]) / Math.abs(disk.L0[i]));
-      }
+      const f = sim.fractions(), sep = sim.separation();
+      const vrel = Math.hypot(core[9] - core[6], core[10] - core[7], core[11] - core[8]) / KMS;
+      const pct = x => `${(100 * x).toFixed(1)} %`;
       return [
-        { key: 'dE', label: 'Worst star |ΔE| / max(|E₀|, ½V₀²)', value: dE, kind: 'error', good: 1e-4, warn: 1e-2 },
-        { key: 'dL', label: 'Worst star |ΔL_z/L_z| (axisymmetry)', value: dL, kind: 'error', good: 1e-10, warn: 1e-6 },
-        { key: 'esc', label: 'Stars beyond 40 kpc', value: 0, kind: 'value', text: `${(100 * sim.escaped()).toFixed(1)} %` },
-        { key: 'unbound', label: 'Unbound stars (specific energy ≥ 0)', value: 100 * Array.from(E).filter(q => q >= 0).length / disk.n, kind: 'value', unit: '%' },
-        { key: 'vc', label: 'Model v_c at R₀ = 8 kpc', value: circularSpeed(R0, c).total, kind: 'value', unit: 'km/s' },
-        { key: 'orb', label: 'Orbital period at R₀', value: 2 * Math.PI * R0 / circularSpeed(R0, c).total * TIME_UNIT_MYR, kind: 'value', unit: 'Myr' },
+        { key: 'orb', label: 'core orbit vs exact Kepler |Δr|/r_p', value: sim.orbitError(), kind: 'error', good: 1e-4, warn: 1e-2 },
+        { key: 'tp', label: 'time from pericentre', value: sim.t - tPeri, kind: 'value', text: `${(sim.t - tPeri).toFixed(0)} Myr` },
+        { key: 'sep', label: 'core separation', value: sep, kind: 'value', text: `${sep.toFixed(1)} kpc` },
+        { key: 'vrel', label: 'relative speed of cores', value: vrel, kind: 'value', text: `${vrel.toFixed(0)} km/s` },
+        { key: 'a0', label: 'A stars still bound to A', value: f[0][0], kind: 'value', text: pct(f[0][0]) },
+        { key: 'a1', label: 'A stars captured by B', value: f[0][1], kind: 'value', text: pct(f[0][1]) },
+        { key: 'a2', label: 'A stars unbound', value: f[0][2], kind: 'value', text: pct(f[0][2]) },
+        { key: 'b0', label: 'B stars still bound to B', value: f[1][0], kind: 'value', text: pct(f[1][0]) },
+        { key: 'b1', label: 'B stars captured by A', value: f[1][1], kind: 'value', text: pct(f[1][1]) },
+        { key: 'b2', label: 'B stars unbound', value: f[1][2], kind: 'value', text: pct(f[1][2]) },
       ];
     },
-    state: () => {
-      let r2 = 0;
-      for (let i = 0; i < disk.n; i++) r2 += disk.x[3 * i] ** 2 + disk.x[3 * i + 1] ** 2 + disk.x[3 * i + 2] ** 2;
-      return { t: disk.t, n: disk.n, rmsRadius: Math.sqrt(r2 / disk.n), escaped: sim.escaped(), first: Array.from(disk.x.subarray(0, 12)) };
+    state() {
+      return { t: sim.t, tPericentre: tPeri, separation_kpc: sim.separation(), cores: Array.from(core.slice(0, 6)), fractions: sim.fractions(), steps: sim.steps };
     },
     record() {
-      const rows = [];
-      for (let R = 0.5; R <= 30; R += 0.5) {
-        const v = circularSpeed(R), nd = circularSpeed(R, { bulge: true, disk: true, halo: false });
-        rows.push([R, v.total, v.bulge, v.disk, v.halo, nd.total, eilers2019(R)]);
-      }
-      return { header: ['R_kpc', 'vc_total', 'vc_bulge', 'vc_disk', 'vc_halo', 'vc_no_dark_matter', 'vc_measured_Eilers2019'], rows };
+      return {
+        header: ['t_Myr', 'separation_kpc', 'A_bound_own', 'A_captured', 'A_unbound', 'B_bound_own', 'B_captured', 'B_unbound'],
+        rows: sim.history.map(r => r.map(v => +v.toPrecision(6))),
+      };
     },
   };
+  sim.observe();
   return sim;
 }
 
+function createSim(params) { return createEncounter(params); }
+
+// ---------------------------------------------------------------- verification
+
 function verify() {
-  const checks = [];
-  const v8 = circularSpeed(R0);
-  checks.push({ label: 'Normalisation: v_c(8 kpc) = 220 km/s, force fractions 5/60/35 % (MWPotential2014)', value: `${v8.total.toFixed(6)} km/s`, pass: Math.abs(v8.total - V0) < 1e-9 });
-  checks.push({ label: 'Disk mass vs Bovy (2015) 6.8×10¹⁰ M☉', value: `${(MW.Md / 1e10).toFixed(2)}×10¹⁰ M☉`, pass: Math.abs(MW.Md / 6.8e10 - 1) < 0.02 });
-  // analytic forces vs numerical gradient of the potential
-  const a = new Float64Array(3), h = 1e-5, all = { bulge: true, disk: true, halo: true };
-  let worst = 0;
-  for (const [x, y, z] of [[5, 3, 0.4], [0.7, -1.2, 0.1], [15, 2, -2]]) {
-    acceleration(x, y, z, all, MW, a);
-    const P = (X, Y, Z) => potential(Math.hypot(X, Y), Z, all);
-    const g = [-(P(x + h, y, z) - P(x - h, y, z)) / (2 * h), -(P(x, y + h, z) - P(x, y - h, z)) / (2 * h), -(P(x, y, z + h) - P(x, y, z - h)) / (2 * h)];
-    for (let k = 0; k < 3; k++) worst = Math.max(worst, Math.abs(a[k] - g[k]) / Math.hypot(...g));
+  const checks = [], notes = [];
+  const fmt = (x, d = 2) => x.toExponential(d);
+
+  // 1. Own conic solver (toolkit gap): vis-viva and angular momentum identities.
+  {
+    const mu = G * 2e11, rp = 25;
+    let worst = 0;
+    for (const e of [0.6, 1, 1.4]) {
+      const hExp = Math.sqrt(mu * rp * (1 + e)), Eexp = e === 1 ? 0 : -mu * (1 - e) / (2 * rp);
+      for (const t of [-900, -300, -40, 0, 17, 250, 1200]) {
+        const s = conicRelative(rp, e, mu, t), r = Math.hypot(s.x, s.y);
+        const E = 0.5 * (s.vx ** 2 + s.vy ** 2) - mu / r, h = s.x * s.vy - s.y * s.vx;
+        worst = Math.max(worst, Math.abs(E - Eexp) / (mu / rp), Math.abs(h - hExp) / hExp);
+      }
+      // continuity across e = 1: nearly parabolic elliptic/hyperbolic orbits approach Barker's
+    }
+    const p1 = conicRelative(rp, 1, mu, 400), pe = conicRelative(rp, 1 - 1e-6, mu, 400), ph = conicRelative(rp, 1 + 1e-6, mu, 400);
+    const cont = Math.max(Math.hypot(p1.x - pe.x, p1.y - pe.y), Math.hypot(p1.x - ph.x, p1.y - ph.y)) / rp;
+    checks.push({ label: 'Conic solver: energy and angular momentum identities (e = 0.6, 1, 1.4)', value: `max rel. error ${fmt(worst)}`, pass: worst < 1e-10 });
+    checks.push({ label: 'Conic solver: e → 1 from both sides matches Barker’s parabola', value: `|Δr|/r_p = ${fmt(cont)}`, pass: cont < 1e-4 });
   }
-  checks.push({ label: 'Analytic forces = −∇Φ (bulge + Miyamoto–Nagai + NFW)', value: `max rel. diff ${worst.toExponential(1)}`, pass: worst < 1e-7 });
-  // NFW enclosed mass vs integral of the density
-  const r = 30, Mnum = gaussLegendre(s => 4 * Math.PI * s * s * haloDensity(s), 1e-9, r, 64);
-  checks.push({ label: 'NFW M(<30 kpc): formula vs ∫4πr²ρ dr', value: `rel. diff ${Math.abs(Mnum / haloMass(r) - 1).toExponential(1)}`, pass: Math.abs(Mnum / haloMass(r) - 1) < 1e-6 });
-  // against the measured Milky Way rotation curve
-  let dev = 0;
-  for (let R = 5; R <= 25; R += 1) dev = Math.max(dev, Math.abs(circularSpeed(R).total / eilers2019(R) - 1));
-  checks.push({ label: 'Model vs measured rotation curve 5–25 kpc (Eilers et al. 2019)', value: `max deviation ${(100 * dev).toFixed(1)} %`, pass: dev < 0.1, state: dev > 0.05 ? 'warn' : undefined });
-  const noDM = circularSpeed(20, { bulge: true, disk: true, halo: false }).total;
-  checks.push({ label: 'Without dark matter, v_c(20 kpc) falls far below the measurement', value: `${noDM.toFixed(0)} vs ${eilers2019(20).toFixed(0)} km/s measured`, pass: noDM < 0.7 * eilers2019(20) });
-  // leapfrog: Lz exact, energy 2nd order
-  const errAt = dt => {
-    const d = createDisk({ n: 50, comps: all, rand: rng(3) });
-    const steps = Math.round(0.25 / dt);
-    for (let i = 0; i < steps; i++) stepDisk(d, dt);
-    const E = energies(d); let m = 0;
-    for (let i = 0; i < d.n; i++) m = Math.max(m, Math.abs((E[i] - d.E0[i]) / d.E0[i]));
-    return { m, d };
-  };
-  const e1 = errAt(1e-3), e2 = errAt(5e-4);
-  checks.push({ label: 'Leapfrog energy error order (expected 2)', value: Math.log2(e1.m / e2.m).toFixed(2), pass: Math.abs(Math.log2(e1.m / e2.m) - 2) < 0.4 });
-  const L = angularMomenta(e2.d); let dl = 0;
-  for (let i = 0; i < e2.d.n; i++) dl = Math.max(dl, Math.abs(L[i] - e2.d.L0[i]) / Math.abs(e2.d.L0[i]));
-  checks.push({ label: 'L_z conserved (axisymmetric potential, 245 Myr)', value: dl.toExponential(1), pass: dl < 1e-12 });
-  return {
-    summary: 'Mass model, forces and integrator checked against exact identities, Bovy (2015) and the measured Milky Way:',
-    checks,
-    notes: ['The model is normalised to 220 km/s at 8 kpc (MWPotential2014); modern measurements give ≈229 km/s, so it runs 4–8 % low.'],
-  };
+
+  // 2. Cores vs exact Kepler for bound, parabolic and hyperbolic encounters (production Δt).
+  {
+    let worst = 0;
+    for (const e of [0.6, 1, 1.4]) {
+      const s = createEncounter({ e, n: 10, nB: 10, q: 0.5 });
+      let m = 0;
+      const end = s.tPeri + 1200;
+      while (s.t < end) { s.step(); if (s.steps % 20 === 0) m = Math.max(m, s.orbitError()); }
+      worst = Math.max(worst, m);
+    }
+    checks.push({ label: 'Core orbit vs exact two-body solution, Δt = 0.25 Myr (e = 0.6, 1, 1.4; to pericentre + 1.2 Gyr)', value: `max |Δr|/r_p = ${fmt(worst)}`, pass: worst < 1e-4 });
+  }
+
+  // 3. Isolated galaxy: circular orbits stay circular; energy of each star conserved.
+  {
+    const s = createEncounter({ massB: 0, n: 2000, nB: 0 });
+    const E0 = new Float64Array(s.N), L0 = new Float64Array(s.N);
+    const Ei = i => 0.5 * (s.v[3 * i] ** 2 + s.v[3 * i + 1] ** 2 + s.v[3 * i + 2] ** 2) - G * s.MA / Math.sqrt(s.x[3 * i] ** 2 + s.x[3 * i + 1] ** 2 + s.x[3 * i + 2] ** 2 + s.params.eps ** 2);
+    const Li = i => { const k = 3 * i, X = s.x, V = s.v; return Math.hypot(X[k + 1] * V[k + 2] - X[k + 2] * V[k + 1], X[k + 2] * V[k] - X[k] * V[k + 2], X[k] * V[k + 1] - X[k + 1] * V[k]); };
+    for (let i = 0; i < s.N; i++) { E0[i] = Ei(i); L0[i] = Li(i); }
+    let dE = 0, dL = 0;
+    while (s.t < 1000) {
+      s.step();
+      if (s.steps % 40 === 0) {
+        for (let i = 0; i < s.N; i++) {
+          dE = Math.max(dE, Math.abs(Ei(i) - E0[i]) / Math.abs(E0[i]));
+          dL = Math.max(dL, Math.abs(Li(i) - L0[i]) / L0[i]);
+        }
+      }
+    }
+    checks.push({ label: 'Isolated disk, 1 Gyr: per-star energy error (2000 stars; bounded, O(Δt²))', value: `max |ΔE/E| = ${fmt(dE)}`, pass: dE < 1e-4 });
+    checks.push({ label: 'Isolated disk, 1 Gyr: per-star angular momentum (exact for leapfrog in a central force)', value: `max |ΔL/L| = ${fmt(dL)}`, pass: dL < 1e-10 });
+  }
+
+  // 4. Timestep refinement through the encounter: leapfrog should show order ≈ 2.
+  {
+    const end = Math.ceil(createEncounter({ n: 1, nB: 1 }).tPeri + 300);   // common end time, a multiple of every Δt
+    const run = dt => { const s = createEncounter({ dt, n: 300, nB: 300 }); while (s.t < end - 1e-9) s.step(); return s; };
+    const r = [1, 0.5, 0.25, 0.125].map(run);
+    const med = (s1, s2) => {
+      const d = Array.from({ length: s1.N }, (_, i) => Math.hypot(s1.x[3 * i] - s2.x[3 * i], s1.x[3 * i + 1] - s2.x[3 * i + 1], s1.x[3 * i + 2] - s2.x[3 * i + 2]));
+      d.sort((p, q) => p - q);
+      return d[Math.floor(d.length / 2)];
+    };
+    const e1 = med(r[0], r[1]), e2 = med(r[1], r[2]), e3 = med(r[2], r[3]);
+    const order = Math.log2(e2 / e3);
+    checks.push({ label: 'Δt refinement 0.5 → 0.25 → 0.125 Myr, median star position at pericentre + 300 Myr', value: `order ${order.toFixed(2)} (leapfrog: 2)`, pass: Math.abs(order - 2) < 0.3 });
+    checks.push({ label: 'Production Δt = 0.25 Myr: median star position error (vs Δt/2)', value: `${fmt(e3)} kpc`, pass: e3 < 0.05 });
+    notes.push(`Refinement errors (median, kpc): Δt 1→0.5: ${fmt(e1)}, 0.5→0.25: ${fmt(e2)}, 0.25→0.125: ${fmt(e3)}. Stars that pass within a few ε of a core are chaotic; the median describes the bulk of the tidal features.`);
+  }
+
+  // 5. Published benchmark: Toomre & Toomre (1972) — prograde disks are torn into bridges
+  //    and tails, retrograde disks are barely disturbed (equal masses, parabolic orbit).
+  {
+    const stripped = iA => {
+      const s = createEncounter({ iA, iB: 0, n: 3000, nB: 300 });
+      const end = s.tPeri + 600;
+      while (s.t < end) s.step();
+      s.observe();
+      const f = s.fractions()[0];
+      return f[1] + f[2];
+    };
+    const pro = stripped(0), retro = stripped(180);
+    checks.push({ label: 'Toomre & Toomre 1972: prograde disk loses far more stars than retrograde (pericentre + 600 Myr)', value: `prograde ${(100 * pro).toFixed(1)} %, retrograde ${(100 * retro).toFixed(1)} %`, pass: pro > 0.1 && pro > 5 * Math.max(retro, 1e-3) });
+  }
+
+  // 6. Determinism and frame-schedule independence.
+  {
+    const a = createEncounter({ n: 200 }), b = createEncounter({ n: 200 });
+    for (let t = 0; a.t < 400; t += 3.7) while (a.t < t) a.step();
+    for (let t = 0; b.t < 400; t += 11.3) while (b.t < t) b.step();
+    while (a.t < b.t) a.step(); while (b.t < a.t) b.step();
+    let same = true;
+    for (let k = 0; k < a.x.length; k++) if (a.x[k] !== b.x[k]) { same = false; break; }
+    checks.push({ label: 'Determinism and frame-rate independence (two frame schedules)', value: same ? 'bit-identical' : 'differs', pass: same });
+  }
+
+  // Outcome of the default encounter (reported, not graded: there is no exact value to compare).
+  {
+    const s = createEncounter({ n: 3000 });
+    while (s.t < s.tPeri + 600) s.step();
+    s.observe();
+    const f = s.fractions().map(g => `${(100 * (g[1] + g[2])).toFixed(1)} %`);
+    notes.push(`Default encounter, 3000 tracers per galaxy, pericentre + 600 Myr: ${f[0]} of A’s stars and ${f[1]} of B’s stars captured or unbound.`);
+  }
+  notes.push('Model scope: restricted three-body (Toomre & Toomre 1972). Stars are test particles; no self-gravity, dark-matter halos, dynamical friction, gas or star formation. The cores therefore never merge, unlike real equal-mass pairs.');
+  return { summary: 'Encounter checked against the exact two-body orbit, isolated circular orbits, Δt refinement and Toomre & Toomre’s prograde/retrograde result.', checks, notes };
 }
 
-
-
-return { DT, PARAMS, createSim, verify, circularSpeed, eilers2019, haloDensity, R0, G, NFW_SCALE, TIME_UNIT_MYR, STEP: DT };
+return { KMS, G, PARAMS, conicRelative, vCirc, createEncounter, createSim, verify };
 })();
 
 // ---- page
 const { createInstrument } = __psim["ui/instrument-app.mjs"];
-const { PARAMS, createSim, circularSpeed, eilers2019, haloDensity, R0, NFW_SCALE } = __psim["local:physics.mjs"];
-// ------------------------------------------------------------------ stage: the stellar disk
-const cam = { tilt: 0.45, spin: 0 };            // tilt 0 = face-on
+const { orbitCamera, createPointRenderer } = __psim["ui/gl.mjs"];
+const { createPlot } = __psim["ui/plot.mjs"];
+const { sci } = __psim["ui/instrument.mjs"];
+const { PARAMS, createSim } = __psim["local:physics.mjs"];
+// ------------------------------------------------------------------ presentation state (never touches physics)
+const cam = orbitCamera({ distance: 150, yaw: -1.15, pitch: 0.72, fov: 0.75 });
+const opts = { colour: 'origin', size: 2.2, paths: true, auto: true, spin: false };
+let pts = null, posBuf = null, colBuf = null, colKey = '', simSeen = null, extent = 60, frameNo = 0;
+let exactPath = null, autoToggle = null, gridStep = 20;
+
+const hexRGB = h => { h = h.trim(); return [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255); };
+const palette = C => ({ A: hexRGB(C('--body-0')), B: hexRGB(C('--body-1')), U: hexRGB(C('--body-2')) });
+
+function fillColours(sim, C, dark) {
+  const P = palette(C), n = sim.N;
+  if (!colBuf || colBuf.length !== 3 * n) colBuf = new Float32Array(3 * n);
+  for (let i = 0; i < n; i++) {
+    const s = sim.status[i], o = sim.origin[i];
+    const c = opts.colour === 'origin' ? (o ? P.B : P.A) : s === 2 ? P.U : (s === 0) === (o === 0) ? P.A : P.B;
+    colBuf[3 * i] = c[0]; colBuf[3 * i + 1] = c[1]; colBuf[3 * i + 2] = c[2];
+  }
+  return colBuf;
+}
+
+// Frame both cores, their disks and the bulk (92nd percentile) of the stars, measured from the state.
+function measureExtent(sim) {
+  const stride = Math.max(1, Math.floor(sim.N / 1500)), r = [];
+  for (let i = 0; i < sim.N; i += stride) r.push(Math.hypot(sim.x[3 * i], sim.x[3 * i + 1], sim.x[3 * i + 2]));
+  r.sort((a, b) => a - b);
+  const c = sim.core;
+  return Math.max(r[Math.floor(0.92 * r.length)] ?? 0, Math.hypot(c[0], c[1]) + sim.RA, Math.hypot(c[3], c[4]) + sim.RB, 25);
+}
+function targetDistance(view) {
+  const half = Math.tan(cam.fov / 2) * Math.min(1, view.W / Math.max(1, view.H));
+  return 1.15 * extent / half;
+}
+
+function drawGL(gl, sim, view) {
+  if (!pts) pts = createPointRenderer(gl);
+  const dark = view.color('--glow') === '1';
+  if (sim !== simSeen) { simSeen = sim; extent = measureExtent(sim); if (opts.auto) cam.distance = targetDistance(view); exactPath = null; }
+  if (++frameNo % 20 === 0) extent = measureExtent(sim);
+  if (opts.auto) cam.distance += 0.04 * (targetDistance(view) - cam.distance);
+  if (opts.spin) cam.yaw += 0.0012;
+  const n = sim.N;
+  if (!posBuf || posBuf.length !== 3 * n) posBuf = new Float32Array(3 * n);
+  posBuf.set(sim.x);                                       // Float64 → Float32 copy of the computed positions
+  const key = `${sim.statusVersion}|${opts.colour}|${dark}|${n}`;
+  pts.update(posBuf, { colors: key !== colKey || !colBuf ? fillColours(sim, view.color, dark) : colBuf });
+  colKey = key;
+  const fade = Math.min(1, Math.sqrt(24000 / n));          // keep the summed glow comparable across star counts
+  pts.draw(cam, { aspect: view.W / view.H, size: opts.size, blend: dark ? 'additive' : 'alpha', opacity: dark ? 0.8 * fade : 0.4 });
+}
+
+// ------------------------------------------------------------------ 2D overlay: measuring grid, orbits, labels
+function niceStep(x) { const e = 10 ** Math.floor(Math.log10(x)), f = x / e; return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * e; }
 
 function draw(ctx, sim, view) {
-  const { W, H } = view, C = view.color, glow = C('--glow') === '1';
-  const d = sim.disk, scale = Math.min(W, H) / 2 / 27;   // fits R ≈ 27 kpc
-  const cx = W / 2, cy = H / 2, ct = Math.cos(cam.tilt), st = Math.sin(cam.tilt);
-  const P = (x, y, z) => [cx + x * scale, cy - (y * ct - z * st) * scale];
-
-  // Dark-matter halo: projected NFW density as a soft glow (invisible in reality).
-  if (sim.comps.halo) {
-    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, 30 * scale);
-    for (const r of [0, 2, 5, 10, 20, 30]) {
-      const rho = haloDensity(Math.max(r, 0.5)) / haloDensity(2);
-      g.addColorStop(r / 30, `rgba(140, 120, 255, ${Math.min(0.22, 0.22 * Math.sqrt(rho))})`);
-    }
-    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  }
-  // Reference rings every 5 kpc and the Sun's radius.
-  ctx.lineWidth = 1;
-  for (let r = 5; r <= 25; r += 5) {
-    ctx.strokeStyle = r === 5 * Math.round(R0 / 5) ? C('--grid-strong') : C('--grid');
-    ctx.beginPath(); ctx.ellipse(cx, cy, r * scale, r * scale * ct, 0, 0, 2 * Math.PI); ctx.stroke();
-  }
-  ctx.setLineDash([3, 4]); ctx.strokeStyle = C('--warn');
-  ctx.beginPath(); ctx.ellipse(cx, cy, R0 * scale, R0 * scale * ct, 0, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle = C('--warn'); ctx.font = '10.5px ui-monospace, Menlo, monospace';
-  ctx.fillText('Sun’s orbit, 8 kpc', cx + R0 * scale * 0.72, cy - R0 * scale * ct * 0.72 - 6);
-
-  // Stars: one computed test particle each. Colour encodes the radius each star started at.
-  ctx.globalCompositeOperation = glow ? 'lighter' : 'source-over';
-  const n = d.n, size = glow ? 2.1 : 1.7;
-  for (let i = 0; i < n; i++) {
-    const [px, py] = P(d.x[3 * i], d.x[3 * i + 1], d.x[3 * i + 2]);
-    if (px < -5 || px > W + 5 || py < -5 || py > H + 5) continue;
-    const f = Math.min(1, d.R0s[i] / 20);
-    const r = Math.round(255 - 110 * f), g = Math.round(214 - 40 * f), b = Math.round(160 + 95 * f);
-    ctx.fillStyle = `rgba(${r},${g},${b},${glow ? 0.7 : 0.8})`;
-    ctx.fillRect(px - size / 2, py - size / 2, size, size);
-  }
-  ctx.globalCompositeOperation = 'source-over';
-  // centre and scale bar
-  ctx.fillStyle = C('--ink'); ctx.beginPath(); ctx.arc(cx, cy, 2, 0, 7); ctx.fill();
-  ctx.strokeStyle = C('--muted');
-  ctx.beginPath(); ctx.moveTo(16, H - 30); ctx.lineTo(16, H - 24); ctx.lineTo(16 + 5 * scale, H - 24); ctx.lineTo(16 + 5 * scale, H - 30); ctx.stroke();
-  ctx.fillStyle = C('--muted'); ctx.fillText('5 kpc', 16, H - 10);
-}
-
-function onPointer(canvas) {
-  let drag = null;
-  canvas.style.cursor = 'grab';
-  canvas.addEventListener('pointerdown', e => { drag = { y: e.clientY, tilt: cam.tilt }; canvas.setPointerCapture(e.pointerId); });
-  canvas.addEventListener('pointermove', e => { if (drag) cam.tilt = Math.max(0, Math.min(1.55, drag.tilt + (e.clientY - drag.y) * 0.006)); });
-  canvas.addEventListener('pointerup', () => { drag = null; });
-  canvas.addEventListener('dblclick', () => { cam.tilt = 0.45; });
-}
-
-// ------------------------------------------------------------------ workbench
-function bench({ eqs, figs, createPlot, createEquation, M }) {
-  const cur = { R: R0 };
-  const curve = createPlot({
-    title: 'Rotation curve v_c(R): what holds the stars in orbit', height: 320,
-    x: { label: 'radius R', unit: 'kpc', min: 0, max: 28 },
-    y: { label: 'circular speed', unit: 'km/s', min: 0, max: 280 },
-    onCursor: R => { cur.R = Math.max(0.3, R); },
-  });
-  figs.append(curve.el);
-  const all = { bulge: true, disk: true, halo: true }, visible = { bulge: true, disk: true, halo: false };
-  curve.band('meas', 5, 25, { color: '--grid', alpha: 0.6, label: 'measured range' });
-  curve.fn('bulge', R => circularSpeed(R).bulge, { color: '--body-0', label: 'bulge', width: 1.3 });
-  curve.fn('disk', R => circularSpeed(R).disk, { color: '--body-1', label: 'stellar disk', width: 1.3 });
-  curve.fn('halo', R => circularSpeed(R).halo, { color: '--body-4', label: 'dark-matter halo', width: 1.3 });
-  curve.fn('visible', R => circularSpeed(R, visible).total, { color: '--muted', dash: true, label: 'visible matter only' });
-  curve.fn('total', R => circularSpeed(R, all).total, { color: '--ink', label: 'model total', width: 2.2 });
-  curve.fn('eilers', R => (R >= 5 && R <= 25 ? eilers2019(R) : NaN), { color: '--warn', dot: true, label: 'measured (Eilers+ 2019)', width: 2 });
-  curve.cursor(cur.R);
-
-  const vsq = (s, sub) => M.sup(M.sub(M.i(s), M.i(sub)), M.n(2));
-  const eq = createEquation({
-    title: 'Where the orbital speed comes from (values at the cursor radius)',
-    lhs: { mathml: `${M.sup(M.sub(M.i('v'), M.i('c')), M.n(2))}${M.paren(M.i('R'))}`, label: 'circular speed², total', value: () => circularSpeed(cur.R).total ** 2, unit: 'km²/s²', digits: 5 },
-    terms: [
-      { id: 'bulge', mathml: vsq('v', 'bulge'), label: 'bulge (Hernquist)', color: '--body-0', value: () => circularSpeed(cur.R).bulge ** 2, unit: 'km²/s²', digits: 4 },
-      { id: 'disk', mathml: vsq('v', 'disk'), label: 'stars and gas (Miyamoto–Nagai)', color: '--body-1', value: () => circularSpeed(cur.R).disk ** 2, unit: 'km²/s²', digits: 4 },
-      { id: 'halo', mathml: vsq('v', 'halo'), label: 'dark matter (NFW)', color: '--body-4', value: () => circularSpeed(cur.R).halo ** 2, unit: 'km²/s²', digits: 4 },
-    ],
-    where: [
-      { mathml: M.sup(M.sub(M.i('v'), M.i('i')), M.n(2)), meaning: 'R × radial pull of component i (gravity balances the centripetal acceleration)' },
-      { mathml: M.sub(M.i('M'), M.i('halo')) + M.paren(`<mo>&lt;</mo>${M.i('r')}`), meaning: 'NFW: 4πρ₀r_s³ [ln(1 + r/r_s) − (r/r_s)/(1 + r/r_s)], r_s', value: () => NFW_SCALE, unit: 'kpc' },
-      { mathml: M.i('R'), meaning: 'cursor radius (drag on the plot)', value: () => cur.R, unit: 'kpc', digits: 3 },
-      { mathml: `${M.sub(M.i('v'), M.i('c'))}`, meaning: 'circular speed at the cursor', value: () => circularSpeed(cur.R).total, unit: 'km/s', digits: 4 },
-    ],
-    note: 'Without the halo term, v_c falls roughly as 1/√R beyond the disk (Kepler). Measured speeds stay nearly flat: that missing pull is the evidence for dark matter.',
-    link: curve,
-  });
-  eqs.append(eq.el);
-
-  return {
-    update(sim) {
-      curve.data('sim', sim.measuredCurve(), { color: '--good', dots: true, label: 'simulated stars (mean v_φ)', r: 2.6, ignoreScale: true });
-      curve.cursor(cur.R);
-      curve.invalidate(); curve.draw();
-      eq.update();
-    },
+  const { W, H } = view, C = view.color;
+  const vp = cam.matrices(W / H).viewProj;
+  const proj = p => {
+    const w = vp[3] * p[0] + vp[7] * p[1] + vp[11] * p[2] + vp[15];
+    if (w <= 0) return null;
+    return [((vp[0] * p[0] + vp[4] * p[1] + vp[8] * p[2] + vp[12]) / w * 0.5 + 0.5) * W, (0.5 - (vp[1] * p[0] + vp[5] * p[1] + vp[9] * p[2] + vp[13]) / w * 0.5) * H];
   };
+  const line = (pts3, close = false) => {
+    ctx.beginPath(); let pen = false;
+    for (const p of pts3) { const q = proj(p); if (!q) { pen = false; continue; } if (pen) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); pen = true; }
+    if (close) ctx.closePath();
+    ctx.stroke();
+  };
+  // orbital-plane grid (z = 0), nice 1-2-5 spacing
+  const step = niceStep(extent / 3), L = Math.ceil(1.6 * extent / step) * step;
+  ctx.lineWidth = 1;
+  for (let g = -L; g <= L + 1e-9; g += step) {
+    ctx.strokeStyle = Math.abs(g) < 1e-9 ? C('--grid-strong') : C('--grid');
+    line([[g, -L, 0], [g, L, 0]]); line([[-L, g, 0], [L, g, 0]]);
+  }
+  // fallback when WebGL2 is missing: a sparse 2D sample of the same computed stars
+  if (view.glError) {
+    const P = palette(C), stride = Math.max(1, Math.floor(sim.N / 6000));
+    for (let i = 0; i < sim.N; i += stride) {
+      const q = proj([sim.x[3 * i], sim.x[3 * i + 1], sim.x[3 * i + 2]]); if (!q) continue;
+      const c = sim.origin[i] ? P.B : P.A;
+      ctx.fillStyle = `rgba(${c.map(v => Math.round(255 * v)).join(',')},0.7)`; ctx.fillRect(q[0] - 1, q[1] - 1, 2, 2);
+    }
+  }
+  if (opts.paths && !sim.isolated) {
+    // exact two-body orbit of each core (dashed reference) and the integrated path (solid)
+    if (!exactPath) {
+      const tEnd = Math.max(2 * sim.tPeri, sim.tPeri + 2500);
+      exactPath = [[], []];
+      for (let k = 0; k <= 600; k++) { const c = sim.exactCores(k / 600 * tEnd); exactPath[0].push(c[0]); exactPath[1].push(c[1]); }
+    }
+    ctx.setLineDash([4, 5]); ctx.lineWidth = 1; ctx.strokeStyle = C('--muted');
+    line(exactPath[0]); line(exactPath[1]);
+    ctx.setLineDash([]); ctx.lineWidth = 1.3;
+    ctx.strokeStyle = C('--body-0'); line([...sim.paths[0], [sim.core[0], sim.core[1], sim.core[2]]]);
+    ctx.strokeStyle = C('--body-1'); line([...sim.paths[1], [sim.core[3], sim.core[4], sim.core[5]]]);
+  }
+  // core markers; labels sit above each disk (along +z) with a halo so they stay readable
+  ctx.font = '11px ui-monospace, Menlo, monospace';
+  [['A', 0, sim.MA, sim.RA, '--body-0'], ['B', 3, sim.MB, sim.RB, '--body-1']].forEach(([name, o, M, R, col]) => {
+    if (!M) return;
+    const q = proj([sim.core[o], sim.core[o + 1], sim.core[o + 2]]); if (!q) return;
+    ctx.strokeStyle = C('--ink'); ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(q[0], q[1], 6, 0, 7); ctx.stroke();
+    const t = proj([sim.core[o], sim.core[o + 1], sim.core[o + 2] + 0.9 * R]) ?? q;
+    const text = `${name} core · ${sci(M, 2)} M☉`, w = ctx.measureText(text).width;
+    const lx = Math.min(W - w - 8, Math.max(8, t[0] - w / 2)), ly = Math.max(16, Math.min(t[1] - 10, q[1] - 22));
+    ctx.strokeStyle = C('--grid-strong'); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(q[0], q[1] - 7); ctx.lineTo(lx + w / 2, ly + 4); ctx.stroke();
+    ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = C('--bg'); ctx.strokeText(text, lx, ly);
+    ctx.fillStyle = C(col); ctx.fillText(text, lx, ly);
+  });
+  if (step !== gridStep) { gridStep = step; setLegend(); }
+  // light-weight figure refresh (reads the recorded history only)
+  updateFigures(sim);
 }
 
-createInstrument({
-  title: 'Dark matter and galaxy rotation',
-  subtitle: 'Thousands of stars in a Milky-Way mass model · bulge, disk and dark-matter halo · leapfrog orbits',
+// ------------------------------------------------------------------ figures in the side column
+let figFrac = null, figSep = null, figN = -1, figSim = null;
+function updateFigures(sim) {
+  if (!figFrac || (figSim === sim && figN === sim.history.length)) return;
+  const h = sim.history, tMax = Math.max(1500, sim.t);
+  if (figSim !== sim) {
+    figSim = sim;
+    for (const f of [figFrac, figSep]) { f.vline('peri', sim.tPeri, { label: 'pericentre' }); }
+    figSep.fn('exact', t => { const c = sim.exactCores(t); return Math.hypot(c[1][0] - c[0][0], c[1][1] - c[0][1]); }, { color: '--muted', dash: true, label: 'exact two-body' });
+  }
+  figN = h.length;
+  for (const f of [figFrac, figSep]) f.setX({ min: 0, max: tMax });
+  const ser = (j, scale = 100) => h.map(r => [r[0], scale * r[j]]);
+  figFrac.data('a1', ser(3), { color: '--body-0', label: 'A → captured by B' });
+  figFrac.data('a2', ser(4), { color: '--body-0', dash: true, label: 'A → unbound' });
+  figFrac.data('b1', ser(6), { color: '--body-1', label: 'B → captured by A' });
+  figFrac.data('b2', ser(7), { color: '--body-1', dash: true, label: 'B → unbound' });
+  figSep.data('sep', ser(1, 1), { color: '--accent', label: 'integrated', width: 2 });
+  for (const f of [figFrac, figSep]) { f.invalidate(); f.draw(); }
+}
+
+function setLegend() {
+  const leg = document.querySelector('.psim-legend');
+  if (!leg) return;
+  leg.replaceChildren(...(opts.colour === 'origin'
+    ? ['each dot: one computed test-particle star', 'amber: born in galaxy A · blue: born in galaxy B', `grid: orbital plane, ${gridStep} kpc squares · drag to rotate, wheel to zoom`]
+    : ['colour: current two-body binding (energy E_k < 0)', 'amber: bound to A · blue: bound to B · pink: unbound', `grid: orbital plane, ${gridStep} kpc squares · drag to rotate, wheel to zoom`]).map(t => Object.assign(document.createElement('span'), { textContent: t })));
+}
+
+// ------------------------------------------------------------------ the instrument
+const mi = s => `<mi>${s}</mi>`;
+const app = createInstrument({
+  title: 'Two galaxies colliding',
+  subtitle: 'Toomre-style restricted model: two softened point-mass galaxies on an exact orbit · test-particle stars, no self-gravity · leapfrog',
   tier: 'approximate',
-  tierReason: 'Test-star orbits are integrated numerically with symplectic leapfrog in a mass model normalised like MWPotential2014, with a Hernquist bulge replacing its cut-off power-law bulge. Energy error and convergence are measured. The stars do not source the potential, so spiral arms and bars cannot form.',
-  layout: 'workbench',
-  params: PARAMS,
-  create: createSim,
-  draw, onPointer, bench,
-  timeUnit: 'Myr', speed: 60, duration: 2000,
-  hudLine: sim => `${sim.disk.n.toLocaleString()} stars · halo ${sim.comps.halo ? 'on' : 'off'} · ${(100 * sim.escaped()).toFixed(1)} % beyond 40 kpc`,
+  tierReason: 'The equations of the restricted three-body model (Toomre & Toomre 1972) are integrated with symplectic leapfrog and checked against the exact two-body orbit, exact conservation laws, Δt refinement and Toomre’s prograde/retrograde result. The model itself is a reduction: stars are massless test particles (no self-gravity), each galaxy is a Plummer-softened point mass without a dark-matter halo, and there is no dynamical friction, gas or star formation, so the galaxies fly apart instead of merging.',
+  params: PARAMS, create: createSim, gl: true, drawGL, draw,
+  timeUnit: 'Myr', timeLabel: 'time since start', speed: 40, duration: 2000,
+  onPointer(canvas, view) {
+    cam.attach(canvas);
+    canvas.style.cursor = 'grab';
+    canvas.addEventListener('wheel', () => { opts.auto = false; if (autoToggle) autoToggle.input.checked = false; }, { passive: true });
+  },
+  onFit(view) { opts.auto = true; if (autoToggle) autoToggle.input.checked = true; cam.distance = targetDistance(view); },
+  hudLine: sim => `${sim.N.toLocaleString('en')} test stars · t − t_peri = ${(sim.t - sim.tPeri).toFixed(0)} Myr · separation ${sim.separation().toFixed(1)} kpc`,
+  extraSections(side, { section, el, toggle, button }) {
+    const figs = section('Where the stars go', { aside: 'computed' });
+    figFrac = createPlot({ title: 'Stars stripped from each galaxy (rest stay bound to their own)', height: 190, x: { label: 'time since start', unit: 'Myr', min: 0, max: 1500 }, y: { label: 'fraction', unit: '%' } });
+    figSep = createPlot({ title: 'Core separation: integrated vs exact orbit', height: 160, x: { label: 'time since start', unit: 'Myr', min: 0, max: 1500 }, y: { label: 'separation', unit: 'kpc', min: 0 } });
+    figs.body.append(figFrac.el,
+      el('p', { class: 'psim-hint' }, 'Two-body energy test against each core with the other ignored: exact once the galaxies are far apart, only indicative while they overlap.'),
+      figSep.el);
+    const view = section('View', { aside: 'presentation only' });
+    const sel = document.createElement('select');
+    sel.className = 'psim-select';
+    for (const [v, l] of [['origin', 'Colour by galaxy of origin'], ['binding', 'Colour by current binding']]) sel.append(new Option(l, v, v === opts.colour, v === opts.colour));
+    sel.addEventListener('change', () => { opts.colour = sel.value; setLegend(); });
+    const size = document.createElement('input');
+    Object.assign(size, { type: 'range', min: 1, max: 4, step: 0.1, value: opts.size });
+    size.setAttribute('aria-label', 'Star dot size');
+    size.addEventListener('input', () => { opts.size = +size.value; });
+    autoToggle = toggle('Auto-frame camera', opts.auto, v => { opts.auto = v; });
+    view.body.append(sel,
+      el('label', { class: 'psim-field' }, el('div', { class: 'top' }, el('span', {}, 'Star dot size (screen pixels)')), size),
+      toggle('Show core orbits (solid: integrated, dashed: exact)', opts.paths, v => { opts.paths = v; }),
+      autoToggle, toggle('Slowly rotate the view', opts.spin, v => { opts.spin = v; }));
+    const scen = section('Encounter presets');
+    const setP = (label, v) => {
+      const inp = side.querySelector(`input[type=number][aria-label="${label} value"]`);
+      if (inp) { inp.value = v; inp.dispatchEvent(new Event('change')); }
+    };
+    const preset = vals => () => { for (const [k, v] of Object.entries(vals)) setP(PARAMS.find(p => p.key === k).label, v); };
+    scen.body.append(el('p', { class: 'psim-hint' }, 'Each preset sets the parameters above and recomputes from the start.'),
+      el('div', { class: 'psim-btns' },
+        button('Tilted pair', preset({ q: 1, e: 1, rp: 20, iA: 15, wA: -30, iB: 60, wB: -30 })),
+        button('Prograde vs retrograde', preset({ q: 1, e: 1, rp: 20, iA: 180, wA: 0, iB: 0, wB: 0 })),
+        button('Small companion', preset({ q: 0.25, e: 1, rp: 20, iA: 10, wA: -30, iB: 60, wB: 0 })),
+        button('Bound orbit, e = 0.6', preset({ q: 1, e: 0.6, rp: 20, iA: 15, wA: -30, iB: 60, wB: -30 }))));
+    side.insertBefore(figs, side.children[2] ?? null);
+    side.append(view, scen);
+  },
   model: {
-    legend: ['kpc · Myr · km/s · purple glow: dark-matter density (invisible in reality)', 'star colour: starting radius (inner warm → outer blue) · drag to tilt'],
+    legend: [],
+    equations: [
+      { caption: 'Each star i feels both galaxy cores k ∈ {A, B} through a softened (Plummer) point-mass potential:',
+        mathml: `<math display="block"><msub><mover>${mi('𝐫')}<mo>¨</mo></mover>${mi('i')}</msub><mo>=</mo><mo>−</mo><munder><mo>∑</mo>${mi('k')}</munder><mfrac><mrow>${mi('G')}<msub>${mi('M')}${mi('k')}</msub><mo>(</mo><msub>${mi('𝐫')}${mi('i')}</msub><mo>−</mo><msub>${mi('𝐑')}${mi('k')}</msub><mo>)</mo></mrow><msup><mrow><mo>(</mo><msup><mrow><mo>|</mo><msub>${mi('𝐫')}${mi('i')}</msub><mo>−</mo><msub>${mi('𝐑')}${mi('k')}</msub><mo>|</mo></mrow><mn>2</mn></msup><mo>+</mo><msup>${mi('ε')}<mn>2</mn></msup><mo>)</mo></mrow><mrow><mn>3</mn><mo>/</mo><mn>2</mn></mrow></msup></mfrac></math>` },
+      { caption: 'The cores move on the exact Newtonian two-body orbit (stars exert no force back):',
+        mathml: `<math display="block"><msub><mover>${mi('𝐑')}<mo>¨</mo></mover>${mi('A')}</msub><mo>=</mo>${mi('G')}<msub>${mi('M')}${mi('B')}</msub><mfrac><mrow><msub>${mi('𝐑')}${mi('B')}</msub><mo>−</mo><msub>${mi('𝐑')}${mi('A')}</msub></mrow><msup><mrow><mo>|</mo><msub>${mi('𝐑')}${mi('B')}</msub><mo>−</mo><msub>${mi('𝐑')}${mi('A')}</msub><mo>|</mo></mrow><mn>3</mn></msup></mfrac><mo>,</mo><mspace width="1em"/><msub>${mi('M')}${mi('A')}</msub><msub>${mi('𝐑')}${mi('A')}</msub><mo>+</mo><msub>${mi('M')}${mi('B')}</msub><msub>${mi('𝐑')}${mi('B')}</msub><mo>=</mo><mn>𝟎</mn></math>` },
+      { caption: 'Binding observable: a star belongs to the galaxy with the most negative two-body energy; unbound if both are ≥ 0.',
+        mathml: `<math display="block"><msub>${mi('E')}${mi('k')}</msub><mo>=</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><msup><mrow><mo>|</mo><msub>${mi('𝐯')}${mi('i')}</msub><mo>−</mo><msub>${mi('𝐕')}${mi('k')}</msub><mo>|</mo></mrow><mn>2</mn></msup><mo>−</mo><mfrac><mrow>${mi('G')}<msub>${mi('M')}${mi('k')}</msub></mrow><msqrt><msup><mrow><mo>|</mo><msub>${mi('𝐫')}${mi('i')}</msub><mo>−</mo><msub>${mi('𝐑')}${mi('k')}</msub><mo>|</mo></mrow><mn>2</mn></msup><mo>+</mo><msup>${mi('ε')}<mn>2</mn></msup></msqrt></mfrac></math>` },
+    ],
     assumptions: [
-      'Static, axisymmetric potential: bulge (Hernquist, a = 0.6 kpc), disk (Miyamoto–Nagai, a = 3 kpc, b = 0.28 kpc), halo (NFW, r_s = 16 kpc), normalised like MWPotential2014: v_c(8 kpc) = 220 km/s with 5/60/35 % force fractions (Bovy 2015).',
-      'Stars are test particles (no self-gravity, no gas, no star formation); collisions between stars are negligible in real galaxies too.',
-      'Initial disk: exponential surface density (scale length 2.6 kpc), 8 km/s velocity dispersion, seeded random numbers.',
-      'Full-model starting velocities come from the analytic potential. Removing the halo expands the disk and can unbind some outer stars; crossing 40 kpc alone does not imply escape.',
-      'Kick-drift-kick leapfrog, Δt = 0.244 Myr: energy error bounded and second order; L_z conserved exactly.',
+      'Restricted three-body model (Toomre & Toomre 1972): stars are massless test particles. They do not attract each other or the cores, so the disks have no self-gravity: no spiral arms, bars or collective response can form.',
+      'Each galaxy is a single point mass with Plummer softening ε (default 1 kpc) for the stars. Its rotation curve is Keplerian beyond a few ε; real disk galaxies have nearly flat rotation curves from extended dark-matter halos.',
+      'No dark-matter halos and therefore no dynamical friction: orbital energy is never lost, so the cores follow the exact two-body orbit and do not merge. Real equal-mass encounters with halos usually merge within one to a few orbits (Barnes & Hernquist 1992).',
+      'No gas, shocks or star formation (collision-driven starbursts are not modelled). Stars themselves essentially never collide in real galaxy collisions (Binney & Tremaine 2008).',
+      'Initial disks: cold and thin (circular orbits, vertical scatter 1 % of the radius), exponential surface density with scale length R_disk/3 between an inner edge of ≈1.5 ε and R_disk. Disk B’s radius scales as √(M_B/M_A), an illustrative choice.',
+      'The run starts at separation max(3 r_p, 2.5 (R_A + R_B)) before pericentre (or at apocentre for tighter bound orbits); the companion’s tide is already weak but non-zero there.',
+      'Kick–drift–kick leapfrog with fixed Δt = 0.25 Myr for cores and stars together; parameters such as masses and lengths are illustrative, not fitted to any observed pair.',
     ],
     conventions: [
-      'Purple glow: projected dark-matter density, shown so it can be seen; dark matter emits no light.',
-      'Star colour marks the radius where each star started, so mixing and escape are visible.',
-      'Rings every 5 kpc; dashed amber ring: the Sun’s orbital radius.',
+      'Each glowing dot is one computed test-particle position (a tracer, not a star of definite mass). Overlapping dots add up in the dark theme, so brightness reads as projected tracer density, not luminosity.',
+      'Colours are categorical labels (galaxy of origin, or current binding), not optical star colours.',
+      'Dot size is fixed in screen pixels and does not scale with distance. Perspective camera; the faint grid lies in the orbital plane with the stated square size.',
+      'Core markers: open circles. Solid lines: integrated core paths; dashed: exact two-body orbit for comparison.',
+      'Playback compresses time: the speed control shows simulated Myr per real second.',
     ],
     references: [
-      'J. Bovy, ApJS 216, 29 (2015): galpy and MWPotential2014.',
-      'C. Eilers, D. Hogg, H.-W. Rix, M. Ness, ApJ 871, 120 (2019): Milky Way circular velocity curve 5–25 kpc.',
-      'J. F. Navarro, C. S. Frenk, S. D. M. White, ApJ 462, 563 (1996).',
-      'V. Rubin & W. K. Ford, ApJ 159, 379 (1970): flat rotation curves (M31).',
+      'A. Toomre & J. Toomre, ApJ 178, 623 (1972): Galactic bridges and tails.',
+      'J. E. Barnes & L. Hernquist, ARA&A 30, 705 (1992): Dynamics of interacting galaxies.',
+      'J. Binney & S. Tremaine, Galactic Dynamics, 2nd ed., Princeton (2008): §1.2 (stellar encounters), §2.2 (Plummer model).',
+      'R. H. Battin, An Introduction to the Mathematics and Methods of Astrodynamics, AIAA (1999): parabolic (Barker) and hyperbolic Kepler equations.',
+      'G from core/galaxy.mjs: 4.30091727×10⁻⁶ kpc (km/s)² / M☉.',
     ],
   },
 });
+setLegend();
+
+// GPU self-test: stars are drawn where the camera projects the cores; empty sky stays empty.
+window.psim.selfTest = () => {
+  // GPU stars land where camera.project() puts the computed positions; empty sky stays empty.
+  const glc = document.querySelector('canvas.psim-gl'), gl = glc.getContext('webgl2'), sim = app.sim;
+  const dpr = glc.width / glc.clientWidth, W = glc.clientWidth, H = glc.clientHeight;
+  const px = (x, y) => { const b = new Uint8Array(4); gl.readPixels(Math.round(x * dpr), Math.round(glc.height - 1 - y * dpr), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, b); return b[3]; };
+  let hit = 0, tested = 0;
+  for (let i = 0; i < sim.N; i += Math.floor(sim.N / 40)) {
+    const p = cam.project([sim.x[3 * i], sim.x[3 * i + 1], sim.x[3 * i + 2]], W, H);
+    if (!p.visible || p.x < 2 || p.y < 2 || p.x > W - 2 || p.y > H - 2) continue;
+    tested++; if (px(p.x, p.y) > 0) hit++;
+  }
+  const corner = px(1, 1);
+  return { label: 'GPU stars drawn at their projected computed positions; corner empty', hit, tested, cornerAlpha: corner, uploaded: pts?.count, expected: sim.N, pass: tested >= 20 && hit === tested && corner === 0 && pts?.count === sim.N };
+};
+window.psim.fit = () => { opts.auto = true; extent = measureExtent(app.sim); cam.distance = targetDistance(app.view); };
 
 </script>
 </body>
