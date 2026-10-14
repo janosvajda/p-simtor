@@ -1,6 +1,58 @@
 {
   "demos": [
     {
+      "id": "black-body",
+      "title": "Black-body radiation",
+      "prompt": "/p-simtor simulate black body radiation",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/black-body.html",
+      "checks": {
+        "total": 11,
+        "passed": 11
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "black-hole-merger",
+      "title": "Binary black-hole merger",
+      "prompt": "/p-simtor simulate two black holes merging",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/black-hole-merger.html",
+      "checks": {
+        "total": 10,
+        "passed": 10
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "dark-matter-galaxy",
+      "title": "Dark matter and galaxy rotation",
+      "prompt": "/p-simtor show why galaxies need dark matter",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/dark-matter-galaxy.html",
+      "checks": {
+        "total": 8,
+        "passed": 8
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "quark-confinement",
+      "title": "Quark confinement",
+      "prompt": "/p-simtor explain quark confinement with an interactive, scientifically qualified visualization",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/quark-confinement.html",
+      "checks": {
+        "total": 14,
+        "passed": 14
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
       "id": "double-pendulum",
       "title": "Why a double pendulum is chaotic",
       "prompt": "/p-simtor show why a double pendulum is chaotic",
@@ -113,19 +165,6 @@
       "checks": {
         "total": 11,
         "passed": 11
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0"
-    },
-    {
-      "id": "quark-confinement",
-      "title": "Quark confinement",
-      "prompt": "/p-simtor explain quark confinement with an interactive, scientifically qualified visualization",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/quark-confinement.html",
-      "checks": {
-        "total": 14,
-        "passed": 14
       },
       "thumb": true,
       "skillVersion": "0.3.0"
