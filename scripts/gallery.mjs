@@ -2,7 +2,7 @@
 // The docs/ gallery (GitHub Pages) shows REAL demos: pages that the installed skill produced
 // in a separate project from a real /p-simtor prompt. Nothing here builds simulations.
 //
-//   node scripts/gallery.mjs add PAGE.html --prompt "/p-simtor show why galaxies need dark matter" [--title T] [--id ID]
+//   node scripts/gallery.mjs add PAGE.html --prompt "/p-simtor show why galaxies need dark matter" [--about "one line"] [--title T] [--id ID]
 //   node scripts/gallery.mjs remove ID
 //   node scripts/gallery.mjs list
 //   node scripts/gallery.mjs order ID…      put these demos first, in this order
@@ -66,7 +66,7 @@ function build() {
       <div class="txt">
         <h2>${esc(d.title)}</h2>
         <div class="cmd"><span>Prompt</span><code>${esc(d.prompt)}</code></div>
-        ${d.checks ? `<p class="chk"><span>Verification</span>${d.checks.passed} of ${d.checks.total} checks passed (details on the page)</p>` : ''}
+        ${d.about ? `<p class="about">${esc(d.about)}</p>` : ''}
         <p class="meta">Generated ${esc(d.date)} by an agent using the installed skill${d.skillVersion ? ` (p-simtor ${esc(d.skillVersion)})` : ''}</p>
       </div>
     </a>`).join('');
@@ -93,6 +93,7 @@ header p { margin: 0; max-width: 760px; color: var(--ink2); }
 .card img, .card .ph { width: 100%; height: auto; aspect-ratio: 545 / 442; object-fit: cover; display: block; background: #0a0d13; border-bottom: 1px solid var(--line); }
 .txt { padding: 16px 18px 18px; display: grid; gap: 10px; }
 .txt h2 { margin: 0; font-size: 17px; }
+.about { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink2); }
 .cmd, .chk { display: grid; gap: 2px; margin: 0; font-size: 13px; color: var(--ink2); }
 .cmd span, .chk span { font: 600 10.5px/1.6 ui-monospace, Menlo, monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
 code { font: 12.5px ui-monospace, Menlo, monospace; color: var(--ink); overflow-wrap: anywhere; }
@@ -139,7 +140,7 @@ if (cmd === 'add') {
   }
   m.demos.push({
     id, title: opt('title') ?? info.title ?? id, prompt: prompt.startsWith('/p-simtor') ? prompt : `/p-simtor ${prompt}`,
-    date: new Date().toISOString().slice(0, 10), source: resolve(src), checks: info.checks, thumb, skillVersion,
+    about: opt('about'), date: new Date().toISOString().slice(0, 10), source: resolve(src), checks: info.checks, thumb, skillVersion,
   });
   save(m);
   console.log(`Added "${id}"${info.checks ? ` (${info.checks.passed}/${info.checks.total} checks passed)` : ''}.`);

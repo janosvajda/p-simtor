@@ -123,5 +123,5 @@ Clarifying questions and discussions before a build need no delivery block. Neve
   - `relativity` (clock rates, GPS)
   - `galaxy` (bulge/disk/NFW potentials, rotation curves, star disks)
   - `lattice-gauge` (SU(2) Monte Carlo, Wilson loops)
-- `ui/`: `instrument-app.mjs` (shell; `stage` or `workbench` layout), `plot.mjs`, `equation.mjs`, `instrument.mjs`, `orbit-view.mjs`, `instrument.css`
+- `ui/`: `instrument-app.mjs` (shell; `stage` or `workbench` layout; `gl: true` adds a GPU layer), `gl.mjs` (WebGL2 points, 2D fields, 3D volumes, orbit camera, colour maps), `plot.mjs`, `equation.mjs`, `instrument.mjs`, `orbit-view.mjs`, `instrument.css`
 - `examples/`: the recipes (`catalog.json`), each with `physics.mjs`, `page.html` and a built page

@@ -400,6 +400,9 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
   .psim-app.workbench .psim-legend { top: auto; bottom: 14px; left: auto; right: 26px; }
   .psim-bench .psim-canvaswrap { height: 70vh; }
 }
+
+/* GPU layer (ui/gl.mjs): under the 2D canvas, which keeps labels and pointer events */
+.psim-gl { pointer-events: none; }
 </style>
 </head>
 <body>
@@ -689,7 +692,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 }</script>
 <script type="application/json" id="psim-verification">{
  "figure-eight": {
-  "generated": "2026-10-14T04:31:32.227Z",
+  "generated": "2026-10-14T10:09:27.465Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
   "settings": {
@@ -759,10 +762,10 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 176
+  "runtimeMs": 175
  },
  "pythagorean": {
-  "generated": "2026-10-14T04:31:35.693Z",
+  "generated": "2026-10-14T10:09:30.811Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
   "settings": {
@@ -832,10 +835,10 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 4933
+  "runtimeMs": 4659
  },
  "lagrange": {
-  "generated": "2026-10-14T04:31:37.737Z",
+  "generated": "2026-10-14T10:09:32.677Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
   "settings": {
@@ -905,10 +908,10 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 684
+  "runtimeMs": 772
  },
  "hierarchical": {
-  "generated": "2026-10-14T04:31:40.198Z",
+  "generated": "2026-10-14T10:09:35.232Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
   "settings": {
@@ -978,10 +981,10 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 3386
+  "runtimeMs": 3329
  },
  "broucke-a2": {
-  "generated": "2026-10-14T04:31:41.491Z",
+  "generated": "2026-10-14T10:09:36.462Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
   "settings": {
@@ -1051,7 +1054,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 288
+  "runtimeMs": 254
  }
 }</script>
 

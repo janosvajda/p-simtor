@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — GPU-rendered scenes
+
+- `ui/gl.mjs`: WebGL2 renderers chosen by what is drawn: glowing point sprites (10⁵–10⁶ bodies or samples, colour-mapped by a computed value), 2D fields as colour-mapped images, ray-marched 3D volumes (emission or emission–absorption), an orbit camera with `project()` for 2D labels, and perceptually uniform colour maps (viridis, inferno, magma, coolwarm).
+- `createInstrument({ gl: true, drawGL })` stacks the GPU layer under the 2D overlay; PNG export composites both; pages explain when WebGL2 is unavailable.
+- Tests: exact camera/projection/inverse maths and colour-map endpoints and monotonic lightness in Node; a browser fixture checks pixels (a point lands where `project()` says, field cells take the colour-map colours exactly, a centred volume is symmetric and bounded).
+- References: when to use the GPU (by element count and state type) in `visual-language.md`; the API in `compose.md`.
+
 ## Unreleased — gaps found by ten real builds
 
 Ten simulations were generated in a test project from single prompts through the installed skill. Their reports listed the following gaps; each fix is tested against exact results.

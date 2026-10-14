@@ -20,6 +20,7 @@ import {
   transport, createClock, logPlot, download, readJsonScript, beacon, cssVar,
 } from './instrument.mjs';
 import { createPlot } from './plot.mjs';
+import { createGLLayer } from './gl.mjs';
 import { createEquation, createDerivation, M } from './equation.mjs';
 import { validateModuleReport } from '../core/verification.mjs';
 
@@ -33,7 +34,7 @@ const TIERS = {
 export function createInstrument(spec) {
   const {
     title, subtitle = '', tier, tierReason, create, draw, params = [], model = {},
-    timeUnit = 'T', timeLabel = 'simulated time', speed: speed0 = 1, controls, onPointer, layout = 'stage', bench,
+    timeUnit = 'T', timeLabel = 'simulated time', speed: speed0 = 1, gl: wantGL = false, drawGL, controls, onPointer, layout = 'stage', bench,
   } = spec;
   if (!TIERS[tier]) throw new Error(`tier must be one of ${Object.keys(TIERS).join(', ')}`);
   const report = readJsonScript('psim-verification');
@@ -78,6 +79,8 @@ export function createInstrument(spec) {
   }
   const canvas = stage.querySelector('canvas');
   const ctx = canvas.getContext('2d');
+  // optional GPU layer under the 2D canvas (ui/gl.mjs): drawGL renders the scene, draw adds labels
+  const glLayer = wantGL ? createGLLayer(canvas) : null;
   $('.psim-hud .dim').textContent = timeLabel;
   const hud = { t: $('.psim-hud b'), a: $('.psim-hud .h1'), b: $('.psim-hud .h2'), flag: $('.psim-hud .flag') };
   if (model.legend) $('.psim-legend').append(...model.legend.map(t => el('span', {}, t)));
@@ -86,7 +89,7 @@ export function createInstrument(spec) {
   const values = Object.fromEntries(params.map(p => [p.key, p.value]));
   let sim, tDisplay = 0, limited = false;
   const clock = createClock({ speed: speed0 });
-  const view = { W: 0, H: 0, dpr: 1, color: cssVar, opts: {}, pointer: null };
+  const view = { W: 0, H: 0, dpr: 1, color: cssVar, opts: {}, pointer: null, gl: glLayer?.gl ?? null, glError: glLayer && !glLayer.ok ? glLayer.reason : '' };
 
   let benchApi = null;
   function rebuild() {
@@ -208,7 +211,15 @@ export function createInstrument(spec) {
       if (!r) { toast(stage, 'This model records no tabular data'); return; }
       download(`${slug}-data.csv`, [`# p-simtor | ${title}`, r.header.join(','), ...r.rows.map(x => x.join(','))].join('\n'), 'text/csv');
     }),
-    button('PNG image', () => canvas.toBlob(b => el('a', { href: URL.createObjectURL(b), download: `${slug}.png` }).click())),
+    button('PNG image', () => {
+      // composite the GPU layer (if any) under the 2D overlay
+      const out = document.createElement('canvas');
+      out.width = canvas.width; out.height = canvas.height;
+      const c = out.getContext('2d');
+      if (glLayer?.ok) c.drawImage(glLayer.canvas, 0, 0);
+      c.drawImage(canvas, 0, 0);
+      out.toBlob(b => el('a', { href: URL.createObjectURL(b), download: `${slug}.png` }).click());
+    }),
   ));
 
   side.append(...[secParams, secDiag, secVerify, secModel, secExport].filter(s => s !== secParams || params.length || controls));
@@ -239,8 +250,10 @@ export function createInstrument(spec) {
         tDisplay = Math.min(target, sim.t);
       }
     }
+    if (glLayer?.ok) { glLayer.sync(view.dpr); drawGL?.(glLayer.gl, sim, view, tDisplay); }
     ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
     ctx.clearRect(0, 0, view.W, view.H);
+    if (glLayer && !glLayer.ok) { ctx.fillStyle = cssVar('--muted'); ctx.font = '13px system-ui, sans-serif'; ctx.fillText(`${glLayer.reason}: the 3D view cannot be shown.`, 16, view.H - 20); }
     draw(ctx, sim, view, tDisplay);
     if (now - lastUi > 100) {
       lastUi = now;

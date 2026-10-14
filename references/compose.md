@@ -88,7 +88,13 @@ createInstrument({
 - **Equations**: give every term a `value: () => …` that reads live state, a `color` matching its plot series id, and `link: plot` so hovering highlights the curve.
 - **Fast-forward support**: `psim check --advance T` calls `window.psim.advanceTo(T)` and then `window.psim.fit?.()`. If your view must re-frame after a long run, define `window.psim.fit`.
 - **GPU or other self-tests**: define `window.psim.selfTest = () => ({ label, pass, …measurements })` after `createInstrument`. `psim check` runs it (see `examples/black-hole/page.html`).
-- For WebGL (volumetric densities, large particle counts), create your own canvas inside `draw`'s first call, or use `extraSections`. Keep a 2D-canvas fallback message if WebGL is unavailable.
+- **GPU scenes** (`psim:ui/gl.mjs`): pass `gl: true` and `drawGL(gl, sim, view, t)` to `createInstrument`. The shell stacks a WebGL2 canvas under the 2D one; `draw` still runs on top for labels, axes and scale bars, and PNG export combines both. Renderers, by what is drawn:
+  - `createPointRenderer(gl)`: `update(positions, { values | colors })`, `draw(camera, { size, sizeUnit: 'px' | 'world', colormap, range, log, blend: 'additive' | 'alpha' })`: 10⁵–10⁶ glowing bodies, stars, molecules or sampled positions.
+  - `createFieldRenderer(gl)`: `update(values, nx, ny, { range, log })`, `draw({ rect, colormap, smooth })`: a 2D field as a colour-mapped image (NaN cells transparent; `smooth: false` shows the grid honestly).
+  - `createVolumeRenderer(gl)`: `update(values, nx, ny, nz)`, `draw(camera, { box, colormap, opacity, steps, mode: 'emission' | 'absorption' })`: ray-marched 3D densities (orbital clouds, gas).
+  - `orbitCamera({ target, distance, yaw, pitch })` (z up): `attach(canvas)` in `onPointer` for drag and zoom; `project([x, y, z], view.W, view.H)` places 2D labels on GPU objects.
+  - `colormap(name, t)` (`viridis`, `inferno`, `magma`, `coolwarm`) gives the same colours in 2D drawing and legends.
+  If WebGL2 is unavailable the shell shows the reason; keep the scientific readouts in 2D so the page still informs. A page with custom shaders can still create its own canvas (see `examples/black-hole/`). Pixel self-tests: see `tests/fixtures/gl-check/page.html`.
 - MathML equations: use Unicode bold letters (𝐫 𝐯 𝐄 𝐁 𝐮) for vectors, because MathML Core ignores `mathvariant="bold"`.
 - Only `psim:` and relative `./` imports are bundled. **No CDN scripts**: the deliverable must work offline. If you need a library (for example an FFT), write it or add it to the project as a local module.
 
