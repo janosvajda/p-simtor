@@ -11,7 +11,8 @@
         "passed": 11
       },
       "thumb": true,
-      "skillVersion": "0.3.0"
+      "skillVersion": "0.3.0",
+      "about": "Planck's law live: the real colour of hot objects, from the cosmic microwave background to a 40 000 K star."
     },
     {
       "id": "black-hole-merger",
@@ -24,7 +25,8 @@
         "passed": 10
       },
       "thumb": true,
-      "skillVersion": "0.3.0"
+      "skillVersion": "0.3.0",
+      "about": "Two black holes spiral together and chirp (post-Newtonian inspiral); the merger itself is honestly marked as not computed."
     },
     {
       "id": "dark-matter-galaxy",
@@ -37,7 +39,8 @@
         "passed": 8
       },
       "thumb": true,
-      "skillVersion": "0.3.0"
+      "skillVersion": "0.3.0",
+      "about": "Thousands of stars orbit a Milky-Way model. Switch off the dark-matter halo and the outer disk lets go."
     },
     {
       "id": "quark-confinement",
@@ -50,7 +53,8 @@
         "passed": 14
       },
       "thumb": true,
-      "skillVersion": "0.3.0"
+      "skillVersion": "0.3.0",
+      "about": "Lattice gauge theory computes the energy between two colour charges: it keeps rising with distance, so they cannot separate."
     },
     {
       "id": "double-pendulum",
@@ -63,7 +67,8 @@
         "passed": 11
       },
       "thumb": true,
-      "skillVersion": "0.3.0"
+      "skillVersion": "0.3.0",
+      "about": "Two pendulums started 10⁻⁸ rad apart part ways after about 8 s; the Lyapunov exponent is measured live."
     },
     {
       "id": "three-level-thermal",
@@ -76,7 +81,8 @@
         "passed": 10
       },
       "thumb": true,
-      "skillVersion": "0.3.0"
+      "skillVersion": "0.3.0",
+      "about": "Boltzmann populations of three energy levels as the temperature rises, with the heat-capacity peaks they cause."
     },
     {
       "id": "hydrogen-2p",
@@ -89,7 +95,8 @@
         "passed": 16
       },
       "thumb": true,
-      "skillVersion": "0.3.0"
+      "skillVersion": "0.3.0",
+      "about": "The exact 2p orbital as a probability cloud of 20 000 sampled positions, in 3D and as a slice."
     },
     {
       "id": "tunnelling-2d",
@@ -102,7 +109,8 @@
         "passed": 13
       },
       "thumb": true,
-      "skillVersion": "0.3.0"
+      "skillVersion": "0.3.0",
+      "about": "An electron wave packet hits a barrier and splits; the transmitted part matches the exact quantum result."
     },
     {
       "id": "lennard-jones",
@@ -115,7 +123,8 @@
         "passed": 14
       },
       "thumb": true,
-      "skillVersion": "0.3.0"
+      "skillVersion": "0.3.0",
+      "about": "Molecular dynamics of a 2D Lennard-Jones fluid: hot gas, condensing clusters and dense liquid."
     },
     {
       "id": "brownian-motion",
@@ -128,7 +137,8 @@
         "passed": 9
       },
       "thumb": true,
-      "skillVersion": "0.3.0"
+      "skillVersion": "0.3.0",
+      "about": "Pollen grains jiggle in water; their spread grows as 4Dt, Einstein's relation, and Brown's real observation is one click away."
     },
     {
       "id": "magnet-heating",
@@ -141,7 +151,8 @@
         "passed": 9
       },
       "thumb": true,
-      "skillVersion": "0.3.0"
+      "skillVersion": "0.3.0",
+      "about": "A 128×128 Ising magnet heated past its Curie point: ordered domains break up into noise."
     },
     {
       "id": "decay-chain",
@@ -154,7 +165,8 @@
         "passed": 12
       },
       "thumb": true,
-      "skillVersion": "0.3.0"
+      "skillVersion": "0.3.0",
+      "about": "Radon-222 progeny decaying atom by atom, against the smooth Bateman curves."
     },
     {
       "id": "salt-dissolving",
@@ -167,7 +179,8 @@
         "passed": 11
       },
       "thumb": true,
-      "skillVersion": "0.3.0"
+      "skillVersion": "0.3.0",
+      "about": "Salt on the bottom of a still glass dissolves in hours, but takes weeks to spread through the water by diffusion."
     }
   ]
 }

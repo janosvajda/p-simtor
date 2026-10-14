@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>GPU renderer check</title>
+<link rel="stylesheet" href="psim:ui/instrument.css"></head>
+<body>
+<script type="application/json" id="psim-verification">null</script>
+<script type="module">
+import { createInstrument } from 'psim:ui/instrument-app.mjs';
+import { orbitCamera, createPointRenderer, createFieldRenderer, createVolumeRenderer, colormap } from 'psim:ui/gl.mjs';
+import { PARAMS, createSim } from './physics.mjs';
+
+const cam = orbitCamera({ distance: 4, yaw: 0.5, pitch: 0.6 });
+let pts, field, vol, uploaded = null;
+createInstrument({
+  title: 'GPU renderer check', subtitle: 'Test fixture for ui/gl.mjs', tier: 'conceptual', tierReason: 'Test fixture only.',
+  params: PARAMS, create: createSim, gl: true, timeUnit: 's',
+  model: { legend: ['ring: points coloured by index (inferno)', 'blob: Gaussian density, emission'] },
+  onPointer(canvas) { cam.attach(canvas); },
+  drawGL(gl, sim, view) {
+    if (!pts) { pts = createPointRenderer(gl); field = createFieldRenderer(gl); vol = createVolumeRenderer(gl); }
+    if (uploaded !== sim) { pts.update(sim.ring, { values: sim.vals }); vol.update(sim.blob, sim.N, sim.N, sim.N); uploaded = sim; }
+    vol.draw(cam, { aspect: view.W / view.H, colormap: 'magma', opacity: 1.5 });
+    pts.draw(cam, { aspect: view.W / view.H, size: 3, colormap: 'inferno', range: [0, 1] });
+  },
+  draw(ctx, sim, view) {
+    const p = cam.project([1, 0, 0], view.W, view.H);
+    ctx.fillStyle = view.color('--muted'); ctx.font = '12px ui-monospace, monospace'; ctx.fillText('x = 1', p.x + 6, p.y);
+  },
+});
+
+// Pixel checks against the geometry the renderers must reproduce.
+window.psim.selfTest = () => {
+  const gl = document.querySelector('canvas.psim-gl').getContext('webgl2');
+  const W = gl.drawingBufferWidth, H = gl.drawingBufferHeight, dpr = devicePixelRatio || 1;
+  const px = (x, y) => { const b = new Uint8Array(4); gl.readPixels(Math.round(x), Math.round(H - 1 - y), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, b); return [...b]; };
+  const clear = () => { gl.viewport(0, 0, W, H); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); };
+  const out = [];
+  // 1. a point drawn where orbitCamera.project says, nothing elsewhere
+  const one = createPointRenderer(gl), c = orbitCamera({ distance: 4, yaw: 0.3, pitch: 0.4 });
+  one.update(new Float32Array([0.7, -0.4, 0.2]));
+  clear(); one.draw(c, { size: 16, color: '#ffffff', blend: 'alpha' });
+  const at = c.project([0.7, -0.4, 0.2], W / dpr, H / dpr), hit = px(at.x * dpr, at.y * dpr), miss = px(5, 5);
+  out.push({ label: 'GPU point lands at camera.project()', hit, miss, pass: hit[0] > 200 && hit[3] > 200 && miss[3] === 0 });
+  // 2. a two-cell field shows exactly the colour map's end colours, cell edges where expected
+  const f = createFieldRenderer(gl);
+  f.update(new Float32Array([0, 1]), 2, 1, { range: [0, 1] });
+  clear(); f.draw({ colormap: 'viridis', smooth: false });
+  const lo = px(W * 0.25, H / 2), hi = px(W * 0.75, H / 2), want = t => colormap('viridis', t).map(v => Math.round(v * 255));
+  const dev = Math.max(...[0, 1, 2].map(i => Math.max(Math.abs(lo[i] - want(0)[i]), Math.abs(hi[i] - want(1)[i]))));
+  out.push({ label: 'GPU field: cells take the colour-map colours', lo, hi, maxDeviation: dev, pass: dev <= 3 });
+  // 3. a centred Gaussian volume is brightest at the centre, symmetric, and empty outside its box
+  const v = createVolumeRenderer(gl), s = createSim({ n: 3 }), cv = orbitCamera({ distance: 5, yaw: 0, pitch: 0 });
+  v.update(s.blob, s.N, s.N, s.N);
+  clear(); v.draw(cv, { colormap: 'magma', opacity: 2 });
+  const mid = px(W / 2, H / 2), left = px(W / 2 - 0.08 * H, H / 2), right = px(W / 2 + 0.08 * H, H / 2), corner = px(5, 5);
+  out.push({ label: 'GPU volume: centred, symmetric, empty outside the box', mid, left, right, corner,
+    pass: mid[3] > left[3] && mid[3] > 40 && Math.abs(left[3] - right[3]) <= 0.05 * left[3] && corner[3] === 0 });
+  return out;
+};
+</script>
+</body>
+</html>

@@ -34,6 +34,16 @@ Use this mapping to write the adjacent legend and `model.conventions`. Colour mi
 
 Label physical time, sample/sweep number, iteration, parameter scans and static views separately. A computed configuration is not necessarily an instantaneous physical snapshot. Label any conceptual overlay so it cannot borrow the computation's credibility.
 
+## When to use the GPU (`ui/gl.mjs`)
+
+Choose the renderer from the size and shape of the state, as a cost estimate (see method selection §5):
+
+- **Points:** up to ~10⁴ moving bodies draw well in 2D canvas; beyond that, or when depth and glow carry meaning (a galaxy, a gas, a sampled probability cloud), use `createPointRenderer` with an `orbitCamera`.
+- **2D fields:** above ~200 × 200 cells updated every frame, use `createFieldRenderer` instead of `putImageData`.
+- **3D densities:** a scalar on a 3D grid (orbital |ψ|², gas density, a temperature field) is shown honestly as a ray-marched volume (`createVolumeRenderer`), not as a cloud of invented particles. Sampled points are a different object: label which one the view shows.
+- Additive glow suits emission on dark backgrounds; in the light theme use `blend: 'alpha'` (read `view.color('--glow')`).
+- Brightness, opacity, glow and colour-map range are representation choices: put them in the legend and `model.conventions`. A log colour scale must say so.
+
 ## Craft rules
 
 - **Trails**: draw in ~24–28 chunks with alpha ∝ (1 − age)^1.6 and slightly thicker heads. Round joins. Never smooth: the polyline vertices are the integrator's states.

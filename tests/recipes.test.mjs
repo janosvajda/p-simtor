@@ -17,11 +17,21 @@ test('every compose recipe has physics.mjs, page.html and a built page', () => {
   }
 });
 
-test('every example prompt in the README ranks its own recipe first', () => {
+test('README lists every gallery demo with a live link and never links to source-view pages', () => {
   const readme = readFileSync(join(ROOT, 'README.md'), 'utf8');
-  const rows = [...readme.matchAll(/^\| `\/p-simtor ([^`]+)` \| \[[^\]]+\]\(examples\/([\w-]+)\//gm)];
-  assert.ok(rows.length >= 7, `found ${rows.length} README example rows`);
-  for (const [, prompt, id] of rows) {
+  const { demos } = JSON.parse(readFileSync(join(ROOT, 'docs', 'demos.json'), 'utf8'));
+  for (const d of demos) assert.ok(readme.includes(`https://janosvajda.github.io/p-simtor/${d.id}.html`), `README links the live ${d.id} demo`);
+  assert.equal(readme.match(/\]\(examples\/[^)]*\.html\)/g), null, 'no links to examples/*.html (GitHub shows them as source)');
+});
+
+test('recipe prompts rank their own recipe first', () => {
+  const cases = {
+    'model the planets orbiting the Sun': 'solar-system', 'simulate three stars orbiting each other': 'three-body',
+    'show why galaxies need dark matter': 'galaxy', 'how does relativity affect GPS clocks?': 'gps-relativity',
+    'simulate a black hole event horizon': 'black-hole', 'simulate black body radiation': 'blackbody',
+    'simulate a proton moving through a magnetic field': 'proton-magnetic-field',
+  };
+  for (const [prompt, id] of Object.entries(cases)) {
     const first = psim('recipes', ...prompt.split(' ')).match(/^ {2}([\w-]+) {2}\(match/m)?.[1];
     assert.equal(first, id, prompt);
   }

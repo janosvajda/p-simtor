@@ -400,6 +400,9 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
   .psim-app.workbench .psim-legend { top: auto; bottom: 14px; left: auto; right: 26px; }
   .psim-bench .psim-canvaswrap { height: 70vh; }
 }
+
+/* GPU layer (ui/gl.mjs): under the 2D canvas, which keeps labels and pointer events */
+.psim-gl { pointer-events: none; }
 </style>
 </head>
 <body>
@@ -755,7 +758,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 }</script>
 <script type="application/json" id="psim-verification">{
  "inner": {
-  "generated": "2026-10-14T04:31:41.736Z",
+  "generated": "2026-10-14T10:09:36.692Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
   "settings": {
@@ -825,10 +828,10 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 134
+  "runtimeMs": 130
  },
  "outer": {
-  "generated": "2026-10-14T04:31:41.918Z",
+  "generated": "2026-10-14T10:09:36.831Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
   "settings": {
@@ -898,10 +901,10 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 213
+  "runtimeMs": 130
  },
  "all": {
-  "generated": "2026-10-14T04:31:42.591Z",
+  "generated": "2026-10-14T10:09:37.381Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
   "settings": {
@@ -971,7 +974,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 835
+  "runtimeMs": 745
  }
 }</script>
 
