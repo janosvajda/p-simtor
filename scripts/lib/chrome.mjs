@@ -134,9 +134,9 @@ export async function checkPage(file, { shotsDir, waitMs = 3000, advance } = {})
   mkdirSync(shotsDir, { recursive: true });
   const name = basename(file, '.html');
   const variants = [
-    { label: 'dark · desktop', q: 'theme=dark', width: 1440, height: 900 },
+    { label: 'dark · desktop', q: 'theme=dark', width: 1440, height: 900, scroll: true },
     { label: 'light · desktop', q: 'theme=light', width: 1440, height: 900 },
-    { label: 'dark · phone', q: 'theme=dark', width: 390, height: 844, mobile: true },
+    { label: 'dark · phone', q: 'theme=dark', width: 390, height: 844, mobile: true, scroll: true },
   ];
   const runs = [], problems = [];
   const b = await launch();
@@ -156,11 +156,15 @@ export async function checkPage(file, { shotsDir, waitMs = 3000, advance } = {})
         }
         await sleep(600);
       }
-      const a = await b.eval(READ_ATTRS);
+      // A heavy page may need longer than waitMs for its first frames: wait for it to go live.
+      let a = await b.eval(READ_ATTRS);
+      for (let k = 0; k < 60 && a.ready === true && !((a.frames ?? 0) > 0 && (a.t ?? 0) > 0); k++) { await sleep(250); a = await b.eval(READ_ATTRS); }
       const overflow = await b.eval('document.documentElement.scrollWidth - document.documentElement.clientWidth');
       // Every diagnostic must show a value: "—" or NaN means a quantity failed to compute in the page.
       const blank = await b.eval(`[...document.querySelectorAll('.psim-row')].filter(r => /^(—|NaN|[−-]?∞|[+-]?Infinity)(?:$|\\s)|NaN/.test(r.querySelector('.v')?.textContent.trim() ?? '')).map(r => r.querySelector('.k')?.textContent)`);
-      const shot = await b.screenshot(join(shotsDir, `${name}-${v.label.replace(/[^a-z]+/g, '-')}.png`));
+      const base = join(shotsDir, `${name}-${v.label.replace(/[^a-z]+/g, '-')}`);
+      const shot = await b.screenshot(`${base}.png`);
+      const more = v.scroll ? await scrollShots(b, base) : [];
       const errors = [...(Array.isArray(a.errors) ? a.errors : []), ...b.consoleErrors];
       const live = (a.frames ?? 0) > 0 && (a.t ?? 0) > 0;
       const ok = a.ready === true && errors.length === 0 && live && overflow <= 1 && blank.length === 0;
@@ -172,7 +176,7 @@ export async function checkPage(file, { shotsDir, waitMs = 3000, advance } = {})
           + `${blank.length ? `, diagnostics without a value: ${blank.join(', ')}` : ''}`
           + `${errors.length ? `, errors: ${errors.join(' | ')}` : ''}`;
       if (!ok) problems.push(`${v.label}: ${summary}`);
-      runs.push({ label: v.label, ok, summary, screenshot: shot });
+      runs.push({ label: v.label, ok, summary, screenshot: shot, more });
     }
     for (const t of await stressInputs(b, file)) {
       runs.push({ label: t.label, ok: t.ok, summary: t.summary });
@@ -192,6 +196,28 @@ export async function checkPage(file, { shotsDir, waitMs = 3000, advance } = {})
     await b.close();
   }
   return { runs, problems };
+}
+
+/**
+ * Screenshots of everything below the first screen: figures under the stage (workbench), the
+ * control column, and the scrolling page on phones. Each scrollable area is paged through and
+ * returned to the top afterwards.
+ */
+async function scrollShots(b, base, maxPages = 6) {
+  const areas = await b.eval(`(() => {
+    const named = [['figures', document.querySelector('.psim-app.workbench .psim-stage')], ['controls', document.querySelector('.psim-side')], ['page', document.scrollingElement]];
+    return named.filter(([, e]) => e && e.scrollHeight - e.clientHeight > 40).map(([label, e], i) => { e.dataset.psimShot = i; return { label, i, pages: Math.ceil((e.scrollHeight - e.clientHeight) / (0.9 * e.clientHeight)) }; });
+  })()`);
+  const files = [];
+  for (const { label, i, pages } of areas) {
+    for (let k = 1; k <= Math.min(pages, maxPages); k++) {
+      await b.eval(`(() => { const e = document.querySelector('[data-psim-shot="${i}"]'); e.scrollTop = ${k} * 0.9 * e.clientHeight; })()`);
+      await sleep(350);
+      files.push(await b.screenshot(`${base}-${label}-${k}.png`));
+    }
+    await b.eval(`document.querySelector('[data-psim-shot="${i}"]').scrollTop = 0`);
+  }
+  return files;
 }
 
 /** Evaluate with a deadline: a frozen page never answers. */

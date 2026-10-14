@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join, basename } from 'node:path';
+import { dirname, join, basename, resolve } from 'node:path';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const text = readFileSync(join(ROOT, 'SKILL.md'), 'utf8');
@@ -51,8 +51,10 @@ test('every file referenced from SKILL.md and references/ exists', () => {
   const docs = [join(ROOT, 'SKILL.md'), ...readdirSync(join(ROOT, 'references')).map(f => join(ROOT, 'references', f))];
   for (const doc of docs) {
     const body = readFileSync(doc, 'utf8');
-    for (const [, link] of body.matchAll(/\]\(((?:references|examples|core|ui|scripts|templates)\/[^)#\s]+)\)/g)) {
-      assert.ok(existsSync(join(ROOT, link)), `${basename(doc)} links to missing ${link}`);
+    for (const [, link] of body.matchAll(/\]\(([^)\s]+)\)/g)) {
+      if (link.startsWith('#') || /^[a-z][a-z\d+.-]*:/i.test(link)) continue;
+      const path = decodeURIComponent(link.split(/[?#]/)[0]);
+      assert.ok(existsSync(resolve(dirname(doc), path)), `${basename(doc)} links to missing ${link}`);
     }
     for (const [, path] of body.matchAll(/`((?:core|ui|scripts|templates|examples)\/[\w./-]+\.(?:mjs|html|css))`/g)) {
       assert.ok(existsSync(join(ROOT, path)), `${basename(doc)} mentions missing ${path}`);

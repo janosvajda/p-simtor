@@ -1,0 +1,2849 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="p-simtor">
+<title>Lennard-Jones fluid (2D)</title>
+<style>/* psim:ui/instrument.css */
+/* p-simtor instrument shell.
+   A simulation page is a scientific instrument: a large stage for the physics,
+   a quiet control column, and numbers you can trust at a glance.
+   Colours are tokens so every domain view (orbits, fields, densities) can read them. */
+
+:root {
+  --bg: #07090d;
+  --stage: #0a0d13;
+  --panel: #0e1219;
+  --raise: #141923;
+  --line: rgba(196, 214, 255, 0.09);
+  --line-strong: rgba(196, 214, 255, 0.18);
+  --ink: #e6e9ef;
+  --ink-2: #b6bdcb;
+  --muted: #7b8396;
+  --faint: #4a5163;
+  --accent: #8cc8ff;
+  --accent-ink: #06121f;
+  --good: #7fd8a4;
+  --warn: #f2c46d;
+  --bad: #ff7a85;
+  --grid: rgba(150, 175, 230, 0.06);
+  --grid-strong: rgba(150, 175, 230, 0.13);
+  --glow: 1;
+  --body-0: #ffb35c;
+  --body-1: #68c3ff;
+  --body-2: #ff6f9a;
+  --body-3: #9be08a;
+  --body-4: #c49bff;
+  --body-5: #ffe07a;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --sans: ui-sans-serif, -apple-system, "Segoe UI", "Inter", system-ui, sans-serif;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --radius: 10px;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg: #efede7;
+  --stage: #f7f5f0;
+  --panel: #fbfaf7;
+  --raise: #ffffff;
+  --line: rgba(30, 34, 46, 0.09);
+  --line-strong: rgba(30, 34, 46, 0.18);
+  --ink: #171a21;
+  --ink-2: #3a3f4b;
+  --muted: #6b7180;
+  --faint: #a4a8b2;
+  --accent: #1c6fd1;
+  --accent-ink: #ffffff;
+  --good: #23864f;
+  --warn: #a8700f;
+  --bad: #c43b4a;
+  --grid: rgba(30, 40, 70, 0.055);
+  --grid-strong: rgba(30, 40, 70, 0.12);
+  --glow: 0;
+  --body-0: #d4731c;
+  --body-1: #1a78bf;
+  --body-2: #cf2f63;
+  --body-3: #3a8f33;
+  --body-4: #7a48cf;
+  --body-5: #a88600;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 13px/1.45 var(--sans);
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
+
+.psim-app {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 372px;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* ---------- header ---------- */
+.psim-head {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.psim-mark {
+  width: 22px; height: 22px; flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  position: relative;
+}
+.psim-mark::before, .psim-mark::after {
+  content: ""; position: absolute; border-radius: 50%;
+}
+.psim-mark::before { inset: 5px; border: 1px solid var(--accent); transform: scaleX(1.6) rotate(-25deg); opacity: .8; }
+.psim-mark::after { width: 4px; height: 4px; left: 9px; top: 9px; background: var(--ink); }
+.psim-title { min-width: 0; flex: 0 1 auto; }
+.psim-title h1 {
+  margin: 0; font: 600 15px/1.2 var(--sans); letter-spacing: .01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.psim-title p { margin: 2px 0 0; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.psim-head .spacer { flex: 1; }
+
+.psim-tier {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 4px 10px 4px 8px; border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  font: 500 11px/1 var(--sans); letter-spacing: .04em; text-transform: uppercase;
+  color: var(--ink-2); background: transparent; cursor: pointer; white-space: nowrap;
+}
+.psim-tier i { width: 7px; height: 7px; border-radius: 50%; background: var(--good); }
+.psim-tier[data-tier="approximate"] i { background: var(--warn); }
+.psim-tier[data-tier="unverified"] i { background: var(--warn); }
+.psim-tier[data-tier="analytical"] i { background: var(--accent); }
+.psim-tier[data-tier="conceptual"] i { background: var(--muted); }
+
+.psim-iconbtn {
+  width: 32px; height: 32px; display: grid; place-items: center;
+  border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink-2);
+  cursor: pointer;
+}
+.psim-iconbtn:hover { border-color: var(--line-strong); color: var(--ink); }
+.psim-iconbtn svg { width: 16px; height: 16px; }
+
+/* ---------- stage ---------- */
+.psim-stage {
+  position: relative; min-height: 0; overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 92%, var(--accent) 8%) 0%, var(--stage) 60%);
+}
+.psim-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.psim-stage canvas.grab { cursor: grab; }
+.psim-stage canvas.grabbing { cursor: grabbing; }
+.psim-stage canvas.move { cursor: move; }
+
+.psim-hud {
+  position: absolute; left: 16px; top: 14px;
+  display: grid; gap: 2px; pointer-events: none;
+  font: 12px/1.35 var(--mono); color: var(--ink-2);
+}
+.psim-hud b { font-weight: 500; color: var(--ink); font-size: 20px; letter-spacing: -.01em; }
+.psim-hud .dim { color: var(--muted); }
+.psim-hud .flag { color: var(--warn); }
+
+.psim-legend {
+  position: absolute; right: 16px; top: 14px; display: grid; gap: 4px; justify-items: end;
+  font: 11px/1.3 var(--sans); color: var(--muted); pointer-events: none; text-align: right;
+}
+
+.psim-transport {
+  position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 4px;
+  padding: 5px; border-radius: 12px;
+  background: color-mix(in srgb, var(--panel) 86%, transparent);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  max-width: calc(100% - 32px);
+}
+.psim-transport button {
+  height: 32px; min-width: 32px; padding: 0 9px; border-radius: 8px;
+  border: 0; background: transparent; color: var(--ink-2); cursor: pointer;
+  display: inline-grid; place-items: center; font: 500 12px var(--sans);
+}
+.psim-transport button:hover { background: var(--raise); color: var(--ink); }
+.psim-transport button.primary { background: var(--ink); color: var(--bg); width: 40px; }
+.psim-transport svg { width: 15px; height: 15px; }
+.psim-transport .sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
+.psim-transport label { display: flex; align-items: center; gap: 8px; padding: 0 8px; color: var(--muted); font-size: 11px; }
+.psim-transport input[type=range] { width: 110px; }
+.psim-transport output { font: 12px var(--mono); color: var(--ink-2); min-width: 64px; }
+
+.psim-scalebar {
+  position: absolute; left: 16px; bottom: 22px; pointer-events: none;
+  font: 11px var(--mono); color: var(--muted);
+}
+.psim-scalebar span { display: block; height: 6px; border: 1px solid var(--muted); border-top: 0; margin-bottom: 4px; }
+
+/* ---------- side column ---------- */
+.psim-side {
+  min-height: 0; overflow: auto;
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+  scrollbar-width: thin;
+}
+.psim-sec { border-bottom: 1px solid var(--line); }
+.psim-sec > summary {
+  list-style: none; cursor: pointer; user-select: none;
+  display: flex; align-items: center; gap: 8px;
+  padding: 13px 18px;
+  font: 600 11px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+}
+.psim-sec > summary::-webkit-details-marker { display: none; }
+.psim-sec > summary::after {
+  content: ""; margin-left: auto; width: 6px; height: 6px;
+  border-right: 1.5px solid var(--faint); border-bottom: 1.5px solid var(--faint);
+  transform: rotate(-45deg); transition: transform .15s;
+}
+.psim-sec[open] > summary::after { transform: rotate(45deg); }
+.psim-sec > summary .aside { margin-left: auto; text-transform: none; letter-spacing: 0; font: 11px var(--mono); color: var(--faint); }
+.psim-sec > summary .aside + ::after { margin-left: 8px; }
+.psim-body { padding: 2px 18px 16px; display: grid; gap: 10px; }
+
+.psim-row { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 10px; }
+.psim-row .k { color: var(--muted); }
+.psim-row .v { font: 12px var(--mono); color: var(--ink); text-align: right; }
+.psim-row .v.good { color: var(--good); }
+.psim-row .v.warn { color: var(--warn); }
+.psim-row .v.bad { color: var(--bad); }
+
+.psim-field { display: grid; gap: 6px; }
+.psim-field .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.psim-field .top span { color: var(--ink-2); }
+.psim-field .top input[type=number], .psim-num {
+  width: 108px; text-align: right;
+  font: 12px var(--mono); color: var(--ink);
+  background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 2px 6px;
+}
+.psim-field .top input[type=number]:hover, .psim-num:hover { border-color: var(--line); }
+.psim-field .top input[type=number]:focus, .psim-num:focus { outline: none; border-color: var(--accent); }
+.psim-hint { color: var(--muted); font-size: 12px; margin: 0; }
+.psim-limit { color: var(--warn); font: 11px var(--mono); }
+.psim-limit:empty { display: none; }
+.psim-hint b { color: var(--ink-2); font-weight: 500; }
+
+select.psim-select {
+  width: 100%; height: 34px; padding: 0 10px; border-radius: 8px;
+  background: var(--raise); color: var(--ink); border: 1px solid var(--line);
+  font: 13px var(--sans);
+}
+
+input[type=range] {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 18px; background: transparent; margin: 0;
+}
+input[type=range]::-webkit-slider-runnable-track { height: 2px; background: var(--line-strong); border-radius: 2px; }
+input[type=range]::-moz-range-track { height: 2px; background: var(--line-strong); border-radius: 2px; }
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 12px; height: 12px; margin-top: -5px; border-radius: 50%;
+  background: var(--ink); border: 2px solid var(--panel); box-shadow: 0 0 0 1px var(--line-strong);
+}
+input[type=range]::-moz-range-thumb {
+  width: 10px; height: 10px; border-radius: 50%; background: var(--ink); border: 2px solid var(--panel);
+}
+input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 40%, transparent); }
+
+.psim-btn {
+  height: 32px; padding: 0 12px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--line-strong); background: transparent; color: var(--ink);
+  font: 500 12px var(--sans);
+}
+.psim-btn:hover { background: var(--raise); }
+.psim-btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.psim-btn:disabled { opacity: .5; cursor: progress; }
+.psim-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.psim-toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--ink-2); cursor: pointer; }
+.psim-toggle input { appearance: none; -webkit-appearance: none; width: 28px; height: 16px; border-radius: 99px; background: var(--line-strong); position: relative; cursor: pointer; margin: 0; flex: none; transition: background .15s; }
+.psim-toggle input::after { content: ""; position: absolute; left: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--ink); transition: transform .15s; }
+.psim-toggle input:checked { background: var(--accent); }
+.psim-toggle input:checked::after { transform: translateX(12px); background: var(--accent-ink); }
+
+/* body cards */
+.psim-bodycard { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; display: grid; gap: 8px; }
+.psim-bodycard header { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.psim-bodycard header i { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 10px currentColor; }
+.psim-bodycard header .m { margin-left: auto; font: 12px var(--mono); color: var(--muted); font-weight: 400; }
+.psim-vec { display: grid; grid-template-columns: 22px repeat(3, minmax(0, 1fr)); gap: 4px; align-items: center; }
+.psim-vec span { color: var(--muted); font: 11px var(--mono); }
+.psim-vec input { width: 100%; min-width: 0; text-align: right; font: 11.5px var(--mono); color: var(--ink); background: var(--raise); border: 1px solid var(--line); border-radius: 6px; padding: 4px 5px; }
+.psim-vec input:focus { outline: none; border-color: var(--accent); }
+
+/* plots */
+.psim-plot { position: relative; height: 112px; border-radius: 8px; background: color-mix(in srgb, var(--stage) 70%, transparent); border: 1px solid var(--line); }
+.psim-plot canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.psim-plot .cap { position: absolute; left: 8px; top: 6px; font: 10.5px var(--mono); color: var(--muted); pointer-events: none; }
+
+/* model / maths */
+.psim-math { overflow-x: auto; padding: 10px 12px; border-radius: 8px; background: color-mix(in srgb, var(--stage) 60%, transparent); border: 1px solid var(--line); }
+.psim-math math { font-size: 15px; color: var(--ink); }
+.psim-prose { color: var(--ink-2); font-size: 12.5px; }
+.psim-prose p { margin: 0 0 8px; }
+.psim-prose ul { margin: 0; padding-left: 18px; }
+.psim-prose li { margin: 3px 0; }
+.psim-prose cite { font-style: normal; color: var(--muted); }
+
+.psim-check { display: grid; grid-template-columns: 16px 1fr; column-gap: 8px; row-gap: 2px; align-items: baseline; }
+.psim-check code { grid-column: 2; overflow-wrap: anywhere; }
+.psim-check i { width: 8px; height: 8px; border-radius: 50%; background: var(--good); transform: translateY(-1px); }
+.psim-check i.warn { background: var(--warn); }
+.psim-check i.bad { background: var(--bad); }
+.psim-check span { color: var(--ink-2); }
+.psim-check code { font: 11.5px var(--mono); color: var(--ink); }
+
+.psim-toast {
+  position: absolute; left: 50%; top: 16px; transform: translate(-50%, -8px); opacity: 0;
+  padding: 8px 12px; border-radius: 8px; background: var(--ink); color: var(--bg); font-size: 12px;
+  transition: opacity .2s, transform .2s; pointer-events: none;
+}
+.psim-toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (max-width: 860px) {
+  .psim-app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 64vh auto; height: auto; }
+  .psim-head { gap: 10px; }
+  .psim-title { flex: 1; }
+  .psim-tier { padding: 6px; }
+  .psim-tier span { display: none; }
+  .psim-side { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+  .psim-head { padding: 10px 16px; }
+  .psim-title p { display: none; }
+  .psim-transport label.speed { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+
+/* ---------- figures (ui/plot.mjs) ---------- */
+.psim-figure { margin: 0; display: grid; gap: 6px; min-width: 0; }
+.psim-plot-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.psim-plot-head .t { font: 600 12px/1.3 var(--sans); color: var(--ink-2); }
+.psim-plot-head .l { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.psim-plot-head .k { display: inline-flex; align-items: center; gap: 6px; font: 11px var(--sans); color: var(--muted); cursor: default; }
+.psim-plot-head .k.on { color: var(--ink); }
+.psim-plot-head .k i { width: 12px; height: 2.5px; border-radius: 2px; }
+.psim-plot2 { position: relative; border-radius: 10px; background: color-mix(in srgb, var(--stage) 75%, transparent); border: 1px solid var(--line); }
+.psim-plot2 canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* ---------- equations split into terms (ui/equation.mjs) ---------- */
+.psim-equation { display: grid; gap: 10px; }
+.psim-equation h3, .psim-derivation h3 { margin: 0; font: 600 11px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.psim-eqrow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 6px; }
+.psim-eqrow .op { align-self: center; font: 20px var(--serif); color: var(--muted); padding: 0 2px; }
+.psim-term {
+  display: grid; grid-template-rows: auto 3px auto auto; justify-items: center; align-content: start; gap: 5px;
+  padding: 10px 12px 9px; border-radius: 10px; min-width: 88px;
+  background: color-mix(in srgb, var(--stage) 70%, transparent); border: 1px solid var(--line);
+  transition: opacity .15s, border-color .15s; outline: none;
+}
+.psim-term[data-id]:not([data-id=""]) { cursor: default; }
+.psim-term:hover, .psim-term:focus-visible { border-color: var(--line-strong); }
+.psim-term.dim { opacity: .35; }
+.psim-term.lhs { background: transparent; border-style: dashed; }
+.psim-term .mx { font-size: 19px; line-height: 1.2; color: var(--ink); min-height: 30px; display: grid; place-items: center; }
+.psim-term .mx math { font-size: 19px; }
+.psim-term .bar { width: 100%; height: 3px; border-radius: 2px; background: var(--line); }
+.psim-term .lb { font: 11px/1.25 var(--sans); color: var(--muted); text-align: center; max-width: 150px; }
+.psim-term .v { font: 12px var(--mono); color: var(--ink-2); white-space: nowrap; }
+.psim-where { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: baseline; padding: 8px 12px; border-left: 2px solid var(--line-strong); }
+.psim-where .kw { grid-column: 1 / -1; font: italic 12px var(--serif); color: var(--muted); }
+.psim-where .w { display: contents; }
+.psim-where .mx math { font-size: 15px; color: var(--ink); }
+.psim-where .mean { color: var(--ink-2); font-size: 12.5px; }
+.psim-where .v { font: 12px var(--mono); color: var(--ink); text-align: right; }
+.psim-derivation ol { margin: 8px 0 0; padding: 0; list-style: none; counter-reset: step; display: grid; gap: 8px; }
+.psim-derivation li { counter-increment: step; display: grid; grid-template-columns: 22px 1fr; column-gap: 8px; align-items: center; }
+.psim-derivation li::before { content: counter(step); grid-row: span 2; align-self: start; margin-top: 8px; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--line-strong); font: 10.5px/18px var(--mono); text-align: center; color: var(--muted); }
+.psim-derivation .mx { overflow-x: auto; padding: 4px 0; }
+.psim-derivation .mx math { font-size: 17px; color: var(--ink); }
+.psim-derivation .why { font-size: 12px; color: var(--muted); }
+
+/* ---------- workbench layout: stage + figures + equations (instrument-app layout: 'workbench') ---------- */
+.psim-app.workbench .psim-stage { overflow: auto; background: var(--stage); }
+.psim-bench { position: relative; display: grid; gap: 18px; padding: 18px 18px 84px; min-height: 100%; }
+.psim-bench .psim-canvaswrap { position: relative; height: clamp(300px, 52vh, 620px); border-radius: 12px; overflow: hidden; border: 1px solid var(--line);
+  background: radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 90%, var(--accent) 10%) 0%, var(--stage) 65%); }
+.psim-bench .psim-canvaswrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+.psim-bench .psim-figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+.psim-bench .psim-eqs { display: grid; gap: 18px; }
+.psim-app.workbench .psim-transport { position: fixed; left: calc((100vw - 372px) / 2); }
+.psim-app.workbench .psim-hud { left: 30px; top: 30px; }
+.psim-app.workbench .psim-legend { right: 30px; top: 30px; }
+@media (max-width: 860px) {
+  .psim-app.workbench .psim-transport { left: 50%; }
+  .psim-bench { padding: 12px 12px 84px; }
+}
+
+@media (max-width: 860px) {
+  /* phones: legend bottom-right, clear of HUD (top-left), scale bars (bottom-left) and transport */
+  .psim-legend { top: auto; bottom: 70px; left: auto; right: 14px; max-width: 58%; justify-items: end; text-align: right; font-size: 10.5px; }
+  .psim-app.workbench { grid-template-rows: auto auto auto; }
+  .psim-app.workbench .psim-stage { overflow: visible; }
+  .psim-app.workbench .psim-transport { position: absolute; }
+  .psim-app.workbench .psim-legend { top: auto; bottom: 14px; left: auto; right: 26px; }
+  .psim-bench .psim-canvaswrap { height: 70vh; }
+}
+</style>
+</head>
+<body>
+<script type="application/json" id="psim-verification">{
+ "summary": "Force/potential identity, exact dimer period, NVE conservation and order, Maxwell–Boltzmann speeds, Langevin temperature and the second-virial low-density limit.",
+ "checks": [
+  {
+   "label": "Force = −dV/dr (4th-order difference, 6 radii)",
+   "value": "max rel. diff 1.24e-12",
+   "pass": true
+  },
+  {
+   "label": "Shifted force: F(r_min) = −F_LJ(r_c); V and F → 0 at r_c⁻",
+   "value": "ΔF = 1.3e-15, V = -5.8e-19, F = -1.1e-13",
+   "pass": true
+  },
+  {
+   "label": "Cell-list forces = all-pairs minimum image (N = 300)",
+   "value": "max |ΔF|/max|F| = 1.2e-16, |ΔU/U| = 4.0e-16, pairs 1471 = 1471",
+   "pass": true
+  },
+  {
+   "label": "Dimer oscillation period vs exact quadrature (Δt = 0.001)",
+   "value": "T_MD = 0.709988, T_exact = 0.709995 τ, rel. err 9.20e-6",
+   "pass": true
+  },
+  {
+   "label": "Dimer period error order (Δt = 0.004 → 0.002)",
+   "value": "p = 2.00 (velocity Verlet: 2)",
+   "pass": true
+  },
+  {
+   "label": "NVE energy, N = 256, ρ* = 0.7, T* ≈ 1, Δt = 0.002 (default), 40 τ (2×10⁴ steps)",
+   "value": "max |ΔE|/(K+|U|) = 2.36e-5",
+   "pass": true
+  },
+  {
+   "label": "NVE energy drift over 40 τ (linear fit)",
+   "value": "9.45e-7 of |E|",
+   "pass": true
+  },
+  {
+   "label": "Total momentum conserved (NVE)",
+   "value": "|Σp|/Σ|p| = 1.05e-15",
+   "pass": true
+  },
+  {
+   "label": "RMS energy-error order from one state, Δt = 0.004 / 0.002 / 0.001 (2 τ)",
+   "value": "p = 1.97, 1.99 (expected 2)",
+   "pass": true
+  },
+  {
+   "label": "Deterministic replay (seeded)",
+   "value": "bit-identical",
+   "pass": true
+  },
+  {
+   "label": "Speeds vs 2D Maxwell–Boltzmann at measured T (KS, NVE)",
+   "value": "D = 0.0115, p = 0.66, n = 4000, T* = 1.499",
+   "pass": true
+  },
+  {
+   "label": "NVT (BAOAB, γ = 1): mean kinetic T* vs bath T* = 1 (60 τ)",
+   "value": "1.0014 ± 0.0067",
+   "pass": true
+  },
+  {
+   "label": "NVT energy balance E − Q_bath (60 τ)",
+   "value": "max rel. 1.55e-4",
+   "pass": true
+  },
+  {
+   "label": "Low-density pressure: Z − 1 vs B₂ρ (ρ* = 0.05, T* = 2, NVT 200 τ)",
+   "value": "Z − 1 = 0.0360 ± 0.0047, B₂ρ = 0.0298",
+   "pass": true
+  }
+ ],
+ "notes": [
+  "Scope: numerical accuracy of the stated 2D shifted-force LJ model (r_c = 2.5σ). Its pressure, energy and phase behaviour differ from the full LJ potential and from 3D argon; no comparison with experiment is claimed.",
+  "NVE runs start with 10 τ of velocity rescaling (equilibration, not physical dynamics); conservation is measured from the end of that phase.",
+  "Error bars use blocking (meanWithError) on correlated samples. B₃ρ² (not computed) is allowed as a 15 % tolerance on the B₂ρ comparison."
+ ],
+ "generated": "2026-10-14T08:08:08.013Z",
+ "runtimeMs": 13184
+}</script>
+<script type="module">
+const __psim = {};
+// ---- psim:ui/instrument.mjs
+__psim["ui/instrument.mjs"] = (() => {
+// Reusable instrument UI: DOM helpers, controls, log-scale plots, the simulation
+// clock, number formatting, theme handling and data export.
+// Domain-agnostic: orbit, field and density views all build on these pieces.
+
+function el(tag, attrs = {}, ...children) {
+  const node = document.createElementNS(
+    tag === 'svg' || attrs.xmlns === 'svg' ? 'http://www.w3.org/2000/svg' : 'http://www.w3.org/1999/xhtml', tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false || k === 'xmlns') continue;
+    if (k.startsWith('on') && typeof v === 'function') node.addEventListener(k.slice(2), v);
+    else if (k === 'class') node.className = v;
+    else if (k === 'html') node.innerHTML = v;
+    else if (k in node && typeof v !== 'string') node[k] = v;
+    else node.setAttribute(k, v === true ? '' : v);
+  }
+  for (const c of children.flat()) if (c != null && c !== false) node.append(c.nodeType ? c : document.createTextNode(String(c)));
+  return node;
+}
+
+const ICONS = {
+  play: '<svg viewBox="0 0 16 16"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg>',
+  pause: '<svg viewBox="0 0 16 16"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg>',
+  step: '<svg viewBox="0 0 16 16"><path d="M3 2.5v11l7-5.5zM11 2.5h2v11h-2z" fill="currentColor"/></svg>',
+  restart: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8a5 5 0 1 0 1.6-3.7"/><path d="M3 2.5v3h3"/></svg>',
+  fit: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg>',
+  sun: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6L13 13M3 13l1.4-1.4M11.6 4.4L13 3"/></svg>',
+  moon: '<svg viewBox="0 0 16 16"><path d="M13.5 10A6 6 0 0 1 6 2.5a6 6 0 1 0 7.5 7.5z" fill="currentColor"/></svg>',
+  info: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 7v4.5M8 4.6v.1"/></svg>',
+};
+
+// ---------- formatting ----------
+
+const SUP = { '-': '⁻', 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹' };
+
+/** 2.44e-11 -> "2.4×10⁻¹¹". */
+function sci(x, digits = 2) {
+  if (x == null || Number.isNaN(x)) return '—';
+  if (x === 0) return '0';
+  if (!Number.isFinite(x)) return x > 0 ? '∞' : '−∞';
+  const e = Math.floor(Math.log10(Math.abs(x)));
+  if (e >= -2 && e < 4) return fix(x, Math.max(0, digits - 1 - e));
+  const m = x / Math.pow(10, e);
+  return `${m.toFixed(digits - 1)}×10${String(e).split('').map(c => SUP[c]).join('')}`;
+}
+
+function fix(x, d = 3) {
+  if (x == null || Number.isNaN(x)) return '—';
+  return x.toFixed(d).replace('-', '−');
+}
+
+/** Classify a relative error against thresholds -> 'good' | 'warn' | 'bad'. */
+function grade(x, good, warn) {
+  if (!(x <= warn)) return 'bad';
+  return x <= good ? 'good' : 'warn';
+}
+
+// ---------- theme ----------
+
+function initTheme(toggleButton) {
+  const root = document.documentElement;
+  let stored = null;
+  try { stored = localStorage.getItem('psim-theme'); } catch { /* storage unavailable */ }
+  const query = new URLSearchParams(location.search).get('theme');
+  const sys = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  const apply = t => {
+    root.dataset.theme = t;
+    if (toggleButton) toggleButton.innerHTML = t === 'dark' ? ICONS.sun : ICONS.moon;
+    if (toggleButton) toggleButton.title = t === 'dark' ? 'Light theme' : 'Dark theme';
+    root.dispatchEvent(new CustomEvent('psim-theme', { detail: t }));
+  };
+  apply(query || stored || root.dataset.theme || sys);
+  toggleButton?.addEventListener('click', () => {
+    const t = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    try { localStorage.setItem('psim-theme', t); } catch { /* ignore */ }
+    apply(t);
+  });
+}
+
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+// ---------- layout pieces ----------
+
+function section(title, { open = true, aside } = {}) {
+  const body = el('div', { class: 'psim-body' });
+  const asideEl = aside != null ? el('span', { class: 'aside' }, aside) : null;
+  const sec = el('details', { class: 'psim-sec', open }, el('summary', {}, title, asideEl), body);
+  sec.body = body;
+  sec.aside = asideEl;
+  return sec;
+}
+
+function row(label, value = '—', cls = '') {
+  const v = el('span', { class: `v ${cls}` }, value);
+  const r = el('div', { class: 'psim-row' }, el('span', { class: 'k' }, label), v);
+  r.set = (text, c) => { v.textContent = text; v.className = `v ${c ?? ''}`; };
+  return r;
+}
+
+/** Value for a numeric input: short, exact enough, scientific notation for small or huge numbers. */
+const inputValue = v => {
+  const a = Math.abs(v);
+  return a !== 0 && (a < 1e-3 || a >= 1e7) ? v.toExponential(4) : String(+Number(v).toPrecision(6));
+};
+
+/**
+ * Slider + exact numeric entry, linear or logarithmic. onInput receives the number.
+ * Typed values are clamped to `limits` (default: the slider's [min, max]) and rounded when
+ * `integer` is set, so a typo like 100000000 can never freeze the page. Pass wider `limits`
+ * when a quantity may legitimately exceed the slider's range.
+ */
+function slider({ label, min, max, step = 'any', value, log = false, unit = '', digits = 3, integer = false, limits = [min, max], onInput }) {
+  const toS = v => log ? Math.log10(v) : v;
+  const fromS = s => log ? Math.pow(10, s) : s;
+  const [lo, hi] = limits;
+  const tidy = v => {
+    const c = Math.min(hi, Math.max(lo, v));
+    return integer ? Math.round(c) : c;
+  };
+  const range = el('input', { type: 'range', min: toS(min), max: toS(max), step: log ? 'any' : step, value: toS(value), 'aria-label': label });
+  const num = el('input', { type: 'number', step: integer ? 1 : 'any', min: lo, max: hi, value: inputValue(value), 'aria-label': `${label} value` });
+  const unitEl = unit ? el('span', { style: 'color:var(--muted);font:11px var(--mono)' }, unit) : null;
+  const note = el('span', { class: 'psim-limit', role: 'status' });
+  const field = el('label', { class: 'psim-field' },
+    el('div', { class: 'top' }, el('span', {}, label), el('div', { style: 'display:flex;align-items:baseline;gap:4px' }, num, unitEl)),
+    range, note);
+  range.addEventListener('input', () => {
+    const v = tidy(+(+fromS(+range.value)).toPrecision(digits + 1));
+    num.value = inputValue(v);
+    note.textContent = '';
+    onInput?.(v);
+  });
+  num.addEventListener('change', () => {
+    const raw = +num.value;
+    if (!Number.isFinite(raw)) { num.value = inputValue(tidy(fromS(+range.value))); return; }
+    const v = tidy(raw);
+    note.textContent = v !== raw ? `limited to ${inputValue(v)} (allowed ${inputValue(lo)}–${inputValue(hi)})` : '';
+    num.value = inputValue(v);
+    range.value = toS(v);
+    onInput?.(v);
+  });
+  field.setValue = v => { range.value = toS(v); num.value = inputValue(v); };
+  return field;
+}
+
+function toggle(label, checked, onChange) {
+  const input = el('input', { type: 'checkbox', checked });
+  input.addEventListener('change', () => onChange(input.checked));
+  const t = el('label', { class: 'psim-toggle' }, el('span', {}, label), input);
+  t.input = input;
+  return t;
+}
+
+function select(options, value, onChange) {
+  const s = el('select', { class: 'psim-select' },
+    options.map(o => el('option', { value: o.value, selected: o.value === value }, o.label)));
+  s.addEventListener('change', () => onChange(s.value));
+  return s;
+}
+
+function button(label, onClick, cls = '') {
+  return el('button', { class: `psim-btn ${cls}`, type: 'button', onclick: onClick }, label);
+}
+
+function toast(stage, text) {
+  let t = stage.querySelector('.psim-toast');
+  if (!t) { t = el('div', { class: 'psim-toast', role: 'status' }); stage.append(t); }
+  t.textContent = text;
+  t.classList.add('on');
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove('on'), 1800);
+}
+
+// ---------- transport ----------
+
+function transport({ onToggle, onStep, onRestart, onFit, speed, speedLabel, onSpeed }) {
+  const play = el('button', { class: 'primary', title: 'Play / pause (Space)', 'aria-label': 'Play or pause', html: ICONS.play, onclick: onToggle });
+  const out = el('output', {}, speedLabel(speed));
+  const range = el('input', { type: 'range', min: -2, max: 2, step: 'any', value: Math.log10(speed), 'aria-label': 'Playback speed' });
+  range.addEventListener('input', () => { const s = Math.pow(10, +range.value); out.textContent = speedLabel(s); onSpeed(s); });
+  const bar = el('div', { class: 'psim-transport' },
+    el('button', { title: 'Restart from initial conditions (R)', 'aria-label': 'Restart', html: ICONS.restart, onclick: onRestart }),
+    play,
+    el('button', { title: 'Advance one integrator step (.)', 'aria-label': 'Step', html: ICONS.step, onclick: onStep }),
+    el('span', { class: 'sep' }),
+    el('label', { class: 'speed' }, 'speed', range, out),
+    el('span', { class: 'sep' }),
+    el('button', { title: 'Fit view to bodies (F)', 'aria-label': 'Fit view', html: ICONS.fit, onclick: onFit }));
+  bar.setPlaying = p => { play.innerHTML = p ? ICONS.pause : ICONS.play; };
+  return bar;
+}
+
+/**
+ * Simulation clock. Converts wall-clock frames into a target *physical* time.
+ * The integrator then advances to that target with its own step sequence, so
+ * the physics never depends on frame rate. Long frames (background tabs) are capped.
+ */
+function createClock({ speed = 1 } = {}) {
+  return {
+    speed, playing: false, last: null,
+    tick(now, t) {
+      if (this.last == null || !this.playing) { this.last = now; return t; }
+      const dt = Math.min(0.1, (now - this.last) / 1000);
+      this.last = now;
+      return t + dt * this.speed;
+    },
+  };
+}
+
+// ---------- plots ----------
+
+/**
+ * Lightweight log-y line plot for diagnostics (energy error, separations).
+ * series: [{ color: cssVarName, data: [[x, y], ...] }]
+ */
+function logPlot({ caption, yMin = 1e-16, yMax = 1, height = 112 }) {
+  const canvas = el('canvas');
+  const box = el('div', { class: 'psim-plot', style: `height:${height}px` }, canvas, el('span', { class: 'cap' }, caption));
+  const series = [];
+  let xMax = 1, dirty = true, refLines = [];
+  const ctx = canvas.getContext('2d');
+  const plot = {
+    el: box,
+    addSeries(color, opts = {}) { const s = { color, data: [], ...opts }; series.push(s); return s; },
+    push(s, x, y) { s.data.push([x, y]); if (s.data.length > 4000) decimate(s); xMax = Math.max(xMax, x); dirty = true; },
+    clear() { for (const s of series) s.data.length = 0; xMax = 1; dirty = true; },
+    setXMax(x) { xMax = x; dirty = true; },
+    setRefLines(lines) { refLines = lines; dirty = true; },
+    invalidate() { dirty = true; },
+    draw() {
+      if (!dirty) return;
+      dirty = false;
+      const dpr = devicePixelRatio || 1;
+      const w = box.clientWidth, h = box.clientHeight;
+      if (!w) return;
+      if (canvas.width !== Math.round(w * dpr)) { canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      const l0 = Math.log10(yMin), l1 = Math.log10(yMax);
+      const pad = { l: 34, r: 8, t: 20, b: 14 };
+      const X = x => pad.l + (x / xMax) * (w - pad.l - pad.r);
+      const Y = y => {
+        const ly = Math.min(l1, Math.max(l0, Math.log10(Math.max(y, 1e-300))));
+        return pad.t + (1 - (ly - l0) / (l1 - l0)) * (h - pad.t - pad.b);
+      };
+      ctx.font = '9.5px ui-monospace, Menlo, monospace';
+      ctx.fillStyle = cssVar('--faint');
+      ctx.strokeStyle = cssVar('--grid-strong');
+      ctx.lineWidth = 1;
+      const stepDec = Math.max(1, Math.round((l1 - l0) / 4));
+      for (let e = Math.ceil(l0); e <= l1; e += stepDec) {
+        const y = Math.round(Y(Math.pow(10, e))) + 0.5;
+        ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+        ctx.fillText(`1e${e}`, 2, y + 3);
+      }
+      for (const r of refLines) {
+        ctx.setLineDash([3, 3]); ctx.strokeStyle = cssVar(r.color);
+        const y = Y(r.y); ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      for (const s of series) {
+        if (!s.data.length) continue;
+        ctx.strokeStyle = cssVar(s.color);
+        ctx.lineWidth = s.width ?? 1.4;
+        ctx.globalAlpha = s.alpha ?? 1;
+        ctx.beginPath();
+        s.data.forEach(([x, y], i) => i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)));
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+    },
+  };
+  new ResizeObserver(() => { dirty = true; plot.draw(); }).observe(box);
+  document.documentElement.addEventListener('psim-theme', () => { dirty = true; plot.draw(); });
+  return plot;
+}
+
+function decimate(s) {
+  // Keep the envelope: max of each pair (errors are what matter, so keep the worse one).
+  const out = [];
+  for (let i = 0; i < s.data.length; i += 2) {
+    const a = s.data[i], b = s.data[i + 1];
+    out.push(!b || a[1] >= b[1] ? a : b);
+  }
+  s.data = out;
+}
+
+// ---------- export ----------
+
+function download(filename, text, mime = 'text/plain') {
+  const url = URL.createObjectURL(new Blob([text], { type: mime }));
+  const a = el('a', { href: url, download: filename });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function readJsonScript(id) {
+  const node = document.getElementById(id);
+  if (!node) return null;
+  const text = node.textContent.trim();
+  return text ? JSON.parse(text) : null;
+}
+
+/**
+ * Status beacon read by scripts/psim.mjs check (headless Chrome).
+ * Pages set fields on it; it is mirrored into <html data-psim-*> attributes.
+ */
+function beacon() {
+  const root = document.documentElement;
+  const errors = [];
+  addEventListener('error', e => { errors.push(String(e.message)); root.dataset.psimErrors = JSON.stringify(errors); });
+  addEventListener('unhandledrejection', e => { errors.push(String(e.reason)); root.dataset.psimErrors = JSON.stringify(errors); });
+  root.dataset.psimErrors = '[]';
+  return {
+    set(key, value) { root.dataset[`psim${key[0].toUpperCase()}${key.slice(1)}`] = typeof value === 'string' ? value : JSON.stringify(value); },
+  };
+}
+
+return { el, ICONS, sci, fix, grade, initTheme, cssVar, section, row, inputValue, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon };
+})();
+
+// ---- psim:ui/plot.mjs
+__psim["ui/plot.mjs"] = (() => {
+// Scientific 2D plot: linear or log axes with 1-2-5 ticks, function and data
+// series, shaded validity bands, reference lines, markers, a draggable cursor,
+// and highlighting linked to equation terms. Theme-aware (reads CSS tokens).
+//
+//   const p = createPlot({ title: 'Spectral radiance', x: { label: 'λ', unit: 'nm', min: 100, max: 3000 },
+//                          y: { label: 'B_λ', unit: 'W sr⁻¹ m⁻³', log: false } });
+//   p.fn('planck', λ => B(λ, T), { color: '--body-0', label: 'T = 5772 K' });
+//   p.vline(λmax, { label: 'λ_max' });  p.draw();
+const { el, cssVar, sci } = __psim["ui/instrument.mjs"];
+function niceTicks(min, max, target = 5) {
+  const span = max - min;
+  if (!(span > 0)) return [min];
+  const raw = span / target, e = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / e;
+  const step = (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * e;
+  const out = [];
+  for (let v = Math.ceil(min / step) * step; v <= max + step * 1e-9; v += step) out.push(Math.abs(v) < step * 1e-9 ? 0 : v);
+  return out;
+}
+
+const SUPS = { '-': '⁻', 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹' };
+/** Powers of ten on log axes read as 10ⁿ. */
+function fmtPow10(v) {
+  const e = Math.round(Math.log10(v));
+  if (e >= 0 && e <= 3) return String(10 ** e);
+  return `10${String(e).split('').map(ch => SUPS[ch]).join('')}`;
+}
+
+function fmtTick(v) {
+  const a = Math.abs(v);
+  if (a !== 0 && (a < 1e-3 || a >= 1e5)) return sci(v, 2);
+  return String(+v.toPrecision(6)).replace('-', '−');
+}
+
+function createPlot({ title = '', x = {}, y = {}, height = 220, legend = true, onCursor } = {}) {
+  const canvas = el('canvas');
+  const head = el('div', { class: 'psim-plot-head' }, el('span', { class: 't' }, title), el('span', { class: 'l' }));
+  const box = el('div', { class: 'psim-plot2', style: `height:${height}px` }, canvas);
+  const root = el('figure', { class: 'psim-figure' }, head, box);
+  const ctx = canvas.getContext('2d');
+  const items = new Map();
+  let order = [], focus = null, cursor = null, dirty = true;
+  const ax = { x: { min: 0, max: 1, log: false, ...x }, y: { min: 0, max: 1, log: false, auto: y.min == null || y.max == null, ...y } };
+  const pad = { l: 60, r: 14, t: 10, b: 34 };
+  let W = 0, H = 0;
+
+  const tr = (a, v) => a.log ? Math.log10(v) : v;
+  const X = v => pad.l + (tr(ax.x, v) - tr(ax.x, ax.x.min)) / (tr(ax.x, ax.x.max) - tr(ax.x, ax.x.min)) * (W - pad.l - pad.r);
+  const Y = v => H - pad.b - (tr(ax.y, v) - tr(ax.y, ax.y.min)) / (tr(ax.y, ax.y.max) - tr(ax.y, ax.y.min)) * (H - pad.t - pad.b);
+  const invX = px => {
+    const f = (px - pad.l) / (W - pad.l - pad.r);
+    const v = tr(ax.x, ax.x.min) + f * (tr(ax.x, ax.x.max) - tr(ax.x, ax.x.min));
+    return ax.x.log ? Math.pow(10, v) : v;
+  };
+
+  const add = (id, item) => { if (!items.has(id)) order.push(id); items.set(id, item); dirty = true; return api; };
+
+  const api = {
+    el: root,
+    /** Plot a function y = f(x), sampled per pixel column. */
+    fn(id, f, opts = {}) { return add(id, { kind: 'fn', f, ...opts }); },
+    /** Plot data points [[x, y], ...] as a line (or dots with { dots: true }). */
+    data(id, pts, opts = {}) { return add(id, { kind: 'data', pts, ...opts }); },
+    /** Shaded x-range, e.g. where a formula is invalid. */
+    band(id, x0, x1, opts = {}) { return add(id, { kind: 'band', x0, x1, ...opts }); },
+    hline(id, yv, opts = {}) { return add(id, { kind: 'hline', y: yv, ...opts }); },
+    vline(id, xv, opts = {}) { return add(id, { kind: 'vline', x: xv, ...opts }); },
+    marker(id, xv, yv, opts = {}) { return add(id, { kind: 'marker', x: xv, y: yv, ...opts }); },
+    remove(id) { items.delete(id); order = order.filter(o => o !== id); dirty = true; return api; },
+    setX(o) { Object.assign(ax.x, o); dirty = true; return api; },
+    setY(o) { Object.assign(ax.y, o); dirty = true; return api; },
+    /** Highlight one series (dims the others); null clears. Used by equation terms. */
+    highlight(id) { focus = id; dirty = true; api.draw(); },
+    /** Show a draggable vertical cursor at x; drag calls onCursor(x). */
+    cursor(xv) { cursor = xv; dirty = true; return api; },
+    invalidate() { dirty = true; },
+    draw,
+  };
+
+  function autoY() {
+    let lo = Infinity, hi = -Infinity;
+    for (const it of items.values()) {
+      if (it.kind === 'fn' && !it.ignoreScale) {
+        for (let i = 0; i <= 200; i++) {
+          const xv = ax.x.log ? Math.pow(10, Math.log10(ax.x.min) + i / 200 * (Math.log10(ax.x.max) - Math.log10(ax.x.min))) : ax.x.min + i / 200 * (ax.x.max - ax.x.min);
+          const v = it.f(xv);
+          if (Number.isFinite(v) && (!ax.y.log || v > 0)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+        }
+      } else if (it.kind === 'data' && !it.ignoreScale) {
+        for (const [, v] of it.pts) if (Number.isFinite(v) && (!ax.y.log || v > 0)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+      }
+    }
+    if (!Number.isFinite(lo)) return;
+    if (ax.y.log) { ax.y.min = Math.pow(10, Math.floor(Math.log10(lo))); ax.y.max = Math.pow(10, Math.ceil(Math.log10(hi))); }
+    else {
+      const span = hi - lo || Math.abs(hi) || 1;
+      ax.y.min = ax.y.zero !== false && lo >= 0 ? 0 : lo - 0.06 * span;
+      ax.y.max = hi + 0.08 * span;
+    }
+  }
+
+  function draw() {
+    if (!dirty) return;
+    dirty = false;
+    const dpr = devicePixelRatio || 1;
+    W = box.clientWidth; H = box.clientHeight;
+    if (!W) return;
+    if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) { canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr); }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    if (ax.y.auto) autoY();
+    const C = cssVar;
+    ctx.font = '10.5px ui-monospace, Menlo, monospace';
+
+    const labelBoxes = [];                              // band and vertical-line labels placed this frame
+    // bands (behind everything)
+    for (const id of order) {
+      const it = items.get(id);
+      if (it.kind !== 'band') continue;
+      const x0 = Math.max(pad.l, X(it.x0)), x1 = Math.min(W - pad.r, X(it.x1));
+      ctx.fillStyle = C(it.color ?? '--grid-strong');
+      ctx.globalAlpha = it.alpha ?? 0.5;
+      ctx.fillRect(x0, pad.t, x1 - x0, H - pad.t - pad.b);
+      ctx.globalAlpha = 1;
+      if (it.label) { ctx.fillStyle = C('--muted'); ctx.fillText(it.label, x0 + 6, pad.t + 12); labelBoxes.push({ x: x0 + 6, w: ctx.measureText(it.label).width, y: pad.t + 12 }); }
+    }
+
+    // grid + ticks
+    ctx.strokeStyle = C('--grid'); ctx.fillStyle = C('--faint'); ctx.lineWidth = 1;
+    const xt = ax.x.log ? logTicks(ax.x.min, ax.x.max) : niceTicks(ax.x.min, ax.x.max, Math.max(3, Math.floor(W / 90)));
+    const yt = ax.y.log ? logTicks(ax.y.min, ax.y.max) : niceTicks(ax.y.min, ax.y.max, Math.max(3, Math.floor(H / 45)));
+    ctx.textAlign = 'center';
+    for (const v of xt) { const px = Math.round(X(v)) + 0.5; ctx.beginPath(); ctx.moveTo(px, pad.t); ctx.lineTo(px, H - pad.b); ctx.stroke(); ctx.fillText(ax.x.log ? fmtPow10(v) : fmtTick(v), px, H - pad.b + 14); }
+    ctx.textAlign = 'right';
+    for (const v of yt) { const py = Math.round(Y(v)) + 0.5; ctx.beginPath(); ctx.moveTo(pad.l, py); ctx.lineTo(W - pad.r, py); ctx.stroke(); ctx.fillText(ax.y.log ? fmtPow10(v) : fmtTick(v), pad.l - 6, py + 3.5); }
+    ctx.textAlign = 'start';
+    ctx.strokeStyle = C('--line-strong');
+    ctx.beginPath(); ctx.moveTo(pad.l + 0.5, pad.t); ctx.lineTo(pad.l + 0.5, H - pad.b + 0.5); ctx.lineTo(W - pad.r, H - pad.b + 0.5); ctx.stroke();
+    // axis labels
+    ctx.fillStyle = C('--muted'); ctx.font = '11px ui-sans-serif, -apple-system, system-ui, sans-serif';
+    const xl = `${ax.x.label ?? ''}${ax.x.unit ? ` (${ax.x.unit})` : ''}`;
+    ctx.textAlign = 'right'; ctx.fillText(xl, W - pad.r, H - 4); ctx.textAlign = 'start';
+    const yl = `${ax.y.label ?? ''}${ax.y.unit ? ` (${ax.y.unit})` : ''}`;
+    ctx.save(); ctx.translate(11, pad.t); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'right'; ctx.fillText(yl, 0, 0); ctx.restore();
+
+    // clip to plot area
+    ctx.save();
+    ctx.beginPath(); ctx.rect(pad.l, pad.t - 2, W - pad.l - pad.r, H - pad.t - pad.b + 4); ctx.clip();
+    const legendItems = [];
+    for (const id of order) {
+      const it = items.get(id);
+      const dim = focus && focus !== id && it.kind !== 'band' ? 0.18 : 1;
+      const col = C(it.color ?? '--accent');
+      ctx.globalAlpha = dim * (it.alpha ?? 1);
+      ctx.strokeStyle = col; ctx.fillStyle = col;
+      ctx.lineWidth = (it.width ?? 1.8) * (focus === id ? 1.6 : 1);
+      ctx.setLineDash(it.dash ? [5, 4] : it.dot ? [1.5, 3.5] : []);
+      if (it.kind === 'fn') {
+        ctx.beginPath();
+        let pen = false;
+        const n = Math.max(2, Math.round((W - pad.l - pad.r) * (it.oversample ?? 1)));
+        for (let i = 0; i <= n; i++) {
+          const px = pad.l + i / n * (W - pad.l - pad.r);
+          const v = it.f(invX(px));
+          if (!Number.isFinite(v) || (ax.y.log && v <= 0)) { pen = false; continue; }
+          const py = Y(v);
+          pen ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+          pen = true;
+        }
+        ctx.stroke();
+        if (it.fill) { ctx.globalAlpha = 0.12 * dim; ctx.lineTo(W - pad.r, Y(Math.max(ax.y.min, 0))); ctx.lineTo(pad.l, Y(Math.max(ax.y.min, 0))); ctx.fill(); }
+      } else if (it.kind === 'data') {
+        if (it.dots) {
+          const shown = ([a, b]) => Number.isFinite(a) && Number.isFinite(b) && (!ax.y.log || b > 0) && (!ax.x.log || a > 0);
+          for (const p of it.pts) { if (!shown(p)) continue; ctx.beginPath(); ctx.arc(X(p[0]), Y(p[1]), it.r ?? 2.4, 0, 7); ctx.fill(); }
+          if (it.errors) {for (let i = 0; i < it.pts.length; i++) {
+            const [a, b] = it.pts[i], e = Math.abs(it.errors[i]);
+            if (!shown(it.pts[i]) || !Number.isFinite(e)) continue;
+            // On a log axis a bar reaching zero or below has no finite end: run it to the axis floor.
+            const lo = ax.y.log && b - e <= ax.y.min ? ax.y.min : b - e;
+            ctx.beginPath(); ctx.moveTo(X(a), Y(lo)); ctx.lineTo(X(a), Y(b + e)); ctx.stroke();
+          }}
+        } else {
+          ctx.beginPath();
+          it.pts.forEach(([a, b], i) => i ? ctx.lineTo(X(a), Y(b)) : ctx.moveTo(X(a), Y(b)));
+          ctx.stroke();
+        }
+      } else if (it.kind === 'hline' || it.kind === 'vline') {
+        ctx.lineWidth = 1; ctx.setLineDash(it.solid ? [] : [3, 4]);
+        ctx.beginPath();
+        if (it.kind === 'hline') { ctx.moveTo(pad.l, Y(it.y)); ctx.lineTo(W - pad.r, Y(it.y)); }
+        else { ctx.moveTo(X(it.x), pad.t); ctx.lineTo(X(it.x), H - pad.b); }
+        ctx.stroke();
+        if (it.label) {
+          ctx.setLineDash([]); ctx.font = '10.5px ui-monospace, Menlo, monospace';
+          if (it.kind === 'hline') ctx.fillText(it.label, W - pad.r - ctx.measureText(it.label).width - 4, Y(it.y) - 5 < pad.t + 10 ? Y(it.y) + 13 : Y(it.y) - 5);   // below the line near the top edge
+          else {
+            // stack labels of nearby vertical lines instead of drawing them on top of each other
+            const x0 = X(it.x) + 5, w = ctx.measureText(it.label).width;
+            let ly = pad.t + 12;
+            while (labelBoxes.some(b => x0 < b.x + b.w + 4 && b.x < x0 + w + 4 && Math.abs(b.y - ly) < 12)) ly += 13;
+            labelBoxes.push({ x: x0, w, y: ly });
+            ctx.fillText(it.label, x0, ly);
+          }
+        }
+      } else if (it.kind === 'marker') {
+        ctx.setLineDash([]);
+        ctx.beginPath(); ctx.arc(X(it.x), Y(it.y), it.r ?? 4.5, 0, 7); ctx.fill();
+        ctx.strokeStyle = C('--panel'); ctx.lineWidth = 1.5; ctx.stroke();
+        if (it.label) { ctx.fillStyle = C('--ink-2'); ctx.font = '10.5px ui-monospace, Menlo, monospace'; ctx.fillText(it.label, X(it.x) + 8, Y(it.y) - 7); }
+      }
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+      if (it.label && (it.kind === 'fn' || it.kind === 'data') && legend) legendItems.push([col, it.label, it.dash, id]);
+    }
+    if (cursor != null) {
+      ctx.strokeStyle = C('--ink'); ctx.lineWidth = 1; ctx.setLineDash([2, 3]);
+      ctx.beginPath(); ctx.moveTo(X(cursor), pad.t); ctx.lineTo(X(cursor), H - pad.b); ctx.stroke(); ctx.setLineDash([]);
+    }
+    ctx.restore();
+    const l = head.querySelector('.l');
+    l.replaceChildren(...legendItems.map(([c, t, dash, id]) => el('span', {
+      class: `k${focus === id ? ' on' : ''}`, onmouseenter: () => api.highlight(id), onmouseleave: () => api.highlight(null),
+    }, el('i', { style: `background:${c};${dash ? 'opacity:.6' : ''}` }), t)));
+  }
+
+  function logTicks(min, max) {
+    const out = [], e0 = Math.ceil(Math.log10(min) - 1e-9), e1 = Math.floor(Math.log10(max) + 1e-9);
+    const stride = Math.max(1, Math.ceil((e1 - e0 + 1) / 6));
+    for (let e = e0; e <= e1; e += stride) out.push(Math.pow(10, e));
+    return out;
+  }
+
+  // cursor dragging
+  let dragging = false;
+  const setFromEvent = e => {
+    if (cursor == null || !onCursor) return;
+    const r = canvas.getBoundingClientRect();
+    const xv = Math.min(ax.x.max, Math.max(ax.x.min, invX(e.clientX - r.left)));
+    cursor = xv; dirty = true; onCursor(xv); draw();
+  };
+  canvas.addEventListener('pointerdown', e => { if (cursor == null || !onCursor) return; dragging = true; canvas.setPointerCapture(e.pointerId); setFromEvent(e); });
+  canvas.addEventListener('pointermove', e => { if (dragging) setFromEvent(e); });
+  canvas.addEventListener('pointerup', () => { dragging = false; });
+  if (onCursor) canvas.style.cursor = 'ew-resize';
+
+  new ResizeObserver(() => { dirty = true; draw(); }).observe(box);
+  document.documentElement.addEventListener('psim-theme', () => { dirty = true; draw(); });
+  return api;
+}
+
+return { createPlot };
+})();
+
+// ---- psim:ui/equation.mjs
+__psim["ui/equation.mjs"] = (() => {
+// Equations split into their physical terms.
+//
+// An equation is shown as a row of term cards. Each card holds one term's maths,
+// its name, its live numerical value with units, and a colour that matches the
+// curve or element it produces in the plots. Hovering a term highlights its curve.
+// A "where" block defines every symbol with its value; a derivation lists steps.
+//
+//   const eq = createEquation({
+//     lhs: { mathml: '<mi>V</mi><mo>(</mo><mi>r</mi><mo>)</mo>', label: 'potential', value: () => V, unit: 'GeV' },
+//     terms: [
+//       { id: 'coul', mathml: '<mo>−</mo><mfrac>…</mfrac>', label: 'Coulomb (gluon exchange)', color: '--body-1', value: () => Vc, unit: 'GeV' },
+//       { id: 'lin', sign: '+', mathml: '<mi>σ</mi><mi>r</mi>', label: 'string (confinement)', color: '--body-0', value: () => s * r, unit: 'GeV' },
+//     ],
+//     where: [{ mathml: '<mi>σ</mi>', meaning: 'string tension', value: () => 0.926, unit: 'GeV/fm' }],
+//     link: plot,
+//   });
+//   eq.update();   // refresh live values (call every UI tick)
+const { el, sci } = __psim["ui/instrument.mjs"];
+const m = inner => `<math display="inline">${inner}</math>`;
+
+function fmt(v, digits = 4) {
+  if (typeof v === 'string') return v;
+  if (v == null || Number.isNaN(v)) return '—';
+  const a = Math.abs(v);
+  if (a !== 0 && (a < 1e-3 || a >= 1e5)) return sci(v, digits - 1);
+  return (+v.toPrecision(digits)).toString().replace('-', '−');
+}
+
+function createEquation({ title, lhs, op = '=', terms = [], where = [], note, link, onFocus } = {}) {
+  const valueEls = [];
+  const focusTerm = id => {
+    for (const c of root.querySelectorAll('.psim-term')) c.classList.toggle('dim', id != null && c.dataset.id !== id);
+    const targets = Array.isArray(link) ? link : link ? [link] : [];
+    targets.forEach(p => p.highlight(id));
+    onFocus?.(id);
+  };
+
+  const card = (t, kind) => {
+    const v = el('span', { class: 'v' });
+    if (t.value) valueEls.push([v, t]);
+    const c = el('div', {
+      class: `psim-term ${kind}`, 'data-id': t.id ?? '', tabindex: t.id ? 0 : null,
+      onmouseenter: () => t.id && focusTerm(t.id), onmouseleave: () => t.id && focusTerm(null),
+      onfocus: () => t.id && focusTerm(t.id), onblur: () => t.id && focusTerm(null),
+    },
+    el('div', { class: 'mx', html: m(t.mathml) }),
+    el('i', { class: 'bar', style: t.color ? `background:var(${t.color})` : '' }),
+    t.label ? el('span', { class: 'lb' }, t.label) : null,
+    v);
+    return c;
+  };
+
+  const row = el('div', { class: 'psim-eqrow' });
+  if (lhs) row.append(card(lhs, 'lhs'), el('span', { class: 'op' }, op));
+  terms.forEach((t, i) => {
+    if (i > 0) row.append(el('span', { class: 'op' }, t.sign ?? '+'));
+    row.append(card(t, 'rhs'));
+  });
+
+  const whereEl = where.length ? el('div', { class: 'psim-where' },
+    el('span', { class: 'kw' }, 'where'),
+    ...where.map(w => {
+      const v = el('span', { class: 'v' });
+      if (w.value) valueEls.push([v, w]);
+      return el('div', { class: 'w' }, el('span', { class: 'mx', html: m(w.mathml) }), el('span', { class: 'mean' }, w.meaning), v);
+    })) : null;
+
+  const root = el('section', { class: 'psim-equation' },
+    title ? el('h3', {}, title) : null, row, whereEl, note ? el('p', { class: 'psim-hint' }, note) : null);
+
+  const api = {
+    el: root,
+    update() {
+      for (const [node, t] of valueEls) {
+        let v;
+        try { v = t.value(); } catch { v = NaN; }
+        node.textContent = `${fmt(v, t.digits)}${t.unit ? ` ${t.unit}` : ''}`;
+      }
+    },
+    focus: focusTerm,
+  };
+  api.update();
+  return api;
+}
+
+/** Numbered derivation: each step is one line of maths plus the reason for it. */
+function createDerivation(steps, { title } = {}) {
+  return el('section', { class: 'psim-derivation' },
+    title ? el('h3', {}, title) : null,
+    el('ol', {}, steps.map(s => el('li', {},
+      el('div', { class: 'mx', html: `<math display="inline">${s.mathml}</math>` }),
+      s.note ? el('span', { class: 'why' }, s.note) : null))));
+}
+
+/** Helpers for writing MathML compactly. */
+const M = {
+  i: s => `<mi>${s}</mi>`,
+  n: s => `<mn>${s}</mn>`,
+  o: s => `<mo>${s}</mo>`,
+  // msub/msup take exactly two children: wrap both, so a multi-part exponent such as −x survives
+  sub: (b, s) => `<msub><mrow>${b}</mrow><mrow>${s}</mrow></msub>`,
+  sup: (b, s) => `<msup><mrow>${b}</mrow><mrow>${s}</mrow></msup>`,
+  frac: (a, b) => `<mfrac><mrow>${a}</mrow><mrow>${b}</mrow></mfrac>`,
+  sqrt: a => `<msqrt>${a}</msqrt>`,
+  row: (...a) => `<mrow>${a.join('')}</mrow>`,
+  paren: a => `<mo>(</mo>${a}<mo>)</mo>`,
+  /** Vector symbol: Unicode mathematical bold (MathML Core ignores mathvariant). */
+  vec: s => `<mi>${{ r: '𝐫', v: '𝐯', E: '𝐄', B: '𝐁', u: '𝐮', F: '𝐅', p: '𝐩', k: '𝐤', x: '𝐱', a: '𝐚' }[s] ?? s}</mi>`,
+};
+
+return { createEquation, createDerivation, M };
+})();
+
+// ---- psim:core/verification.mjs
+__psim["core/verification.mjs"] = (() => {
+// Shared verification gates for the CLI and browser. Reports are evidence only
+// when every check is explicit and the tested settings still match the simulation.
+
+function validateModuleReport(report) {
+  if (!report || !Array.isArray(report.checks) || !report.checks.length) throw new Error('verification: need a non-empty checks array');
+  for (const [i, check] of report.checks.entries()) {
+    const where = `verification check ${i + 1}`;
+    if (!check || typeof check.label !== 'string' || !check.label.trim()) throw new Error(`${where}: label is required`);
+    if (typeof check.pass !== 'boolean') throw new Error(`${where}: pass must be explicitly true or false`);
+    if (typeof check.value === 'number') {
+      if (!Number.isFinite(check.value)) throw new Error(`${where}: measured value must be finite`);
+    } else if (typeof check.value !== 'string' || !check.value.trim() || /NaN|Infinity|∞|^\s*—\s*$/.test(check.value)) {
+      throw new Error(`${where}: measured value must be finite and present`);
+    }
+    if (check.state != null && check.state !== 'warn') throw new Error(`${where}: optional state must be 'warn'`);
+  }
+  return report;
+}
+
+/** Reasons a gravity report cannot support a successful verification claim. */
+function gravityReportProblems(report) {
+  const problems = [];
+  const finiteError = (value, limit, label) => {
+    if (!(Number.isFinite(value) && value >= 0)) problems.push(`${label} is missing or non-finite`);
+    else if (value > limit) problems.push(`${label} ${value.toExponential(2)} exceeds ${limit.toExponential(0)}`);
+  };
+  const c = report?.conservation, cv = report?.convergence;
+  finiteError(c?.dE, report?.settings?.softening > 0 ? 1e-4 : 1e-8, 'energy error');
+  finiteError(c?.dP, 1e-10, 'momentum drift');
+  finiteError(c?.dL, 1e-10, 'angular momentum drift');
+  if (!(Number.isFinite(c?.h) && c.h > 0)) problems.push('step parameter is missing or non-finite');
+  if (!(Number.isFinite(report?.duration) && report.duration > 0)) problems.push('verification duration is invalid');
+  if (!(Number.isFinite(cv?.observedOrder) && Number.isFinite(cv?.expectedOrder) && cv.expectedOrder > 0)) problems.push('convergence order is unresolved or non-finite');
+  else if (Math.abs(cv.observedOrder - cv.expectedOrder) > 0.6) problems.push('observed convergence order differs from theory');
+  if (!(Number.isFinite(cv?.horizon) && cv.horizon >= 0 && cv.horizon <= report.duration && typeof cv.converged === 'boolean')) problems.push('convergence horizon is invalid');
+  finiteError(cv?.finalDifference, Infinity, 'final refinement difference');
+  if (report?.determinism?.identical !== true || report?.frameIndependence?.identical !== true) problems.push('reproducibility check failed');
+  if (!Array.isArray(report?.benchmarks) || !report.benchmarks.length) problems.push('benchmarks are missing');
+  else {for (const b of report.benchmarks) {
+    const name = b?.name ?? 'unnamed benchmark';
+    finiteError(b?.dE, 1e-9, `${name}: energy error`);
+    if (b && Object.hasOwn(b, 'positionError')) finiteError(b.positionError, 1e-3, `${name}: position error`);
+    else if (b && Object.hasOwn(b, 'returnError')) finiteError(b.returnError, 1e-6, `${name}: return error`);
+    else if (b?.matchesLiterature !== true) problems.push(`benchmark failed: ${name}`);
+  }}
+  return problems;
+}
+
+/** Match solver settings, allowing only round-off in the computed step parameter. */
+function gravityReportMatches(report, settings) {
+  if (!report?.settings || report.integrator !== settings.integrator) return false;
+  for (const key of ['integrator', 'G', 'softening', 'stepsPerCrossing']) {
+    if (report.settings[key] !== settings[key]) return false;
+  }
+  const h = report.conservation?.h;
+  return Number.isFinite(h) && h > 0 && Number.isFinite(settings.h) && Math.abs(h - settings.h) <= 1e-12 * Math.abs(h);
+}
+
+return { validateModuleReport, gravityReportProblems, gravityReportMatches };
+})();
+
+// ---- psim:ui/instrument-app.mjs
+__psim["ui/instrument-app.mjs"] = (() => {
+// Generic instrument shell for composed simulations (any domain).
+//
+// The page supplies a physics module that follows the simulation contract
+// (see references/compose.md) and a draw function; this shell provides the
+// header, trust tier, theme, transport, frame-rate-independent clock,
+// parameter controls, live diagnostics, verification report, model panel,
+// export and the window.psim hook used by automated checks.
+//
+// Simulation contract (returned by create(params)):
+//   sim.t                    physical time of the latest computed state
+//   sim.step()               advance by one integrator step (or one analytic tick)
+//   sim.sample?(t)           state at t between steps, for drawing (default: current state)
+//   sim.diagnostics()        [{ key, label, value, kind: 'error'|'value', unit?, good?, warn? }]
+//   sim.state()              JSON-serialisable state (export, tests)
+//   sim.record?()            { header: [...], rows: [[...], ...] } for CSV export
+//   sim.timeDependent        false for static analytic visualisations (no transport)
+const { el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon, cssVar } = __psim["ui/instrument.mjs"];
+const { createPlot } = __psim["ui/plot.mjs"];
+const { createEquation, createDerivation, M } = __psim["ui/equation.mjs"];
+const { validateModuleReport } = __psim["core/verification.mjs"];
+const TIERS = {
+  validated: 'Validated numerical',
+  approximate: 'Approximate numerical',
+  analytical: 'Analytical',
+  conceptual: 'Conceptual illustration',
+};
+
+function createInstrument(spec) {
+  const {
+    title, subtitle = '', tier, tierReason, create, draw, params = [], model = {},
+    timeUnit = 'T', timeLabel = 'simulated time', speed: speed0 = 1, controls, onPointer, layout = 'stage', bench,
+  } = spec;
+  if (!TIERS[tier]) throw new Error(`tier must be one of ${Object.keys(TIERS).join(', ')}`);
+  const report = readJsonScript('psim-verification');
+  if (report) validateModuleReport(report);
+  const verified = report?.checks.every(c => c.pass === true) === true;
+  const trustLabel = verified ? TIERS[tier] : 'Verification needed';
+  const status = beacon();
+  const query = new URLSearchParams(location.search);
+
+  document.title = title;
+  document.body.innerHTML = `
+  <div class="psim-app ${layout === 'workbench' ? 'workbench' : ''}">
+    <header class="psim-head">
+      <div class="psim-mark" aria-hidden="true"></div>
+      <div class="psim-title"><h1></h1><p></p></div>
+      <div class="spacer"></div>
+      <button class="psim-tier" type="button"><i></i><span></span></button>
+      <button class="psim-iconbtn" type="button" aria-label="Toggle theme"></button>
+    </header>
+    <main class="psim-stage"><canvas></canvas>
+      <div class="psim-hud"><span class="dim"></span><b>0</b><span class="h1"></span><span class="dim h2"></span><span class="flag"></span></div>
+      <div class="psim-legend"></div>
+    </main>
+    <aside class="psim-side"></aside>
+  </div>`;
+  const $ = s => document.querySelector(s);
+  $('.psim-title h1').textContent = title;
+  $('.psim-title p').textContent = subtitle;
+  const tierBtn = $('.psim-tier');
+  tierBtn.dataset.tier = verified ? tier : 'unverified';
+  tierBtn.querySelector('span').textContent = trustLabel;
+  initTheme($('.psim-iconbtn'));
+  const stage = $('.psim-stage'), side = $('.psim-side');
+  // Workbench layout: the live canvas on top, then term-split equations and figures that
+  // update with the model (spec.bench builds them; see references/compose.md).
+  let benchParts = null;
+  if (layout === 'workbench') {
+    const wrap = el('div', { class: 'psim-canvaswrap' }, stage.querySelector('canvas'), stage.querySelector('.psim-hud'), stage.querySelector('.psim-legend'));
+    const eqs = el('div', { class: 'psim-eqs' }), figs = el('div', { class: 'psim-figs' });
+    stage.prepend(el('div', { class: 'psim-bench' }, wrap, eqs, figs));
+    benchParts = { wrap, eqs, figs };
+  }
+  const canvas = stage.querySelector('canvas');
+  const ctx = canvas.getContext('2d');
+  $('.psim-hud .dim').textContent = timeLabel;
+  const hud = { t: $('.psim-hud b'), a: $('.psim-hud .h1'), b: $('.psim-hud .h2'), flag: $('.psim-hud .flag') };
+  if (model.legend) $('.psim-legend').append(...model.legend.map(t => el('span', {}, t)));
+
+  // ------------------------------------------------------------ state
+  const values = Object.fromEntries(params.map(p => [p.key, p.value]));
+  let sim, tDisplay = 0, limited = false;
+  const clock = createClock({ speed: speed0 });
+  const view = { W: 0, H: 0, dpr: 1, color: cssVar, opts: {}, pointer: null };
+
+  let benchApi = null;
+  function rebuild() {
+    sim = create({ ...values });
+    tDisplay = sim.t ?? 0;
+    diagPlot.clear();
+    renderDiag(true);
+    benchApi?.update?.(sim, tDisplay, { rebuilt: true });
+    status.set('params', values);
+  }
+
+  // ------------------------------------------------------------ transport
+  const timeDependent = spec.timeDependent !== false;
+  let tp = null;
+  if (timeDependent) {
+    tp = transport({
+      speed: speed0, speedLabel: s => `${sci(s, 2)} ${timeUnit}/s`,
+      onToggle: () => setPlaying(!clock.playing),
+      onStep: () => { setPlaying(false); sim.step(); tDisplay = sim.t; },
+      onRestart: () => rebuild(),
+      onFit: () => spec.onFit?.(view),
+      onSpeed: s => { clock.speed = s; },
+    });
+    stage.append(tp);
+  } else {
+    stage.querySelector('.psim-hud').querySelector('.dim').textContent = '';
+  }
+  function setPlaying(p) { clock.playing = p; tp?.setPlaying(p); }
+
+  // ------------------------------------------------------------ side panel
+  const secParams = section('Parameters');
+  const paramInputs = new Map();
+  if (params.length) {
+    secParams.body.append(el('p', { class: 'psim-hint' }, 'Changing a parameter recomputes the model from its initial state.'));
+    for (const p of params) {
+      if (p.options) {
+        secParams.body.append(el('div', { class: 'psim-field' }, el('div', { class: 'top' }, el('span', {}, p.label)),
+          select(p.options, p.value, v => { values[p.key] = isNaN(+v) ? v : +v; rebuild(); })));
+      } else {
+        const sl = slider({
+          label: p.label, min: p.min, max: p.max, value: p.value, log: p.log, unit: p.unit ?? '', digits: p.digits ?? 3,
+          integer: p.integer, limits: p.limits,
+          onInput: v => { values[p.key] = v; rebuild(); },
+        });
+        paramInputs.set(p.key, sl);
+        secParams.body.append(sl);
+      }
+      if (p.hint) secParams.body.append(el('p', { class: 'psim-hint', style: 'margin-top:-4px;font-size:11.5px' }, p.hint));
+    }
+  }
+  if (controls) controls(secParams.body, { values, rebuild });
+
+  const secDiag = section('Diagnostics', { aside: 'live' });
+  const diagPlot = logPlot({ caption: '', yMin: 1e-16, yMax: 1 });
+  const diagSeries = diagPlot.addSeries('--accent');
+  const diagRows = new Map();
+  secDiag.body.append(diagPlot.el);
+  let nextPlot = 0;
+  function renderDiag(reset = false) {
+    const d = sim.diagnostics();
+    if (reset) {
+      diagRows.forEach(r => r.remove());
+      diagRows.clear();
+      nextPlot = 0;
+      const firstErr = d.find(x => x.kind === 'error');
+      diagPlot.el.style.display = firstErr ? '' : 'none';
+      diagPlot.el.querySelector('.cap').textContent = firstErr ? `${firstErr.label}   vs   t` : '';
+      if (spec.duration) diagPlot.setXMax(spec.duration);
+    }
+    for (const x of d) {
+      let r = diagRows.get(x.key);
+      if (!r) { r = row(x.label); diagRows.set(x.key, r); secDiag.body.append(r); }
+      const text = x.text ?? (x.kind === 'error' ? sci(x.value) : `${sci(x.value, 4)}${x.unit ? ` ${x.unit}` : ''}`);
+      r.set(text, x.kind === 'error' && x.good != null ? grade(x.value, x.good, x.warn ?? x.good * 1000) : '');
+    }
+    const firstErr = d.find(x => x.kind === 'error');
+    if (firstErr && timeDependent && sim.t >= nextPlot) {
+      diagPlot.push(diagSeries, sim.t, Math.max(firstErr.value, 1e-17));
+      nextPlot = sim.t + (spec.duration ?? 10) / 800;
+    }
+    diagPlot.draw();
+    return d;
+  }
+
+  const secVerify = section('Verification', { aside: report ? 'report embedded' : 'no report' });
+  if (report?.checks) {
+    secVerify.body.append(el('p', { class: 'psim-hint' }, report.summary ?? `Measured when this page was built (${(report.generated ?? '').slice(0, 10)}):`));
+    for (const c of report.checks) {
+      secVerify.body.append(el('div', { class: 'psim-check' },
+        el('i', { class: c.pass !== true ? 'bad' : c.state === 'warn' ? 'warn' : '' }),
+        el('span', {}, c.label), el('code', {}, c.value)));
+    }
+    if (report.notes) for (const n of report.notes) secVerify.body.append(el('p', { class: 'psim-hint' }, n));
+  } else {
+    secVerify.body.append(el('p', { class: 'psim-hint' }, 'No build-time verification report is embedded in this page.'));
+  }
+
+  const secModel = section('Model, assumptions & limits', { open: false });
+  secModel.body.append(
+    el('div', { class: 'psim-prose' }, el('p', {}, el('b', {}, `${trustLabel}. `), tierReason ?? '')),
+    ...(model.equations ?? []).flatMap(eq => [
+      eq.caption ? el('p', { class: 'psim-hint' }, eq.caption) : null,
+      el('div', { class: 'psim-math', html: eq.mathml }),
+    ]),
+    model.assumptions ? el('div', { class: 'psim-prose' }, el('p', {}, el('b', {}, 'Assumptions and limits')), el('ul', {}, model.assumptions.map(a => el('li', {}, a)))) : null,
+    model.conventions ? el('div', { class: 'psim-prose' }, el('p', {}, el('b', {}, 'Visual conventions')), el('ul', {}, model.conventions.map(a => el('li', {}, a)))) : null,
+    model.references ? el('div', { class: 'psim-prose' }, el('p', {}, el('b', {}, 'References')), el('ul', {}, model.references.map(a => el('li', {}, el('cite', {}, a))))) : null,
+  );
+  tierBtn.addEventListener('click', () => { secModel.open = true; secModel.scrollIntoView({ behavior: 'smooth' }); });
+
+  const secExport = section('Export', { open: false });
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  secExport.body.append(el('div', { class: 'psim-btns' },
+    button('State JSON', () => download(`${slug}-state.json`, JSON.stringify({
+      generator: 'p-simtor', title, tier: tierBtn.dataset.tier, params: values, t: sim.t, state: sim.state(), diagnostics: sim.diagnostics(), verification: report,
+    }, null, 2), 'application/json')),
+    button('Data CSV', () => {
+      const r = sim.record?.();
+      if (!r) { toast(stage, 'This model records no tabular data'); return; }
+      download(`${slug}-data.csv`, [`# p-simtor | ${title}`, r.header.join(','), ...r.rows.map(x => x.join(','))].join('\n'), 'text/csv');
+    }),
+    button('PNG image', () => canvas.toBlob(b => el('a', { href: URL.createObjectURL(b), download: `${slug}.png` }).click())),
+  ));
+
+  side.append(...[secParams, secDiag, secVerify, secModel, secExport].filter(s => s !== secParams || params.length || controls));
+  if (spec.extraSections) spec.extraSections(side, { section, el, row, slider, toggle, button, values, rebuild, view });
+
+  // ------------------------------------------------------------ canvas & loop
+  function resize() {
+    view.dpr = devicePixelRatio || 1;
+    view.W = canvas.clientWidth; view.H = canvas.clientHeight;
+    canvas.width = Math.round(view.W * view.dpr); canvas.height = Math.round(view.H * view.dpr);
+  }
+  new ResizeObserver(resize).observe(canvas);
+  resize();
+  if (onPointer) onPointer(canvas, view, () => sim);
+
+  let frames = 0, lastUi = 0;
+  function frame(now) {
+    if (timeDependent) {
+      const target = clock.tick(now, tDisplay);
+      if (target > tDisplay) {
+        const deadline = performance.now() + 9;
+        let k = 0;
+        while (sim.t < target) {
+          sim.step();
+          if ((++k & 63) === 0 && performance.now() > deadline) break;
+        }
+        limited = sim.t < target;
+        tDisplay = Math.min(target, sim.t);
+      }
+    }
+    ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
+    ctx.clearRect(0, 0, view.W, view.H);
+    draw(ctx, sim, view, tDisplay);
+    if (now - lastUi > 100) {
+      lastUi = now;
+      const d = renderDiag();
+      hud.t.textContent = timeDependent ? `${fix(tDisplay, 3)} ${timeUnit}` : '';
+      const firstErr = d.find(x => x.kind === 'error');
+      hud.a.textContent = firstErr ? `${firstErr.label} ${sci(firstErr.value)}` : '';
+      hud.b.textContent = spec.hudLine?.(sim) ?? '';
+      hud.flag.textContent = limited ? 'compute-limited: playback slowed to keep the calculation exact' : '';
+      benchApi?.update?.(sim, tDisplay, { rebuilt: false });
+      status.set('t', timeDependent ? tDisplay : 1);
+      if (firstErr) status.set('drift', firstErr.value);
+    }
+    if (++frames === 1 || frames % 30 === 0) status.set('frames', frames);   // first frame at once: slow pages count as live
+    requestAnimationFrame(frame);
+  }
+
+  window.psim = {
+    model: 'generic',
+    get t() { return tDisplay; },
+    state: () => ({ t: sim.t, ...sim.state() }),
+    params: () => ({ ...values }),
+    advanceTo: t => { while (sim.t < t) sim.step(); tDisplay = Math.max(tDisplay, Math.min(t, sim.t)); return window.psim.state(); },
+    restart: () => rebuild(),
+    steps: n => { if (typeof sim.step === "function") for (let i = 0; i < n; i++) sim.step(); tDisplay = sim.t ?? 0; return window.psim.state(); },
+  };
+
+  if (bench && benchParts) {
+    benchApi = bench({
+      ...benchParts, createPlot, createEquation, createDerivation, M, values,
+      setParam: (k, v) => { values[k] = v; paramInputs.get(k)?.setValue?.(v); rebuild(); },
+      getSim: () => sim,
+    }) ?? null;
+  }
+  rebuild();
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  setPlaying(timeDependent && (query.get('autoplay') ? query.get('autoplay') !== '0' : !reduced));
+  addEventListener('keydown', e => {
+    if (e.target.closest('input, select, textarea') || !timeDependent) return;
+    if (e.code === 'Space') { e.preventDefault(); setPlaying(!clock.playing); }
+    else if (e.key === '.') { setPlaying(false); sim.step(); tDisplay = sim.t; }
+    else if (e.key === 'r' || e.key === 'R') rebuild();
+  });
+  status.set('model', 'generic');
+  status.set('ready', true);
+  requestAnimationFrame(frame);
+  return { values, rebuild, view, get sim() { return sim; } };
+}
+
+return { createInstrument };
+})();
+
+// ---- psim:core/numerics.mjs
+__psim["core/numerics.mjs"] = (() => {
+// General numerical toolkit: random numbers, FFT, ODE solvers, quadrature, root
+// finding, special functions, linear algebra. Pure functions, browser + Node.
+// Every routine is tested against known values in tests/numerics.test.mjs.
+// Import these instead of writing them again in a page.
+
+// ---------------------------------------------------------------- random numbers
+
+/** Seeded PRNG (mulberry32), uniform in [0, 1). Deterministic for a given seed. */
+function rng(seed = 1) {
+  let a = seed >>> 0;
+  const next = () => {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  let spare = null;
+  next.normal = () => {               // standard normal (Box–Muller, cached pair)
+    if (spare != null) { const s = spare; spare = null; return s; }
+    let u = 0; while (u === 0) u = next();
+    const v = next(), r = Math.sqrt(-2 * Math.log(u));
+    spare = r * Math.sin(2 * Math.PI * v);
+    return r * Math.cos(2 * Math.PI * v);
+  };
+  return next;
+}
+
+// ---------------------------------------------------------------- FFT
+
+/** In-place radix-2 complex FFT. re/im: Float64Array, length a power of two.
+ *  Forward: X_k = Σ x_n e^{−2πikn/N}. Inverse (inverse = true) includes the 1/N factor. */
+function fft(re, im, inverse = false) {
+  const n = re.length;
+  if (n & (n - 1)) throw new Error('fft: length must be a power of two');
+  for (let i = 1, j = 0; i < n; i++) {
+    let bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; }
+  }
+  const sign = inverse ? 1 : -1;
+  for (let len = 2; len <= n; len <<= 1) {
+    const ang = sign * 2 * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang);
+    for (let i = 0; i < n; i += len) {
+      let cr = 1, ci = 0;
+      for (let k = 0; k < len / 2; k++) {
+        const a = i + k, b = a + len / 2;
+        const xr = re[b] * cr - im[b] * ci, xi = re[b] * ci + im[b] * cr;
+        re[b] = re[a] - xr; im[b] = im[a] - xi;
+        re[a] += xr; im[a] += xi;
+        const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t;
+      }
+    }
+  }
+  if (inverse) for (let i = 0; i < n; i++) { re[i] /= n; im[i] /= n; }
+}
+
+/** Angular wavenumbers k for an FFT grid of n points with spacing dx (FFT ordering). */
+function fftFreq(n, dx) {
+  const k = new Float64Array(n);
+  for (let i = 0; i < n; i++) k[i] = 2 * Math.PI * (i < n / 2 ? i : i - n) / (n * dx);
+  return k;
+}
+
+// ---------------------------------------------------------------- ODEs
+
+/** Classical RK4 step for y' = f(t, y). y: array; returns new array. */
+function rk4Step(f, t, y, h) {
+  const k1 = f(t, y);
+  const k2 = f(t + h / 2, y.map((v, i) => v + h / 2 * k1[i]));
+  const k3 = f(t + h / 2, y.map((v, i) => v + h / 2 * k2[i]));
+  const k4 = f(t + h, y.map((v, i) => v + h * k3[i]));
+  return y.map((v, i) => v + h / 6 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]));
+}
+
+// Dormand–Prince 5(4) coefficients (Dormand & Prince 1980; Hairer, Nørsett & Wanner, Table 5.2).
+const DP = {
+  c: [0, 1 / 5, 3 / 10, 4 / 5, 8 / 9, 1, 1],
+  a: [[], [1 / 5], [3 / 40, 9 / 40], [44 / 45, -56 / 15, 32 / 9],
+    [19372 / 6561, -25360 / 2187, 64448 / 6561, -212 / 729],
+    [9017 / 3168, -355 / 33, 46732 / 5247, 49 / 176, -5103 / 18656],
+    [35 / 384, 0, 500 / 1113, 125 / 192, -2187 / 6784, 11 / 84]],
+  b: [35 / 384, 0, 500 / 1113, 125 / 192, -2187 / 6784, 11 / 84, 0],
+  e: [71 / 57600, 0, -71 / 16695, 71 / 1920, -17253 / 339200, 22 / 525, -1 / 40],
+};
+
+/** The Dormand–Prince 5(4) tableau (for steppers built on top of dopri5). */
+const DORMAND_PRINCE = DP;
+
+/**
+ * Adaptive Dormand–Prince 5(4) integration of y' = f(t, y) from t0 to t1.
+ * Error control per component: |err_i| <= atol + rtol·max(|y_i|, |y_new_i|).
+ * onStep(t, y) is called after every accepted step (return false to stop early).
+ * Returns { t, y, steps, rejected, stopped }. Throws if tolerance cannot be met or
+ * the step budget is exhausted; stopped is reserved for an intentional onStep stop.
+ */
+function dopri5(f, t0, y0, t1, { rtol = 1e-9, atol = 1e-12, h0, hmax = Infinity, maxSteps = 1e6, onStep } = {}) {
+  if (!Number.isFinite(t0) || !Number.isFinite(t1) || !y0.length || !Array.from(y0).every(Number.isFinite)) throw new Error('dopri5: finite times and a non-empty finite state are required');
+  if (!(Number.isFinite(rtol) && rtol > 0 && Number.isFinite(atol) && atol > 0)) throw new Error('dopri5: tolerances must be finite and positive');
+  if (!(hmax > 0) || (hmax !== Infinity && !Number.isFinite(hmax)) || (h0 != null && !(Number.isFinite(h0) && h0 !== 0))) throw new Error('dopri5: step sizes must be non-zero and finite (hmax may be Infinity)');
+  if (!(Number.isSafeInteger(maxSteps) && maxSteps > 0)) throw new Error('dopri5: maxSteps must be a positive integer');
+  const n = y0.length, dir = Math.sign(t1 - t0) || 1;
+  let t = t0;
+  const y = Float64Array.from(y0);
+  let h = dir * Math.min(Math.abs(h0 ?? (t1 - t0) / 100), hmax);
+  const k = Array.from({ length: 7 }, () => new Float64Array(n));
+  const yt = new Float64Array(n), yn = new Float64Array(n);
+  let steps = 0, rejected = 0, stopped = false;
+  const maxAttempts = 4 * maxSteps;
+  k[0].set(f(t, y));
+  while (dir * (t1 - t) > 0 && steps < maxSteps && steps + rejected < maxAttempts) {
+    if (dir * (t + h - t1) > 0) h = t1 - t;
+    // This checks floating-point progress, not a dimensional time threshold. A
+    // femtosecond step can be perfectly resolvable and still need error control.
+    if (h === 0 || t + h === t) throw new Error(`dopri5: step underflow at t = ${t}; cannot meet tolerance`);
+    for (let s = 1; s < 7; s++) {
+      for (let i = 0; i < n; i++) {
+        let acc = y[i];
+        for (let j = 0; j < s; j++) acc += h * DP.a[s][j] * k[j][i];
+        yt[i] = acc;
+      }
+      k[s].set(f(t + DP.c[s] * h, yt));
+    }
+    let err = 0;
+    for (let i = 0; i < n; i++) {
+      let acc = y[i], e = 0;
+      for (let j = 0; j < 7; j++) { acc += h * DP.b[j] * k[j][i]; e += h * DP.e[j] * k[j][i]; }
+      yn[i] = acc;
+      const sc = atol + rtol * Math.max(Math.abs(y[i]), Math.abs(acc));
+      err = Math.max(err, Math.abs(e) / sc);
+    }
+    if (!Number.isFinite(err)) throw new Error(`dopri5: non-finite derivative or state at t = ${t}`);
+    if (err <= 1) {
+      t += h; y.set(yn); k[0].set(k[6]); steps++;      // FSAL: k7 of this step = k1 of the next
+      if (onStep && onStep(t, y) === false) { stopped = true; break; }
+    } else rejected++;
+    const fac = err === 0 ? 5 : Math.min(5, Math.max(0.2, 0.9 * Math.pow(err, -0.2)));
+    h = dir * Math.min(Math.abs(h * fac), hmax);
+  }
+  if (!stopped && dir * (t1 - t) > 0) throw new Error(`dopri5: step budget exhausted at t = ${t}, before t = ${t1}`);
+  return { t, y, steps, rejected, stopped };
+}
+
+// ---------------------------------------------------------------- quadrature
+
+const GL_CACHE = new Map();
+/** Gauss–Legendre nodes and weights on [−1, 1] (Newton iteration on P_n). */
+function gaussLegendreNodes(n) {
+  if (GL_CACHE.has(n)) return GL_CACHE.get(n);
+  const x = new Float64Array(n), w = new Float64Array(n);
+  for (let i = 0; i < Math.ceil(n / 2); i++) {
+    let z = Math.cos(Math.PI * (i + 0.75) / (n + 0.5)), dp = 0;
+    for (let it = 0; it < 100; it++) {
+      let p0 = 1, p1 = z;
+      for (let k = 2; k <= n; k++) { const p2 = ((2 * k - 1) * z * p1 - (k - 1) * p0) / k; p0 = p1; p1 = p2; }
+      const pn = n === 1 ? z : p1, pm = n === 1 ? 1 : p0;
+      dp = n * (z * pn - pm) / (z * z - 1);
+      const dz = pn / dp;
+      z -= dz;
+      if (Math.abs(dz) < 1e-16) break;
+    }
+    x[i] = -z; x[n - 1 - i] = z;
+    w[i] = w[n - 1 - i] = 2 / ((1 - z * z) * dp * dp);
+  }
+  const out = { x, w };
+  GL_CACHE.set(n, out);
+  return out;
+}
+
+/** ∫_a^b f(x) dx with n-point Gauss–Legendre (exact for polynomials of degree 2n−1). */
+function gaussLegendre(f, a, b, n = 32) {
+  const { x, w } = gaussLegendreNodes(n);
+  const m = (b - a) / 2, c = (a + b) / 2;
+  let s = 0;
+  for (let i = 0; i < n; i++) s += w[i] * f(m * x[i] + c);
+  return s * m;
+}
+
+/** Adaptive Simpson quadrature to absolute tolerance tol. */
+function adaptiveSimpson(f, a, b, tol = 1e-10, maxDepth = 50) {
+  const simpson = (fl, fmid, fr, lo, hi) => (hi - lo) / 6 * (fl + 4 * fmid + fr);
+  const recurse = (lo, hi, fl, fmid, fr, whole, eps, depth) => {
+    const mid = (lo + hi) / 2, lm = (lo + mid) / 2, rm = (mid + hi) / 2;
+    const flm = f(lm), frm = f(rm);
+    const left = simpson(fl, flm, fmid, lo, mid), right = simpson(fmid, frm, fr, mid, hi);
+    if (depth <= 0 || Math.abs(left + right - whole) <= 15 * eps) return left + right + (left + right - whole) / 15;
+    return recurse(lo, mid, fl, flm, fmid, left, eps / 2, depth - 1) + recurse(mid, hi, fmid, frm, fr, right, eps / 2, depth - 1);
+  };
+  const fa = f(a), fb = f(b), fm = f((a + b) / 2);
+  return recurse(a, b, fa, fm, fb, simpson(fa, fm, fb, a, b), tol, maxDepth);
+}
+
+/** ∫_0^∞ f(x) dx via the substitution x = t/(1−t) and Gauss–Legendre panels. */
+function integrateToInfinity(f, { panels = 16, n = 32 } = {}) {
+  const g = t => { const x = t / (1 - t); return f(x) / ((1 - t) * (1 - t)); };
+  let s = 0;
+  for (let p = 0; p < panels; p++) s += gaussLegendre(g, p / panels, (p + 1) / panels, n);   // nodes never hit t = 1
+  return s;
+}
+
+// ---------------------------------------------------------------- roots
+
+/** Brent's method: root of f in [a, b] where f(a)·f(b) < 0. */
+function brent(f, lo, hi, tol = 1e-14, maxIter = 200) {
+  let a = lo, b = hi;                      // b: best estimate; a: previous; c: bracket partner
+  let fa = f(a), fb = f(b);
+  if (fa * fb > 0) throw new Error('brent: root not bracketed');
+  let c = a, fc = fa, d = b - a, e = d;
+  for (let i = 0; i < maxIter; i++) {
+    if (fb * fc > 0) { c = a; fc = fa; d = e = b - a; }
+    if (Math.abs(fc) < Math.abs(fb)) { a = b; b = c; c = a; fa = fb; fb = fc; fc = fa; }
+    const tol1 = 2 * Number.EPSILON * Math.abs(b) + tol / 2, m = (c - b) / 2;
+    if (Math.abs(m) <= tol1 || fb === 0) return b;
+    if (Math.abs(e) >= tol1 && Math.abs(fa) > Math.abs(fb)) {
+      let p, q, r;
+      const s = fb / fa;
+      if (a === c) { p = 2 * m * s; q = 1 - s; }
+      else { q = fa / fc; r = fb / fc; p = s * (2 * m * q * (q - r) - (b - a) * (r - 1)); q = (q - 1) * (r - 1) * (s - 1); }
+      if (p > 0) q = -q; else p = -p;
+      if (2 * p < Math.min(3 * m * q - Math.abs(tol1 * q), Math.abs(e * q))) { e = d; d = p / q; }
+      else { d = m; e = d; }
+    } else { d = m; e = d; }
+    a = b; fa = fb;
+    b += Math.abs(d) > tol1 ? d : (m > 0 ? tol1 : -tol1);
+    fb = f(b);
+  }
+  return b;
+}
+
+// ---------------------------------------------------------------- special functions
+
+const LANCZOS = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313,
+  -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+
+/** ln Γ(x) for x > 0 (Lanczos, g = 7, n = 9; relative error ~1e-15). */
+function lgamma(z) {
+  if (z <= 0 && Number.isInteger(z)) return Infinity;   // poles of Γ
+  if (z < 0.5) return Math.log(Math.PI / Math.abs(Math.sin(Math.PI * z))) - lgamma(1 - z);
+  const x = z - 1;
+  let a = LANCZOS[0];
+  const t = x + 7.5;
+  for (let i = 1; i < 9; i++) a += LANCZOS[i] / (x + i);
+  return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a);
+}
+
+function gamma(x) {
+  if (x <= 0 && Number.isInteger(x)) return NaN;        // poles of Γ
+  if (x < 0.5) return Math.PI / (Math.sin(Math.PI * x) * gamma(1 - x));
+  return Math.exp(lgamma(x));
+}
+
+function factorial(n) {
+  let f = 1;
+  for (let i = 2; i <= n; i++) f *= i;
+  return f;
+}
+
+/** Error function (Abramowitz–Stegun 7.1.26 is too coarse; this uses a series / continued fraction, |err| < 1e-14). */
+function erf(x) {
+  const ax = Math.abs(x);
+  if (ax > 6) return Math.sign(x);                      // erfc(6) ≈ 2e-17 < double precision near 1
+  if (ax < 2.5) {
+    let sum = ax, term = ax;
+    for (let n = 1; n < 100; n++) {
+      term *= -ax * ax / n;
+      const add = term / (2 * n + 1);
+      sum += add;
+      if (Math.abs(add) < 1e-17 * Math.abs(sum)) break;
+    }
+    return Math.sign(x) * 2 / Math.sqrt(Math.PI) * sum;
+  }
+  // erfc continued fraction (Lentz)
+  let f = ax, C = ax, D = 0;
+  for (let n = 1; n < 200; n++) {
+    const an = n / 2;
+    D = ax + an * D; D = 1 / (D === 0 ? 1e-300 : D);
+    C = ax + an / C; if (C === 0) C = 1e-300;
+    const delta = C * D;
+    f *= delta;
+    if (Math.abs(delta - 1) < 1e-16) break;
+  }
+  const erfc = Math.exp(-ax * ax) / Math.sqrt(Math.PI) / f;
+  return Math.sign(x) * (1 - erfc);
+}
+
+/** Modified Bessel function of the first kind I_n(x), integer n ≥ 0 (power series; fine for x ≲ 50). */
+function besselI(n, x) {
+  let term = Math.pow(x / 2, n) / factorial(n), sum = term;
+  for (let k = 1; k < 500; k++) {
+    term *= (x * x / 4) / (k * (k + n));
+    sum += term;
+    if (Math.abs(term) < 1e-17 * Math.abs(sum)) break;
+  }
+  return sum;
+}
+
+/**
+ * Bessel function of the first kind J_n(x), integer n ≥ 0, any real x. Miller's backward
+ * recurrence normalised by J₀ + 2ΣJ₂ₖ = 1: relative accuracy also where J_n is tiny (x ≪ n),
+ * absolute accuracy ~1e-15·√(x) for large x. J_n(−x) = (−1)ⁿJ_n(x).
+ */
+function besselJ(n, x) {
+  if (!(Number.isInteger(n) && n >= 0)) throw new Error('besselJ: order must be an integer ≥ 0');
+  if (!Number.isFinite(x)) return Number.isNaN(x) ? NaN : 0;     // J_n(±∞) = 0
+  if (x < 0) return (n % 2 ? -1 : 1) * besselJ(n, -x);
+  if (x === 0) return n === 0 ? 1 : 0;
+  const top = Math.max(n, x);
+  const m = 2 * Math.ceil((top + 20 + Math.sqrt(60 * top)) / 2);    // even start index well above n and x
+  let jp = 0, j = 1e-300, norm = 0, result = 0;
+  for (let k = m; k > 0; k--) {
+    const jm = (2 * k / x) * j - jp;                                  // J_{k−1} from J_k, J_{k+1}
+    jp = j; j = jm;
+    if (Math.abs(j) > 1e250) { j *= 1e-250; jp *= 1e-250; norm *= 1e-250; result *= 1e-250; }
+    if (k - 1 === n) result = j;
+    if ((k - 1) % 2 === 0 && k - 1 > 0) norm += 2 * j;
+  }
+  return result / (norm + j);
+}
+
+/**
+ * First `count` positive zeros j_{n,1} < j_{n,2} < … of J_n (integer n ≥ 0): bracketed by a scan
+ * finer than the zero spacing (always > π), refined with Brent. Mode frequencies of circular
+ * membranes, waveguides and diffraction minima: ω_{n,s} = c·j_{n,s}/R.
+ */
+function besselJZeros(n, count) {
+  if (!(Number.isInteger(n) && n >= 0 && Number.isInteger(count) && count > 0)) throw new Error('besselJZeros: need integers n ≥ 0, count > 0');
+  const zeros = [], step = 0.5;
+  let a = n === 0 ? 1 : n, fa = besselJ(n, a);                        // j_{n,1} > n for n > 0, j_{0,1} > 2
+  while (zeros.length < count) {
+    const b = a + step, fb = besselJ(n, b);
+    if (fa === 0) zeros.push(a);
+    else if (fa * fb < 0) zeros.push(brent(x => besselJ(n, x), a, b, 1e-15));
+    a = b; fa = fb;
+  }
+  return zeros;
+}
+
+/**
+ * Complete elliptic integral of the first kind K(m) = ∫₀^{π/2} dθ / √(1 − m sin²θ), parameter
+ * m = k² < 1, by the arithmetic–geometric mean: K = π / (2 AGM(1, √(1 − m))).
+ */
+function ellipticK(m) {
+  if (!(m < 1)) return m === 1 ? Infinity : NaN;
+  let a = 1, b = Math.sqrt(1 - m);
+  for (let i = 0; i < 40 && Math.abs(a - b) > 1e-16 * a; i++) [a, b] = [(a + b) / 2, Math.sqrt(a * b)];
+  return Math.PI / (2 * a);
+}
+
+/** Generalised Laguerre polynomial L_n^(α)(x) by three-term recurrence. */
+function laguerre(n, alpha, x) {
+  if (n === 0) return 1;
+  let l0 = 1, l1 = 1 + alpha - x;
+  for (let k = 1; k < n; k++) {
+    const l2 = ((2 * k + 1 + alpha - x) * l1 - (k + alpha) * l0) / (k + 1);
+    l0 = l1; l1 = l2;
+  }
+  return l1;
+}
+
+/** Associated Legendre P_l^m(x), m ≥ 0, with the Condon–Shortley phase (−1)^m. */
+function legendreP(l, m, x) {
+  let pmm = 1;
+  if (m > 0) {
+    const s = Math.sqrt((1 - x) * (1 + x));
+    let fact = 1;
+    for (let i = 1; i <= m; i++) { pmm *= -fact * s; fact += 2; }
+  }
+  if (l === m) return pmm;
+  let pmmp1 = x * (2 * m + 1) * pmm;
+  if (l === m + 1) return pmmp1;
+  let pll = 0;
+  for (let ll = m + 2; ll <= l; ll++) {
+    pll = ((2 * ll - 1) * x * pmmp1 - (ll + m - 1) * pmm) / (ll - m);
+    pmm = pmmp1; pmmp1 = pll;
+  }
+  return pll;
+}
+
+/**
+ * Fully normalised associated Legendre function P̄_l^m(x) = N_lm P_l^m(x) with
+ * N_lm = √((2l+1)/(4π) · (l−m)!/(l+m)!), Condon–Shortley phase included. Uses the standard
+ * stable recurrences (no factorials), so it is accurate for large l and m.
+ */
+function normalizedLegendre(l, m, x) {
+  const s = Math.sqrt(Math.max(0, (1 - x) * (1 + x)));
+  let pmm = 1 / Math.sqrt(4 * Math.PI);
+  for (let i = 1; i <= m; i++) pmm *= -Math.sqrt((2 * i + 1) / (2 * i)) * s;
+  if (l === m) return pmm;
+  let pm1 = x * Math.sqrt(2 * m + 3) * pmm;
+  if (l === m + 1) return pm1;
+  let pl = 0;
+  for (let ll = m + 2; ll <= l; ll++) {
+    const a = Math.sqrt((4 * ll * ll - 1) / (ll * ll - m * m));
+    const b = Math.sqrt(((ll - 1) ** 2 - m * m) / (4 * (ll - 1) ** 2 - 1));
+    pl = a * (x * pm1 - b * pmm);
+    pmm = pm1; pm1 = pl;
+  }
+  return pl;
+}
+
+/**
+ * Real (tesseral) spherical harmonic, orthonormal on the sphere.
+ * m > 0: √2 P̄_l^m cos(mφ); m < 0: √2 P̄_l^|m| sin(|m|φ); m = 0: P̄_l^0.
+ * The Condon–Shortley phase is removed, so p_x ∝ +x, p_y ∝ +y.
+ */
+function realYlm(l, m, theta, phi) {
+  const am = Math.abs(m);
+  const P = normalizedLegendre(l, am, Math.cos(theta)) * (am % 2 ? -1 : 1);
+  if (m === 0) return P;
+  return Math.SQRT2 * P * (m > 0 ? Math.cos(am * phi) : Math.sin(am * phi));
+}
+
+/**
+ * Complex spherical harmonic Y_l^m(θ, φ) with the Condon–Shortley phase (the quantum-mechanics
+ * convention): Y_l^m = P̄_l^|m|(cos θ) e^{imφ} for m ≥ 0 and Y_l^{−m} = (−1)^m conj(Y_l^m).
+ * Orthonormal on the sphere; eigenfunctions of L² and L_z. Returns { re, im }.
+ */
+function complexYlm(l, m, theta, phi) {
+  if (!(Number.isInteger(l) && Number.isInteger(m) && l >= 0 && Math.abs(m) <= l)) throw new Error('complexYlm: need integers l ≥ 0, |m| ≤ l');
+  const am = Math.abs(m), P = normalizedLegendre(l, am, Math.cos(theta));
+  const sign = m < 0 && am % 2 ? -1 : 1;
+  return { re: sign * P * Math.cos(m * phi), im: sign * P * Math.sin(m * phi) };
+}
+
+/**
+ * Radial function R_nl(r) of a hydrogen-like atom (one electron, nuclear charge Z, point nucleus,
+ * non-relativistic), normalised so ∫R²r²dr = 1:
+ *   R_nl = √((2Z/na₀)³ (n−l−1)!/(2n (n+l)!)) e^{−ρ/2} ρ^l L_{n−l−1}^{(2l+1)}(ρ),  ρ = 2Zr/(na₀).
+ * Lengths in units of a₀ unless a0 is given (use the reduced-mass a₀ for exact spectroscopy).
+ */
+function hydrogenRadial(n, l, r, { Z = 1, a0 = 1 } = {}) {
+  if (!(Number.isInteger(n) && Number.isInteger(l) && n >= 1 && l >= 0 && l < n)) throw new Error('hydrogenRadial: need integers n ≥ 1, 0 ≤ l < n');
+  const rho = 2 * Z * r / (n * a0);
+  const lnNorm = 1.5 * Math.log(2 * Z / (n * a0)) + 0.5 * (lgamma(n - l) - lgamma(n + l + 1) - Math.log(2 * n));
+  return Math.exp(lnNorm - rho / 2) * rho ** l * laguerre(n - l - 1, 2 * l + 1, rho);
+}
+
+// ---------------------------------------------------------------- linear algebra
+
+/** Solve a tridiagonal system (Thomas algorithm). a: sub, b: diag, c: super, d: rhs. Works for complex via callers. */
+function solveTridiagonal(a, b, c, d) {
+  const n = b.length, cp = new Float64Array(n), dp = new Float64Array(n), x = new Float64Array(n);
+  cp[0] = c[0] / b[0]; dp[0] = d[0] / b[0];
+  for (let i = 1; i < n; i++) {
+    const m = b[i] - a[i] * cp[i - 1];
+    cp[i] = c[i] / m;
+    dp[i] = (d[i] - a[i] * dp[i - 1]) / m;
+  }
+  x[n - 1] = dp[n - 1];
+  for (let i = n - 2; i >= 0; i--) x[i] = dp[i] - cp[i] * x[i + 1];
+  return x;
+}
+
+/**
+ * All eigenvalues and eigenvectors of a real symmetric tridiagonal matrix (implicit QL with
+ * Wilkinson shifts; Numerical Recipes "tqli"). diag: n diagonal entries; off: n−1 entries
+ * coupling i and i+1. Returns { values, vectors } with vectors[i] the unit eigenvector of
+ * values[i] (unsorted). Cost O(n³) with eigenvectors: fine to n ≈ 500 in a browser.
+ */
+function eigenTridiagonal(diag, off) {
+  const n = diag.length;
+  if (off.length !== n - 1) throw new Error('eigenTridiagonal: off must have n − 1 entries');
+  const d = Float64Array.from(diag), e = new Float64Array(n);
+  e.set(off);
+  const z = new Float64Array(n * n);
+  for (let i = 0; i < n; i++) z[i * n + i] = 1;
+  for (let l = 0; l < n; l++) {
+    let iter = 0, m;
+    do {
+      for (m = l; m < n - 1; m++) {
+        const dd = Math.abs(d[m]) + Math.abs(d[m + 1]);
+        if (Math.abs(e[m]) <= Number.EPSILON * dd) break;
+      }
+      if (m !== l) {
+        if (iter++ === 60) throw new Error('eigenTridiagonal: no convergence');
+        let g = (d[l + 1] - d[l]) / (2 * e[l]);
+        let r = Math.hypot(g, 1);
+        g = d[m] - d[l] + e[l] / (g + (g >= 0 ? r : -r));
+        let s = 1, c = 1, p = 0, i;
+        for (i = m - 1; i >= l; i--) {
+          let f = s * e[i];
+          const b = c * e[i];
+          r = Math.hypot(f, g);
+          e[i + 1] = r;
+          if (r === 0) { d[i + 1] -= p; e[m] = 0; break; }
+          s = f / r; c = g / r;
+          g = d[i + 1] - p;
+          r = (d[i] - g) * s + 2 * c * b;
+          p = s * r;
+          d[i + 1] = g + p;
+          g = c * r - b;
+          for (let k = 0; k < n; k++) {
+            f = z[k * n + i + 1];
+            z[k * n + i + 1] = s * z[k * n + i] + c * f;
+            z[k * n + i] = c * z[k * n + i] - s * f;
+          }
+        }
+        if (r === 0 && i >= l) continue;
+        d[l] -= p; e[l] = g; e[m] = 0;
+      }
+    } while (m !== l);
+  }
+  const vectors = Array.from({ length: n }, (_v, i) => Float64Array.from({ length: n }, (_w, k) => z[k * n + i]));
+  return { values: Array.from(d), vectors };
+}
+
+/** Least-squares fit y ≈ a + b x. Returns { a, b, r2 }. */
+function linearFit(xs, ys) {
+  // two-pass (centred) sums: no cancellation when x has a large offset (e.g. timestamps)
+  const n = xs.length;
+  let mx = 0, my = 0;
+  for (let i = 0; i < n; i++) { mx += xs[i]; my += ys[i]; }
+  mx /= n; my /= n;
+  let sxx = 0, sxy = 0, syy = 0;
+  for (let i = 0; i < n; i++) { const dx = xs[i] - mx, dy = ys[i] - my; sxx += dx * dx; sxy += dx * dy; syy += dy * dy; }
+  const b = sxy / sxx, a = my - b * mx;
+  const r2 = syy === 0 ? 1 : (sxy * sxy) / (sxx * syy);
+  return { a, b, r2 };
+}
+
+/**
+ * Mean and standard error of a correlated series by binning (blocking) analysis. Returns the
+ * largest error over block sizes with ≥ minBins blocks: conservative (≈ 10 % high for
+ * uncorrelated data). Series too short for blocking fall back to the naive standard error.
+ */
+function meanWithError(xs, minBins = 16) {
+  const n = xs.length;
+  const mean = xs.reduce((s, v) => s + v, 0) / n;
+  if (n < minBins) {
+    const v = n > 1 ? xs.reduce((s, x) => s + (x - mean) ** 2, 0) / (n - 1) : NaN;
+    return { mean, error: Math.sqrt(v / n), naive: true };
+  }
+  let best = 0;
+  for (let size = 1; n / size >= minBins; size *= 2) {
+    const nb = Math.floor(n / size), means = [];
+    for (let b = 0; b < nb; b++) { let s = 0; for (let i = 0; i < size; i++) s += xs[b * size + i]; means.push(s / size); }
+    const m = means.reduce((s, v) => s + v, 0) / nb;
+    const v = means.reduce((s, x) => s + (x - m) ** 2, 0) / (nb - 1);
+    best = Math.max(best, Math.sqrt(v / nb));
+  }
+  return { mean, error: best };
+}
+
+return { rng, fft, fftFreq, rk4Step, DORMAND_PRINCE, dopri5, gaussLegendreNodes, gaussLegendre, adaptiveSimpson, integrateToInfinity, brent, lgamma, gamma, factorial, erf, besselI, besselJ, besselJZeros, ellipticK, laguerre, legendreP, normalizedLegendre, realYlm, complexYlm, hydrogenRadial, solveTridiagonal, eigenTridiagonal, linearFit, meanWithError };
+})();
+
+// ---- psim:core/data.mjs
+__psim["core/data.mjs"] = (() => {
+// Working with data, independent of subject: interpolation that does not invent wiggles,
+// histograms with uncertainties, and a goodness-of-fit test against a model distribution.
+
+/**
+ * Interpolate tabulated data (xs strictly increasing). method 'linear' or 'monotone'
+ * (Fritsch–Carlson monotone cubic: no overshoot between data points, so it never invents
+ * maxima that the data do not have). Outside [x₀, x_last] returns NaN unless extrapolate: true
+ * (then linear from the end segment). Returns a function x → y.
+ */
+function interpolate(xs, ys, { method = 'monotone', extrapolate = false } = {}) {
+  const n = xs.length;
+  if (n < 2 || ys.length !== n) throw new Error('interpolate: need ≥ 2 points and equal-length xs, ys');
+  for (let i = 1; i < n; i++) if (!(xs[i] > xs[i - 1])) throw new Error('interpolate: xs must be strictly increasing');
+  const h = Array.from({ length: n - 1 }, (_, i) => xs[i + 1] - xs[i]);
+  const delta = h.map((hi, i) => (ys[i + 1] - ys[i]) / hi);
+  let m = null;
+  if (method === 'monotone') {
+    m = new Float64Array(n);
+    m[0] = delta[0]; m[n - 1] = delta[n - 2];
+    for (let i = 1; i < n - 1; i++) m[i] = delta[i - 1] * delta[i] <= 0 ? 0 : (delta[i - 1] + delta[i]) / 2;
+    for (let i = 0; i < n - 1; i++) {
+      if (delta[i] === 0) { m[i] = 0; m[i + 1] = 0; continue; }
+      const a = m[i] / delta[i], b = m[i + 1] / delta[i], s = a * a + b * b;
+      if (s > 9) { const t = 3 / Math.sqrt(s); m[i] = t * a * delta[i]; m[i + 1] = t * b * delta[i]; }
+    }
+  } else if (method !== 'linear') throw new Error(`interpolate: unknown method "${method}"`);
+  return x => {
+    if (x < xs[0] || x > xs[n - 1]) {
+      if (!extrapolate) return NaN;
+      const i = x < xs[0] ? 0 : n - 2;
+      return ys[i] + delta[i] * (x - xs[i]);
+    }
+    let lo = 0, hi = n - 1;
+    while (hi - lo > 1) { const mid = (lo + hi) >> 1; xs[mid] <= x ? (lo = mid) : (hi = mid); }
+    const t = (x - xs[lo]) / h[lo];
+    if (!m) return ys[lo] + t * (ys[hi] - ys[lo]);
+    const t2 = t * t, t3 = t2 * t;
+    return (2 * t3 - 3 * t2 + 1) * ys[lo] + (t3 - 2 * t2 + t) * h[lo] * m[lo] + (-2 * t3 + 3 * t2) * ys[hi] + (t3 - t2) * h[lo] * m[hi];
+  };
+}
+
+/**
+ * Histogram with Poisson uncertainties, normalised as a probability density if density: true.
+ * Returns { edges, centers, counts, values, errors }.
+ */
+function histogram(samples, { bins = 30, range, density = true } = {}) {
+  const [lo, hi] = range ?? [Math.min(...samples), Math.max(...samples)];
+  if (!(hi > lo)) throw new Error('histogram: empty or degenerate range');
+  const w = (hi - lo) / bins, counts = new Float64Array(bins);
+  let inRange = 0;
+  for (const s of samples) {
+    if (s < lo || s > hi) continue;
+    counts[Math.min(bins - 1, Math.floor((s - lo) / w))]++; inRange++;
+  }
+  const norm = density ? 1 / (samples.length * w) : 1;
+  return {
+    edges: Array.from({ length: bins + 1 }, (_, i) => lo + i * w),
+    centers: Array.from({ length: bins }, (_, i) => lo + (i + 0.5) * w),
+    counts, inRange,
+    values: Array.from(counts, c => c * norm),
+    errors: Array.from(counts, c => Math.sqrt(c) * norm),
+  };
+}
+
+/**
+ * One-sample Kolmogorov–Smirnov test of samples against a model CDF. Returns { D, p }:
+ * D is the largest CDF difference; p the asymptotic probability of a D at least this large if
+ * the samples came from the model (assumes independent samples; thin correlated chains first).
+ */
+function ksTest(samples, cdf) {
+  const s = Float64Array.from(samples).sort(), n = s.length;
+  if (n < 5) throw new Error('ksTest: need at least 5 samples');
+  let D = 0;
+  for (let i = 0; i < n; i++) {
+    const F = cdf(s[i]);
+    D = Math.max(D, Math.abs((i + 1) / n - F), Math.abs(F - i / n));
+  }
+  const l = (Math.sqrt(n) + 0.12 + 0.11 / Math.sqrt(n)) * D;      // Stephens' correction
+  let p = 0;
+  for (let k = 1; k <= 100; k++) p += 2 * (k % 2 ? 1 : -1) * Math.exp(-2 * k * k * l * l);
+  return { D, p: Math.min(1, Math.max(0, p)) };
+}
+
+return { interpolate, histogram, ksTest };
+})();
+
+// ---- local:physics.mjs
+__psim["local:physics.mjs"] = (() => {
+// Two-dimensional Lennard-Jones fluid: classical molecular dynamics in reduced units.
+//
+// Scientific aim: let the user watch how a simple-fluid model behaves across state points
+// (dilute gas, condensing clusters, dense liquid, cold dense packing) and measure its
+// thermodynamic observables: kinetic temperature, virial pressure, energy, the speed
+// distribution and the pair-distribution function g(r).
+//
+// Model (Rahman 1964; Allen & Tildesley, Computer Simulation of Liquids, 2nd ed. 2017, ch. 1, 3, 5):
+//   V_LJ(r) = 4ε[(σ/r)¹² − (σ/r)⁶], used in shifted-force form (Allen & Tildesley §5.2.3;
+//   Toxvaerd & Dyre, J. Chem. Phys. 134, 081102 (2011)):
+//   V(r) = V_LJ(r) − V_LJ(r_c) − (r − r_c) V_LJ'(r_c)  for r < r_c = 2.5σ, 0 beyond.
+//   Both V and the force vanish continuously at r_c. (A plain energy-shifted cutoff leaves a
+//   force jump at r_c; measured here it broke the 2nd-order energy convergence of Verlet.)
+//   m ẍᵢ = −∇ᵢ Σ_{j≠i} V(|xᵢ − xⱼ|)  in a square periodic box (minimum image), 2 dimensions.
+// Reduced units: σ = ε = m = k_B = 1; time τ = σ√(m/ε). For argon's LJ parameters
+// (σ = 3.405 Å, ε/k_B = 119.8 K, m = 39.948 u) τ ≈ 2.15 ps, but this is a 2D model, so the
+// argon mapping is a unit scale only, not a prediction for real argon.
+//
+// State: positions xᵢ ∈ [0, L)², velocities vᵢ (flat Float64Arrays, 2 per particle).
+// Methods: velocity Verlet (NVE, symplectic, 2nd order) or BAOAB Langevin (NVT, Leimkuhler &
+// Matthews 2013) with the heat exchanged with the bath integrated so the energy balance can be
+// checked. Cell lists make the force evaluation O(N).
+// Initial state: square lattice + Gaussian velocities from a seeded RNG, zero total momentum.
+// NVE mode first equilibrates for t_eq = 10 τ with velocity rescaling to T₀ (not physical
+// dynamics, labelled on the page); production NVE dynamics follow, with no rescaling.
+//
+// Observables (computed from the state, never from the renderer):
+//   kinetic temperature  T = 2K / n_dof  (n_dof = 2N − 2 in NVE: total momentum is fixed; 2N in NVT)
+//   virial pressure       P = (N T + ½ Σ_{i<j} 𝐫ᵢⱼ·𝐅ᵢⱼ) / L²      (d = 2)
+//   g(r)                  pair histogram / (ideal-gas pair count in the annulus)
+//   speed histogram       compared with the 2D Maxwell–Boltzmann f(v) = (v/T) e^{−v²/2T}
+// Progress axis: physical time in τ.
+//
+// Toolkit note: core/particles.mjs is all-pairs with open boundaries and
+// core/stochastic.mjs's langevinBAOAB does not report the heat exchanged, so the periodic
+// cell-list force, velocity Verlet and the heat-tracked BAOAB are implemented here.
+const { rng, brent, gaussLegendre, meanWithError } = __psim["core/numerics.mjs"];
+const { ksTest } = __psim["core/data.mjs"];
+const RC = 2.5;
+const RC2 = RC * RC;
+const V_RC = 4 * (RC ** -12 - RC ** -6);           // V(r_c) of the full potential (−0.016316)
+const F_RC = 24 * (2 * RC ** -13 - RC ** -7);      // −V'(r_c) of the full potential (−0.038927)
+const T_EQ = 10;                            // equilibration / warm-up length, τ
+
+/** Shifted-force LJ potential and the scalar force −dV/dr (reduced units): both vanish at r_c. */
+function ljV(r) { return r >= RC ? 0 : 4 * (r ** -12 - r ** -6) - V_RC + (r - RC) * F_RC; }
+function ljF(r) { return r >= RC ? 0 : 24 * (2 * r ** -13 - r ** -7) - F_RC; }
+const ljShift = r => (r >= RC ? 0 : -V_RC + (r - RC) * F_RC);
+const ljRepulsive = r => (r >= RC ? 0 : 4 * r ** -12);
+const ljAttractive = r => (r >= RC ? 0 : -4 * r ** -6);
+
+const PARAMS = [
+  { key: 'N', label: 'Particles N', min: 36, max: 1024, value: 400, integer: true, log: true,
+    hint: 'Cost grows linearly with N (cell lists).' },
+  { key: 'rho', label: 'Number density ρ*', min: 0.05, max: 1.0, value: 0.35, unit: 'σ⁻²', digits: 3,
+    hint: 'Box side L = √(N/ρ). Hexagonal close packing in 2D is ρ* ≈ 1.15.' },
+  { key: 'T0', label: 'Temperature T*', min: 0.05, max: 5, value: 0.4, log: true, unit: 'ε/k_B', digits: 3,
+    hint: 'NVE: target of the equilibration rescaling; afterwards T is measured, not imposed. NVT: bath temperature.' },
+  { key: 'ensemble', label: 'Dynamics', value: 'nve', options: [
+    { value: 'nve', label: 'NVE (velocity Verlet) after 10 τ rescaling' },
+    { value: 'nvt', label: 'NVT Langevin thermostat (BAOAB)' },
+  ] },
+  { key: 'gamma', label: 'Langevin friction γ (NVT only)', min: 0.05, max: 10, value: 1, log: true, unit: 'τ⁻¹', digits: 3 },
+  { key: 'dt', label: 'Time step Δt', min: 0.0005, max: 0.01, value: 0.002, log: true, unit: 'τ', digits: 3,
+    hint: 'Energy fluctuation of velocity Verlet scales as Δt²; 0.002 keeps it ≈ 3×10⁻⁵ in a dense liquid.' },
+  { key: 'seed', label: 'Random seed', min: 1, max: 9999, value: 7, integer: true },
+];
+
+const PRESETS = [
+  { label: 'Dilute hot gas', N: 400, rho: 0.05, T0: 2.0 },
+  { label: 'Cool, condensing', N: 400, rho: 0.35, T0: 0.4 },
+  { label: 'Dense liquid', N: 400, rho: 0.75, T0: 1.0 },
+  { label: 'Dense and cold', N: 400, rho: 0.9, T0: 0.2 },
+];
+
+// ------------------------------------------------------------------ core integrator
+
+/**
+ * A periodic 2D LJ system. x, v: flat arrays (2 per particle), L: box side.
+ * Returns { x, v, F, L, n, U, W (Σ r·F), K(), force(), verlet(dt), baoab(dt, γ, T, rand), heat }.
+ */
+function createSystem({ x, v, L, allPairs = false }) {
+  const n = x.length / 2;
+  if (!(L >= 2 * RC)) throw new Error('box must satisfy L ≥ 2 r_c for the minimum image');
+  const F = new Float64Array(2 * n);
+  const nc = Math.max(1, Math.floor(L / RC)), cs = L / nc;
+  const useCells = nc >= 3 && !allPairs;
+  const head = new Int32Array(nc * nc), next = new Int32Array(n);
+  const half = L / 2;
+  const sys = { x, v, F, L, n, U: 0, W: 0, Urep: 0, Uatt: 0, Ushift: 0, heat: 0, pairs: 0 };
+
+  function pair(i, j) {
+    let dx = x[2 * i] - x[2 * j], dy = x[2 * i + 1] - x[2 * j + 1];
+    if (dx > half) dx -= L; else if (dx < -half) dx += L;
+    if (dy > half) dy -= L; else if (dy < -half) dy += L;
+    const r2 = dx * dx + dy * dy;
+    if (r2 >= RC2) return;
+    const i2 = 1 / r2, s6 = i2 * i2 * i2, s12 = s6 * s6;
+    const r = Math.sqrt(r2);
+    const fr = 24 * (2 * s12 - s6) * i2 - F_RC / r;  // F/r, shifted force
+    F[2 * i] += fr * dx; F[2 * i + 1] += fr * dy;
+    F[2 * j] -= fr * dx; F[2 * j + 1] -= fr * dy;
+    sys.Urep += 4 * s12; sys.Uatt -= 4 * s6; sys.Ushift += (r - RC) * F_RC - V_RC;
+    sys.W += fr * r2;
+    inRange++;
+  }
+  let inRange = 0;
+
+  sys.force = () => {
+    F.fill(0); sys.W = 0; sys.Urep = 0; sys.Uatt = 0; sys.Ushift = 0; inRange = 0;
+    if (!useCells) {
+      for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) pair(i, j);
+    } else {
+      head.fill(-1);
+      for (let i = 0; i < n; i++) {
+        const cx = Math.min(nc - 1, Math.floor(x[2 * i] / cs)), cy = Math.min(nc - 1, Math.floor(x[2 * i + 1] / cs));
+        const c = cx + nc * cy;
+        next[i] = head[c]; head[c] = i;
+      }
+      // Each cell with itself and 4 forward neighbours: every pair visited once.
+      const OFF = [[1, 0], [-1, 1], [0, 1], [1, 1]];
+      for (let cy = 0; cy < nc; cy++) {
+        for (let cx = 0; cx < nc; cx++) {
+          const c = cx + nc * cy;
+          for (let i = head[c]; i >= 0; i = next[i]) for (let j = next[i]; j >= 0; j = next[j]) pair(i, j);
+          for (const [ox, oy] of OFF) {
+            const c2 = ((cx + ox + nc) % nc) + nc * ((cy + oy + nc) % nc);
+            for (let i = head[c]; i >= 0; i = next[i]) for (let j = head[c2]; j >= 0; j = next[j]) pair(i, j);
+          }
+        }
+      }
+    }
+    sys.pairs = inRange;
+    sys.U = sys.Urep + sys.Uatt + sys.Ushift;
+  };
+
+  const wrap = () => {
+    for (let k = 0; k < 2 * n; k++) { const q = x[k]; if (q >= L) x[k] = q - L * Math.floor(q / L); else if (q < 0) x[k] = q - L * Math.floor(q / L); }
+  };
+  sys.K = () => { let s = 0; for (let k = 0; k < 2 * n; k++) s += v[k] * v[k]; return 0.5 * s; };
+
+  sys.verlet = dt => {
+    const h = 0.5 * dt;
+    for (let k = 0; k < 2 * n; k++) { v[k] += h * F[k]; x[k] += dt * v[k]; }
+    wrap(); sys.force();
+    for (let k = 0; k < 2 * n; k++) v[k] += h * F[k];
+  };
+  sys.baoab = (dt, gamma, T, rand) => {
+    const h = 0.5 * dt, c1 = Math.exp(-gamma * dt), c2 = Math.sqrt((1 - c1 * c1) * T);
+    for (let k = 0; k < 2 * n; k++) { v[k] += h * F[k]; x[k] += h * v[k]; }      // B, A
+    const K0 = sys.K();
+    for (let k = 0; k < 2 * n; k++) v[k] = c1 * v[k] + c2 * rand.normal();     // O (exact OU)
+    sys.heat += sys.K() - K0;                                                  // energy from the bath
+    for (let k = 0; k < 2 * n; k++) x[k] += h * v[k];                          // A
+    wrap(); sys.force();
+    for (let k = 0; k < 2 * n; k++) v[k] += h * F[k];                          // B
+  };
+  sys.force();
+  return sys;
+}
+
+/** Square-lattice start with seeded Gaussian velocities at temperature T0, zero momentum. */
+function initialState({ N, rho, T0, seed }) {
+  const L = Math.sqrt(N / rho), cols = Math.ceil(Math.sqrt(N)), a = L / cols;
+  const x = new Float64Array(2 * N), v = new Float64Array(2 * N);
+  for (let i = 0; i < N; i++) { x[2 * i] = (i % cols + 0.5) * a; x[2 * i + 1] = (Math.floor(i / cols) + 0.5) * a; }
+  const rand = rng(seed);
+  for (let k = 0; k < 2 * N; k++) v[k] = rand.normal();
+  removeMomentum(v);
+  rescale(v, T0, 2 * N - 2);
+  return { x, v, L, rand };
+}
+function removeMomentum(v) {
+  const n = v.length / 2; let px = 0, py = 0;
+  for (let i = 0; i < n; i++) { px += v[2 * i]; py += v[2 * i + 1]; }
+  for (let i = 0; i < n; i++) { v[2 * i] -= px / n; v[2 * i + 1] -= py / n; }
+}
+function rescale(v, T, dof) {
+  let s = 0; for (const q of v) s += q * q;
+  const f = Math.sqrt(T * dof / s);
+  for (let k = 0; k < v.length; k++) v[k] *= f;
+}
+
+/** 2D Maxwell–Boltzmann speed density and CDF at temperature T (m = k_B = 1). */
+const mb2d = (s, T) => (s / T) * Math.exp(-s * s / (2 * T));
+const mb2dCdf = (s, T) => 1 - Math.exp(-s * s / (2 * T));
+
+// ------------------------------------------------------------------ the simulation
+
+function createSim(p) {
+  const N = Math.round(p.N), nvt = p.ensemble === 'nvt';
+  const dt = p.dt, T0 = p.T0, gamma = p.gamma;
+  const { x, v, L, rand } = initialState({ N, rho: p.rho, T0, seed: Math.round(p.seed) });
+  const sys = createSystem({ x, v, L });
+  const dof = nvt ? 2 * N : 2 * N - 2;
+  let steps = 0, t = 0;
+  let E0 = null, scale0 = 1, maxErr = 0, sumErr2 = 0, nErr = 0;
+  const rmax = Math.min(L / 2, 5), gBins = 100, gdr = rmax / gBins, gHist = new Float64Array(gBins);
+  let gSamples = 0;
+  const vMax = 4 * Math.sqrt(Math.max(T0, 0.05)) + 0.5, vBins = 40, vHist = new Float64Array(vBins);
+  let vCount = 0;
+  const Ts = [], Ps = [], series = [], rows = [];
+  const gEvery = Math.max(5, Math.round(N * N / 20000));
+  const statEvery = 5;
+
+  const temp = () => 2 * sys.K() / dof;
+  const pressure = () => (N * temp() + 0.5 * sys.W) / (L * L);
+
+  function sampleG() {
+    const half = L / 2, r2max = rmax * rmax;
+    for (let i = 0; i < N; i++) {
+      for (let j = i + 1; j < N; j++) {
+        let dx = x[2 * i] - x[2 * j], dy = x[2 * i + 1] - x[2 * j + 1];
+        if (dx > half) dx -= L; else if (dx < -half) dx += L;
+        if (dy > half) dy -= L; else if (dy < -half) dy += L;
+        const r2 = dx * dx + dy * dy;
+        if (r2 < r2max) gHist[Math.min(gBins - 1, Math.floor(Math.sqrt(r2) / gdr))] += 2;
+      }
+    }
+    gSamples++;
+  }
+
+  function step() {
+    if (nvt) sys.baoab(dt, gamma, T0, rand);
+    else {
+      sys.verlet(dt);
+      if (t + dt < T_EQ - 1e-9 && (steps + 1) % 10 === 0) rescale(v, T0, dof);
+    }
+    steps++; t = steps * dt;
+    const prod = t >= T_EQ - 1e-9;
+    const E = sys.K() + sys.U;
+    if (prod && E0 === null) { E0 = E - sys.heat; scale0 = sys.K() + Math.abs(sys.U); }
+    if (prod) {
+      const err = Math.abs(E - sys.heat - E0) / scale0;
+      if (err > maxErr) maxErr = err;
+      sumErr2 += err * err; nErr++;
+      if (steps % statEvery === 0) {
+        const T = temp(), P = pressure();
+        Ts.push(T); Ps.push(P);
+        for (let i = 0; i < N; i++) {
+          const s = Math.hypot(v[2 * i], v[2 * i + 1]);
+          if (s < vMax) vHist[Math.floor(s / vMax * vBins)]++;
+          vCount++;
+        }
+        if (rows.length < 50000) rows.push([+t.toFixed(6), sys.K() / N, sys.U / N, E / N, T, P]);
+      }
+      if (steps % gEvery === 0) sampleG();
+    }
+    if (steps % 10 === 0) {
+      series.push([t, sys.K() / N, sys.U / N, (sys.K() + sys.U - sys.heat) / N]);
+      if (series.length > 4000) series.splice(0, series.length - 4000);
+    }
+  }
+
+  return {
+    get t() { return t; },
+    params: p, N, L, x, v, dt, sys, nvt, vMax,
+    get production() { return t >= T_EQ - 1e-9; },
+    step,
+    temperature: temp, pressure,
+    energyError: () => (E0 === null ? null : Math.abs(sys.K() + sys.U - sys.heat - E0) / scale0),
+    maxEnergyError: () => maxErr,
+    rmsEnergyError: () => Math.sqrt(sumErr2 / Math.max(1, nErr)),
+    series,
+    speedHistogram() {
+      const w = vMax / vBins;
+      return Array.from(vHist, (c, k) => [(k + 0.5) * w, vCount ? c / (vCount * w) : 0]);
+    },
+    gOfR() {
+      if (!gSamples) return [];
+      const out = [];
+      for (let k = 0; k < gBins; k++) {
+        const r0 = k * gdr, r1 = r0 + gdr, ideal = N * (N - 1) / (L * L) * Math.PI * (r1 * r1 - r0 * r0);
+        out.push([r0 + gdr / 2, gHist[k] / (gSamples * ideal)]);
+      }
+      return out;
+    },
+    stats() {
+      if (Ts.length < 32) return null;
+      return { T: meanWithError(Ts), P: meanWithError(Ps), n: Ts.length };
+    },
+    diagnostics() {
+      const st = this.stats(), err = this.energyError();
+      const d = [{
+        key: 'dE', label: nvt ? '|ΔE − Q_bath| / (K + |U|)' : '|ΔE| / (K + |U|) (NVE)', value: err ?? 0, kind: 'error',
+        good: 1e-4, warn: 1e-3, text: err === null ? (nvt ? 'warming up' : 'equilibrating (rescaling)') : undefined,
+      }];
+      d.push(
+        { key: 'T', label: 'Kinetic temperature T* (now)', value: temp(), kind: 'value' },
+        { key: 'Tm', label: 'Mean T* (production)', value: st?.T.mean ?? 0, kind: 'value', text: st ? `${st.T.mean.toFixed(4)} ± ${st.T.error.toFixed(4)}` : 'collecting after equilibration' },
+        { key: 'Pm', label: 'Mean pressure P* (virial)', value: st?.P.mean ?? 0, kind: 'value', text: st ? `${st.P.mean.toFixed(4)} ± ${st.P.error.toFixed(4)}` : 'collecting after equilibration' },
+        { key: 'u', label: 'Potential energy per particle U/N', value: sys.U / N, kind: 'value', unit: 'ε' },
+        { key: 'L', label: 'Box side L', value: L, kind: 'value', unit: 'σ' },
+        { key: 'steps', label: 'Steps', value: steps, kind: 'value', text: steps.toLocaleString() },
+      );
+      return d;
+    },
+    state: () => ({ N, L, steps, K: sys.K(), U: sys.U, heat: sys.heat, x: Array.from(x, q => +q.toFixed(9)), v: Array.from(v, q => +q.toFixed(9)) }),
+    record: () => ({ header: ['t_tau', 'K_per_N', 'U_per_N', 'E_per_N', 'T_kin', 'P_virial'], rows }),
+  };
+}
+
+// ------------------------------------------------------------------ verification
+
+/** Exact radial period of an LJ dimer (μ = 1/2) released at rest from r1 < r_min. */
+function dimerPeriod(r1) {
+  const E = ljV(r1), rmin = 2 ** (1 / 6);
+  const r2 = brent(r => ljV(r) - E, rmin, RC - 1e-12);
+  const c = (r1 + r2) / 2, h = (r2 - r1) / 2, mu = 0.5;
+  // r = c + h sin θ removes the 1/√ endpoint singularities.
+  const f = th => { const r = c + h * Math.sin(th); return h * Math.cos(th) / Math.sqrt(2 * Math.max(E - ljV(r), 1e-300) / mu); };
+  let I = 0; const K = 16;
+  for (let k = 0; k < K; k++) I += gaussLegendre(f, -Math.PI / 2 + Math.PI * k / K, -Math.PI / 2 + Math.PI * (k + 1) / K, 32);
+  return { T: 2 * I, r2, E };
+}
+
+function runDimer(r1, dt, periods, Tex) {
+  const L = 20, x = Float64Array.from([5, 5, 5 + r1, 5]), v = new Float64Array(4);
+  const sys = createSystem({ x, v, L });
+  const vr = () => v[2] - v[0];
+  let t = 0, prev = vr();
+  const crossings = [];
+  const nSteps = Math.ceil(periods * Tex / dt);
+  for (let s = 0; s < nSteps; s++) {
+    sys.verlet(dt); t += dt;
+    const cur = vr();
+    if (prev < 0 && cur >= 0) crossings.push(t - dt + dt * (-prev) / (cur - prev));   // inner turning point
+    prev = cur;
+  }
+  const T = (crossings.at(-1) - crossings[0]) / (crossings.length - 1);
+  return T;
+}
+
+function nveRun({ N, rho, T0, dt, tProd, seed = 3 }) {
+  const sim = createSim({ N, rho, T0, dt, seed, ensemble: 'nve', gamma: 1 });
+  const nEq = Math.round(T_EQ / dt), nProd = Math.round(tProd / dt);
+  for (let i = 0; i < nEq; i++) sim.step();
+  for (let i = 0; i < nProd; i++) sim.step();
+  return sim;
+}
+
+function verify() {
+  const checks = [], notes = [];
+
+  // 1. Force is the exact derivative of the potential; potential continuous at r_c.
+  let fdErr = 0;
+  for (const r of [0.95, 1.0, 1.1, 1.3, 1.8, 2.3]) {
+    const h = 1e-4, fd = -(8 * (ljV(r + h) - ljV(r - h)) - (ljV(r + 2 * h) - ljV(r - 2 * h))) / (12 * h);
+    fdErr = Math.max(fdErr, Math.abs(fd - ljF(r)) / Math.max(1, Math.abs(ljF(r))));
+  }
+  checks.push({ label: 'Force = −dV/dr (4th-order difference, 6 radii)', value: `max rel. diff ${fdErr.toExponential(2)}`, pass: fdErr < 1e-8 });
+  const minimum = Math.abs(ljF(2 ** (1 / 6)));
+  checks.push({ label: 'Shifted force: F(r_min) = −F_LJ(r_c); V and F → 0 at r_c⁻', value: `ΔF = ${Math.abs(minimum - Math.abs(F_RC)).toExponential(1)}, V = ${ljV(RC - 1e-12).toExponential(1)}, F = ${ljF(RC - 1e-12).toExponential(1)}`, pass: Math.abs(minimum - Math.abs(F_RC)) < 1e-12 && Math.abs(ljV(RC - 1e-12)) < 1e-10 && Math.abs(ljF(RC - 1e-12)) < 1e-10 });
+
+  // 1b. Cell lists find exactly the same interactions as the all-pairs minimum-image sum.
+  {
+    const st = initialState({ N: 300, rho: 0.6, T0: 1, seed: 9 });
+    const r = rng(4);
+    for (let k = 0; k < st.x.length; k++) st.x[k] = (st.x[k] + 0.3 * (r() - 0.5) + st.L) % st.L;
+    const a = createSystem({ x: Float64Array.from(st.x), v: st.v, L: st.L });
+    const b = createSystem({ x: Float64Array.from(st.x), v: st.v, L: st.L, allPairs: true });
+    let dF = 0, Fs = 0;
+    for (let k = 0; k < a.F.length; k++) { dF = Math.max(dF, Math.abs(a.F[k] - b.F[k])); Fs = Math.max(Fs, Math.abs(b.F[k])); }
+    const dU = Math.abs(a.U - b.U) / Math.abs(b.U);
+    checks.push({ label: 'Cell-list forces = all-pairs minimum image (N = 300)', value: `max |ΔF|/max|F| = ${(dF / Fs).toExponential(1)}, |ΔU/U| = ${dU.toExponential(1)}, pairs ${a.pairs} = ${b.pairs}`, pass: dF / Fs < 1e-12 && dU < 1e-12 && a.pairs === b.pairs });
+  }
+
+  // 2. Exact benchmark: radial oscillation period of a bound dimer (quadrature) vs MD.
+  const ex = dimerPeriod(1.05);
+  const Tmd = runDimer(1.05, 0.001, 10, ex.T);
+  const dimErr = Math.abs(Tmd - ex.T) / ex.T;
+  checks.push({ label: 'Dimer oscillation period vs exact quadrature (Δt = 0.001)', value: `T_MD = ${Tmd.toFixed(6)}, T_exact = ${ex.T.toFixed(6)} τ, rel. err ${dimErr.toExponential(2)}`, pass: dimErr < 1e-4 });
+  const Tmd2 = runDimer(1.05, 0.004, 10, ex.T), Tmd3 = runDimer(1.05, 0.002, 10, ex.T);
+  const pDim = Math.log2(Math.abs(Tmd2 - ex.T) / Math.abs(Tmd3 - ex.T));
+  checks.push({ label: 'Dimer period error order (Δt = 0.004 → 0.002)', value: `p = ${pDim.toFixed(2)} (velocity Verlet: 2)`, pass: Math.abs(pDim - 2) < 0.3 });
+
+  // 3. Many-body NVE: energy conservation without drift, momentum, convergence order.
+  const liq = nveRun({ N: 256, rho: 0.7, T0: 1.0, dt: 0.002, tProd: 40 });
+  const eMax = liq.maxEnergyError();
+  checks.push({ label: 'NVE energy, N = 256, ρ* = 0.7, T* ≈ 1, Δt = 0.002 (default), 40 τ (2×10⁴ steps)', value: `max |ΔE|/(K+|U|) = ${eMax.toExponential(2)}`, pass: eMax < 1e-4 });
+  // drift: linear fit of E over the production series
+  const ser = liq.series.filter(r => r[0] >= T_EQ);
+  const n = ser.length, mt = ser.reduce((s, r) => s + r[0], 0) / n, me = ser.reduce((s, r) => s + r[3], 0) / n;
+  let sxy = 0, sxx = 0; for (const r of ser) { sxy += (r[0] - mt) * (r[3] - me); sxx += (r[0] - mt) ** 2; }
+  const drift = Math.abs(sxy / sxx) * 40 / Math.abs(me);
+  checks.push({ label: 'NVE energy drift over 40 τ (linear fit)', value: `${drift.toExponential(2)} of |E|`, pass: drift < 5e-5 });
+  let px = 0, py = 0, ps = 0;
+  for (let i = 0; i < liq.N; i++) { px += liq.v[2 * i]; py += liq.v[2 * i + 1]; ps += Math.hypot(liq.v[2 * i], liq.v[2 * i + 1]); }
+  const pRel = Math.hypot(px, py) / ps;
+  checks.push({ label: 'Total momentum conserved (NVE)', value: `|Σp|/Σ|p| = ${pRel.toExponential(2)}`, pass: pRel < 1e-11 });
+
+  // energy-error amplitude vs Δt, all runs from the same equilibrated state over the same 2 τ
+  const eq = nveRun({ N: 256, rho: 0.7, T0: 1.0, dt: 0.002, tProd: 0 });
+  const amp = dt => {
+    const s = createSystem({ x: Float64Array.from(eq.x), v: Float64Array.from(eq.v), L: eq.L });
+    const E0 = s.K() + s.U, sc = s.K() + Math.abs(s.U);
+    let sum = 0; const steps = Math.round(2 / dt);
+    for (let i = 0; i < steps; i++) { s.verlet(dt); sum += ((s.K() + s.U - E0) / sc) ** 2; }
+    return Math.sqrt(sum / steps);
+  };
+  const a1 = amp(0.004), a2 = amp(0.002), a3 = amp(0.001);
+  const p1 = Math.log2(a1 / a2), p2 = Math.log2(a2 / a3);
+  checks.push({ label: 'RMS energy-error order from one state, Δt = 0.004 / 0.002 / 0.001 (2 τ)', value: `p = ${p1.toFixed(2)}, ${p2.toFixed(2)} (expected 2)`, pass: Math.abs(p1 - 2) < 0.3 && Math.abs(p2 - 2) < 0.3 });
+
+  // 4. Determinism.
+  const d1 = nveRun({ N: 64, rho: 0.5, T0: 1, dt: 0.005, tProd: 1 }).state(), d2 = nveRun({ N: 64, rho: 0.5, T0: 1, dt: 0.005, tProd: 1 }).state();
+  checks.push({ label: 'Deterministic replay (seeded)', value: JSON.stringify(d1) === JSON.stringify(d2) ? 'bit-identical' : 'differs', pass: JSON.stringify(d1) === JSON.stringify(d2) });
+
+  // 5. Speed distribution vs 2D Maxwell–Boltzmann (NVE, thinned snapshots 2 τ apart).
+  {
+    const sim = nveRun({ N: 400, rho: 0.5, T0: 1.5, dt: 0.004, tProd: 0 });
+    const speeds = [];
+    let Tsum = 0;
+    for (let snap = 0; snap < 10; snap++) {
+      for (let i = 0; i < Math.round(2 / 0.004); i++) sim.step();
+      for (let i = 0; i < sim.N; i++) speeds.push(Math.hypot(sim.v[2 * i], sim.v[2 * i + 1]));
+      Tsum += sim.temperature();
+    }
+    const Tm = Tsum / 10;
+    const { D, p } = ksTest(speeds, s => mb2dCdf(s, Tm));
+    checks.push({ label: 'Speeds vs 2D Maxwell–Boltzmann at measured T (KS, NVE)', value: `D = ${D.toFixed(4)}, p = ${p.toFixed(2)}, n = ${speeds.length}, T* = ${Tm.toFixed(3)}`, pass: p > 0.01 });
+  }
+
+  // 6. NVT Langevin: kinetic temperature equals the bath; energy balance with the bath heat.
+  {
+    const sim = createSim({ N: 256, rho: 0.5, T0: 1.0, dt: 0.004, seed: 11, ensemble: 'nvt', gamma: 1 });
+    const steps = Math.round((T_EQ + 60) / 0.004);
+    for (let i = 0; i < steps; i++) sim.step();
+    const st = sim.stats();
+    const dev = Math.abs(st.T.mean - 1.0);
+    checks.push({ label: 'NVT (BAOAB, γ = 1): mean kinetic T* vs bath T* = 1 (60 τ)', value: `${st.T.mean.toFixed(4)} ± ${st.T.error.toFixed(4)}`, pass: dev < 3 * st.T.error + 2e-3 });
+    const bal = sim.maxEnergyError();
+    checks.push({ label: 'NVT energy balance E − Q_bath (60 τ)', value: `max rel. ${bal.toExponential(2)}`, pass: bal < 1e-3 });
+  }
+
+  // 7. Low-density limit: virial pressure vs second virial coefficient of this potential.
+  {
+    const T = 2.0, rho = 0.05;
+    // B₂(T) = −π ∫₀^{r_c} (e^{−V/T} − 1) r dr in 2D (V = 0 beyond r_c).
+    const B2 = -Math.PI * (gaussLegendre(r => (Math.exp(-ljV(r) / T) - 1) * r, 0.4, 1.2, 64) + gaussLegendre(r => (Math.exp(-ljV(r) / T) - 1) * r, 1.2, RC, 64) - 0.4 * 0.4 / 2);
+    const sim = createSim({ N: 400, rho, T0: T, dt: 0.004, seed: 5, ensemble: 'nvt', gamma: 1 });
+    const steps = Math.round((T_EQ + 200) / 0.004);
+    for (let i = 0; i < steps; i++) sim.step();
+    const st = sim.stats();
+    // Z = P/(ρ T_bath); compare Z − 1 with B₂ρ. Next term B₃ρ² is ≲ 10 % of B₂ρ here.
+    const Z1 = st.P.mean / (rho * T) - 1, eZ = st.P.error / (rho * T), pred = B2 * rho;
+    const ok = Math.abs(Z1 - pred) < 3 * eZ + 0.15 * Math.abs(pred);
+    checks.push({ label: 'Low-density pressure: Z − 1 vs B₂ρ (ρ* = 0.05, T* = 2, NVT 200 τ)', value: `Z − 1 = ${Z1.toFixed(4)} ± ${eZ.toFixed(4)}, B₂ρ = ${pred.toFixed(4)}`, pass: ok });
+  }
+
+  notes.push('Scope: numerical accuracy of the stated 2D shifted-force LJ model (r_c = 2.5σ). Its pressure, energy and phase behaviour differ from the full LJ potential and from 3D argon; no comparison with experiment is claimed.');
+  notes.push('NVE runs start with 10 τ of velocity rescaling (equilibration, not physical dynamics); conservation is measured from the end of that phase.');
+  notes.push('Error bars use blocking (meanWithError) on correlated samples. B₃ρ² (not computed) is allowed as a 15 % tolerance on the B₂ρ comparison.');
+  return { summary: 'Force/potential identity, exact dimer period, NVE conservation and order, Maxwell–Boltzmann speeds, Langevin temperature and the second-virial low-density limit.', checks, notes };
+}
+
+return { RC, T_EQ, ljV, ljF, ljShift, ljRepulsive, ljAttractive, PARAMS, PRESETS, createSystem, initialState, mb2d, mb2dCdf, createSim, dimerPeriod, verify };
+})();
+
+// ---- page
+const { createInstrument } = __psim["ui/instrument-app.mjs"];
+const { PARAMS, PRESETS, createSim, T_EQ, RC, mb2d, ljShift } = __psim["local:physics.mjs"];
+// Perceptual sequential map (viridis control points) for particle speed.
+const VIR = [[68, 1, 84], [59, 82, 139], [33, 145, 140], [94, 201, 98], [253, 231, 37]];
+function vir(f) {
+  f = Math.max(0, Math.min(1, f)) * (VIR.length - 1);
+  const i = Math.min(VIR.length - 2, Math.floor(f)), u = f - i, a = VIR[i], b = VIR[i + 1];
+  return `rgb(${a.map((c, k) => Math.round(c + u * (b[k] - c))).join(',')})`;
+}
+const BINS = 24, PALETTE = Array.from({ length: BINS }, (_, k) => vir((k + 0.5) / BINS));
+const vScale = sim => 3 * Math.sqrt(sim.params.T0);   // colour bar top: 3 √(k_B T₀ / m)
+
+function draw(ctx, sim, view) {
+  const { W, H } = view, C = view.color, L = sim.L;
+  const narrow = W < 560;
+  const top = narrow ? 150 : 64, bottom = narrow ? 175 : 70;
+  const side = Math.min(W - 40, H - top - bottom);
+  const s = side / L, ox = (W - side) / 2, oy = top + (H - top - bottom - side) / 2;
+  const rPx = Math.max(1.5, 0.5 * s);   // disc radius σ/2, enlarged to ≥ 1.5 px when tiny (disclosed)
+
+  // Box, with the interaction range drawn as a hairline grid of r_c cells (measuring aid).
+  ctx.fillStyle = C('--grid'); ctx.fillRect(ox, oy, side, side);
+  ctx.strokeStyle = C('--line-strong'); ctx.lineWidth = 1; ctx.strokeRect(ox + 0.5, oy + 0.5, side, side);
+
+  // Particles: draw each disc and its periodic images that overlap the box.
+  ctx.save(); ctx.beginPath(); ctx.rect(ox, oy, side, side); ctx.clip();
+  const x = sim.x, v = sim.v, vs = vScale(sim), edge = 0.5 + rPx / s;
+  const groups = Array.from({ length: BINS }, () => []);
+  for (let i = 0; i < sim.N; i++) {
+    const sp = Math.hypot(v[2 * i], v[2 * i + 1]);
+    groups[Math.min(BINS - 1, Math.floor(sp / vs * BINS))].push(i);
+  }
+  const outline = C('--glow') !== '1';
+  for (let g = 0; g < BINS; g++) {
+    if (!groups[g].length) continue;
+    ctx.fillStyle = PALETTE[g]; ctx.beginPath();
+    for (const i of groups[g]) {
+      const px = x[2 * i], py = x[2 * i + 1];
+      const xs = [px], ys = [py];
+      if (px < edge) xs.push(px + L); else if (px > L - edge) xs.push(px - L);
+      if (py < edge) ys.push(py + L); else if (py > L - edge) ys.push(py - L);
+      for (const a of xs) for (const b of ys) {
+        const X = ox + a * s, Y = oy + (L - b) * s;
+        ctx.moveTo(X + rPx, Y); ctx.arc(X, Y, rPx, 0, 2 * Math.PI);
+      }
+    }
+    ctx.fill();
+    if (outline && rPx > 2.5) { ctx.strokeStyle = 'rgba(20,24,32,0.35)'; ctx.lineWidth = 0.6; ctx.stroke(); }
+  }
+  ctx.restore();
+
+  // Status line above the box: what the clock currently means.
+  ctx.font = '12px ui-sans-serif, system-ui'; ctx.fillStyle = C('--ink-2'); ctx.textAlign = 'center';
+  const phase = !sim.production
+    ? (sim.nvt ? `warm-up (Langevin, statistics start at ${T_EQ} τ)` : `equilibration: velocities rescaled to T* = ${sim.params.T0} until ${T_EQ} τ (not physical dynamics)`)
+    : (sim.nvt ? `NVT production: Langevin bath at T* = ${sim.params.T0}` : 'NVE production: Newtonian dynamics, no thermostat');
+  ctx.fillText(phase, W / 2, oy - 10);
+  ctx.textAlign = 'start';
+
+  // Scale bar (5σ or 10σ) and colour bar below the box.
+  const bar = L > 60 ? 20 : L > 25 ? 10 : 5, by = oy + side + 22;
+  ctx.strokeStyle = C('--muted'); ctx.fillStyle = C('--muted'); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(ox, by - 5); ctx.lineTo(ox, by); ctx.lineTo(ox + bar * s, by); ctx.lineTo(ox + bar * s, by - 5); ctx.stroke();
+  ctx.font = '11px ui-monospace, Menlo, monospace';
+  ctx.fillText(`${bar} σ`, ox, by + 14);
+  const cw = Math.min(180, side * 0.45), cx = ox + side - cw;
+  for (let k = 0; k < 60; k++) { ctx.fillStyle = vir(k / 59); ctx.fillRect(cx + k * cw / 60, by - 8, cw / 60 + 0.6, 8); }
+  ctx.fillStyle = C('--muted'); ctx.textAlign = 'right';
+  ctx.fillText(`speed |v|: 0 → ${vs.toFixed(2)} σ/τ`, cx + cw, by + 14);
+  ctx.textAlign = 'start';
+}
+
+function bench({ eqs, figs, createPlot, createEquation, M, setParam }) {
+  const presetsEl = document.createElement('div');
+  presetsEl.className = 'psim-btns';
+  for (const p of PRESETS) {
+    const b = document.createElement('button');
+    b.className = 'psim-btn'; b.type = 'button'; b.textContent = `${p.label} · ρ* ${p.rho}, T* ${p.T0}`;
+    b.onclick = () => { setParam('N', p.N); setParam('rho', p.rho); setParam('T0', p.T0); };
+    presetsEl.append(b);
+  }
+  eqs.append(presetsEl);
+
+  const speed = createPlot({ title: 'Speed distribution (production samples)', height: 240,
+    x: { label: 'speed |v|', unit: 'σ/τ', min: 0, max: 4 }, y: { label: 'f(v)', unit: 'τ/σ', min: 0, max: 1 } });
+  const gr = createPlot({ title: 'Pair distribution g(r)', height: 240,
+    x: { label: 'r', unit: 'σ', min: 0, max: 5 }, y: { label: 'g(r)', min: 0, max: 3 } });
+  const en = createPlot({ title: 'Energy per particle', height: 240,
+    x: { label: 'time', unit: 'τ', min: 0, max: 20 }, y: { label: 'energy / N', unit: 'ε', min: -3, max: 2 } });
+  figs.append(speed.el, gr.el, en.el);
+
+  let cur = null;
+  const r_ = M.i('r'), sig = M.i('σ'), eps = M.i('ε');
+  const pot = createEquation({
+    title: 'Potential energy, term by term (live sums over interacting pairs, per particle)',
+    lhs: { mathml: `${M.i('U')}<mo>/</mo>${M.i('N')}`, label: 'potential energy per particle', unit: 'ε', value: () => cur && cur.sys.U / cur.N },
+    terms: [
+      { id: 'rep', mathml: `<mn>4</mn>${eps}${M.sup(M.row(M.paren(M.frac(sig, r_))), M.n(12))}`, label: 'Pauli repulsion (r⁻¹² core)', color: '--body-2', unit: 'ε', value: () => cur && cur.sys.Urep / cur.N },
+      { id: 'att', sign: '−', mathml: `<mn>4</mn>${eps}${M.sup(M.row(M.paren(M.frac(sig, r_))), M.n(6))}`, label: 'London dispersion attraction (r⁻⁶)', color: '--body-1', unit: 'ε', value: () => cur && -cur.sys.Uatt / cur.N },
+      { id: 'sh', sign: '+', mathml: `${M.i('Δ')}${M.sub(M.i('V'), M.i('sf'))}${M.paren(r_)}`, label: 'shift so V and F vanish at r_c = 2.5σ', color: '--muted', unit: 'ε', value: () => cur && cur.sys.Ushift / cur.N },
+    ],
+    where: [
+      { mathml: `${M.i('Δ')}${M.sub(M.i('V'), M.i('sf'))}`, meaning: '−V_LJ(r_c) − (r − r_c)V′_LJ(r_c)', value: () => ljShift(1.5), unit: 'ε at r = 1.5σ' },
+      { mathml: M.i('N'), meaning: 'particles', value: () => cur?.N ?? 0 },
+    ],
+  });
+  const press = createEquation({
+    title: 'Virial pressure (2D) and kinetic temperature',
+    lhs: { mathml: M.i('P'), label: 'pressure (instantaneous)', unit: 'ε/σ²', value: () => cur && cur.pressure() },
+    terms: [
+      { id: 'kin', mathml: `${M.i('ρ')}${M.sub(M.i('k'), M.i('B'))}${M.i('T')}`, label: 'ideal-gas (momentum flux)', color: '--body-0', unit: 'ε/σ²', value: () => cur && cur.N * cur.temperature() / cur.L ** 2 },
+      { id: 'vir', sign: '+', mathml: `${M.frac(M.n(1), `<mn>2</mn>${M.sup(M.i('L'), M.n(2))}`)}<munder><mo>∑</mo><mrow>${M.i('i')}<mo>&lt;</mo>${M.i('j')}</mrow></munder>${M.sub(M.vec('r'), M.i('ij'))}<mo>·</mo>${M.sub(M.vec('F'), M.i('ij'))}`, label: 'virial of the pair forces', color: '--body-4', unit: 'ε/σ²', value: () => cur && 0.5 * cur.sys.W / cur.L ** 2 },
+    ],
+    where: [
+      { mathml: `${M.sub(M.i('k'), M.i('B'))}${M.i('T')}`, meaning: '2K / n_dof (n_dof = 2N − 2 in NVE, 2N in NVT)', value: () => cur && cur.temperature(), unit: 'ε' },
+      { mathml: M.i('ρ'), meaning: 'number density N/L²', value: () => cur && cur.N / cur.L ** 2, unit: 'σ⁻²' },
+    ],
+  });
+  eqs.append(pot.el, press.el);
+
+  let lastPlot = 0;
+  return {
+    update(sim, t, { rebuilt }) {
+      cur = sim; pot.update(); press.update();
+      const now = performance.now();
+      if (!rebuilt && now - lastPlot < 400) return;
+      lastPlot = now;
+      const st = sim.stats(), Tm = st ? st.T.mean : sim.temperature();
+      const h = sim.speedHistogram(), vmax = sim.vMax;
+      speed.setX({ min: 0, max: vmax });
+      const peak = mb2d(Math.sqrt(Tm), Tm);
+      speed.setY({ min: 0, max: Math.max(peak, ...h.map(q => q[1])) * 1.15 });
+      speed.data('hist', h, { color: '--body-0', dots: true, label: st ? `MD, ${(st.n * sim.N).toLocaleString()} speeds` : 'collecting after equilibration' });
+      speed.fn('mb', s => mb2d(s, Tm), { color: '--muted', dash: true, label: `2D Maxwell–Boltzmann, T* = ${Tm.toFixed(3)} (measured)` });
+      const g = sim.gOfR();
+      gr.setX({ min: 0, max: Math.min(5, sim.L / 2) });
+      gr.setY({ min: 0, max: Math.max(2, ...g.map(q => q[1])) * 1.1 });
+      gr.data('g', g, { color: '--body-3', label: g.length ? 'g(r), production average' : 'collecting after equilibration' });
+      gr.hline('one', 1, { color: '--muted', label: 'ideal gas' });
+      gr.vline('rc', RC, { color: '--faint', label: 'r_c' });
+      const ser = sim.series;
+      if (ser.length > 1) {
+        const tmax = Math.max(20, ser.at(-1)[0]);
+        let lo = Infinity, hi = -Infinity;
+        for (const r of ser) { lo = Math.min(lo, r[1], r[2], r[3]); hi = Math.max(hi, r[1], r[2], r[3]); }
+        const pad = 0.08 * (hi - lo || 1);
+        en.setX({ min: ser[0][0], max: tmax }).setY({ min: lo - pad, max: hi + pad });
+        en.data('K', ser.map(r => [r[0], r[1]]), { color: '--body-0', label: 'kinetic K/N' });
+        en.data('U', ser.map(r => [r[0], r[2]]), { color: '--body-1', label: 'potential U/N' });
+        en.data('E', ser.map(r => [r[0], r[3]]), { color: '--ink', label: sim.nvt ? '(K + U − Q_bath)/N' : 'total E/N' });
+        en.vline('eq', T_EQ, { color: '--faint', label: sim.nvt ? 'warm-up ends' : 'rescaling ends' });
+      }
+      speed.invalidate(); gr.invalidate(); en.invalidate();
+      speed.draw(); gr.draw(); en.draw();
+    },
+  };
+}
+
+const LJ = `<math display="block"><msub><mi>V</mi><mi>LJ</mi></msub><mo>(</mo><mi>r</mi><mo>)</mo><mo>=</mo><mn>4</mn><mi>ε</mi><mrow><mo>[</mo><msup><mrow><mo>(</mo><mfrac><mi>σ</mi><mi>r</mi></mfrac><mo>)</mo></mrow><mn>12</mn></msup><mo>−</mo><msup><mrow><mo>(</mo><mfrac><mi>σ</mi><mi>r</mi></mfrac><mo>)</mo></mrow><mn>6</mn></msup><mo>]</mo></mrow></math>`;
+const SF = `<math display="block"><mi>V</mi><mo>(</mo><mi>r</mi><mo>)</mo><mo>=</mo><msub><mi>V</mi><mi>LJ</mi></msub><mo>(</mo><mi>r</mi><mo>)</mo><mo>−</mo><msub><mi>V</mi><mi>LJ</mi></msub><mo>(</mo><msub><mi>r</mi><mi>c</mi></msub><mo>)</mo><mo>−</mo><mo>(</mo><mi>r</mi><mo>−</mo><msub><mi>r</mi><mi>c</mi></msub><mo>)</mo><msubsup><mi>V</mi><mi>LJ</mi><mo>′</mo></msubsup><mo>(</mo><msub><mi>r</mi><mi>c</mi></msub><mo>)</mo><mo>,</mo><mspace width="0.6em"/><mi>r</mi><mo>&lt;</mo><msub><mi>r</mi><mi>c</mi></msub><mo>=</mo><mn>2.5</mn><mi>σ</mi></math>`;
+const EOM = `<math display="block"><mi>m</mi><msub><mover><mi>𝐫</mi><mo>¨</mo></mover><mi>i</mi></msub><mo>=</mo><mo>−</mo><munder><mo>∑</mo><mrow><mi>j</mi><mo>≠</mo><mi>i</mi></mrow></munder><msub><mo>∇</mo><mi>i</mi></msub><mi>V</mi><mo>(</mo><mo>|</mo><msub><mi>𝐫</mi><mi>i</mi></msub><mo>−</mo><msub><mi>𝐫</mi><mi>j</mi></msub><mo>|</mo><mo>)</mo><mspace width="0.6em"/><mtext>(NVT adds </mtext><mo>−</mo><mi>γ</mi><mi>m</mi><msub><mi>𝐯</mi><mi>i</mi></msub><mo>+</mo><msqrt><mrow><mn>2</mn><mi>γ</mi><mi>m</mi><msub><mi>k</mi><mi>B</mi></msub><mi>T</mi></mrow></msqrt><msub><mi>𝛈</mi><mi>i</mi></msub><mtext>)</mtext></math>`;
+
+createInstrument({
+  title: 'Lennard-Jones fluid in 2D',
+  subtitle: 'Classical molecular dynamics · shifted-force LJ, r_c = 2.5σ · periodic box · reduced units',
+  tier: 'validated',
+  tierReason: 'Validated scope: the numerical solution of the stated 2D shifted-force Lennard-Jones model (velocity Verlet NVE, BAOAB Langevin NVT). Checked against an exact dimer period, energy and momentum conservation, measured 2nd-order convergence, the Maxwell–Boltzmann speed law and the exact second-virial low-density limit (Verification). It is not a quantitative model of real argon, which is 3D and needs the full potential.',
+  layout: 'workbench',
+  params: PARAMS,
+  create: createSim,
+  draw, bench,
+  timeUnit: 'τ', timeLabel: 'simulated time',
+  speed: 2, duration: 100,
+  hudLine: sim => `T* = ${sim.temperature().toFixed(3)} · P* = ${sim.pressure().toFixed(3)}`,
+  model: {
+    legend: ['disc diameter σ · colour: speed |v| (bar below)', 'periodic box: edge discs reappear opposite'],
+    equations: [
+      { caption: 'Lennard-Jones pair potential (reduced units σ = ε = m = k_B = 1)', mathml: LJ },
+      { caption: 'Shifted-force form used: energy and force both go continuously to zero at r_c', mathml: SF },
+      { caption: 'Equations of motion (minimum-image pair sum in a periodic L × L box)', mathml: EOM },
+    ],
+    assumptions: [
+      'Two-dimensional classical point particles of equal mass with pairwise LJ forces; no quantum effects, no three-body forces.',
+      `Shifted-force cutoff at r_c = 2.5σ (Toxvaerd & Dyre 2011). It shifts pressure, energy and phase boundaries relative to the full potential; reported P*, U/N and g(r) belong to this model.`,
+      `NVE mode: the first ${T_EQ} τ rescale velocities to T₀ every 10 steps (equilibration, not physical dynamics); afterwards pure Newtonian dynamics, so the temperature is measured, not imposed.`,
+      'NVT mode: Langevin bath (BAOAB splitting). The friction γ alters the dynamics (diffusion, relaxation) but not equilibrium averages, apart from an O(Δt²) sampling bias.',
+      'Statistics (histograms, g(r), mean T and P) start after the equilibration phase. Error bars on means use blocking analysis of correlated samples.',
+      'Small periodic boxes have finite-size effects (suppressed long-wavelength fluctuations, artificial periodicity), especially near phase transitions.',
+      'Units: for argon parameters (σ = 3.405 Å, ε/k_B = 119.8 K, m = 39.948 u) τ ≈ 2.15 ps and T* = 1 ≈ 120 K. This only converts units; a 2D system is not real argon.',
+    ],
+    conventions: [
+      'Each disc is a computed particle position; disc diameter = σ (enlarged to at least 3 px when the box is large).',
+      'Colour = instantaneous speed on the viridis scale shown in the colour bar, 0 to 3√(k_B T₀/m).',
+      'Periodic images of particles near the edges are drawn on the opposite side, so a disc may appear split.',
+      'Energy plot: points every 10 steps. The dashed curve in the speed plot is the exact 2D Maxwell–Boltzmann law at the measured mean temperature, not a fit.',
+      'Playback compresses time: the speed control sets simulated τ per wall-clock second; frame rate never changes the step Δt.',
+    ],
+    references: [
+      'J. E. Lennard-Jones, Proc. R. Soc. Lond. A 106, 463 (1924).',
+      'A. Rahman, Phys. Rev. 136, A405 (1964): argon LJ parameters in MD.',
+      'L. Verlet, Phys. Rev. 159, 98 (1967): velocity/position Verlet integration of LJ fluids.',
+      'M. P. Allen & D. J. Tildesley, Computer Simulation of Liquids, 2nd ed. (OUP 2017): cutoffs, cell lists, virial pressure, g(r).',
+      'S. Toxvaerd & J. C. Dyre, J. Chem. Phys. 134, 081102 (2011): shifted-force cutoff.',
+      'B. Leimkuhler & C. Matthews, Appl. Math. Res. Express 2013, 34 (2013): BAOAB Langevin integrator.',
+    ],
+  },
+});
+
+</script>
+</body>
+</html>

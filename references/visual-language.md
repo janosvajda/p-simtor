@@ -6,20 +6,33 @@ p-simtor pages look like **precision instruments**: a dark observatory field (or
 
 - Layout: a large stage (the physics) plus a 372 px control column. On phones it stacks: stage at 64vh, controls below. No horizontal scroll (the `check` command fails on overflow).
 - Header: title, one-line subtitle naming the model and method, **trust-tier badge** (click opens the model panel), theme toggle.
-- HUD (top-left of stage): physical time, the primary error metric, step size. Legend (top-right): units and visual conventions in one or two lines. Scale bar (bottom-left). Transport (bottom-centre).
+- HUD (top-left of stage): the labelled progress coordinate (physical time, sampling or scan), the primary diagnostic and resolution. Legend (top-right): units and visual conventions in one or two lines. Scale bar (bottom-left). Transport (bottom-centre).
 - Colours are CSS tokens (`--ink`, `--muted`, `--accent`, `--body-0…5`, `--grid`, `--glow`). Both themes are first-class: always read colours through `view.color('--token')` so they switch live.
 - Numbers: tabular figures, scientific notation as 2.4×10⁻¹¹ (`sci()`), units always shown.
 
-## Choose the representation from the physics
+## Derive the view from the state and observables
 
-| Phenomenon | Primary visual | Supporting visuals |
+Select a representation after the mathematical specification is established. Similar-looking pictures do not imply similar physics.
+
+| Object being represented | Suitable view | Required interpretation |
 |---|---|---|
-| Trajectories (gravity, charges) | Fading polylines through computed states; luminous point markers | Energy-error plot, phase-space or separation plot |
-| Fields | Field lines (density ∝ strength) or normalised arrows with magnitude colour | Equipotentials, |F| colour map with a colour bar |
-| Probability densities | Volumetric glow or 90% isosurface, phase as hue; point cloud for sampling intuition | Radial distribution P(r) with nodes, energy level |
-| Wavefunctions in 1D | Re/Im or |ψ| with phase hue, \|ψ\|² filled; potential drawn behind | Norm, ⟨x⟩, T/R over time |
-| Many-particle systems | Discs or spheres coloured by speed or species | Live histograms against theory (MB), g(r), T(t) |
-| Potentials and coupling (QCD) | Curves with shaded validity regions; parameter sweep slider | Annotated thresholds with citations |
+| Physical coordinates or trajectories | Computed positions, paths, phase-space plots | Units, coordinate system, projection, marker-size and time scaling |
+| Scalar/vector/tensor field | Labelled scalar maps, arrows, streamlines, components or justified invariants | Quantity, units, component/basis, averaging and scale; arrow geometry must have a defined meaning |
+| Amplitude or probability | Components, phase/magnitude, density maps, samples or level sets | Amplitude versus probability, normalization, sampling meaning and transfer function |
+| Populations or statistical estimates | Distributions, histories, correlations and estimates with error bars | State space, ensemble, estimator, aggregation and sampling uncertainty |
+| Relation or abstract coordinates | Parameter plots, surfaces, diagrams or eigenstate/constraint views | Physical space versus internal/parameter space; evaluated relation versus physical evolution |
+| Observed/fitted data | Data points, uncertainty, fitted/interpolated/extrapolated values labelled separately | Provenance, fitted parameters, validity domain and limits of extrapolation |
+
+For every channel—position, height, colour, size, arrows, opacity and playback—record:
+
+- the state variable, computed observable, dataset or symbolic label it comes from;
+- the mapping, normalization, units and uncertainty/averaging where applicable;
+- whether the geometry depicts physical space, internal coordinates or a diagram;
+- which part is a physical prediction and which part is a representation convention.
+
+Use this mapping to write the adjacent legend and `model.conventions`. Colour might encode a numerical value, phase, categorical identity or a purely symbolic label. Claim optical colour only when it is actually derived from appropriate optical data/calculation. A mathematical charge/category label does not imply a visible pigment; an internal coordinate does not imply a direction in physical space. Disclose basis-dependent components and projected quantities instead of presenting representation choices as measured properties.
+
+Label physical time, sample/sweep number, iteration, parameter scans and static views separately. A computed configuration is not necessarily an instantaneous physical snapshot. Label any conceptual overlay so it cannot borrow the computation's credibility.
 
 ## Craft rules
 
@@ -27,9 +40,9 @@ p-simtor pages look like **precision instruments**: a dark observatory field (or
 - **Glow** (dark theme only, `--glow = 1`): additive radial gradient (≈6× marker radius) plus a solid core plus a small specular highlight. In light theme, use a solid core with a soft halo ring and a hairline outline.
 - **Reference overlays** (analytic solutions) are dashed and muted; computed results are solid and coloured. The eye should see the agreement at once.
 - **Grids**: hairline, two weights (minor / every 5th major), and they fade with zoom. A grid is a measuring device: it must use nice steps (1-2-5).
-- **Motion**: playback speed is set so the main timescale (orbit, gyration, oscillation) takes 2–10 s. Respect `prefers-reduced-motion` (start paused).
+- **Motion**: choose readable playback for the computed dynamics or sampling and disclose its meaning and compression. Respect `prefers-reduced-motion` (start paused).
 - **Typography**: sans for prose, mono for numbers, MathML for equations. No emoji.
-- **Disclosure**: any exaggeration (marker size, log scaling, time compression, symbolic colour) appears in the legend or model panel.
+- **Disclosure**: important conventions and reductions appear beside the view; the model panel contains their detail. Include exaggerated marker size, log scaling, time compression and symbolic colour where used.
 - Restraint: no lens flares, bloom on everything, random particles, or starfields behind physics that has no stars. Every pixel either shows computed physics, a measurement aid, or a disclosed convention.
 
 ## Before delivering, look at the screenshots and ask

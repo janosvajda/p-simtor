@@ -1,6 +1,6 @@
 # Verification
 
-Every page carries evidence for its trust tier. Choose checks that match the mathematics: there is no universal test.
+Every page carries evidence for its trust tier. Derive checks from the chosen equations, observable definitions and scientific claims. The catalogue below gives examples, not a closed list or a universal test suite.
 
 ## Check catalogue
 
@@ -41,6 +41,18 @@ Going further costs tokens without changing any claim. A **differential** measur
 - At very fine timesteps, floating-point noise can dominate refinement ratios. Gravity measures order at an explicitly reported calibration step based on the initial dynamical scales (at most 2000 steps per crossing); conservation and the predictability horizon still use the actual finer production step.
 - When a check fails, fix the model, method or step size. Don't loosen the threshold to make it pass. If a limit is real (chaos, approximation), report it as a limit.
 - Separate the **model's** validity from the **numerics'** accuracy. A perfectly converged softened N-body run is still softened.
+
+## Verification follows the scientific claim
+
+Choose checks after defining the model and observables. Deterministic replay or a finite output is useful engineering evidence, but does not establish physical accuracy. Benchmark against a solution, dataset or independently justified limiting case outside the implementation being checked. Disclose whether a comparison uses measured data, an exact result of the same reduced model, or an empirical fit.
+
+- **Fields/PDEs:** refine spatial resolution and time step independently. Test boundary conditions, conservation or the stated loss/drive balance, and a linear mode or other independent limit. A homogeneous oscillator check alone does not verify spatial propagation.
+- **Monte Carlo:** check equilibration and correlated-sample uncertainty, varying sample length and independent seeds. Study volume and discretisation for claims requiring those limits. Sweeps have no integrator convergence order and do not conserve energy per update; they sample the specified distribution.
+- **Derived observables and estimators:** check the definition, units, normalisation and an independently known limit. Study binning, state truncation, quadrature and sample size separately from dynamics where applicable. Uncertainty must account for dependencies in the input samples. A property of an ensemble does not automatically hold for every sampled frame.
+- **Reduced or fitted models:** verify the calculation within that model and state where it is applicable. A benchmark for one model, state space or estimator cannot validate a different theory or a broader physical claim.
+- **Representation:** verify that visual values match their declared source quantity and mapping. Changing presentation alone must leave the model's state and observables unchanged. A colour, projection or symbolic label is not itself evidence for a physical prediction.
+
+Use uncertainty for noisy observables, not a universal relative-error threshold. If a claimed signal is unresolved, report the missing evidence and withhold that claim rather than force its expected shape. Symbolic colour and illustrative geometry are explanation conventions, not physical verification results.
 
 ## Reporting format for composed models
 

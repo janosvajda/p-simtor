@@ -1,0 +1,2983 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="p-simtor">
+<title>Quantum tunnelling in 2D</title>
+<style>/* psim:ui/instrument.css */
+/* p-simtor instrument shell.
+   A simulation page is a scientific instrument: a large stage for the physics,
+   a quiet control column, and numbers you can trust at a glance.
+   Colours are tokens so every domain view (orbits, fields, densities) can read them. */
+
+:root {
+  --bg: #07090d;
+  --stage: #0a0d13;
+  --panel: #0e1219;
+  --raise: #141923;
+  --line: rgba(196, 214, 255, 0.09);
+  --line-strong: rgba(196, 214, 255, 0.18);
+  --ink: #e6e9ef;
+  --ink-2: #b6bdcb;
+  --muted: #7b8396;
+  --faint: #4a5163;
+  --accent: #8cc8ff;
+  --accent-ink: #06121f;
+  --good: #7fd8a4;
+  --warn: #f2c46d;
+  --bad: #ff7a85;
+  --grid: rgba(150, 175, 230, 0.06);
+  --grid-strong: rgba(150, 175, 230, 0.13);
+  --glow: 1;
+  --body-0: #ffb35c;
+  --body-1: #68c3ff;
+  --body-2: #ff6f9a;
+  --body-3: #9be08a;
+  --body-4: #c49bff;
+  --body-5: #ffe07a;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --sans: ui-sans-serif, -apple-system, "Segoe UI", "Inter", system-ui, sans-serif;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --radius: 10px;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg: #efede7;
+  --stage: #f7f5f0;
+  --panel: #fbfaf7;
+  --raise: #ffffff;
+  --line: rgba(30, 34, 46, 0.09);
+  --line-strong: rgba(30, 34, 46, 0.18);
+  --ink: #171a21;
+  --ink-2: #3a3f4b;
+  --muted: #6b7180;
+  --faint: #a4a8b2;
+  --accent: #1c6fd1;
+  --accent-ink: #ffffff;
+  --good: #23864f;
+  --warn: #a8700f;
+  --bad: #c43b4a;
+  --grid: rgba(30, 40, 70, 0.055);
+  --grid-strong: rgba(30, 40, 70, 0.12);
+  --glow: 0;
+  --body-0: #d4731c;
+  --body-1: #1a78bf;
+  --body-2: #cf2f63;
+  --body-3: #3a8f33;
+  --body-4: #7a48cf;
+  --body-5: #a88600;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 13px/1.45 var(--sans);
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
+
+.psim-app {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 372px;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* ---------- header ---------- */
+.psim-head {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.psim-mark {
+  width: 22px; height: 22px; flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  position: relative;
+}
+.psim-mark::before, .psim-mark::after {
+  content: ""; position: absolute; border-radius: 50%;
+}
+.psim-mark::before { inset: 5px; border: 1px solid var(--accent); transform: scaleX(1.6) rotate(-25deg); opacity: .8; }
+.psim-mark::after { width: 4px; height: 4px; left: 9px; top: 9px; background: var(--ink); }
+.psim-title { min-width: 0; flex: 0 1 auto; }
+.psim-title h1 {
+  margin: 0; font: 600 15px/1.2 var(--sans); letter-spacing: .01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.psim-title p { margin: 2px 0 0; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.psim-head .spacer { flex: 1; }
+
+.psim-tier {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 4px 10px 4px 8px; border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  font: 500 11px/1 var(--sans); letter-spacing: .04em; text-transform: uppercase;
+  color: var(--ink-2); background: transparent; cursor: pointer; white-space: nowrap;
+}
+.psim-tier i { width: 7px; height: 7px; border-radius: 50%; background: var(--good); }
+.psim-tier[data-tier="approximate"] i { background: var(--warn); }
+.psim-tier[data-tier="unverified"] i { background: var(--warn); }
+.psim-tier[data-tier="analytical"] i { background: var(--accent); }
+.psim-tier[data-tier="conceptual"] i { background: var(--muted); }
+
+.psim-iconbtn {
+  width: 32px; height: 32px; display: grid; place-items: center;
+  border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink-2);
+  cursor: pointer;
+}
+.psim-iconbtn:hover { border-color: var(--line-strong); color: var(--ink); }
+.psim-iconbtn svg { width: 16px; height: 16px; }
+
+/* ---------- stage ---------- */
+.psim-stage {
+  position: relative; min-height: 0; overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 92%, var(--accent) 8%) 0%, var(--stage) 60%);
+}
+.psim-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.psim-stage canvas.grab { cursor: grab; }
+.psim-stage canvas.grabbing { cursor: grabbing; }
+.psim-stage canvas.move { cursor: move; }
+
+.psim-hud {
+  position: absolute; left: 16px; top: 14px;
+  display: grid; gap: 2px; pointer-events: none;
+  font: 12px/1.35 var(--mono); color: var(--ink-2);
+}
+.psim-hud b { font-weight: 500; color: var(--ink); font-size: 20px; letter-spacing: -.01em; }
+.psim-hud .dim { color: var(--muted); }
+.psim-hud .flag { color: var(--warn); }
+
+.psim-legend {
+  position: absolute; right: 16px; top: 14px; display: grid; gap: 4px; justify-items: end;
+  font: 11px/1.3 var(--sans); color: var(--muted); pointer-events: none; text-align: right;
+}
+
+.psim-transport {
+  position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 4px;
+  padding: 5px; border-radius: 12px;
+  background: color-mix(in srgb, var(--panel) 86%, transparent);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  max-width: calc(100% - 32px);
+}
+.psim-transport button {
+  height: 32px; min-width: 32px; padding: 0 9px; border-radius: 8px;
+  border: 0; background: transparent; color: var(--ink-2); cursor: pointer;
+  display: inline-grid; place-items: center; font: 500 12px var(--sans);
+}
+.psim-transport button:hover { background: var(--raise); color: var(--ink); }
+.psim-transport button.primary { background: var(--ink); color: var(--bg); width: 40px; }
+.psim-transport svg { width: 15px; height: 15px; }
+.psim-transport .sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
+.psim-transport label { display: flex; align-items: center; gap: 8px; padding: 0 8px; color: var(--muted); font-size: 11px; }
+.psim-transport input[type=range] { width: 110px; }
+.psim-transport output { font: 12px var(--mono); color: var(--ink-2); min-width: 64px; }
+
+.psim-scalebar {
+  position: absolute; left: 16px; bottom: 22px; pointer-events: none;
+  font: 11px var(--mono); color: var(--muted);
+}
+.psim-scalebar span { display: block; height: 6px; border: 1px solid var(--muted); border-top: 0; margin-bottom: 4px; }
+
+/* ---------- side column ---------- */
+.psim-side {
+  min-height: 0; overflow: auto;
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+  scrollbar-width: thin;
+}
+.psim-sec { border-bottom: 1px solid var(--line); }
+.psim-sec > summary {
+  list-style: none; cursor: pointer; user-select: none;
+  display: flex; align-items: center; gap: 8px;
+  padding: 13px 18px;
+  font: 600 11px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+}
+.psim-sec > summary::-webkit-details-marker { display: none; }
+.psim-sec > summary::after {
+  content: ""; margin-left: auto; width: 6px; height: 6px;
+  border-right: 1.5px solid var(--faint); border-bottom: 1.5px solid var(--faint);
+  transform: rotate(-45deg); transition: transform .15s;
+}
+.psim-sec[open] > summary::after { transform: rotate(45deg); }
+.psim-sec > summary .aside { margin-left: auto; text-transform: none; letter-spacing: 0; font: 11px var(--mono); color: var(--faint); }
+.psim-sec > summary .aside + ::after { margin-left: 8px; }
+.psim-body { padding: 2px 18px 16px; display: grid; gap: 10px; }
+
+.psim-row { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 10px; }
+.psim-row .k { color: var(--muted); }
+.psim-row .v { font: 12px var(--mono); color: var(--ink); text-align: right; }
+.psim-row .v.good { color: var(--good); }
+.psim-row .v.warn { color: var(--warn); }
+.psim-row .v.bad { color: var(--bad); }
+
+.psim-field { display: grid; gap: 6px; }
+.psim-field .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.psim-field .top span { color: var(--ink-2); }
+.psim-field .top input[type=number], .psim-num {
+  width: 108px; text-align: right;
+  font: 12px var(--mono); color: var(--ink);
+  background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 2px 6px;
+}
+.psim-field .top input[type=number]:hover, .psim-num:hover { border-color: var(--line); }
+.psim-field .top input[type=number]:focus, .psim-num:focus { outline: none; border-color: var(--accent); }
+.psim-hint { color: var(--muted); font-size: 12px; margin: 0; }
+.psim-limit { color: var(--warn); font: 11px var(--mono); }
+.psim-limit:empty { display: none; }
+.psim-hint b { color: var(--ink-2); font-weight: 500; }
+
+select.psim-select {
+  width: 100%; height: 34px; padding: 0 10px; border-radius: 8px;
+  background: var(--raise); color: var(--ink); border: 1px solid var(--line);
+  font: 13px var(--sans);
+}
+
+input[type=range] {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 18px; background: transparent; margin: 0;
+}
+input[type=range]::-webkit-slider-runnable-track { height: 2px; background: var(--line-strong); border-radius: 2px; }
+input[type=range]::-moz-range-track { height: 2px; background: var(--line-strong); border-radius: 2px; }
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 12px; height: 12px; margin-top: -5px; border-radius: 50%;
+  background: var(--ink); border: 2px solid var(--panel); box-shadow: 0 0 0 1px var(--line-strong);
+}
+input[type=range]::-moz-range-thumb {
+  width: 10px; height: 10px; border-radius: 50%; background: var(--ink); border: 2px solid var(--panel);
+}
+input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 40%, transparent); }
+
+.psim-btn {
+  height: 32px; padding: 0 12px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--line-strong); background: transparent; color: var(--ink);
+  font: 500 12px var(--sans);
+}
+.psim-btn:hover { background: var(--raise); }
+.psim-btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.psim-btn:disabled { opacity: .5; cursor: progress; }
+.psim-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.psim-toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--ink-2); cursor: pointer; }
+.psim-toggle input { appearance: none; -webkit-appearance: none; width: 28px; height: 16px; border-radius: 99px; background: var(--line-strong); position: relative; cursor: pointer; margin: 0; flex: none; transition: background .15s; }
+.psim-toggle input::after { content: ""; position: absolute; left: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--ink); transition: transform .15s; }
+.psim-toggle input:checked { background: var(--accent); }
+.psim-toggle input:checked::after { transform: translateX(12px); background: var(--accent-ink); }
+
+/* body cards */
+.psim-bodycard { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; display: grid; gap: 8px; }
+.psim-bodycard header { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.psim-bodycard header i { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 10px currentColor; }
+.psim-bodycard header .m { margin-left: auto; font: 12px var(--mono); color: var(--muted); font-weight: 400; }
+.psim-vec { display: grid; grid-template-columns: 22px repeat(3, minmax(0, 1fr)); gap: 4px; align-items: center; }
+.psim-vec span { color: var(--muted); font: 11px var(--mono); }
+.psim-vec input { width: 100%; min-width: 0; text-align: right; font: 11.5px var(--mono); color: var(--ink); background: var(--raise); border: 1px solid var(--line); border-radius: 6px; padding: 4px 5px; }
+.psim-vec input:focus { outline: none; border-color: var(--accent); }
+
+/* plots */
+.psim-plot { position: relative; height: 112px; border-radius: 8px; background: color-mix(in srgb, var(--stage) 70%, transparent); border: 1px solid var(--line); }
+.psim-plot canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.psim-plot .cap { position: absolute; left: 8px; top: 6px; font: 10.5px var(--mono); color: var(--muted); pointer-events: none; }
+
+/* model / maths */
+.psim-math { overflow-x: auto; padding: 10px 12px; border-radius: 8px; background: color-mix(in srgb, var(--stage) 60%, transparent); border: 1px solid var(--line); }
+.psim-math math { font-size: 15px; color: var(--ink); }
+.psim-prose { color: var(--ink-2); font-size: 12.5px; }
+.psim-prose p { margin: 0 0 8px; }
+.psim-prose ul { margin: 0; padding-left: 18px; }
+.psim-prose li { margin: 3px 0; }
+.psim-prose cite { font-style: normal; color: var(--muted); }
+
+.psim-check { display: grid; grid-template-columns: 16px 1fr; column-gap: 8px; row-gap: 2px; align-items: baseline; }
+.psim-check code { grid-column: 2; overflow-wrap: anywhere; }
+.psim-check i { width: 8px; height: 8px; border-radius: 50%; background: var(--good); transform: translateY(-1px); }
+.psim-check i.warn { background: var(--warn); }
+.psim-check i.bad { background: var(--bad); }
+.psim-check span { color: var(--ink-2); }
+.psim-check code { font: 11.5px var(--mono); color: var(--ink); }
+
+.psim-toast {
+  position: absolute; left: 50%; top: 16px; transform: translate(-50%, -8px); opacity: 0;
+  padding: 8px 12px; border-radius: 8px; background: var(--ink); color: var(--bg); font-size: 12px;
+  transition: opacity .2s, transform .2s; pointer-events: none;
+}
+.psim-toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (max-width: 860px) {
+  .psim-app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 64vh auto; height: auto; }
+  .psim-head { gap: 10px; }
+  .psim-title { flex: 1; }
+  .psim-tier { padding: 6px; }
+  .psim-tier span { display: none; }
+  .psim-side { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+  .psim-head { padding: 10px 16px; }
+  .psim-title p { display: none; }
+  .psim-transport label.speed { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+
+/* ---------- figures (ui/plot.mjs) ---------- */
+.psim-figure { margin: 0; display: grid; gap: 6px; min-width: 0; }
+.psim-plot-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.psim-plot-head .t { font: 600 12px/1.3 var(--sans); color: var(--ink-2); }
+.psim-plot-head .l { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.psim-plot-head .k { display: inline-flex; align-items: center; gap: 6px; font: 11px var(--sans); color: var(--muted); cursor: default; }
+.psim-plot-head .k.on { color: var(--ink); }
+.psim-plot-head .k i { width: 12px; height: 2.5px; border-radius: 2px; }
+.psim-plot2 { position: relative; border-radius: 10px; background: color-mix(in srgb, var(--stage) 75%, transparent); border: 1px solid var(--line); }
+.psim-plot2 canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* ---------- equations split into terms (ui/equation.mjs) ---------- */
+.psim-equation { display: grid; gap: 10px; }
+.psim-equation h3, .psim-derivation h3 { margin: 0; font: 600 11px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.psim-eqrow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 6px; }
+.psim-eqrow .op { align-self: center; font: 20px var(--serif); color: var(--muted); padding: 0 2px; }
+.psim-term {
+  display: grid; grid-template-rows: auto 3px auto auto; justify-items: center; align-content: start; gap: 5px;
+  padding: 10px 12px 9px; border-radius: 10px; min-width: 88px;
+  background: color-mix(in srgb, var(--stage) 70%, transparent); border: 1px solid var(--line);
+  transition: opacity .15s, border-color .15s; outline: none;
+}
+.psim-term[data-id]:not([data-id=""]) { cursor: default; }
+.psim-term:hover, .psim-term:focus-visible { border-color: var(--line-strong); }
+.psim-term.dim { opacity: .35; }
+.psim-term.lhs { background: transparent; border-style: dashed; }
+.psim-term .mx { font-size: 19px; line-height: 1.2; color: var(--ink); min-height: 30px; display: grid; place-items: center; }
+.psim-term .mx math { font-size: 19px; }
+.psim-term .bar { width: 100%; height: 3px; border-radius: 2px; background: var(--line); }
+.psim-term .lb { font: 11px/1.25 var(--sans); color: var(--muted); text-align: center; max-width: 150px; }
+.psim-term .v { font: 12px var(--mono); color: var(--ink-2); white-space: nowrap; }
+.psim-where { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: baseline; padding: 8px 12px; border-left: 2px solid var(--line-strong); }
+.psim-where .kw { grid-column: 1 / -1; font: italic 12px var(--serif); color: var(--muted); }
+.psim-where .w { display: contents; }
+.psim-where .mx math { font-size: 15px; color: var(--ink); }
+.psim-where .mean { color: var(--ink-2); font-size: 12.5px; }
+.psim-where .v { font: 12px var(--mono); color: var(--ink); text-align: right; }
+.psim-derivation ol { margin: 8px 0 0; padding: 0; list-style: none; counter-reset: step; display: grid; gap: 8px; }
+.psim-derivation li { counter-increment: step; display: grid; grid-template-columns: 22px 1fr; column-gap: 8px; align-items: center; }
+.psim-derivation li::before { content: counter(step); grid-row: span 2; align-self: start; margin-top: 8px; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--line-strong); font: 10.5px/18px var(--mono); text-align: center; color: var(--muted); }
+.psim-derivation .mx { overflow-x: auto; padding: 4px 0; }
+.psim-derivation .mx math { font-size: 17px; color: var(--ink); }
+.psim-derivation .why { font-size: 12px; color: var(--muted); }
+
+/* ---------- workbench layout: stage + figures + equations (instrument-app layout: 'workbench') ---------- */
+.psim-app.workbench .psim-stage { overflow: auto; background: var(--stage); }
+.psim-bench { position: relative; display: grid; gap: 18px; padding: 18px 18px 84px; min-height: 100%; }
+.psim-bench .psim-canvaswrap { position: relative; height: clamp(300px, 52vh, 620px); border-radius: 12px; overflow: hidden; border: 1px solid var(--line);
+  background: radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 90%, var(--accent) 10%) 0%, var(--stage) 65%); }
+.psim-bench .psim-canvaswrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+.psim-bench .psim-figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+.psim-bench .psim-eqs { display: grid; gap: 18px; }
+.psim-app.workbench .psim-transport { position: fixed; left: calc((100vw - 372px) / 2); }
+.psim-app.workbench .psim-hud { left: 30px; top: 30px; }
+.psim-app.workbench .psim-legend { right: 30px; top: 30px; }
+@media (max-width: 860px) {
+  .psim-app.workbench .psim-transport { left: 50%; }
+  .psim-bench { padding: 12px 12px 84px; }
+}
+
+@media (max-width: 860px) {
+  /* phones: legend bottom-right, clear of HUD (top-left), scale bars (bottom-left) and transport */
+  .psim-legend { top: auto; bottom: 70px; left: auto; right: 14px; max-width: 58%; justify-items: end; text-align: right; font-size: 10.5px; }
+  .psim-app.workbench { grid-template-rows: auto auto auto; }
+  .psim-app.workbench .psim-stage { overflow: visible; }
+  .psim-app.workbench .psim-transport { position: absolute; }
+  .psim-app.workbench .psim-legend { top: auto; bottom: 14px; left: auto; right: 26px; }
+  .psim-bench .psim-canvaswrap { height: 70vh; }
+}
+</style>
+</head>
+<body>
+<script type="application/json" id="psim-verification">{
+ "summary": "Split-operator 2D Schrödinger solver checked against the exact square-barrier transmission averaged over the packet momenta, free-packet motion, norm, separability, and dt/dx refinement.",
+ "checks": [
+  {
+   "label": "Closed-form T(E) vs RK4 shooting of the stationary equation (6 cases incl. E > V₀ and 8mV₀w²/ħ² < 1)",
+   "value": "max rel. diff 2.1e-9",
+   "pass": true
+  },
+  {
+   "label": "Free 2D packet (V₀ = 0) after 200 fs: centre ⟨x⟩ = x₀ + ħk_x t/m",
+   "value": "|Δ⟨x⟩| = 1.2e-12 nm",
+   "pass": true
+  },
+  {
+   "label": "Free packet width σ(t) = √(σ₀² + (ħt/2mσ₀)²)",
+   "value": "rel. err 2.1e-13",
+   "pass": true
+  },
+  {
+   "label": "Norm conserved (unitary): 2D run of 765 steps on 512×128 cells, round-off budget 1e-14 per step",
+   "value": "|ΔN| = 6.1e-12 (8.0e-15 per step)",
+   "pass": true
+  },
+  {
+   "label": "Default case (E₀ = 100, V₀ = 150 meV, a = 1.5 nm, θ = 20°): T measured vs exact T̄ = 0.12768",
+   "value": "T = 0.12755, Δ 0.100 %",
+   "pass": true
+  },
+  {
+   "label": "⟨H⟩ after the collision (Strang splitting: bounded, not exact)",
+   "value": "rel. change 8.6e-10",
+   "pass": true
+  },
+  {
+   "label": "Only normal energy tunnels: θ = 20° vs θ = 0° at E₀cos²θ = 88.30 meV",
+   "value": "|ΔT| = 3.1e-14",
+   "pass": true
+  },
+  {
+   "label": "Deep tunnelling (E₀ = 60, V₀ = 300 meV, a = 2 nm): T vs exact T̄ = 0.00002230",
+   "value": "T = 0.00002226, Δ 0.191 %",
+   "pass": true
+  },
+  {
+   "label": "Over-barrier reflection (E₀ = 250, V₀ = 150 meV, a = 1 nm): T vs exact T̄ = 0.9400",
+   "value": "T = 0.9381, Δ 0.208 %",
+   "pass": true
+  },
+  {
+   "label": "Thick barrier (E₀ = 120, V₀ = 160 meV, a = 4 nm): T vs exact T̄ = 0.03278",
+   "value": "T = 0.03277, Δ 0.030 %",
+   "pass": true
+  },
+  {
+   "label": "Narrowest, fastest (E₀ = 300, V₀ = 400 meV, a = 1 nm, σ₀ = 5 nm): T vs exact T̄ = 0.2533",
+   "value": "T = 0.2525, Δ 0.310 %",
+   "pass": true
+  },
+  {
+   "label": "Time-step order (Strang splitting, dt = 1 → 0.125 fs)",
+   "value": "p = 2.00, |T(dt) − T(dt/2)| = 1.3e-4",
+   "pass": true
+  },
+  {
+   "label": "Grid refinement dx = 0.5 → 0.125 nm",
+   "value": "T = 0.195634 → 0.195636 → 0.195636; exact 0.195805",
+   "pass": true
+  }
+ ],
+ "notes": [
+  "At θ = 20° the packet transmits T̄ = 0.1277; the same packet at normal incidence (E_x = 100 meV) would transmit 0.1958.",
+  "Time-step errors at the production dt = 0.5 fs: 1.3e-4 in T; dt/2 vs dt/4: 3.2e-5.",
+  "The exact benchmark T̄ assumes an infinite domain and infinite time; the box is periodic and T is read at t_sep. Remaining differences come from the time step and the finite measurement time (slow momentum tail).",
+  "A sharp-edged rectangular barrier was tried first: on this spectral grid it converged only to first order in dx (6–26 % off at dx = 0.5 nm), so the smooth sech² barrier with an exact T(E) is used instead.",
+  "Model scope: one free electron in vacuum-like conditions (free-electron mass), static ideal rectangular barrier; no spin, image-charge, many-body or phonon effects."
+ ],
+ "generated": "2026-10-14T08:07:54.578Z",
+ "runtimeMs": 16149
+}</script>
+<script type="module">
+const __psim = {};
+// ---- psim:ui/instrument.mjs
+__psim["ui/instrument.mjs"] = (() => {
+// Reusable instrument UI: DOM helpers, controls, log-scale plots, the simulation
+// clock, number formatting, theme handling and data export.
+// Domain-agnostic: orbit, field and density views all build on these pieces.
+
+function el(tag, attrs = {}, ...children) {
+  const node = document.createElementNS(
+    tag === 'svg' || attrs.xmlns === 'svg' ? 'http://www.w3.org/2000/svg' : 'http://www.w3.org/1999/xhtml', tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false || k === 'xmlns') continue;
+    if (k.startsWith('on') && typeof v === 'function') node.addEventListener(k.slice(2), v);
+    else if (k === 'class') node.className = v;
+    else if (k === 'html') node.innerHTML = v;
+    else if (k in node && typeof v !== 'string') node[k] = v;
+    else node.setAttribute(k, v === true ? '' : v);
+  }
+  for (const c of children.flat()) if (c != null && c !== false) node.append(c.nodeType ? c : document.createTextNode(String(c)));
+  return node;
+}
+
+const ICONS = {
+  play: '<svg viewBox="0 0 16 16"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg>',
+  pause: '<svg viewBox="0 0 16 16"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg>',
+  step: '<svg viewBox="0 0 16 16"><path d="M3 2.5v11l7-5.5zM11 2.5h2v11h-2z" fill="currentColor"/></svg>',
+  restart: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8a5 5 0 1 0 1.6-3.7"/><path d="M3 2.5v3h3"/></svg>',
+  fit: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg>',
+  sun: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6L13 13M3 13l1.4-1.4M11.6 4.4L13 3"/></svg>',
+  moon: '<svg viewBox="0 0 16 16"><path d="M13.5 10A6 6 0 0 1 6 2.5a6 6 0 1 0 7.5 7.5z" fill="currentColor"/></svg>',
+  info: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 7v4.5M8 4.6v.1"/></svg>',
+};
+
+// ---------- formatting ----------
+
+const SUP = { '-': '⁻', 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹' };
+
+/** 2.44e-11 -> "2.4×10⁻¹¹". */
+function sci(x, digits = 2) {
+  if (x == null || Number.isNaN(x)) return '—';
+  if (x === 0) return '0';
+  if (!Number.isFinite(x)) return x > 0 ? '∞' : '−∞';
+  const e = Math.floor(Math.log10(Math.abs(x)));
+  if (e >= -2 && e < 4) return fix(x, Math.max(0, digits - 1 - e));
+  const m = x / Math.pow(10, e);
+  return `${m.toFixed(digits - 1)}×10${String(e).split('').map(c => SUP[c]).join('')}`;
+}
+
+function fix(x, d = 3) {
+  if (x == null || Number.isNaN(x)) return '—';
+  return x.toFixed(d).replace('-', '−');
+}
+
+/** Classify a relative error against thresholds -> 'good' | 'warn' | 'bad'. */
+function grade(x, good, warn) {
+  if (!(x <= warn)) return 'bad';
+  return x <= good ? 'good' : 'warn';
+}
+
+// ---------- theme ----------
+
+function initTheme(toggleButton) {
+  const root = document.documentElement;
+  let stored = null;
+  try { stored = localStorage.getItem('psim-theme'); } catch { /* storage unavailable */ }
+  const query = new URLSearchParams(location.search).get('theme');
+  const sys = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  const apply = t => {
+    root.dataset.theme = t;
+    if (toggleButton) toggleButton.innerHTML = t === 'dark' ? ICONS.sun : ICONS.moon;
+    if (toggleButton) toggleButton.title = t === 'dark' ? 'Light theme' : 'Dark theme';
+    root.dispatchEvent(new CustomEvent('psim-theme', { detail: t }));
+  };
+  apply(query || stored || root.dataset.theme || sys);
+  toggleButton?.addEventListener('click', () => {
+    const t = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    try { localStorage.setItem('psim-theme', t); } catch { /* ignore */ }
+    apply(t);
+  });
+}
+
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+// ---------- layout pieces ----------
+
+function section(title, { open = true, aside } = {}) {
+  const body = el('div', { class: 'psim-body' });
+  const asideEl = aside != null ? el('span', { class: 'aside' }, aside) : null;
+  const sec = el('details', { class: 'psim-sec', open }, el('summary', {}, title, asideEl), body);
+  sec.body = body;
+  sec.aside = asideEl;
+  return sec;
+}
+
+function row(label, value = '—', cls = '') {
+  const v = el('span', { class: `v ${cls}` }, value);
+  const r = el('div', { class: 'psim-row' }, el('span', { class: 'k' }, label), v);
+  r.set = (text, c) => { v.textContent = text; v.className = `v ${c ?? ''}`; };
+  return r;
+}
+
+/** Value for a numeric input: short, exact enough, scientific notation for small or huge numbers. */
+const inputValue = v => {
+  const a = Math.abs(v);
+  return a !== 0 && (a < 1e-3 || a >= 1e7) ? v.toExponential(4) : String(+Number(v).toPrecision(6));
+};
+
+/**
+ * Slider + exact numeric entry, linear or logarithmic. onInput receives the number.
+ * Typed values are clamped to `limits` (default: the slider's [min, max]) and rounded when
+ * `integer` is set, so a typo like 100000000 can never freeze the page. Pass wider `limits`
+ * when a quantity may legitimately exceed the slider's range.
+ */
+function slider({ label, min, max, step = 'any', value, log = false, unit = '', digits = 3, integer = false, limits = [min, max], onInput }) {
+  const toS = v => log ? Math.log10(v) : v;
+  const fromS = s => log ? Math.pow(10, s) : s;
+  const [lo, hi] = limits;
+  const tidy = v => {
+    const c = Math.min(hi, Math.max(lo, v));
+    return integer ? Math.round(c) : c;
+  };
+  const range = el('input', { type: 'range', min: toS(min), max: toS(max), step: log ? 'any' : step, value: toS(value), 'aria-label': label });
+  const num = el('input', { type: 'number', step: integer ? 1 : 'any', min: lo, max: hi, value: inputValue(value), 'aria-label': `${label} value` });
+  const unitEl = unit ? el('span', { style: 'color:var(--muted);font:11px var(--mono)' }, unit) : null;
+  const note = el('span', { class: 'psim-limit', role: 'status' });
+  const field = el('label', { class: 'psim-field' },
+    el('div', { class: 'top' }, el('span', {}, label), el('div', { style: 'display:flex;align-items:baseline;gap:4px' }, num, unitEl)),
+    range, note);
+  range.addEventListener('input', () => {
+    const v = tidy(+(+fromS(+range.value)).toPrecision(digits + 1));
+    num.value = inputValue(v);
+    note.textContent = '';
+    onInput?.(v);
+  });
+  num.addEventListener('change', () => {
+    const raw = +num.value;
+    if (!Number.isFinite(raw)) { num.value = inputValue(tidy(fromS(+range.value))); return; }
+    const v = tidy(raw);
+    note.textContent = v !== raw ? `limited to ${inputValue(v)} (allowed ${inputValue(lo)}–${inputValue(hi)})` : '';
+    num.value = inputValue(v);
+    range.value = toS(v);
+    onInput?.(v);
+  });
+  field.setValue = v => { range.value = toS(v); num.value = inputValue(v); };
+  return field;
+}
+
+function toggle(label, checked, onChange) {
+  const input = el('input', { type: 'checkbox', checked });
+  input.addEventListener('change', () => onChange(input.checked));
+  const t = el('label', { class: 'psim-toggle' }, el('span', {}, label), input);
+  t.input = input;
+  return t;
+}
+
+function select(options, value, onChange) {
+  const s = el('select', { class: 'psim-select' },
+    options.map(o => el('option', { value: o.value, selected: o.value === value }, o.label)));
+  s.addEventListener('change', () => onChange(s.value));
+  return s;
+}
+
+function button(label, onClick, cls = '') {
+  return el('button', { class: `psim-btn ${cls}`, type: 'button', onclick: onClick }, label);
+}
+
+function toast(stage, text) {
+  let t = stage.querySelector('.psim-toast');
+  if (!t) { t = el('div', { class: 'psim-toast', role: 'status' }); stage.append(t); }
+  t.textContent = text;
+  t.classList.add('on');
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove('on'), 1800);
+}
+
+// ---------- transport ----------
+
+function transport({ onToggle, onStep, onRestart, onFit, speed, speedLabel, onSpeed }) {
+  const play = el('button', { class: 'primary', title: 'Play / pause (Space)', 'aria-label': 'Play or pause', html: ICONS.play, onclick: onToggle });
+  const out = el('output', {}, speedLabel(speed));
+  const range = el('input', { type: 'range', min: -2, max: 2, step: 'any', value: Math.log10(speed), 'aria-label': 'Playback speed' });
+  range.addEventListener('input', () => { const s = Math.pow(10, +range.value); out.textContent = speedLabel(s); onSpeed(s); });
+  const bar = el('div', { class: 'psim-transport' },
+    el('button', { title: 'Restart from initial conditions (R)', 'aria-label': 'Restart', html: ICONS.restart, onclick: onRestart }),
+    play,
+    el('button', { title: 'Advance one integrator step (.)', 'aria-label': 'Step', html: ICONS.step, onclick: onStep }),
+    el('span', { class: 'sep' }),
+    el('label', { class: 'speed' }, 'speed', range, out),
+    el('span', { class: 'sep' }),
+    el('button', { title: 'Fit view to bodies (F)', 'aria-label': 'Fit view', html: ICONS.fit, onclick: onFit }));
+  bar.setPlaying = p => { play.innerHTML = p ? ICONS.pause : ICONS.play; };
+  return bar;
+}
+
+/**
+ * Simulation clock. Converts wall-clock frames into a target *physical* time.
+ * The integrator then advances to that target with its own step sequence, so
+ * the physics never depends on frame rate. Long frames (background tabs) are capped.
+ */
+function createClock({ speed = 1 } = {}) {
+  return {
+    speed, playing: false, last: null,
+    tick(now, t) {
+      if (this.last == null || !this.playing) { this.last = now; return t; }
+      const dt = Math.min(0.1, (now - this.last) / 1000);
+      this.last = now;
+      return t + dt * this.speed;
+    },
+  };
+}
+
+// ---------- plots ----------
+
+/**
+ * Lightweight log-y line plot for diagnostics (energy error, separations).
+ * series: [{ color: cssVarName, data: [[x, y], ...] }]
+ */
+function logPlot({ caption, yMin = 1e-16, yMax = 1, height = 112 }) {
+  const canvas = el('canvas');
+  const box = el('div', { class: 'psim-plot', style: `height:${height}px` }, canvas, el('span', { class: 'cap' }, caption));
+  const series = [];
+  let xMax = 1, dirty = true, refLines = [];
+  const ctx = canvas.getContext('2d');
+  const plot = {
+    el: box,
+    addSeries(color, opts = {}) { const s = { color, data: [], ...opts }; series.push(s); return s; },
+    push(s, x, y) { s.data.push([x, y]); if (s.data.length > 4000) decimate(s); xMax = Math.max(xMax, x); dirty = true; },
+    clear() { for (const s of series) s.data.length = 0; xMax = 1; dirty = true; },
+    setXMax(x) { xMax = x; dirty = true; },
+    setRefLines(lines) { refLines = lines; dirty = true; },
+    invalidate() { dirty = true; },
+    draw() {
+      if (!dirty) return;
+      dirty = false;
+      const dpr = devicePixelRatio || 1;
+      const w = box.clientWidth, h = box.clientHeight;
+      if (!w) return;
+      if (canvas.width !== Math.round(w * dpr)) { canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      const l0 = Math.log10(yMin), l1 = Math.log10(yMax);
+      const pad = { l: 34, r: 8, t: 20, b: 14 };
+      const X = x => pad.l + (x / xMax) * (w - pad.l - pad.r);
+      const Y = y => {
+        const ly = Math.min(l1, Math.max(l0, Math.log10(Math.max(y, 1e-300))));
+        return pad.t + (1 - (ly - l0) / (l1 - l0)) * (h - pad.t - pad.b);
+      };
+      ctx.font = '9.5px ui-monospace, Menlo, monospace';
+      ctx.fillStyle = cssVar('--faint');
+      ctx.strokeStyle = cssVar('--grid-strong');
+      ctx.lineWidth = 1;
+      const stepDec = Math.max(1, Math.round((l1 - l0) / 4));
+      for (let e = Math.ceil(l0); e <= l1; e += stepDec) {
+        const y = Math.round(Y(Math.pow(10, e))) + 0.5;
+        ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+        ctx.fillText(`1e${e}`, 2, y + 3);
+      }
+      for (const r of refLines) {
+        ctx.setLineDash([3, 3]); ctx.strokeStyle = cssVar(r.color);
+        const y = Y(r.y); ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      for (const s of series) {
+        if (!s.data.length) continue;
+        ctx.strokeStyle = cssVar(s.color);
+        ctx.lineWidth = s.width ?? 1.4;
+        ctx.globalAlpha = s.alpha ?? 1;
+        ctx.beginPath();
+        s.data.forEach(([x, y], i) => i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)));
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+    },
+  };
+  new ResizeObserver(() => { dirty = true; plot.draw(); }).observe(box);
+  document.documentElement.addEventListener('psim-theme', () => { dirty = true; plot.draw(); });
+  return plot;
+}
+
+function decimate(s) {
+  // Keep the envelope: max of each pair (errors are what matter, so keep the worse one).
+  const out = [];
+  for (let i = 0; i < s.data.length; i += 2) {
+    const a = s.data[i], b = s.data[i + 1];
+    out.push(!b || a[1] >= b[1] ? a : b);
+  }
+  s.data = out;
+}
+
+// ---------- export ----------
+
+function download(filename, text, mime = 'text/plain') {
+  const url = URL.createObjectURL(new Blob([text], { type: mime }));
+  const a = el('a', { href: url, download: filename });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function readJsonScript(id) {
+  const node = document.getElementById(id);
+  if (!node) return null;
+  const text = node.textContent.trim();
+  return text ? JSON.parse(text) : null;
+}
+
+/**
+ * Status beacon read by scripts/psim.mjs check (headless Chrome).
+ * Pages set fields on it; it is mirrored into <html data-psim-*> attributes.
+ */
+function beacon() {
+  const root = document.documentElement;
+  const errors = [];
+  addEventListener('error', e => { errors.push(String(e.message)); root.dataset.psimErrors = JSON.stringify(errors); });
+  addEventListener('unhandledrejection', e => { errors.push(String(e.reason)); root.dataset.psimErrors = JSON.stringify(errors); });
+  root.dataset.psimErrors = '[]';
+  return {
+    set(key, value) { root.dataset[`psim${key[0].toUpperCase()}${key.slice(1)}`] = typeof value === 'string' ? value : JSON.stringify(value); },
+  };
+}
+
+return { el, ICONS, sci, fix, grade, initTheme, cssVar, section, row, inputValue, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon };
+})();
+
+// ---- psim:ui/plot.mjs
+__psim["ui/plot.mjs"] = (() => {
+// Scientific 2D plot: linear or log axes with 1-2-5 ticks, function and data
+// series, shaded validity bands, reference lines, markers, a draggable cursor,
+// and highlighting linked to equation terms. Theme-aware (reads CSS tokens).
+//
+//   const p = createPlot({ title: 'Spectral radiance', x: { label: 'λ', unit: 'nm', min: 100, max: 3000 },
+//                          y: { label: 'B_λ', unit: 'W sr⁻¹ m⁻³', log: false } });
+//   p.fn('planck', λ => B(λ, T), { color: '--body-0', label: 'T = 5772 K' });
+//   p.vline(λmax, { label: 'λ_max' });  p.draw();
+const { el, cssVar, sci } = __psim["ui/instrument.mjs"];
+function niceTicks(min, max, target = 5) {
+  const span = max - min;
+  if (!(span > 0)) return [min];
+  const raw = span / target, e = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / e;
+  const step = (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * e;
+  const out = [];
+  for (let v = Math.ceil(min / step) * step; v <= max + step * 1e-9; v += step) out.push(Math.abs(v) < step * 1e-9 ? 0 : v);
+  return out;
+}
+
+const SUPS = { '-': '⁻', 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹' };
+/** Powers of ten on log axes read as 10ⁿ. */
+function fmtPow10(v) {
+  const e = Math.round(Math.log10(v));
+  if (e >= 0 && e <= 3) return String(10 ** e);
+  return `10${String(e).split('').map(ch => SUPS[ch]).join('')}`;
+}
+
+function fmtTick(v) {
+  const a = Math.abs(v);
+  if (a !== 0 && (a < 1e-3 || a >= 1e5)) return sci(v, 2);
+  return String(+v.toPrecision(6)).replace('-', '−');
+}
+
+function createPlot({ title = '', x = {}, y = {}, height = 220, legend = true, onCursor } = {}) {
+  const canvas = el('canvas');
+  const head = el('div', { class: 'psim-plot-head' }, el('span', { class: 't' }, title), el('span', { class: 'l' }));
+  const box = el('div', { class: 'psim-plot2', style: `height:${height}px` }, canvas);
+  const root = el('figure', { class: 'psim-figure' }, head, box);
+  const ctx = canvas.getContext('2d');
+  const items = new Map();
+  let order = [], focus = null, cursor = null, dirty = true;
+  const ax = { x: { min: 0, max: 1, log: false, ...x }, y: { min: 0, max: 1, log: false, auto: y.min == null || y.max == null, ...y } };
+  const pad = { l: 60, r: 14, t: 10, b: 34 };
+  let W = 0, H = 0;
+
+  const tr = (a, v) => a.log ? Math.log10(v) : v;
+  const X = v => pad.l + (tr(ax.x, v) - tr(ax.x, ax.x.min)) / (tr(ax.x, ax.x.max) - tr(ax.x, ax.x.min)) * (W - pad.l - pad.r);
+  const Y = v => H - pad.b - (tr(ax.y, v) - tr(ax.y, ax.y.min)) / (tr(ax.y, ax.y.max) - tr(ax.y, ax.y.min)) * (H - pad.t - pad.b);
+  const invX = px => {
+    const f = (px - pad.l) / (W - pad.l - pad.r);
+    const v = tr(ax.x, ax.x.min) + f * (tr(ax.x, ax.x.max) - tr(ax.x, ax.x.min));
+    return ax.x.log ? Math.pow(10, v) : v;
+  };
+
+  const add = (id, item) => { if (!items.has(id)) order.push(id); items.set(id, item); dirty = true; return api; };
+
+  const api = {
+    el: root,
+    /** Plot a function y = f(x), sampled per pixel column. */
+    fn(id, f, opts = {}) { return add(id, { kind: 'fn', f, ...opts }); },
+    /** Plot data points [[x, y], ...] as a line (or dots with { dots: true }). */
+    data(id, pts, opts = {}) { return add(id, { kind: 'data', pts, ...opts }); },
+    /** Shaded x-range, e.g. where a formula is invalid. */
+    band(id, x0, x1, opts = {}) { return add(id, { kind: 'band', x0, x1, ...opts }); },
+    hline(id, yv, opts = {}) { return add(id, { kind: 'hline', y: yv, ...opts }); },
+    vline(id, xv, opts = {}) { return add(id, { kind: 'vline', x: xv, ...opts }); },
+    marker(id, xv, yv, opts = {}) { return add(id, { kind: 'marker', x: xv, y: yv, ...opts }); },
+    remove(id) { items.delete(id); order = order.filter(o => o !== id); dirty = true; return api; },
+    setX(o) { Object.assign(ax.x, o); dirty = true; return api; },
+    setY(o) { Object.assign(ax.y, o); dirty = true; return api; },
+    /** Highlight one series (dims the others); null clears. Used by equation terms. */
+    highlight(id) { focus = id; dirty = true; api.draw(); },
+    /** Show a draggable vertical cursor at x; drag calls onCursor(x). */
+    cursor(xv) { cursor = xv; dirty = true; return api; },
+    invalidate() { dirty = true; },
+    draw,
+  };
+
+  function autoY() {
+    let lo = Infinity, hi = -Infinity;
+    for (const it of items.values()) {
+      if (it.kind === 'fn' && !it.ignoreScale) {
+        for (let i = 0; i <= 200; i++) {
+          const xv = ax.x.log ? Math.pow(10, Math.log10(ax.x.min) + i / 200 * (Math.log10(ax.x.max) - Math.log10(ax.x.min))) : ax.x.min + i / 200 * (ax.x.max - ax.x.min);
+          const v = it.f(xv);
+          if (Number.isFinite(v) && (!ax.y.log || v > 0)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+        }
+      } else if (it.kind === 'data' && !it.ignoreScale) {
+        for (const [, v] of it.pts) if (Number.isFinite(v) && (!ax.y.log || v > 0)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+      }
+    }
+    if (!Number.isFinite(lo)) return;
+    if (ax.y.log) { ax.y.min = Math.pow(10, Math.floor(Math.log10(lo))); ax.y.max = Math.pow(10, Math.ceil(Math.log10(hi))); }
+    else {
+      const span = hi - lo || Math.abs(hi) || 1;
+      ax.y.min = ax.y.zero !== false && lo >= 0 ? 0 : lo - 0.06 * span;
+      ax.y.max = hi + 0.08 * span;
+    }
+  }
+
+  function draw() {
+    if (!dirty) return;
+    dirty = false;
+    const dpr = devicePixelRatio || 1;
+    W = box.clientWidth; H = box.clientHeight;
+    if (!W) return;
+    if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) { canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr); }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    if (ax.y.auto) autoY();
+    const C = cssVar;
+    ctx.font = '10.5px ui-monospace, Menlo, monospace';
+
+    const labelBoxes = [];                              // band and vertical-line labels placed this frame
+    // bands (behind everything)
+    for (const id of order) {
+      const it = items.get(id);
+      if (it.kind !== 'band') continue;
+      const x0 = Math.max(pad.l, X(it.x0)), x1 = Math.min(W - pad.r, X(it.x1));
+      ctx.fillStyle = C(it.color ?? '--grid-strong');
+      ctx.globalAlpha = it.alpha ?? 0.5;
+      ctx.fillRect(x0, pad.t, x1 - x0, H - pad.t - pad.b);
+      ctx.globalAlpha = 1;
+      if (it.label) { ctx.fillStyle = C('--muted'); ctx.fillText(it.label, x0 + 6, pad.t + 12); labelBoxes.push({ x: x0 + 6, w: ctx.measureText(it.label).width, y: pad.t + 12 }); }
+    }
+
+    // grid + ticks
+    ctx.strokeStyle = C('--grid'); ctx.fillStyle = C('--faint'); ctx.lineWidth = 1;
+    const xt = ax.x.log ? logTicks(ax.x.min, ax.x.max) : niceTicks(ax.x.min, ax.x.max, Math.max(3, Math.floor(W / 90)));
+    const yt = ax.y.log ? logTicks(ax.y.min, ax.y.max) : niceTicks(ax.y.min, ax.y.max, Math.max(3, Math.floor(H / 45)));
+    ctx.textAlign = 'center';
+    for (const v of xt) { const px = Math.round(X(v)) + 0.5; ctx.beginPath(); ctx.moveTo(px, pad.t); ctx.lineTo(px, H - pad.b); ctx.stroke(); ctx.fillText(ax.x.log ? fmtPow10(v) : fmtTick(v), px, H - pad.b + 14); }
+    ctx.textAlign = 'right';
+    for (const v of yt) { const py = Math.round(Y(v)) + 0.5; ctx.beginPath(); ctx.moveTo(pad.l, py); ctx.lineTo(W - pad.r, py); ctx.stroke(); ctx.fillText(ax.y.log ? fmtPow10(v) : fmtTick(v), pad.l - 6, py + 3.5); }
+    ctx.textAlign = 'start';
+    ctx.strokeStyle = C('--line-strong');
+    ctx.beginPath(); ctx.moveTo(pad.l + 0.5, pad.t); ctx.lineTo(pad.l + 0.5, H - pad.b + 0.5); ctx.lineTo(W - pad.r, H - pad.b + 0.5); ctx.stroke();
+    // axis labels
+    ctx.fillStyle = C('--muted'); ctx.font = '11px ui-sans-serif, -apple-system, system-ui, sans-serif';
+    const xl = `${ax.x.label ?? ''}${ax.x.unit ? ` (${ax.x.unit})` : ''}`;
+    ctx.textAlign = 'right'; ctx.fillText(xl, W - pad.r, H - 4); ctx.textAlign = 'start';
+    const yl = `${ax.y.label ?? ''}${ax.y.unit ? ` (${ax.y.unit})` : ''}`;
+    ctx.save(); ctx.translate(11, pad.t); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'right'; ctx.fillText(yl, 0, 0); ctx.restore();
+
+    // clip to plot area
+    ctx.save();
+    ctx.beginPath(); ctx.rect(pad.l, pad.t - 2, W - pad.l - pad.r, H - pad.t - pad.b + 4); ctx.clip();
+    const legendItems = [];
+    for (const id of order) {
+      const it = items.get(id);
+      const dim = focus && focus !== id && it.kind !== 'band' ? 0.18 : 1;
+      const col = C(it.color ?? '--accent');
+      ctx.globalAlpha = dim * (it.alpha ?? 1);
+      ctx.strokeStyle = col; ctx.fillStyle = col;
+      ctx.lineWidth = (it.width ?? 1.8) * (focus === id ? 1.6 : 1);
+      ctx.setLineDash(it.dash ? [5, 4] : it.dot ? [1.5, 3.5] : []);
+      if (it.kind === 'fn') {
+        ctx.beginPath();
+        let pen = false;
+        const n = Math.max(2, Math.round((W - pad.l - pad.r) * (it.oversample ?? 1)));
+        for (let i = 0; i <= n; i++) {
+          const px = pad.l + i / n * (W - pad.l - pad.r);
+          const v = it.f(invX(px));
+          if (!Number.isFinite(v) || (ax.y.log && v <= 0)) { pen = false; continue; }
+          const py = Y(v);
+          pen ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+          pen = true;
+        }
+        ctx.stroke();
+        if (it.fill) { ctx.globalAlpha = 0.12 * dim; ctx.lineTo(W - pad.r, Y(Math.max(ax.y.min, 0))); ctx.lineTo(pad.l, Y(Math.max(ax.y.min, 0))); ctx.fill(); }
+      } else if (it.kind === 'data') {
+        if (it.dots) {
+          const shown = ([a, b]) => Number.isFinite(a) && Number.isFinite(b) && (!ax.y.log || b > 0) && (!ax.x.log || a > 0);
+          for (const p of it.pts) { if (!shown(p)) continue; ctx.beginPath(); ctx.arc(X(p[0]), Y(p[1]), it.r ?? 2.4, 0, 7); ctx.fill(); }
+          if (it.errors) {for (let i = 0; i < it.pts.length; i++) {
+            const [a, b] = it.pts[i], e = Math.abs(it.errors[i]);
+            if (!shown(it.pts[i]) || !Number.isFinite(e)) continue;
+            // On a log axis a bar reaching zero or below has no finite end: run it to the axis floor.
+            const lo = ax.y.log && b - e <= ax.y.min ? ax.y.min : b - e;
+            ctx.beginPath(); ctx.moveTo(X(a), Y(lo)); ctx.lineTo(X(a), Y(b + e)); ctx.stroke();
+          }}
+        } else {
+          ctx.beginPath();
+          it.pts.forEach(([a, b], i) => i ? ctx.lineTo(X(a), Y(b)) : ctx.moveTo(X(a), Y(b)));
+          ctx.stroke();
+        }
+      } else if (it.kind === 'hline' || it.kind === 'vline') {
+        ctx.lineWidth = 1; ctx.setLineDash(it.solid ? [] : [3, 4]);
+        ctx.beginPath();
+        if (it.kind === 'hline') { ctx.moveTo(pad.l, Y(it.y)); ctx.lineTo(W - pad.r, Y(it.y)); }
+        else { ctx.moveTo(X(it.x), pad.t); ctx.lineTo(X(it.x), H - pad.b); }
+        ctx.stroke();
+        if (it.label) {
+          ctx.setLineDash([]); ctx.font = '10.5px ui-monospace, Menlo, monospace';
+          if (it.kind === 'hline') ctx.fillText(it.label, W - pad.r - ctx.measureText(it.label).width - 4, Y(it.y) - 5 < pad.t + 10 ? Y(it.y) + 13 : Y(it.y) - 5);   // below the line near the top edge
+          else {
+            // stack labels of nearby vertical lines instead of drawing them on top of each other
+            const x0 = X(it.x) + 5, w = ctx.measureText(it.label).width;
+            let ly = pad.t + 12;
+            while (labelBoxes.some(b => x0 < b.x + b.w + 4 && b.x < x0 + w + 4 && Math.abs(b.y - ly) < 12)) ly += 13;
+            labelBoxes.push({ x: x0, w, y: ly });
+            ctx.fillText(it.label, x0, ly);
+          }
+        }
+      } else if (it.kind === 'marker') {
+        ctx.setLineDash([]);
+        ctx.beginPath(); ctx.arc(X(it.x), Y(it.y), it.r ?? 4.5, 0, 7); ctx.fill();
+        ctx.strokeStyle = C('--panel'); ctx.lineWidth = 1.5; ctx.stroke();
+        if (it.label) { ctx.fillStyle = C('--ink-2'); ctx.font = '10.5px ui-monospace, Menlo, monospace'; ctx.fillText(it.label, X(it.x) + 8, Y(it.y) - 7); }
+      }
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+      if (it.label && (it.kind === 'fn' || it.kind === 'data') && legend) legendItems.push([col, it.label, it.dash, id]);
+    }
+    if (cursor != null) {
+      ctx.strokeStyle = C('--ink'); ctx.lineWidth = 1; ctx.setLineDash([2, 3]);
+      ctx.beginPath(); ctx.moveTo(X(cursor), pad.t); ctx.lineTo(X(cursor), H - pad.b); ctx.stroke(); ctx.setLineDash([]);
+    }
+    ctx.restore();
+    const l = head.querySelector('.l');
+    l.replaceChildren(...legendItems.map(([c, t, dash, id]) => el('span', {
+      class: `k${focus === id ? ' on' : ''}`, onmouseenter: () => api.highlight(id), onmouseleave: () => api.highlight(null),
+    }, el('i', { style: `background:${c};${dash ? 'opacity:.6' : ''}` }), t)));
+  }
+
+  function logTicks(min, max) {
+    const out = [], e0 = Math.ceil(Math.log10(min) - 1e-9), e1 = Math.floor(Math.log10(max) + 1e-9);
+    const stride = Math.max(1, Math.ceil((e1 - e0 + 1) / 6));
+    for (let e = e0; e <= e1; e += stride) out.push(Math.pow(10, e));
+    return out;
+  }
+
+  // cursor dragging
+  let dragging = false;
+  const setFromEvent = e => {
+    if (cursor == null || !onCursor) return;
+    const r = canvas.getBoundingClientRect();
+    const xv = Math.min(ax.x.max, Math.max(ax.x.min, invX(e.clientX - r.left)));
+    cursor = xv; dirty = true; onCursor(xv); draw();
+  };
+  canvas.addEventListener('pointerdown', e => { if (cursor == null || !onCursor) return; dragging = true; canvas.setPointerCapture(e.pointerId); setFromEvent(e); });
+  canvas.addEventListener('pointermove', e => { if (dragging) setFromEvent(e); });
+  canvas.addEventListener('pointerup', () => { dragging = false; });
+  if (onCursor) canvas.style.cursor = 'ew-resize';
+
+  new ResizeObserver(() => { dirty = true; draw(); }).observe(box);
+  document.documentElement.addEventListener('psim-theme', () => { dirty = true; draw(); });
+  return api;
+}
+
+return { createPlot };
+})();
+
+// ---- psim:ui/equation.mjs
+__psim["ui/equation.mjs"] = (() => {
+// Equations split into their physical terms.
+//
+// An equation is shown as a row of term cards. Each card holds one term's maths,
+// its name, its live numerical value with units, and a colour that matches the
+// curve or element it produces in the plots. Hovering a term highlights its curve.
+// A "where" block defines every symbol with its value; a derivation lists steps.
+//
+//   const eq = createEquation({
+//     lhs: { mathml: '<mi>V</mi><mo>(</mo><mi>r</mi><mo>)</mo>', label: 'potential', value: () => V, unit: 'GeV' },
+//     terms: [
+//       { id: 'coul', mathml: '<mo>−</mo><mfrac>…</mfrac>', label: 'Coulomb (gluon exchange)', color: '--body-1', value: () => Vc, unit: 'GeV' },
+//       { id: 'lin', sign: '+', mathml: '<mi>σ</mi><mi>r</mi>', label: 'string (confinement)', color: '--body-0', value: () => s * r, unit: 'GeV' },
+//     ],
+//     where: [{ mathml: '<mi>σ</mi>', meaning: 'string tension', value: () => 0.926, unit: 'GeV/fm' }],
+//     link: plot,
+//   });
+//   eq.update();   // refresh live values (call every UI tick)
+const { el, sci } = __psim["ui/instrument.mjs"];
+const m = inner => `<math display="inline">${inner}</math>`;
+
+function fmt(v, digits = 4) {
+  if (typeof v === 'string') return v;
+  if (v == null || Number.isNaN(v)) return '—';
+  const a = Math.abs(v);
+  if (a !== 0 && (a < 1e-3 || a >= 1e5)) return sci(v, digits - 1);
+  return (+v.toPrecision(digits)).toString().replace('-', '−');
+}
+
+function createEquation({ title, lhs, op = '=', terms = [], where = [], note, link, onFocus } = {}) {
+  const valueEls = [];
+  const focusTerm = id => {
+    for (const c of root.querySelectorAll('.psim-term')) c.classList.toggle('dim', id != null && c.dataset.id !== id);
+    const targets = Array.isArray(link) ? link : link ? [link] : [];
+    targets.forEach(p => p.highlight(id));
+    onFocus?.(id);
+  };
+
+  const card = (t, kind) => {
+    const v = el('span', { class: 'v' });
+    if (t.value) valueEls.push([v, t]);
+    const c = el('div', {
+      class: `psim-term ${kind}`, 'data-id': t.id ?? '', tabindex: t.id ? 0 : null,
+      onmouseenter: () => t.id && focusTerm(t.id), onmouseleave: () => t.id && focusTerm(null),
+      onfocus: () => t.id && focusTerm(t.id), onblur: () => t.id && focusTerm(null),
+    },
+    el('div', { class: 'mx', html: m(t.mathml) }),
+    el('i', { class: 'bar', style: t.color ? `background:var(${t.color})` : '' }),
+    t.label ? el('span', { class: 'lb' }, t.label) : null,
+    v);
+    return c;
+  };
+
+  const row = el('div', { class: 'psim-eqrow' });
+  if (lhs) row.append(card(lhs, 'lhs'), el('span', { class: 'op' }, op));
+  terms.forEach((t, i) => {
+    if (i > 0) row.append(el('span', { class: 'op' }, t.sign ?? '+'));
+    row.append(card(t, 'rhs'));
+  });
+
+  const whereEl = where.length ? el('div', { class: 'psim-where' },
+    el('span', { class: 'kw' }, 'where'),
+    ...where.map(w => {
+      const v = el('span', { class: 'v' });
+      if (w.value) valueEls.push([v, w]);
+      return el('div', { class: 'w' }, el('span', { class: 'mx', html: m(w.mathml) }), el('span', { class: 'mean' }, w.meaning), v);
+    })) : null;
+
+  const root = el('section', { class: 'psim-equation' },
+    title ? el('h3', {}, title) : null, row, whereEl, note ? el('p', { class: 'psim-hint' }, note) : null);
+
+  const api = {
+    el: root,
+    update() {
+      for (const [node, t] of valueEls) {
+        let v;
+        try { v = t.value(); } catch { v = NaN; }
+        node.textContent = `${fmt(v, t.digits)}${t.unit ? ` ${t.unit}` : ''}`;
+      }
+    },
+    focus: focusTerm,
+  };
+  api.update();
+  return api;
+}
+
+/** Numbered derivation: each step is one line of maths plus the reason for it. */
+function createDerivation(steps, { title } = {}) {
+  return el('section', { class: 'psim-derivation' },
+    title ? el('h3', {}, title) : null,
+    el('ol', {}, steps.map(s => el('li', {},
+      el('div', { class: 'mx', html: `<math display="inline">${s.mathml}</math>` }),
+      s.note ? el('span', { class: 'why' }, s.note) : null))));
+}
+
+/** Helpers for writing MathML compactly. */
+const M = {
+  i: s => `<mi>${s}</mi>`,
+  n: s => `<mn>${s}</mn>`,
+  o: s => `<mo>${s}</mo>`,
+  // msub/msup take exactly two children: wrap both, so a multi-part exponent such as −x survives
+  sub: (b, s) => `<msub><mrow>${b}</mrow><mrow>${s}</mrow></msub>`,
+  sup: (b, s) => `<msup><mrow>${b}</mrow><mrow>${s}</mrow></msup>`,
+  frac: (a, b) => `<mfrac><mrow>${a}</mrow><mrow>${b}</mrow></mfrac>`,
+  sqrt: a => `<msqrt>${a}</msqrt>`,
+  row: (...a) => `<mrow>${a.join('')}</mrow>`,
+  paren: a => `<mo>(</mo>${a}<mo>)</mo>`,
+  /** Vector symbol: Unicode mathematical bold (MathML Core ignores mathvariant). */
+  vec: s => `<mi>${{ r: '𝐫', v: '𝐯', E: '𝐄', B: '𝐁', u: '𝐮', F: '𝐅', p: '𝐩', k: '𝐤', x: '𝐱', a: '𝐚' }[s] ?? s}</mi>`,
+};
+
+return { createEquation, createDerivation, M };
+})();
+
+// ---- psim:core/verification.mjs
+__psim["core/verification.mjs"] = (() => {
+// Shared verification gates for the CLI and browser. Reports are evidence only
+// when every check is explicit and the tested settings still match the simulation.
+
+function validateModuleReport(report) {
+  if (!report || !Array.isArray(report.checks) || !report.checks.length) throw new Error('verification: need a non-empty checks array');
+  for (const [i, check] of report.checks.entries()) {
+    const where = `verification check ${i + 1}`;
+    if (!check || typeof check.label !== 'string' || !check.label.trim()) throw new Error(`${where}: label is required`);
+    if (typeof check.pass !== 'boolean') throw new Error(`${where}: pass must be explicitly true or false`);
+    if (typeof check.value === 'number') {
+      if (!Number.isFinite(check.value)) throw new Error(`${where}: measured value must be finite`);
+    } else if (typeof check.value !== 'string' || !check.value.trim() || /NaN|Infinity|∞|^\s*—\s*$/.test(check.value)) {
+      throw new Error(`${where}: measured value must be finite and present`);
+    }
+    if (check.state != null && check.state !== 'warn') throw new Error(`${where}: optional state must be 'warn'`);
+  }
+  return report;
+}
+
+/** Reasons a gravity report cannot support a successful verification claim. */
+function gravityReportProblems(report) {
+  const problems = [];
+  const finiteError = (value, limit, label) => {
+    if (!(Number.isFinite(value) && value >= 0)) problems.push(`${label} is missing or non-finite`);
+    else if (value > limit) problems.push(`${label} ${value.toExponential(2)} exceeds ${limit.toExponential(0)}`);
+  };
+  const c = report?.conservation, cv = report?.convergence;
+  finiteError(c?.dE, report?.settings?.softening > 0 ? 1e-4 : 1e-8, 'energy error');
+  finiteError(c?.dP, 1e-10, 'momentum drift');
+  finiteError(c?.dL, 1e-10, 'angular momentum drift');
+  if (!(Number.isFinite(c?.h) && c.h > 0)) problems.push('step parameter is missing or non-finite');
+  if (!(Number.isFinite(report?.duration) && report.duration > 0)) problems.push('verification duration is invalid');
+  if (!(Number.isFinite(cv?.observedOrder) && Number.isFinite(cv?.expectedOrder) && cv.expectedOrder > 0)) problems.push('convergence order is unresolved or non-finite');
+  else if (Math.abs(cv.observedOrder - cv.expectedOrder) > 0.6) problems.push('observed convergence order differs from theory');
+  if (!(Number.isFinite(cv?.horizon) && cv.horizon >= 0 && cv.horizon <= report.duration && typeof cv.converged === 'boolean')) problems.push('convergence horizon is invalid');
+  finiteError(cv?.finalDifference, Infinity, 'final refinement difference');
+  if (report?.determinism?.identical !== true || report?.frameIndependence?.identical !== true) problems.push('reproducibility check failed');
+  if (!Array.isArray(report?.benchmarks) || !report.benchmarks.length) problems.push('benchmarks are missing');
+  else {for (const b of report.benchmarks) {
+    const name = b?.name ?? 'unnamed benchmark';
+    finiteError(b?.dE, 1e-9, `${name}: energy error`);
+    if (b && Object.hasOwn(b, 'positionError')) finiteError(b.positionError, 1e-3, `${name}: position error`);
+    else if (b && Object.hasOwn(b, 'returnError')) finiteError(b.returnError, 1e-6, `${name}: return error`);
+    else if (b?.matchesLiterature !== true) problems.push(`benchmark failed: ${name}`);
+  }}
+  return problems;
+}
+
+/** Match solver settings, allowing only round-off in the computed step parameter. */
+function gravityReportMatches(report, settings) {
+  if (!report?.settings || report.integrator !== settings.integrator) return false;
+  for (const key of ['integrator', 'G', 'softening', 'stepsPerCrossing']) {
+    if (report.settings[key] !== settings[key]) return false;
+  }
+  const h = report.conservation?.h;
+  return Number.isFinite(h) && h > 0 && Number.isFinite(settings.h) && Math.abs(h - settings.h) <= 1e-12 * Math.abs(h);
+}
+
+return { validateModuleReport, gravityReportProblems, gravityReportMatches };
+})();
+
+// ---- psim:ui/instrument-app.mjs
+__psim["ui/instrument-app.mjs"] = (() => {
+// Generic instrument shell for composed simulations (any domain).
+//
+// The page supplies a physics module that follows the simulation contract
+// (see references/compose.md) and a draw function; this shell provides the
+// header, trust tier, theme, transport, frame-rate-independent clock,
+// parameter controls, live diagnostics, verification report, model panel,
+// export and the window.psim hook used by automated checks.
+//
+// Simulation contract (returned by create(params)):
+//   sim.t                    physical time of the latest computed state
+//   sim.step()               advance by one integrator step (or one analytic tick)
+//   sim.sample?(t)           state at t between steps, for drawing (default: current state)
+//   sim.diagnostics()        [{ key, label, value, kind: 'error'|'value', unit?, good?, warn? }]
+//   sim.state()              JSON-serialisable state (export, tests)
+//   sim.record?()            { header: [...], rows: [[...], ...] } for CSV export
+//   sim.timeDependent        false for static analytic visualisations (no transport)
+const { el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon, cssVar } = __psim["ui/instrument.mjs"];
+const { createPlot } = __psim["ui/plot.mjs"];
+const { createEquation, createDerivation, M } = __psim["ui/equation.mjs"];
+const { validateModuleReport } = __psim["core/verification.mjs"];
+const TIERS = {
+  validated: 'Validated numerical',
+  approximate: 'Approximate numerical',
+  analytical: 'Analytical',
+  conceptual: 'Conceptual illustration',
+};
+
+function createInstrument(spec) {
+  const {
+    title, subtitle = '', tier, tierReason, create, draw, params = [], model = {},
+    timeUnit = 'T', timeLabel = 'simulated time', speed: speed0 = 1, controls, onPointer, layout = 'stage', bench,
+  } = spec;
+  if (!TIERS[tier]) throw new Error(`tier must be one of ${Object.keys(TIERS).join(', ')}`);
+  const report = readJsonScript('psim-verification');
+  if (report) validateModuleReport(report);
+  const verified = report?.checks.every(c => c.pass === true) === true;
+  const trustLabel = verified ? TIERS[tier] : 'Verification needed';
+  const status = beacon();
+  const query = new URLSearchParams(location.search);
+
+  document.title = title;
+  document.body.innerHTML = `
+  <div class="psim-app ${layout === 'workbench' ? 'workbench' : ''}">
+    <header class="psim-head">
+      <div class="psim-mark" aria-hidden="true"></div>
+      <div class="psim-title"><h1></h1><p></p></div>
+      <div class="spacer"></div>
+      <button class="psim-tier" type="button"><i></i><span></span></button>
+      <button class="psim-iconbtn" type="button" aria-label="Toggle theme"></button>
+    </header>
+    <main class="psim-stage"><canvas></canvas>
+      <div class="psim-hud"><span class="dim"></span><b>0</b><span class="h1"></span><span class="dim h2"></span><span class="flag"></span></div>
+      <div class="psim-legend"></div>
+    </main>
+    <aside class="psim-side"></aside>
+  </div>`;
+  const $ = s => document.querySelector(s);
+  $('.psim-title h1').textContent = title;
+  $('.psim-title p').textContent = subtitle;
+  const tierBtn = $('.psim-tier');
+  tierBtn.dataset.tier = verified ? tier : 'unverified';
+  tierBtn.querySelector('span').textContent = trustLabel;
+  initTheme($('.psim-iconbtn'));
+  const stage = $('.psim-stage'), side = $('.psim-side');
+  // Workbench layout: the live canvas on top, then term-split equations and figures that
+  // update with the model (spec.bench builds them; see references/compose.md).
+  let benchParts = null;
+  if (layout === 'workbench') {
+    const wrap = el('div', { class: 'psim-canvaswrap' }, stage.querySelector('canvas'), stage.querySelector('.psim-hud'), stage.querySelector('.psim-legend'));
+    const eqs = el('div', { class: 'psim-eqs' }), figs = el('div', { class: 'psim-figs' });
+    stage.prepend(el('div', { class: 'psim-bench' }, wrap, eqs, figs));
+    benchParts = { wrap, eqs, figs };
+  }
+  const canvas = stage.querySelector('canvas');
+  const ctx = canvas.getContext('2d');
+  $('.psim-hud .dim').textContent = timeLabel;
+  const hud = { t: $('.psim-hud b'), a: $('.psim-hud .h1'), b: $('.psim-hud .h2'), flag: $('.psim-hud .flag') };
+  if (model.legend) $('.psim-legend').append(...model.legend.map(t => el('span', {}, t)));
+
+  // ------------------------------------------------------------ state
+  const values = Object.fromEntries(params.map(p => [p.key, p.value]));
+  let sim, tDisplay = 0, limited = false;
+  const clock = createClock({ speed: speed0 });
+  const view = { W: 0, H: 0, dpr: 1, color: cssVar, opts: {}, pointer: null };
+
+  let benchApi = null;
+  function rebuild() {
+    sim = create({ ...values });
+    tDisplay = sim.t ?? 0;
+    diagPlot.clear();
+    renderDiag(true);
+    benchApi?.update?.(sim, tDisplay, { rebuilt: true });
+    status.set('params', values);
+  }
+
+  // ------------------------------------------------------------ transport
+  const timeDependent = spec.timeDependent !== false;
+  let tp = null;
+  if (timeDependent) {
+    tp = transport({
+      speed: speed0, speedLabel: s => `${sci(s, 2)} ${timeUnit}/s`,
+      onToggle: () => setPlaying(!clock.playing),
+      onStep: () => { setPlaying(false); sim.step(); tDisplay = sim.t; },
+      onRestart: () => rebuild(),
+      onFit: () => spec.onFit?.(view),
+      onSpeed: s => { clock.speed = s; },
+    });
+    stage.append(tp);
+  } else {
+    stage.querySelector('.psim-hud').querySelector('.dim').textContent = '';
+  }
+  function setPlaying(p) { clock.playing = p; tp?.setPlaying(p); }
+
+  // ------------------------------------------------------------ side panel
+  const secParams = section('Parameters');
+  const paramInputs = new Map();
+  if (params.length) {
+    secParams.body.append(el('p', { class: 'psim-hint' }, 'Changing a parameter recomputes the model from its initial state.'));
+    for (const p of params) {
+      if (p.options) {
+        secParams.body.append(el('div', { class: 'psim-field' }, el('div', { class: 'top' }, el('span', {}, p.label)),
+          select(p.options, p.value, v => { values[p.key] = isNaN(+v) ? v : +v; rebuild(); })));
+      } else {
+        const sl = slider({
+          label: p.label, min: p.min, max: p.max, value: p.value, log: p.log, unit: p.unit ?? '', digits: p.digits ?? 3,
+          integer: p.integer, limits: p.limits,
+          onInput: v => { values[p.key] = v; rebuild(); },
+        });
+        paramInputs.set(p.key, sl);
+        secParams.body.append(sl);
+      }
+      if (p.hint) secParams.body.append(el('p', { class: 'psim-hint', style: 'margin-top:-4px;font-size:11.5px' }, p.hint));
+    }
+  }
+  if (controls) controls(secParams.body, { values, rebuild });
+
+  const secDiag = section('Diagnostics', { aside: 'live' });
+  const diagPlot = logPlot({ caption: '', yMin: 1e-16, yMax: 1 });
+  const diagSeries = diagPlot.addSeries('--accent');
+  const diagRows = new Map();
+  secDiag.body.append(diagPlot.el);
+  let nextPlot = 0;
+  function renderDiag(reset = false) {
+    const d = sim.diagnostics();
+    if (reset) {
+      diagRows.forEach(r => r.remove());
+      diagRows.clear();
+      nextPlot = 0;
+      const firstErr = d.find(x => x.kind === 'error');
+      diagPlot.el.style.display = firstErr ? '' : 'none';
+      diagPlot.el.querySelector('.cap').textContent = firstErr ? `${firstErr.label}   vs   t` : '';
+      if (spec.duration) diagPlot.setXMax(spec.duration);
+    }
+    for (const x of d) {
+      let r = diagRows.get(x.key);
+      if (!r) { r = row(x.label); diagRows.set(x.key, r); secDiag.body.append(r); }
+      const text = x.text ?? (x.kind === 'error' ? sci(x.value) : `${sci(x.value, 4)}${x.unit ? ` ${x.unit}` : ''}`);
+      r.set(text, x.kind === 'error' && x.good != null ? grade(x.value, x.good, x.warn ?? x.good * 1000) : '');
+    }
+    const firstErr = d.find(x => x.kind === 'error');
+    if (firstErr && timeDependent && sim.t >= nextPlot) {
+      diagPlot.push(diagSeries, sim.t, Math.max(firstErr.value, 1e-17));
+      nextPlot = sim.t + (spec.duration ?? 10) / 800;
+    }
+    diagPlot.draw();
+    return d;
+  }
+
+  const secVerify = section('Verification', { aside: report ? 'report embedded' : 'no report' });
+  if (report?.checks) {
+    secVerify.body.append(el('p', { class: 'psim-hint' }, report.summary ?? `Measured when this page was built (${(report.generated ?? '').slice(0, 10)}):`));
+    for (const c of report.checks) {
+      secVerify.body.append(el('div', { class: 'psim-check' },
+        el('i', { class: c.pass !== true ? 'bad' : c.state === 'warn' ? 'warn' : '' }),
+        el('span', {}, c.label), el('code', {}, c.value)));
+    }
+    if (report.notes) for (const n of report.notes) secVerify.body.append(el('p', { class: 'psim-hint' }, n));
+  } else {
+    secVerify.body.append(el('p', { class: 'psim-hint' }, 'No build-time verification report is embedded in this page.'));
+  }
+
+  const secModel = section('Model, assumptions & limits', { open: false });
+  secModel.body.append(
+    el('div', { class: 'psim-prose' }, el('p', {}, el('b', {}, `${trustLabel}. `), tierReason ?? '')),
+    ...(model.equations ?? []).flatMap(eq => [
+      eq.caption ? el('p', { class: 'psim-hint' }, eq.caption) : null,
+      el('div', { class: 'psim-math', html: eq.mathml }),
+    ]),
+    model.assumptions ? el('div', { class: 'psim-prose' }, el('p', {}, el('b', {}, 'Assumptions and limits')), el('ul', {}, model.assumptions.map(a => el('li', {}, a)))) : null,
+    model.conventions ? el('div', { class: 'psim-prose' }, el('p', {}, el('b', {}, 'Visual conventions')), el('ul', {}, model.conventions.map(a => el('li', {}, a)))) : null,
+    model.references ? el('div', { class: 'psim-prose' }, el('p', {}, el('b', {}, 'References')), el('ul', {}, model.references.map(a => el('li', {}, el('cite', {}, a))))) : null,
+  );
+  tierBtn.addEventListener('click', () => { secModel.open = true; secModel.scrollIntoView({ behavior: 'smooth' }); });
+
+  const secExport = section('Export', { open: false });
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  secExport.body.append(el('div', { class: 'psim-btns' },
+    button('State JSON', () => download(`${slug}-state.json`, JSON.stringify({
+      generator: 'p-simtor', title, tier: tierBtn.dataset.tier, params: values, t: sim.t, state: sim.state(), diagnostics: sim.diagnostics(), verification: report,
+    }, null, 2), 'application/json')),
+    button('Data CSV', () => {
+      const r = sim.record?.();
+      if (!r) { toast(stage, 'This model records no tabular data'); return; }
+      download(`${slug}-data.csv`, [`# p-simtor | ${title}`, r.header.join(','), ...r.rows.map(x => x.join(','))].join('\n'), 'text/csv');
+    }),
+    button('PNG image', () => canvas.toBlob(b => el('a', { href: URL.createObjectURL(b), download: `${slug}.png` }).click())),
+  ));
+
+  side.append(...[secParams, secDiag, secVerify, secModel, secExport].filter(s => s !== secParams || params.length || controls));
+  if (spec.extraSections) spec.extraSections(side, { section, el, row, slider, toggle, button, values, rebuild, view });
+
+  // ------------------------------------------------------------ canvas & loop
+  function resize() {
+    view.dpr = devicePixelRatio || 1;
+    view.W = canvas.clientWidth; view.H = canvas.clientHeight;
+    canvas.width = Math.round(view.W * view.dpr); canvas.height = Math.round(view.H * view.dpr);
+  }
+  new ResizeObserver(resize).observe(canvas);
+  resize();
+  if (onPointer) onPointer(canvas, view, () => sim);
+
+  let frames = 0, lastUi = 0;
+  function frame(now) {
+    if (timeDependent) {
+      const target = clock.tick(now, tDisplay);
+      if (target > tDisplay) {
+        const deadline = performance.now() + 9;
+        let k = 0;
+        while (sim.t < target) {
+          sim.step();
+          if ((++k & 63) === 0 && performance.now() > deadline) break;
+        }
+        limited = sim.t < target;
+        tDisplay = Math.min(target, sim.t);
+      }
+    }
+    ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
+    ctx.clearRect(0, 0, view.W, view.H);
+    draw(ctx, sim, view, tDisplay);
+    if (now - lastUi > 100) {
+      lastUi = now;
+      const d = renderDiag();
+      hud.t.textContent = timeDependent ? `${fix(tDisplay, 3)} ${timeUnit}` : '';
+      const firstErr = d.find(x => x.kind === 'error');
+      hud.a.textContent = firstErr ? `${firstErr.label} ${sci(firstErr.value)}` : '';
+      hud.b.textContent = spec.hudLine?.(sim) ?? '';
+      hud.flag.textContent = limited ? 'compute-limited: playback slowed to keep the calculation exact' : '';
+      benchApi?.update?.(sim, tDisplay, { rebuilt: false });
+      status.set('t', timeDependent ? tDisplay : 1);
+      if (firstErr) status.set('drift', firstErr.value);
+    }
+    if (++frames === 1 || frames % 30 === 0) status.set('frames', frames);   // first frame at once: slow pages count as live
+    requestAnimationFrame(frame);
+  }
+
+  window.psim = {
+    model: 'generic',
+    get t() { return tDisplay; },
+    state: () => ({ t: sim.t, ...sim.state() }),
+    params: () => ({ ...values }),
+    advanceTo: t => { while (sim.t < t) sim.step(); tDisplay = Math.max(tDisplay, Math.min(t, sim.t)); return window.psim.state(); },
+    restart: () => rebuild(),
+    steps: n => { if (typeof sim.step === "function") for (let i = 0; i < n; i++) sim.step(); tDisplay = sim.t ?? 0; return window.psim.state(); },
+  };
+
+  if (bench && benchParts) {
+    benchApi = bench({
+      ...benchParts, createPlot, createEquation, createDerivation, M, values,
+      setParam: (k, v) => { values[k] = v; paramInputs.get(k)?.setValue?.(v); rebuild(); },
+      getSim: () => sim,
+    }) ?? null;
+  }
+  rebuild();
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  setPlaying(timeDependent && (query.get('autoplay') ? query.get('autoplay') !== '0' : !reduced));
+  addEventListener('keydown', e => {
+    if (e.target.closest('input, select, textarea') || !timeDependent) return;
+    if (e.code === 'Space') { e.preventDefault(); setPlaying(!clock.playing); }
+    else if (e.key === '.') { setPlaying(false); sim.step(); tDisplay = sim.t; }
+    else if (e.key === 'r' || e.key === 'R') rebuild();
+  });
+  status.set('model', 'generic');
+  status.set('ready', true);
+  requestAnimationFrame(frame);
+  return { values, rebuild, view, get sim() { return sim; } };
+}
+
+return { createInstrument };
+})();
+
+// ---- psim:core/constants.mjs
+__psim["core/constants.mjs"] = (() => {
+// Physical constants, SI units. CODATA 2018 recommended values
+// (Tiesinga et al., Rev. Mod. Phys. 93, 025010, 2021). "exact" = defined by the 2019 SI.
+// Import from here instead of typing constants by hand; cite the source in the page.
+
+const CODATA = 'CODATA 2018';
+
+const c = 299792458;                 // m s^-1, exact
+const h = 6.62607015e-34;            // J s, exact
+const hbar = 6.62607015e-34 / (2 * Math.PI);  // J s, exact (h/2π)
+const e = 1.602176634e-19;           // C, exact
+const kB = 1.380649e-23;             // J K^-1, exact
+const NA = 6.02214076e23;            // mol^-1, exact
+const eps0 = 8.8541878128e-12;       // F m^-1
+const mu0 = 1.25663706212e-6;        // N A^-2
+const G = 6.67430e-11;               // m^3 kg^-1 s^-2 (relative uncertainty 2.2e-5)
+const me = 9.1093837015e-31;         // kg
+const mp = 1.67262192369e-27;        // kg
+const mn = 1.67492749804e-27;        // kg
+const u = 1.66053906660e-27;         // kg (atomic mass constant)
+const a0 = 5.29177210903e-11;        // m (Bohr radius)
+const alpha = 7.2973525693e-3;       // fine-structure constant
+const Eh = 4.3597447222071e-18;      // J (Hartree energy)
+const Ry = 13.605693122994;          // eV (Rydberg energy)
+const eV = 1.602176634e-19;          // J, exact
+const MeV = 1.602176634e-13;         // J, exact
+const mpc2MeV = 938.27208816;        // MeV (proton rest energy)
+const mec2MeV = 0.51099895000;       // MeV (electron rest energy)
+const hbarcMeVfm = 197.3269804;      // MeV fm
+
+// Astronomy (IAU 2012/2015 nominal values)
+const AU = 1.495978707e11;           // m, exact (IAU 2012)
+const GMsun = 1.3271244e20;          // m^3 s^-2 (IAU 2015 nominal)
+const Msun = 1.3271244e20 / 6.67430e-11;     // kg, GM☉/G (G-limited, ±2.2e-5)
+const yearJulian = 365.25 * 86400;   // s
+/**
+ * G in AU³ M☉⁻¹ yr⁻² with the Julian year and IAU GM☉: 39.47693 (≈ 4π², which is exact only
+ * for the Gaussian year 2π/k). Using this value keeps AU–yr runs consistent with SI ones.
+ */
+const G_AU_MSUN_YR = 1.3271244e20 * (365.25 * 86400) ** 2 / 1.495978707e11 ** 3;
+
+return { CODATA, c, h, hbar, e, kB, NA, eps0, mu0, G, me, mp, mn, u, a0, alpha, Eh, Ry, eV, MeV, mpc2MeV, mec2MeV, hbarcMeVfm, AU, GMsun, Msun, yearJulian, G_AU_MSUN_YR };
+})();
+
+// ---- psim:core/numerics.mjs
+__psim["core/numerics.mjs"] = (() => {
+// General numerical toolkit: random numbers, FFT, ODE solvers, quadrature, root
+// finding, special functions, linear algebra. Pure functions, browser + Node.
+// Every routine is tested against known values in tests/numerics.test.mjs.
+// Import these instead of writing them again in a page.
+
+// ---------------------------------------------------------------- random numbers
+
+/** Seeded PRNG (mulberry32), uniform in [0, 1). Deterministic for a given seed. */
+function rng(seed = 1) {
+  let a = seed >>> 0;
+  const next = () => {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  let spare = null;
+  next.normal = () => {               // standard normal (Box–Muller, cached pair)
+    if (spare != null) { const s = spare; spare = null; return s; }
+    let u = 0; while (u === 0) u = next();
+    const v = next(), r = Math.sqrt(-2 * Math.log(u));
+    spare = r * Math.sin(2 * Math.PI * v);
+    return r * Math.cos(2 * Math.PI * v);
+  };
+  return next;
+}
+
+// ---------------------------------------------------------------- FFT
+
+/** In-place radix-2 complex FFT. re/im: Float64Array, length a power of two.
+ *  Forward: X_k = Σ x_n e^{−2πikn/N}. Inverse (inverse = true) includes the 1/N factor. */
+function fft(re, im, inverse = false) {
+  const n = re.length;
+  if (n & (n - 1)) throw new Error('fft: length must be a power of two');
+  for (let i = 1, j = 0; i < n; i++) {
+    let bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; }
+  }
+  const sign = inverse ? 1 : -1;
+  for (let len = 2; len <= n; len <<= 1) {
+    const ang = sign * 2 * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang);
+    for (let i = 0; i < n; i += len) {
+      let cr = 1, ci = 0;
+      for (let k = 0; k < len / 2; k++) {
+        const a = i + k, b = a + len / 2;
+        const xr = re[b] * cr - im[b] * ci, xi = re[b] * ci + im[b] * cr;
+        re[b] = re[a] - xr; im[b] = im[a] - xi;
+        re[a] += xr; im[a] += xi;
+        const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t;
+      }
+    }
+  }
+  if (inverse) for (let i = 0; i < n; i++) { re[i] /= n; im[i] /= n; }
+}
+
+/** Angular wavenumbers k for an FFT grid of n points with spacing dx (FFT ordering). */
+function fftFreq(n, dx) {
+  const k = new Float64Array(n);
+  for (let i = 0; i < n; i++) k[i] = 2 * Math.PI * (i < n / 2 ? i : i - n) / (n * dx);
+  return k;
+}
+
+// ---------------------------------------------------------------- ODEs
+
+/** Classical RK4 step for y' = f(t, y). y: array; returns new array. */
+function rk4Step(f, t, y, h) {
+  const k1 = f(t, y);
+  const k2 = f(t + h / 2, y.map((v, i) => v + h / 2 * k1[i]));
+  const k3 = f(t + h / 2, y.map((v, i) => v + h / 2 * k2[i]));
+  const k4 = f(t + h, y.map((v, i) => v + h * k3[i]));
+  return y.map((v, i) => v + h / 6 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]));
+}
+
+// Dormand–Prince 5(4) coefficients (Dormand & Prince 1980; Hairer, Nørsett & Wanner, Table 5.2).
+const DP = {
+  c: [0, 1 / 5, 3 / 10, 4 / 5, 8 / 9, 1, 1],
+  a: [[], [1 / 5], [3 / 40, 9 / 40], [44 / 45, -56 / 15, 32 / 9],
+    [19372 / 6561, -25360 / 2187, 64448 / 6561, -212 / 729],
+    [9017 / 3168, -355 / 33, 46732 / 5247, 49 / 176, -5103 / 18656],
+    [35 / 384, 0, 500 / 1113, 125 / 192, -2187 / 6784, 11 / 84]],
+  b: [35 / 384, 0, 500 / 1113, 125 / 192, -2187 / 6784, 11 / 84, 0],
+  e: [71 / 57600, 0, -71 / 16695, 71 / 1920, -17253 / 339200, 22 / 525, -1 / 40],
+};
+
+/** The Dormand–Prince 5(4) tableau (for steppers built on top of dopri5). */
+const DORMAND_PRINCE = DP;
+
+/**
+ * Adaptive Dormand–Prince 5(4) integration of y' = f(t, y) from t0 to t1.
+ * Error control per component: |err_i| <= atol + rtol·max(|y_i|, |y_new_i|).
+ * onStep(t, y) is called after every accepted step (return false to stop early).
+ * Returns { t, y, steps, rejected, stopped }. Throws if tolerance cannot be met or
+ * the step budget is exhausted; stopped is reserved for an intentional onStep stop.
+ */
+function dopri5(f, t0, y0, t1, { rtol = 1e-9, atol = 1e-12, h0, hmax = Infinity, maxSteps = 1e6, onStep } = {}) {
+  if (!Number.isFinite(t0) || !Number.isFinite(t1) || !y0.length || !Array.from(y0).every(Number.isFinite)) throw new Error('dopri5: finite times and a non-empty finite state are required');
+  if (!(Number.isFinite(rtol) && rtol > 0 && Number.isFinite(atol) && atol > 0)) throw new Error('dopri5: tolerances must be finite and positive');
+  if (!(hmax > 0) || (hmax !== Infinity && !Number.isFinite(hmax)) || (h0 != null && !(Number.isFinite(h0) && h0 !== 0))) throw new Error('dopri5: step sizes must be non-zero and finite (hmax may be Infinity)');
+  if (!(Number.isSafeInteger(maxSteps) && maxSteps > 0)) throw new Error('dopri5: maxSteps must be a positive integer');
+  const n = y0.length, dir = Math.sign(t1 - t0) || 1;
+  let t = t0;
+  const y = Float64Array.from(y0);
+  let h = dir * Math.min(Math.abs(h0 ?? (t1 - t0) / 100), hmax);
+  const k = Array.from({ length: 7 }, () => new Float64Array(n));
+  const yt = new Float64Array(n), yn = new Float64Array(n);
+  let steps = 0, rejected = 0, stopped = false;
+  const maxAttempts = 4 * maxSteps;
+  k[0].set(f(t, y));
+  while (dir * (t1 - t) > 0 && steps < maxSteps && steps + rejected < maxAttempts) {
+    if (dir * (t + h - t1) > 0) h = t1 - t;
+    // This checks floating-point progress, not a dimensional time threshold. A
+    // femtosecond step can be perfectly resolvable and still need error control.
+    if (h === 0 || t + h === t) throw new Error(`dopri5: step underflow at t = ${t}; cannot meet tolerance`);
+    for (let s = 1; s < 7; s++) {
+      for (let i = 0; i < n; i++) {
+        let acc = y[i];
+        for (let j = 0; j < s; j++) acc += h * DP.a[s][j] * k[j][i];
+        yt[i] = acc;
+      }
+      k[s].set(f(t + DP.c[s] * h, yt));
+    }
+    let err = 0;
+    for (let i = 0; i < n; i++) {
+      let acc = y[i], e = 0;
+      for (let j = 0; j < 7; j++) { acc += h * DP.b[j] * k[j][i]; e += h * DP.e[j] * k[j][i]; }
+      yn[i] = acc;
+      const sc = atol + rtol * Math.max(Math.abs(y[i]), Math.abs(acc));
+      err = Math.max(err, Math.abs(e) / sc);
+    }
+    if (!Number.isFinite(err)) throw new Error(`dopri5: non-finite derivative or state at t = ${t}`);
+    if (err <= 1) {
+      t += h; y.set(yn); k[0].set(k[6]); steps++;      // FSAL: k7 of this step = k1 of the next
+      if (onStep && onStep(t, y) === false) { stopped = true; break; }
+    } else rejected++;
+    const fac = err === 0 ? 5 : Math.min(5, Math.max(0.2, 0.9 * Math.pow(err, -0.2)));
+    h = dir * Math.min(Math.abs(h * fac), hmax);
+  }
+  if (!stopped && dir * (t1 - t) > 0) throw new Error(`dopri5: step budget exhausted at t = ${t}, before t = ${t1}`);
+  return { t, y, steps, rejected, stopped };
+}
+
+// ---------------------------------------------------------------- quadrature
+
+const GL_CACHE = new Map();
+/** Gauss–Legendre nodes and weights on [−1, 1] (Newton iteration on P_n). */
+function gaussLegendreNodes(n) {
+  if (GL_CACHE.has(n)) return GL_CACHE.get(n);
+  const x = new Float64Array(n), w = new Float64Array(n);
+  for (let i = 0; i < Math.ceil(n / 2); i++) {
+    let z = Math.cos(Math.PI * (i + 0.75) / (n + 0.5)), dp = 0;
+    for (let it = 0; it < 100; it++) {
+      let p0 = 1, p1 = z;
+      for (let k = 2; k <= n; k++) { const p2 = ((2 * k - 1) * z * p1 - (k - 1) * p0) / k; p0 = p1; p1 = p2; }
+      const pn = n === 1 ? z : p1, pm = n === 1 ? 1 : p0;
+      dp = n * (z * pn - pm) / (z * z - 1);
+      const dz = pn / dp;
+      z -= dz;
+      if (Math.abs(dz) < 1e-16) break;
+    }
+    x[i] = -z; x[n - 1 - i] = z;
+    w[i] = w[n - 1 - i] = 2 / ((1 - z * z) * dp * dp);
+  }
+  const out = { x, w };
+  GL_CACHE.set(n, out);
+  return out;
+}
+
+/** ∫_a^b f(x) dx with n-point Gauss–Legendre (exact for polynomials of degree 2n−1). */
+function gaussLegendre(f, a, b, n = 32) {
+  const { x, w } = gaussLegendreNodes(n);
+  const m = (b - a) / 2, c = (a + b) / 2;
+  let s = 0;
+  for (let i = 0; i < n; i++) s += w[i] * f(m * x[i] + c);
+  return s * m;
+}
+
+/** Adaptive Simpson quadrature to absolute tolerance tol. */
+function adaptiveSimpson(f, a, b, tol = 1e-10, maxDepth = 50) {
+  const simpson = (fl, fmid, fr, lo, hi) => (hi - lo) / 6 * (fl + 4 * fmid + fr);
+  const recurse = (lo, hi, fl, fmid, fr, whole, eps, depth) => {
+    const mid = (lo + hi) / 2, lm = (lo + mid) / 2, rm = (mid + hi) / 2;
+    const flm = f(lm), frm = f(rm);
+    const left = simpson(fl, flm, fmid, lo, mid), right = simpson(fmid, frm, fr, mid, hi);
+    if (depth <= 0 || Math.abs(left + right - whole) <= 15 * eps) return left + right + (left + right - whole) / 15;
+    return recurse(lo, mid, fl, flm, fmid, left, eps / 2, depth - 1) + recurse(mid, hi, fmid, frm, fr, right, eps / 2, depth - 1);
+  };
+  const fa = f(a), fb = f(b), fm = f((a + b) / 2);
+  return recurse(a, b, fa, fm, fb, simpson(fa, fm, fb, a, b), tol, maxDepth);
+}
+
+/** ∫_0^∞ f(x) dx via the substitution x = t/(1−t) and Gauss–Legendre panels. */
+function integrateToInfinity(f, { panels = 16, n = 32 } = {}) {
+  const g = t => { const x = t / (1 - t); return f(x) / ((1 - t) * (1 - t)); };
+  let s = 0;
+  for (let p = 0; p < panels; p++) s += gaussLegendre(g, p / panels, (p + 1) / panels, n);   // nodes never hit t = 1
+  return s;
+}
+
+// ---------------------------------------------------------------- roots
+
+/** Brent's method: root of f in [a, b] where f(a)·f(b) < 0. */
+function brent(f, lo, hi, tol = 1e-14, maxIter = 200) {
+  let a = lo, b = hi;                      // b: best estimate; a: previous; c: bracket partner
+  let fa = f(a), fb = f(b);
+  if (fa * fb > 0) throw new Error('brent: root not bracketed');
+  let c = a, fc = fa, d = b - a, e = d;
+  for (let i = 0; i < maxIter; i++) {
+    if (fb * fc > 0) { c = a; fc = fa; d = e = b - a; }
+    if (Math.abs(fc) < Math.abs(fb)) { a = b; b = c; c = a; fa = fb; fb = fc; fc = fa; }
+    const tol1 = 2 * Number.EPSILON * Math.abs(b) + tol / 2, m = (c - b) / 2;
+    if (Math.abs(m) <= tol1 || fb === 0) return b;
+    if (Math.abs(e) >= tol1 && Math.abs(fa) > Math.abs(fb)) {
+      let p, q, r;
+      const s = fb / fa;
+      if (a === c) { p = 2 * m * s; q = 1 - s; }
+      else { q = fa / fc; r = fb / fc; p = s * (2 * m * q * (q - r) - (b - a) * (r - 1)); q = (q - 1) * (r - 1) * (s - 1); }
+      if (p > 0) q = -q; else p = -p;
+      if (2 * p < Math.min(3 * m * q - Math.abs(tol1 * q), Math.abs(e * q))) { e = d; d = p / q; }
+      else { d = m; e = d; }
+    } else { d = m; e = d; }
+    a = b; fa = fb;
+    b += Math.abs(d) > tol1 ? d : (m > 0 ? tol1 : -tol1);
+    fb = f(b);
+  }
+  return b;
+}
+
+// ---------------------------------------------------------------- special functions
+
+const LANCZOS = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313,
+  -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+
+/** ln Γ(x) for x > 0 (Lanczos, g = 7, n = 9; relative error ~1e-15). */
+function lgamma(z) {
+  if (z <= 0 && Number.isInteger(z)) return Infinity;   // poles of Γ
+  if (z < 0.5) return Math.log(Math.PI / Math.abs(Math.sin(Math.PI * z))) - lgamma(1 - z);
+  const x = z - 1;
+  let a = LANCZOS[0];
+  const t = x + 7.5;
+  for (let i = 1; i < 9; i++) a += LANCZOS[i] / (x + i);
+  return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a);
+}
+
+function gamma(x) {
+  if (x <= 0 && Number.isInteger(x)) return NaN;        // poles of Γ
+  if (x < 0.5) return Math.PI / (Math.sin(Math.PI * x) * gamma(1 - x));
+  return Math.exp(lgamma(x));
+}
+
+function factorial(n) {
+  let f = 1;
+  for (let i = 2; i <= n; i++) f *= i;
+  return f;
+}
+
+/** Error function (Abramowitz–Stegun 7.1.26 is too coarse; this uses a series / continued fraction, |err| < 1e-14). */
+function erf(x) {
+  const ax = Math.abs(x);
+  if (ax > 6) return Math.sign(x);                      // erfc(6) ≈ 2e-17 < double precision near 1
+  if (ax < 2.5) {
+    let sum = ax, term = ax;
+    for (let n = 1; n < 100; n++) {
+      term *= -ax * ax / n;
+      const add = term / (2 * n + 1);
+      sum += add;
+      if (Math.abs(add) < 1e-17 * Math.abs(sum)) break;
+    }
+    return Math.sign(x) * 2 / Math.sqrt(Math.PI) * sum;
+  }
+  // erfc continued fraction (Lentz)
+  let f = ax, C = ax, D = 0;
+  for (let n = 1; n < 200; n++) {
+    const an = n / 2;
+    D = ax + an * D; D = 1 / (D === 0 ? 1e-300 : D);
+    C = ax + an / C; if (C === 0) C = 1e-300;
+    const delta = C * D;
+    f *= delta;
+    if (Math.abs(delta - 1) < 1e-16) break;
+  }
+  const erfc = Math.exp(-ax * ax) / Math.sqrt(Math.PI) / f;
+  return Math.sign(x) * (1 - erfc);
+}
+
+/** Modified Bessel function of the first kind I_n(x), integer n ≥ 0 (power series; fine for x ≲ 50). */
+function besselI(n, x) {
+  let term = Math.pow(x / 2, n) / factorial(n), sum = term;
+  for (let k = 1; k < 500; k++) {
+    term *= (x * x / 4) / (k * (k + n));
+    sum += term;
+    if (Math.abs(term) < 1e-17 * Math.abs(sum)) break;
+  }
+  return sum;
+}
+
+/**
+ * Bessel function of the first kind J_n(x), integer n ≥ 0, any real x. Miller's backward
+ * recurrence normalised by J₀ + 2ΣJ₂ₖ = 1: relative accuracy also where J_n is tiny (x ≪ n),
+ * absolute accuracy ~1e-15·√(x) for large x. J_n(−x) = (−1)ⁿJ_n(x).
+ */
+function besselJ(n, x) {
+  if (!(Number.isInteger(n) && n >= 0)) throw new Error('besselJ: order must be an integer ≥ 0');
+  if (!Number.isFinite(x)) return Number.isNaN(x) ? NaN : 0;     // J_n(±∞) = 0
+  if (x < 0) return (n % 2 ? -1 : 1) * besselJ(n, -x);
+  if (x === 0) return n === 0 ? 1 : 0;
+  const top = Math.max(n, x);
+  const m = 2 * Math.ceil((top + 20 + Math.sqrt(60 * top)) / 2);    // even start index well above n and x
+  let jp = 0, j = 1e-300, norm = 0, result = 0;
+  for (let k = m; k > 0; k--) {
+    const jm = (2 * k / x) * j - jp;                                  // J_{k−1} from J_k, J_{k+1}
+    jp = j; j = jm;
+    if (Math.abs(j) > 1e250) { j *= 1e-250; jp *= 1e-250; norm *= 1e-250; result *= 1e-250; }
+    if (k - 1 === n) result = j;
+    if ((k - 1) % 2 === 0 && k - 1 > 0) norm += 2 * j;
+  }
+  return result / (norm + j);
+}
+
+/**
+ * First `count` positive zeros j_{n,1} < j_{n,2} < … of J_n (integer n ≥ 0): bracketed by a scan
+ * finer than the zero spacing (always > π), refined with Brent. Mode frequencies of circular
+ * membranes, waveguides and diffraction minima: ω_{n,s} = c·j_{n,s}/R.
+ */
+function besselJZeros(n, count) {
+  if (!(Number.isInteger(n) && n >= 0 && Number.isInteger(count) && count > 0)) throw new Error('besselJZeros: need integers n ≥ 0, count > 0');
+  const zeros = [], step = 0.5;
+  let a = n === 0 ? 1 : n, fa = besselJ(n, a);                        // j_{n,1} > n for n > 0, j_{0,1} > 2
+  while (zeros.length < count) {
+    const b = a + step, fb = besselJ(n, b);
+    if (fa === 0) zeros.push(a);
+    else if (fa * fb < 0) zeros.push(brent(x => besselJ(n, x), a, b, 1e-15));
+    a = b; fa = fb;
+  }
+  return zeros;
+}
+
+/**
+ * Complete elliptic integral of the first kind K(m) = ∫₀^{π/2} dθ / √(1 − m sin²θ), parameter
+ * m = k² < 1, by the arithmetic–geometric mean: K = π / (2 AGM(1, √(1 − m))).
+ */
+function ellipticK(m) {
+  if (!(m < 1)) return m === 1 ? Infinity : NaN;
+  let a = 1, b = Math.sqrt(1 - m);
+  for (let i = 0; i < 40 && Math.abs(a - b) > 1e-16 * a; i++) [a, b] = [(a + b) / 2, Math.sqrt(a * b)];
+  return Math.PI / (2 * a);
+}
+
+/** Generalised Laguerre polynomial L_n^(α)(x) by three-term recurrence. */
+function laguerre(n, alpha, x) {
+  if (n === 0) return 1;
+  let l0 = 1, l1 = 1 + alpha - x;
+  for (let k = 1; k < n; k++) {
+    const l2 = ((2 * k + 1 + alpha - x) * l1 - (k + alpha) * l0) / (k + 1);
+    l0 = l1; l1 = l2;
+  }
+  return l1;
+}
+
+/** Associated Legendre P_l^m(x), m ≥ 0, with the Condon–Shortley phase (−1)^m. */
+function legendreP(l, m, x) {
+  let pmm = 1;
+  if (m > 0) {
+    const s = Math.sqrt((1 - x) * (1 + x));
+    let fact = 1;
+    for (let i = 1; i <= m; i++) { pmm *= -fact * s; fact += 2; }
+  }
+  if (l === m) return pmm;
+  let pmmp1 = x * (2 * m + 1) * pmm;
+  if (l === m + 1) return pmmp1;
+  let pll = 0;
+  for (let ll = m + 2; ll <= l; ll++) {
+    pll = ((2 * ll - 1) * x * pmmp1 - (ll + m - 1) * pmm) / (ll - m);
+    pmm = pmmp1; pmmp1 = pll;
+  }
+  return pll;
+}
+
+/**
+ * Fully normalised associated Legendre function P̄_l^m(x) = N_lm P_l^m(x) with
+ * N_lm = √((2l+1)/(4π) · (l−m)!/(l+m)!), Condon–Shortley phase included. Uses the standard
+ * stable recurrences (no factorials), so it is accurate for large l and m.
+ */
+function normalizedLegendre(l, m, x) {
+  const s = Math.sqrt(Math.max(0, (1 - x) * (1 + x)));
+  let pmm = 1 / Math.sqrt(4 * Math.PI);
+  for (let i = 1; i <= m; i++) pmm *= -Math.sqrt((2 * i + 1) / (2 * i)) * s;
+  if (l === m) return pmm;
+  let pm1 = x * Math.sqrt(2 * m + 3) * pmm;
+  if (l === m + 1) return pm1;
+  let pl = 0;
+  for (let ll = m + 2; ll <= l; ll++) {
+    const a = Math.sqrt((4 * ll * ll - 1) / (ll * ll - m * m));
+    const b = Math.sqrt(((ll - 1) ** 2 - m * m) / (4 * (ll - 1) ** 2 - 1));
+    pl = a * (x * pm1 - b * pmm);
+    pmm = pm1; pm1 = pl;
+  }
+  return pl;
+}
+
+/**
+ * Real (tesseral) spherical harmonic, orthonormal on the sphere.
+ * m > 0: √2 P̄_l^m cos(mφ); m < 0: √2 P̄_l^|m| sin(|m|φ); m = 0: P̄_l^0.
+ * The Condon–Shortley phase is removed, so p_x ∝ +x, p_y ∝ +y.
+ */
+function realYlm(l, m, theta, phi) {
+  const am = Math.abs(m);
+  const P = normalizedLegendre(l, am, Math.cos(theta)) * (am % 2 ? -1 : 1);
+  if (m === 0) return P;
+  return Math.SQRT2 * P * (m > 0 ? Math.cos(am * phi) : Math.sin(am * phi));
+}
+
+/**
+ * Complex spherical harmonic Y_l^m(θ, φ) with the Condon–Shortley phase (the quantum-mechanics
+ * convention): Y_l^m = P̄_l^|m|(cos θ) e^{imφ} for m ≥ 0 and Y_l^{−m} = (−1)^m conj(Y_l^m).
+ * Orthonormal on the sphere; eigenfunctions of L² and L_z. Returns { re, im }.
+ */
+function complexYlm(l, m, theta, phi) {
+  if (!(Number.isInteger(l) && Number.isInteger(m) && l >= 0 && Math.abs(m) <= l)) throw new Error('complexYlm: need integers l ≥ 0, |m| ≤ l');
+  const am = Math.abs(m), P = normalizedLegendre(l, am, Math.cos(theta));
+  const sign = m < 0 && am % 2 ? -1 : 1;
+  return { re: sign * P * Math.cos(m * phi), im: sign * P * Math.sin(m * phi) };
+}
+
+/**
+ * Radial function R_nl(r) of a hydrogen-like atom (one electron, nuclear charge Z, point nucleus,
+ * non-relativistic), normalised so ∫R²r²dr = 1:
+ *   R_nl = √((2Z/na₀)³ (n−l−1)!/(2n (n+l)!)) e^{−ρ/2} ρ^l L_{n−l−1}^{(2l+1)}(ρ),  ρ = 2Zr/(na₀).
+ * Lengths in units of a₀ unless a0 is given (use the reduced-mass a₀ for exact spectroscopy).
+ */
+function hydrogenRadial(n, l, r, { Z = 1, a0 = 1 } = {}) {
+  if (!(Number.isInteger(n) && Number.isInteger(l) && n >= 1 && l >= 0 && l < n)) throw new Error('hydrogenRadial: need integers n ≥ 1, 0 ≤ l < n');
+  const rho = 2 * Z * r / (n * a0);
+  const lnNorm = 1.5 * Math.log(2 * Z / (n * a0)) + 0.5 * (lgamma(n - l) - lgamma(n + l + 1) - Math.log(2 * n));
+  return Math.exp(lnNorm - rho / 2) * rho ** l * laguerre(n - l - 1, 2 * l + 1, rho);
+}
+
+// ---------------------------------------------------------------- linear algebra
+
+/** Solve a tridiagonal system (Thomas algorithm). a: sub, b: diag, c: super, d: rhs. Works for complex via callers. */
+function solveTridiagonal(a, b, c, d) {
+  const n = b.length, cp = new Float64Array(n), dp = new Float64Array(n), x = new Float64Array(n);
+  cp[0] = c[0] / b[0]; dp[0] = d[0] / b[0];
+  for (let i = 1; i < n; i++) {
+    const m = b[i] - a[i] * cp[i - 1];
+    cp[i] = c[i] / m;
+    dp[i] = (d[i] - a[i] * dp[i - 1]) / m;
+  }
+  x[n - 1] = dp[n - 1];
+  for (let i = n - 2; i >= 0; i--) x[i] = dp[i] - cp[i] * x[i + 1];
+  return x;
+}
+
+/**
+ * All eigenvalues and eigenvectors of a real symmetric tridiagonal matrix (implicit QL with
+ * Wilkinson shifts; Numerical Recipes "tqli"). diag: n diagonal entries; off: n−1 entries
+ * coupling i and i+1. Returns { values, vectors } with vectors[i] the unit eigenvector of
+ * values[i] (unsorted). Cost O(n³) with eigenvectors: fine to n ≈ 500 in a browser.
+ */
+function eigenTridiagonal(diag, off) {
+  const n = diag.length;
+  if (off.length !== n - 1) throw new Error('eigenTridiagonal: off must have n − 1 entries');
+  const d = Float64Array.from(diag), e = new Float64Array(n);
+  e.set(off);
+  const z = new Float64Array(n * n);
+  for (let i = 0; i < n; i++) z[i * n + i] = 1;
+  for (let l = 0; l < n; l++) {
+    let iter = 0, m;
+    do {
+      for (m = l; m < n - 1; m++) {
+        const dd = Math.abs(d[m]) + Math.abs(d[m + 1]);
+        if (Math.abs(e[m]) <= Number.EPSILON * dd) break;
+      }
+      if (m !== l) {
+        if (iter++ === 60) throw new Error('eigenTridiagonal: no convergence');
+        let g = (d[l + 1] - d[l]) / (2 * e[l]);
+        let r = Math.hypot(g, 1);
+        g = d[m] - d[l] + e[l] / (g + (g >= 0 ? r : -r));
+        let s = 1, c = 1, p = 0, i;
+        for (i = m - 1; i >= l; i--) {
+          let f = s * e[i];
+          const b = c * e[i];
+          r = Math.hypot(f, g);
+          e[i + 1] = r;
+          if (r === 0) { d[i + 1] -= p; e[m] = 0; break; }
+          s = f / r; c = g / r;
+          g = d[i + 1] - p;
+          r = (d[i] - g) * s + 2 * c * b;
+          p = s * r;
+          d[i + 1] = g + p;
+          g = c * r - b;
+          for (let k = 0; k < n; k++) {
+            f = z[k * n + i + 1];
+            z[k * n + i + 1] = s * z[k * n + i] + c * f;
+            z[k * n + i] = c * z[k * n + i] - s * f;
+          }
+        }
+        if (r === 0 && i >= l) continue;
+        d[l] -= p; e[l] = g; e[m] = 0;
+      }
+    } while (m !== l);
+  }
+  const vectors = Array.from({ length: n }, (_v, i) => Float64Array.from({ length: n }, (_w, k) => z[k * n + i]));
+  return { values: Array.from(d), vectors };
+}
+
+/** Least-squares fit y ≈ a + b x. Returns { a, b, r2 }. */
+function linearFit(xs, ys) {
+  // two-pass (centred) sums: no cancellation when x has a large offset (e.g. timestamps)
+  const n = xs.length;
+  let mx = 0, my = 0;
+  for (let i = 0; i < n; i++) { mx += xs[i]; my += ys[i]; }
+  mx /= n; my /= n;
+  let sxx = 0, sxy = 0, syy = 0;
+  for (let i = 0; i < n; i++) { const dx = xs[i] - mx, dy = ys[i] - my; sxx += dx * dx; sxy += dx * dy; syy += dy * dy; }
+  const b = sxy / sxx, a = my - b * mx;
+  const r2 = syy === 0 ? 1 : (sxy * sxy) / (sxx * syy);
+  return { a, b, r2 };
+}
+
+/**
+ * Mean and standard error of a correlated series by binning (blocking) analysis. Returns the
+ * largest error over block sizes with ≥ minBins blocks: conservative (≈ 10 % high for
+ * uncorrelated data). Series too short for blocking fall back to the naive standard error.
+ */
+function meanWithError(xs, minBins = 16) {
+  const n = xs.length;
+  const mean = xs.reduce((s, v) => s + v, 0) / n;
+  if (n < minBins) {
+    const v = n > 1 ? xs.reduce((s, x) => s + (x - mean) ** 2, 0) / (n - 1) : NaN;
+    return { mean, error: Math.sqrt(v / n), naive: true };
+  }
+  let best = 0;
+  for (let size = 1; n / size >= minBins; size *= 2) {
+    const nb = Math.floor(n / size), means = [];
+    for (let b = 0; b < nb; b++) { let s = 0; for (let i = 0; i < size; i++) s += xs[b * size + i]; means.push(s / size); }
+    const m = means.reduce((s, v) => s + v, 0) / nb;
+    const v = means.reduce((s, x) => s + (x - m) ** 2, 0) / (nb - 1);
+    best = Math.max(best, Math.sqrt(v / nb));
+  }
+  return { mean, error: best };
+}
+
+return { rng, fft, fftFreq, rk4Step, DORMAND_PRINCE, dopri5, gaussLegendreNodes, gaussLegendre, adaptiveSimpson, integrateToInfinity, brent, lgamma, gamma, factorial, erf, besselI, besselJ, besselJZeros, ellipticK, laguerre, legendreP, normalizedLegendre, realYlm, complexYlm, hydrogenRadial, solveTridiagonal, eigenTridiagonal, linearFit, meanWithError };
+})();
+
+// ---- psim:core/fields.mjs
+__psim["core/fields.mjs"] = (() => {
+// Multidimensional regular-grid mathematics. Axis 0 is fastest:
+// shape [nx, ny, nz] means index = i + nx * (j + ny * k).
+// Fields are flat arrays. Spacing is a positive scalar or one value per axis.
+// Irregular domains: grid.mask (1 = inside, length = grid size) restricts the derivative operators
+// to the masked cells; maskBc 'dirichlet' (zero outside, e.g. a clamped edge) or 'neumann' (zero
+// flux). The boundary is a staircase of cells: first-order in dx for curved boundaries.
+const { fft } = __psim["core/numerics.mjs"];
+const finite = (value, who) => {
+  if (!Number.isFinite(value)) throw new Error(`${who}: numerical range exceeded; use finite inputs and suitable units`);
+  return value;
+};
+const positive = (value, who) => {
+  if (!(Number.isFinite(value) && value > 0)) throw new Error(`${who}: expected a positive finite parameter`);
+};
+function grid(shape, spacing = 1, bc = 'periodic', mask = null, maskBc = 'dirichlet') {
+  if (!shape?.length) throw new Error('fields: shape must contain positive integer extents');
+  const dimensions = Array.from(shape);
+  let size = 1;
+  const strides = dimensions.map(length => {
+    if (!(Number.isSafeInteger(length) && length > 0)) throw new Error('fields: shape must contain positive integer extents');
+    const stride = size; size *= length;
+    if (!Number.isSafeInteger(size)) throw new Error('fields: grid size exceeds the integer range');
+    return stride;
+  });
+  const dx = typeof spacing === 'number' ? dimensions.map(() => spacing) : Array.from(spacing);
+  if (dx.length !== dimensions.length || !dx.every(value => Number.isFinite(value) && value > 0)) throw new Error('fields: spacing must be positive and match the shape');
+  const boundaries = typeof bc === 'string' ? dimensions.map(() => bc) : Array.from(bc);
+  if (boundaries.length !== dimensions.length || !boundaries.every(value => ['periodic', 'dirichlet', 'neumann'].includes(value))) throw new Error('fields: boundary must be periodic, dirichlet or neumann for each axis');
+  if (mask && mask.length !== size) throw new Error('fields: mask length must equal the grid size');
+  if (!['dirichlet', 'neumann'].includes(maskBc)) throw new Error('fields: maskBc must be dirichlet or neumann');
+  return { shape: dimensions, spacing: dx, strides, boundaries, size, mask, maskBc };
+}
+function field(values, size, who) {
+  if (!values || values.length !== size) throw new Error(`${who}: field length must equal the grid size`);
+  for (const value of values) finite(value, who);
+}
+function overlaps(a, b) {
+  return a === b || (ArrayBuffer.isView(a) && ArrayBuffer.isView(b) && a.buffer === b.buffer && a.byteOffset < b.byteOffset + b.byteLength && b.byteOffset < a.byteOffset + a.byteLength);
+}
+function output(out, input, who) {
+  if (!out || out.length !== input.length || overlaps(out, input)) throw new Error(`${who}: output must have matching length and not overlap the input`);
+}
+function neighbor(values, index, axis, side, spec) {
+  const stride = spec.strides[axis], length = spec.shape[axis], coordinate = Math.floor(index / stride) % length;
+  let other;
+  if (coordinate + side >= 0 && coordinate + side < length) other = index + side * stride;
+  else if (spec.boundaries[axis] === 'periodic') other = index - side * (length - 1) * stride;
+  else return spec.boundaries[axis] === 'neumann' ? values[index] : 0;
+  if (spec.mask && !spec.mask[other]) return spec.maskBc === 'neumann' ? values[index] : 0;
+  return values[other];
+}
+
+/**
+ * Compact second-order Laplacian on any-dimensional grid. Dirichlet: zero ghost values;
+ * Neumann: copied edge-cell ghosts (zero face flux), conserving the unweighted cell sum.
+ * The output must not alias input. Mixed per-axis boundaries are allowed.
+ */
+function laplacianND(values, { shape, spacing = 1, bc = 'periodic', mask, maskBc }, out = new Float64Array(values.length)) {
+  const spec = grid(shape, spacing, bc, mask, maskBc);
+  field(values, spec.size, 'laplacianND'); output(out, values, 'laplacianND');
+  for (let index = 0; index < spec.size; index++) {
+    if (mask && !mask[index]) { out[index] = 0; continue; }
+    let result = 0;
+    for (let axis = 0; axis < spec.shape.length; axis++) {
+      const dx = spec.spacing[axis];
+      result += ((neighbor(values, index, axis, -1, spec) - values[index]) / dx + (neighbor(values, index, axis, 1, spec) - values[index]) / dx) / dx;
+    }
+    out[index] = finite(result, 'laplacianND');
+  }
+  return out;
+}
+
+/** Central second-order gradient, one flat component per axis, with the same ghost rules. */
+function gradientND(values, { shape, spacing = 1, bc = 'periodic', mask, maskBc }) {
+  const spec = grid(shape, spacing, bc, mask, maskBc);
+  field(values, spec.size, 'gradientND');
+  return spec.shape.map((_length, axis) => Float64Array.from({ length: spec.size }, (_, index) => (mask && !mask[index]) ? 0 :
+    finite((neighbor(values, index, axis, 1, spec) - neighbor(values, index, axis, -1, spec)) / spec.spacing[axis] / 2, 'gradientND')));
+}
+
+/** Central divergence. div(grad) uses a wider stencil than the compact laplacianND. */
+function divergenceND(components, { shape, spacing = 1, bc = 'periodic', mask, maskBc }) {
+  const spec = grid(shape, spacing, bc, mask, maskBc);
+  if (components?.length !== spec.shape.length) throw new Error('divergenceND: one component per axis required');
+  for (const values of components) field(values, spec.size, 'divergenceND');
+  return Float64Array.from({ length: spec.size }, (_, index) => {
+    if (mask && !mask[index]) return 0;
+    let result = 0;
+    for (let axis = 0; axis < spec.shape.length; axis++) result += (neighbor(components[axis], index, axis, 1, spec) - neighbor(components[axis], index, axis, -1, spec)) / spec.spacing[axis] / 2;
+    return finite(result, 'divergenceND');
+  });
+}
+
+function fftGrid(shape) {
+  const spec = grid(shape);
+  if (!spec.shape.every(length => length <= 2 ** 29 && Number.isInteger(Math.log2(length)))) throw new Error('fftND: every extent must be a supported power of two');
+  return spec;
+}
+function transform(re, im, spec, inverse) {
+  for (let axis = 0; axis < spec.shape.length; axis++) {
+    const length = spec.shape[axis], stride = spec.strides[axis], block = length * stride;
+    const rowRe = new Float64Array(length), rowIm = new Float64Array(length);
+    for (let base = 0; base < spec.size; base += block) { for (let offset = 0; offset < stride; offset++) {
+      for (let i = 0; i < length; i++) { const index = base + offset + i * stride; rowRe[i] = re[index]; rowIm[i] = im[index]; }
+      fft(rowRe, rowIm, inverse);
+      for (let i = 0; i < length; i++) { const index = base + offset + i * stride; re[index] = finite(rowRe[i], 'fftND'); im[index] = finite(rowIm[i], 'fftND'); }
+    } }
+  }
+}
+
+/** In-place separable radix-2 complex FFT; inverse includes 1/product(shape). */
+function fftND(re, im, shape, inverse = false) {
+  const spec = fftGrid(shape);
+  field(re, spec.size, 'fftND'); field(im, spec.size, 'fftND');
+  if (overlaps(re, im)) throw new Error('fftND: real and imaginary storage must not overlap');
+  transform(re, im, spec, inverse);
+  return { re, im };
+}
+
+function eigenvalues(spec, discretization) {
+  if (!['spectral', 'finite-difference'].includes(discretization)) throw new Error('fields: discretization must be spectral or finite-difference');
+  return Float64Array.from({ length: spec.size }, (_, index) => {
+    let value = 0;
+    for (let axis = 0; axis < spec.shape.length; axis++) {
+      const n = spec.shape[axis], i = Math.floor(index / spec.strides[axis]) % n, mode = i < n / 2 ? i : i - n;
+      const k = discretization === 'spectral' ? 2 * Math.PI * mode / n / spec.spacing[axis] : 2 * Math.sin(Math.PI * mode / n) / spec.spacing[axis];
+      value += k * k;
+    }
+    return finite(value, 'fields Fourier operator');
+  });
+}
+function mean(values) {
+  let result = 0, correction = 0;
+  for (const value of values) {
+    const term = value / values.length - correction, next = result + term;
+    correction = (next - result) - term; result = next;
+  }
+  return result;
+}
+function volume(spec) {
+  const value = spec.spacing.reduce((product, dx) => product * dx, 1);
+  positive(value, 'fields cell volume'); return value;
+}
+
+/**
+ * Solve (-Laplacian + screening^2) u = source on a periodic power-of-two grid.
+ * Spectral (default) or compact finite-difference symbol. Unscreened Poisson requires a
+ * zero-mean source (rtol relative to maximum source magnitude); fixes the solution mean to zero.
+ * Returns { u, sourceMean, discretization }. No incompatible mean is silently removed.
+ */
+function solvePoissonPeriodic(source, { shape, spacing = 1, screening = 0, discretization = 'spectral', rtol = 1e-12, atol = 0 }) {
+  const spec = grid(shape, spacing); fftGrid(shape); field(source, spec.size, 'solvePoissonPeriodic');
+  if (!(Number.isFinite(screening) && screening >= 0 && Number.isFinite(rtol) && rtol >= 0 && Number.isFinite(atol) && atol >= 0)) throw new Error('solvePoissonPeriodic: invalid screening or tolerance');
+  const screen2 = screening * screening;
+  if (!Number.isFinite(screen2) || (screening > 0 && screen2 === 0)) throw new Error('solvePoissonPeriodic: screening scale outside numerical range');
+  let scale = 0;
+  for (const value of source) scale = Math.max(scale, Math.abs(value));
+  const divisor = scale || 1, re = Float64Array.from(source, value => value / divisor), im = new Float64Array(spec.size);
+  const scaledMean = mean(re), sourceMean = finite(scaledMean * divisor, 'solvePoissonPeriodic');
+  if (screening === 0 && Math.abs(scaledMean) > rtol + atol / divisor) throw new Error('solvePoissonPeriodic: unscreened periodic source must have zero mean');
+  const lambda = eigenvalues(spec, discretization);
+  transform(re, im, spec, false);
+  for (let i = 0; i < spec.size; i++) {
+    const denominator = finite(lambda[i] + screen2, 'solvePoissonPeriodic');
+    if (denominator === 0) re[i] = im[i] = 0;
+    else { re[i] = finite(re[i] / denominator, 'solvePoissonPeriodic'); im[i] = finite(im[i] / denominator, 'solvePoissonPeriodic'); }
+  }
+  transform(re, im, spec, true);
+  return { u: Float64Array.from(re, value => finite(value * divisor, 'solvePoissonPeriodic')), sourceMean, discretization };
+}
+
+/**
+ * Linear periodic diffusion du/dt = D Laplacian u by exact Fourier-mode propagation.
+ * Spectral or compact finite-difference spatial operator, no source. advanceTo evaluates
+ * from the original coefficients, so results at a given time do not depend on frame schedules.
+ */
+function diffusionPeriodic({ u0, shape, spacing = 1, D, dt, t0 = 0, discretization = 'spectral' }) {
+  const spec = grid(shape, spacing); fftGrid(shape); field(u0, spec.size, 'diffusionPeriodic');
+  if (!(Number.isFinite(D) && D >= 0 && Number.isFinite(t0))) throw new Error('diffusionPeriodic: D must be finite/non-negative and t0 finite');
+  positive(dt, 'diffusionPeriodic dt');
+  let scale = 0;
+  for (const value of u0) scale = Math.max(scale, Math.abs(value));
+  const divisor = scale || 1, initialRe = Float64Array.from(u0, value => value / divisor), initialIm = new Float64Array(spec.size);
+  transform(initialRe, initialIm, spec, false);
+  const lambda = eigenvalues(spec, discretization), u = Float64Array.from(u0);
+  const re = new Float64Array(spec.size), im = new Float64Array(spec.size);
+  const s = {
+    t: t0, u, steps: 0, shape: spec.shape.slice(), discretization,
+    advanceTo(target) {
+      if (!(Number.isFinite(target) && target >= s.t)) throw new Error('diffusionPeriodic: target must be finite and not earlier than current time');
+      const elapsed = finite(target - t0, 'diffusionPeriodic');
+      for (let i = 0; i < spec.size; i++) {
+        const factor = lambda[i] === 0 || D === 0 ? 1 : Math.exp(-D * lambda[i] * elapsed);
+        re[i] = initialRe[i] * factor; im[i] = initialIm[i] * factor;
+      }
+      transform(re, im, spec, true);
+      for (let i = 0; i < spec.size; i++) re[i] = finite(re[i] * divisor, 'diffusionPeriodic');
+      u.set(re); s.t = target; s.steps++; return true;
+    },
+    step() { const target = finite(s.t + dt, 'diffusionPeriodic'); if (target === s.t) throw new Error('diffusionPeriodic: step underflow'); return s.advanceTo(target); },
+    total() { return finite(mean(u) * spec.size * volume(spec), 'diffusionPeriodic total'); },
+  };
+  return s;
+}
+
+/**
+ * Periodic time-dependent Schrodinger equation in any dimension, static real V and isotropic
+ * mass. Strang split FFT, second order in dt, unitary up to round-off. Inputs are copied.
+ * Returns t/re/im, step/advanceTo, probability() and norm(); no automatic normalization.
+ *
+ * absorb: { width, strength } adds a complex absorbing potential −iW near both ends of every axis
+ * (width: grid cells per axis or one number; W = strength·s², s = depth into the layer ∈ [0, 1]),
+ * so outgoing waves leave instead of wrapping round. The norm then decreases: absorbed() is the
+ * probability removed. Choose strength comparable to the packet's kinetic energy and a layer of
+ * several wavelengths; check the reflected remainder by changing the layer.
+ */
+function schrodingerND({ re0, im0, V, shape, spacing = 1, dt, mass = 1, hbar = 1, t0 = 0, absorb }) {
+  const spec = grid(shape, spacing); fftGrid(shape); field(re0, spec.size, 'schrodingerND');
+  if (im0) field(im0, spec.size, 'schrodingerND');
+  if (V) field(V, spec.size, 'schrodingerND potential');
+  positive(dt, 'schrodingerND dt'); positive(mass, 'schrodingerND mass'); positive(hbar, 'schrodingerND hbar'); finite(t0, 'schrodingerND t0');
+  const lambda = eigenvalues(spec, 'spectral');
+  const halfV = Float64Array.from({ length: spec.size }, (_, i) => finite(-(V?.[i] ?? 0) / hbar * (dt / 2), 'schrodingerND potential phase'));
+  const kinetic = Float64Array.from(lambda, value => finite(-hbar / mass * (value / 2) * dt, 'schrodingerND kinetic phase'));
+  const re = Float64Array.from(re0), im = im0 ? Float64Array.from(im0) : new Float64Array(spec.size);
+  const workRe = new Float64Array(spec.size), workIm = new Float64Array(spec.size), cellVolume = volume(spec);
+  let halfDamp = null;                                    // e^{−W dt/2ħ} per cell, applied with each potential half-step
+  if (absorb) {
+    const widths = typeof absorb.width === 'number' ? spec.shape.map(() => absorb.width) : Array.from(absorb.width ?? []);
+    if (widths.length !== spec.shape.length || !widths.every(w => Number.isInteger(w) && w >= 0) || widths.some((w, k) => 2 * w >= spec.shape[k])) throw new Error('schrodingerND: absorb.width must be whole cells per axis, less than half the axis');
+    if (!(Number.isFinite(absorb.strength) && absorb.strength > 0)) throw new Error('schrodingerND: absorb.strength must be positive');
+    halfDamp = Float64Array.from({ length: spec.size }, (_, index) => {
+      let W = 0;
+      for (let axis = 0; axis < spec.shape.length; axis++) {
+        const w = widths[axis];
+        if (!w) continue;
+        const n = spec.shape[axis], i = Math.floor(index / spec.strides[axis]) % n, depth = Math.max(w - i, i - (n - 1 - w), 0) / w;
+        W += absorb.strength * depth * depth;
+      }
+      return Math.exp(-W * dt / (2 * hbar));
+    });
+  }
+  const damp = () => { if (halfDamp) for (let i = 0; i < spec.size; i++) { workRe[i] *= halfDamp[i]; workIm[i] *= halfDamp[i]; } };
+  const rotate = phases => {
+    for (let i = 0; i < spec.size; i++) {
+      const c = Math.cos(phases[i]), d = Math.sin(phases[i]), a = workRe[i], b = workIm[i];
+      workRe[i] = a * c - b * d; workIm[i] = a * d + b * c;
+    }
+  };
+  const s = {
+    t: t0, re, im, steps: 0, shape: spec.shape.slice(),
+    step() {
+      const nextTime = finite(s.t + dt, 'schrodingerND');
+      if (nextTime === s.t) throw new Error('schrodingerND: step underflow');
+      workRe.set(re); workIm.set(im);
+      rotate(halfV); damp(); transform(workRe, workIm, spec, false); rotate(kinetic); transform(workRe, workIm, spec, true); rotate(halfV); damp();
+      field(workRe, spec.size, 'schrodingerND'); field(workIm, spec.size, 'schrodingerND');
+      re.set(workRe); im.set(workIm); s.t = nextTime; s.steps++;
+    },
+    advanceTo(target, maxSteps = 1000000) {
+      if (!(Number.isFinite(target) && target >= s.t && Number.isSafeInteger(maxSteps) && maxSteps > 0)) throw new Error('schrodingerND: finite future target and positive integer budget required');
+      let steps = 0;
+      while (s.t < target) { if (steps++ === maxSteps) return false; s.step(); }
+      return true;
+    },
+    probability() { return Float64Array.from(re, (value, i) => finite(value * value + im[i] * im[i], 'schrodingerND probability')); },
+    norm() { return finite(mean(s.probability()) * spec.size * cellVolume, 'schrodingerND norm'); },
+    /** Probability removed by the absorbing layers so far (0 without absorb). */
+    absorbed() { return halfDamp ? Math.max(0, initialNorm - s.norm()) : 0; },
+  };
+  const initialNorm = s.norm();
+  return s;
+}
+
+/**
+ * Level-set contours of a 2D field (storage as above: index i + nx·j) by marching squares with
+ * linear interpolation; saddles are resolved by the cell average. Returns polylines in physical
+ * coordinates x = origin[0] + i·dx, y = origin[1] + j·dy: [{ points: [[x, y], …], closed }].
+ * Accuracy O(dx²) for smooth fields; a contour is a drawing aid, so state the level's meaning.
+ */
+function contourLines(values, { shape, spacing = 1, origin = [0, 0] }, level) {
+  const spec = grid(shape, spacing);
+  if (spec.shape.length !== 2) throw new Error('contourLines: a 2D shape [nx, ny] is required');
+  field(values, spec.size, 'contourLines'); finite(level, 'contourLines level');
+  const [nx, ny] = spec.shape, [dx, dy] = spec.spacing, v = (i, j) => values[i + nx * j];
+  const point = new Map();                                      // edge id → crossing point
+  const cross = (i0, j0, i1, j1) => {
+    const id = i1 > i0 ? 2 * (i0 + nx * j0) : 2 * (i0 + nx * j0) + 1;
+    if (!point.has(id)) {
+      const a = v(i0, j0), b = v(i1, j1), f = a === b ? 0.5 : (level - a) / (b - a);
+      point.set(id, [origin[0] + (i0 + f * (i1 - i0)) * dx, origin[1] + (j0 + f * (j1 - j0)) * dy]);
+    }
+    return id;
+  };
+  const links = new Map(), link = (p, q) => { for (const [a, b] of [[p, q], [q, p]]) { if (!links.has(a)) links.set(a, []); links.get(a).push(b); } };
+  for (let j = 0; j < ny - 1; j++) {for (let i = 0; i < nx - 1; i++) {
+    const c = [v(i, j), v(i + 1, j), v(i + 1, j + 1), v(i, j + 1)];
+    const code = c.reduce((s, x, k) => s | (x > level ? 1 << k : 0), 0);
+    if (code === 0 || code === 15) continue;
+    const e = [() => cross(i, j, i + 1, j), () => cross(i + 1, j, i + 1, j + 1), () => cross(i, j + 1, i + 1, j + 1), () => cross(i, j, i, j + 1)];
+    const centreHigh = (c[0] + c[1] + c[2] + c[3]) / 4 > level;
+    const table = {
+      1: [[3, 0]], 2: [[0, 1]], 3: [[3, 1]], 4: [[1, 2]], 6: [[0, 2]], 7: [[3, 2]], 8: [[2, 3]],
+      9: [[0, 2]], 11: [[1, 2]], 12: [[1, 3]], 13: [[0, 1]], 14: [[3, 0]],
+      5: centreHigh ? [[3, 2], [1, 0]] : [[3, 0], [1, 2]], 10: centreHigh ? [[0, 3], [2, 1]] : [[0, 1], [2, 3]],
+    };
+    for (const [p, q] of table[code]) link(e[p](), e[q]());
+  }}
+  const used = new Set(), lines = [];
+  const walk = start => {
+    const ids = [start]; used.add(start);
+    for (let cur = start; ;) {
+      const nextId = (links.get(cur) ?? []).find(n => !used.has(n));
+      if (nextId === undefined) break;
+      ids.push(nextId); used.add(nextId); cur = nextId;
+    }
+    return ids;
+  };
+  for (const [id, nbrs] of links) if (nbrs.length === 1 && !used.has(id)) lines.push({ points: walk(id).map(k => point.get(k)), closed: false });
+  for (const id of links.keys()) {
+    if (used.has(id)) continue;
+    const ids = walk(id);
+    lines.push({ points: [...ids, ids[0]].map(k => point.get(k)), closed: true });
+  }
+  return lines;
+}
+
+/**
+ * The density level whose super-level set holds `fraction` of the total (e.g. 0.9 for "the
+ * surface enclosing 90 % of the probability"), for non-negative cell values on a uniform grid.
+ * Cell-resolution estimate: refine the grid to check it.
+ */
+function densityLevel(values, fraction) {
+  if (!(fraction > 0 && fraction < 1)) throw new Error('densityLevel: fraction must be in (0, 1)');
+  const sorted = Float64Array.from(values, x => { if (!(x >= 0)) throw new Error('densityLevel: values must be non-negative and finite'); return x; }).sort().reverse();
+  const total = sorted.reduce((s, x) => s + x, 0);
+  if (!(total > 0)) throw new Error('densityLevel: total must be positive');
+  let acc = 0;
+  for (const x of sorted) { acc += x; if (acc >= fraction * total) return x; }
+  return 0;
+}
+
+return { laplacianND, gradientND, divergenceND, fftND, solvePoissonPeriodic, diffusionPeriodic, schrodingerND, contourLines, densityLevel };
+})();
+
+// ---- local:physics.mjs
+__psim["local:physics.mjs"] = (() => {
+// Quantum tunnelling of a 2D electron wave packet through a rectangular barrier.
+//
+// Scientific aim: show how much of a localised electron wave packet tunnels through a
+// classically forbidden slab barrier in a plane, and that only the momentum component
+// normal to the barrier matters (oblique incidence lowers the effective energy).
+//
+// Model (time-dependent Schrödinger equation, one electron, free-electron mass):
+//   iħ ∂ψ/∂t = [−ħ²/(2mₑ) ∇² + V(x)] ψ,   V(x) = V₀ sech²(x/w)  (Eckart / Pöschl–Teller barrier,
+//   a smooth ridge of height V₀ and full width at half maximum a = 1.7627 w, uniform in y)
+// Units: nm, fs, meV. ħ = 658.2 meV·fs, ħ²/2mₑ = 38.10 meV·nm² (CODATA 2018 via core/constants).
+// Initial state: isotropic Gaussian, ψ ∝ exp(−|r − r₀|²/4σ₀²) exp(i k₀·r), k₀ at angle θ to the
+//   barrier normal, centred far enough left that it does not overlap the barrier.
+// Method: Strang split-operator FFT on a periodic 256 nm × 64 nm box (512 × 128 cells,
+//   dx = 0.5 nm), core/fields.mjs schrodingerND. Unitary to round-off; second order in dt.
+//   No absorbing layer: the run is measured before the fastest part of the packet can wrap
+//   around in x (periodic images). Wrapping in y is harmless: V does not depend on y, so the
+//   problem separates and the x-probabilities are unaffected (they are integrals over y).
+//   A smooth barrier is used deliberately: a sharp-edged rectangular barrier on this spectral
+//   grid converged only to first order in dx (measured 6–26 % errors in T at dx = 0.5 nm), whereas
+//   sech² has an exact closed-form T(E) and is resolved spectrally (see verify()).
+// Observables: P_T(t) = ∫_{x>0}|ψ|² (beyond the barrier crest), P_R(t) = ∫_{x<0}|ψ|².
+//   Measured transmission T_meas = P_T at t_sep, the first time the free packet's trailing
+//   edge (centre − 4σ) is beyond the barrier's tail (x > 6w, where V < 2.5×10⁻⁵ V₀).
+// Exact benchmark (separable slab): T̄ = ∫ |φ(k_x)|² T(ħ²k_x²/2m) dk_x, with |φ|² the Gaussian
+//   momentum distribution (mean k₀cosθ, s.d. 1/(2σ₀)) and T(E) the closed-form sech² barrier
+//   coefficient (Landau & Lifshitz, Quantum Mechanics, 3rd ed., §25 Problem 4; Eckart, Phys. Rev.
+//   35, 1303 (1930)), itself checked against RK4 shooting of the stationary equation.
+const { hbar: HBAR_SI, me, eV } = __psim["core/constants.mjs"];
+const { schrodingerND, fftND } = __psim["core/fields.mjs"];
+const { gaussLegendre, rk4Step } = __psim["core/numerics.mjs"];
+const HBAR = HBAR_SI / (1e-3 * eV) * 1e15;          // meV fs
+const MASS = me / (1e-3 * eV * 1e-30 / 1e-18);      // meV fs² nm⁻²
+const H2M = HBAR * HBAR / (2 * MASS);                // ħ²/2m, meV nm²
+const GRID = { nx: 512, ny: 128, dx: 0.5, dt: 0.5 };
+
+const PARAMS = [
+  { key: 'E', label: 'Packet energy E₀ = ħ²k₀²/2m', min: 50, max: 300, value: 100, unit: 'meV', digits: 3,
+    hint: 'Central kinetic energy of the electron. Compare with the barrier height.' },
+  { key: 'V0', label: 'Barrier height V₀', min: 0, max: 400, value: 150, unit: 'meV', digits: 3 },
+  { key: 'a', label: 'Barrier width a (FWHM)', min: 1, max: 4, value: 1.5, unit: 'nm', digits: 3,
+    hint: 'Full width at half height of V₀ sech²(x/w), a = 1.763 w. Tunnelling falls roughly exponentially with width.' },
+  { key: 'theta', label: 'Angle of incidence θ', min: 0, max: 40, value: 20, unit: '°', digits: 3,
+    hint: 'Only the normal energy E₀cos²θ meets the barrier; the parallel motion passes freely.' },
+  { key: 'sigma', label: 'Packet width σ₀', min: 5, max: 10, value: 6, unit: 'nm', digits: 3,
+    hint: 'Narrower in space means a broader spread of energies (Δk = 1/2σ₀).' },
+];
+
+// ------------------------------------------------------------------ exact 1D transmission
+const FWHM_PER_W = 2 * Math.acosh(Math.SQRT2);       // 1.7627…
+const barrierV = (x, V0, a) => V0 / Math.cosh(x * FWHM_PER_W / a) ** 2;
+
+/** Closed-form transmission of V₀ sech²(x/w), w = a/1.7627, at energy E > 0 (Landau–Lifshitz §25). */
+function barrierT(E, V0, a) {
+  if (V0 === 0) return 1;
+  const w = a / FWHM_PER_W, k = Math.sqrt(E / H2M), s = Math.sinh(Math.PI * k * w);
+  const g = 4 * V0 * w * w / H2M;                            // 8mV₀w²/ħ²
+  const c = g > 1 ? Math.cosh(Math.PI / 2 * Math.sqrt(g - 1)) : Math.cos(Math.PI / 2 * Math.sqrt(1 - g));
+  return 1 / (1 + (c * c) / (s * s));
+}
+
+/** T̄ = ∫ g(k) T(ħ²k²/2m) dk, g = Gaussian (mean kx, s.d. sk); k ≤ 0 never reaches the barrier. */
+function packetT(kx, sk, V0, a) {
+  const lo = Math.max(1e-9, kx - 9 * sk), hi = kx + 9 * sk, panels = 48, w = (hi - lo) / panels;
+  const g = k => Math.exp(-0.5 * ((k - kx) / sk) ** 2) / (sk * Math.sqrt(2 * Math.PI));
+  let s = 0;
+  for (let i = 0; i < panels; i++) s += gaussLegendre(k => g(k) * barrierT(H2M * k * k, V0, a), lo + i * w, lo + (i + 1) * w, 24);
+  return s;
+}
+
+// ------------------------------------------------------------------ setup
+function analytic(p, grid = GRID) {
+  const th = p.theta * Math.PI / 180, k0 = Math.sqrt(p.E / H2M);
+  const kx = k0 * Math.cos(th), ky = k0 * Math.sin(th), sk = 1 / (2 * p.sigma);
+  const vx = HBAR * kx / MASS, vy = HBAR * ky / MASS, sv = HBAR * sk / MASS;   // nm/fs
+  const Lx = grid.nx * grid.dx, xb = 6 * p.a / FWHM_PER_W, x0 = -(xb + 4.5 * p.sigma + 2);
+  const sig = t => Math.hypot(p.sigma, sv * t);                // free width σ(t)
+  const solve = f => { let lo = 0, hi = 1; while (f(hi) < 0) hi *= 2; for (let i = 0; i < 80; i++) { const m = (lo + hi) / 2; if (f(m) < 0) lo = m; else hi = m; } return hi; };
+  const tSep = solve(t => x0 + vx * t - 4 * sig(t) - xb);        // free trailing edge past barrier tail
+  const tWrap = solve(t => x0 + vx * t + 4 * sig(t) - Lx / 2);   // free leading edge at box edge
+  const y0 = -vy * tSep / 2;
+  return { k0, kx, ky, sk, vx, vy, sv, x0, y0, xb, sig, tSep, tWrap, Tbar: packetT(kx, sk, p.V0, p.a), Ex: H2M * kx * kx };
+}
+
+function initialState(p, an, grid) {
+  const { nx, ny, dx } = grid, Lx = nx * dx, Ly = ny * dx, n = nx * ny;
+  const re = new Float64Array(n), im = new Float64Array(n), V = new Float64Array(n);
+  const s2 = 4 * p.sigma * p.sigma;
+  for (let j = 0; j < ny; j++) {
+    let y = -Ly / 2 + j * dx - an.y0;
+    y -= Ly * Math.round(y / Ly);                               // nearest periodic image
+    for (let i = 0; i < nx; i++) {
+      const x = -Lx / 2 + i * dx, k = i + nx * j;
+      const amp = Math.exp(-((x - an.x0) ** 2 + (ny > 2 ? y * y : 0)) / s2);
+      const ph = an.kx * x + an.ky * (ny > 2 ? y : 0);
+      re[k] = amp * Math.cos(ph); im[k] = amp * Math.sin(ph);
+      V[k] = barrierV(x, p.V0, p.a);
+    }
+  }
+  let norm = 0;
+  for (let k = 0; k < n; k++) norm += re[k] * re[k] + im[k] * im[k];
+  const c = 1 / Math.sqrt(norm * dx * dx);
+  for (let k = 0; k < n; k++) { re[k] *= c; im[k] *= c; }
+  return { re, im, V };
+}
+
+// ------------------------------------------------------------------ simulation
+function createSim(p, grid = GRID, { history = true } = {}) {
+  const { nx, ny, dx } = grid, Lx = nx * dx, Ly = ny * dx, dA = dx * dx;
+  const an = analytic(p, grid);
+  const { re, im, V } = initialState(p, an, grid);
+  const solver = schrodingerND({ re0: re, im0: im, V, shape: [nx, ny], spacing: dx, dt: grid.dt, mass: MASS, hbar: HBAR });
+  const iL = nx / 2, iR = nx / 2 + 1;   // x_i < 0 for i < iL, x_i > 0 for i ≥ iR; the x = 0 column is split evenly
+  const xs = Float64Array.from({ length: nx }, (_, i) => -Lx / 2 + i * dx);
+  let measured = null;
+  const hist = [];
+
+  function parts() {
+    let L = 0, B = 0, R = 0;
+    const { re: r, im: m } = solver;
+    for (let j = 0; j < ny; j++) {
+      const o = nx * j;
+      for (let i = 0; i < nx; i++) {
+        const q = r[o + i] * r[o + i] + m[o + i] * m[o + i];
+        if (i < iL) L += q; else if (i >= iR) R += q; else B += q;
+      }
+    }
+    return { PR: (L + B / 2) * dA, PT: (R + B / 2) * dA, norm: (L + B + R) * dA };
+  }
+
+  /** ⟨H⟩ = ⟨T⟩ + ⟨V⟩, kinetic part evaluated spectrally (same operator as the propagator). */
+  function energy() {
+    const a = Float64Array.from(solver.re), b = Float64Array.from(solver.im);
+    fftND(a, b, [nx, ny]);
+    let kin = 0, tot = 0, pot = 0, nrm = 0;
+    for (let j = 0; j < ny; j++) {
+      const ky = 2 * Math.PI * (j < ny / 2 ? j : j - ny) / Ly;
+      for (let i = 0; i < nx; i++) {
+        const kx = 2 * Math.PI * (i < nx / 2 ? i : i - nx) / Lx, k = i + nx * j, q = a[k] * a[k] + b[k] * b[k];
+        kin += q * H2M * (kx * kx + ky * ky); tot += q;
+      }
+    }
+    for (let k = 0; k < nx * ny; k++) { const q = solver.re[k] ** 2 + solver.im[k] ** 2; pot += q * V[k]; nrm += q; }
+    return { K: kin / tot, U: pot / nrm, H: kin / tot + pot / nrm };
+  }
+  const E0 = energy().H;
+  let eCache = null;
+  const energyNow = () => (eCache && eCache.t === solver.t ? eCache : (eCache = { t: solver.t, ...energy() }));
+  let cur = parts();
+
+  const sim = {
+    params: p, grid, an, V, xs, iL, iR,
+    get t() { return solver.t; },
+    get re() { return solver.re; },
+    get im() { return solver.im; },
+    get measured() { return measured; },
+    get parts() { return cur; },
+    hist,
+    step() {
+      solver.step();
+      cur = parts();
+      if (history) hist.push([solver.t, cur.PT, cur.PR]);
+      if (!measured && solver.t >= an.tSep) measured = { t: solver.t, ...cur };
+    },
+    energy: energyNow, E0,
+    diagnostics() {
+      const m = measured;
+      return [
+        { key: 'norm', label: 'Norm error |∫|ψ|² − 1|', value: Math.max(Math.abs(cur.norm - 1), 1e-17), kind: 'error', good: 1e-10, warn: 1e-8 },
+        { key: 'dH', label: '⟨H⟩ change (relative)', value: Math.max(Math.abs(energyNow().H / E0 - 1), 1e-17), kind: 'error', good: 1e-6, warn: 1e-3 },
+        { key: 'PT', label: 'Probability beyond crest P_T (x > 0)', value: cur.PT, kind: 'value', text: cur.PT.toPrecision(4) },
+        { key: 'PR', label: 'Probability before crest P_R (x < 0)', value: cur.PR, kind: 'value', text: cur.PR.toPrecision(4) },
+        { key: 'Tbar', label: 'Exact T̄ (momentum-averaged)', value: an.Tbar, kind: 'value', text: an.Tbar.toPrecision(4) },
+        { key: 'Tm', label: `Measured T at t = ${an.tSep.toFixed(0)} fs`, value: m ? m.PT : 0, kind: 'value',
+          text: m ? `${m.PT.toPrecision(4)} (Δ = ${(m.PT / an.Tbar - 1 >= 0 ? '+' : '')}${(100 * (m.PT / an.Tbar - 1)).toFixed(2)} %)` : 'not yet (packet still at barrier)' },
+        { key: 'sep', label: 'Clean measurement window', value: an.tWrap - an.tSep, kind: 'value',
+          text: an.tSep < an.tWrap ? `${an.tSep.toFixed(0)}–${an.tWrap.toFixed(0)} fs` : 'none: packet too slow/broad for this box' },
+      ];
+    },
+    state() { return { t: solver.t, ...cur, Tbar: an.Tbar, measured, tSep: an.tSep, tWrap: an.tWrap }; },
+    record() { return { header: ['t_fs', 'P_T', 'P_R'], rows: hist.map(r => r.map(v => +v.toPrecision(10))) }; },
+  };
+  return sim;
+}
+
+/** Run to the measurement time and return P_T there (verification helper). */
+function measureT(p, grid = GRID) {
+  const s = createSim(p, grid, { history: false });
+  while (!s.measured) s.step();
+  return { T: s.measured.PT, norm: s.measured.norm, Tbar: s.an.Tbar, sim: s };
+}
+
+// ------------------------------------------------------------------ verification
+/** Independent T(E): integrate ψ'' = (2m/ħ²)(V − E)ψ through the barrier with RK4 from a pure
+ *  outgoing wave on the right, then project onto e^{±ikx} on the left: T = 1/|A|². */
+function shootingT(E, V0, a, n = 20000) {
+  const k = Math.sqrt(E / H2M), X = 18 * a / FWHM_PER_W, h = -2 * X / n;
+  let x = X, y = [Math.cos(k * x), Math.sin(k * x), -k * Math.sin(k * x), k * Math.cos(k * x)];
+  const f = (t, u) => { const q = (barrierV(t, V0, a) - E) / H2M; return [u[2], u[3], q * u[0], q * u[1]]; };
+  for (let i = 0; i < n; i++) { y = rk4Step(f, x, y, h); x += h; }
+  // |A| from A e^{ikx} = (ψ + ψ'/(ik))/2 at x = −X (the phase e^{ikx} does not change |A|)
+  const Are = (y[0] + y[3] / k) / 2, Aim = (y[1] - y[2] / k) / 2;
+  return 1 / (Are * Are + Aim * Aim);
+}
+
+function verify() {
+  const checks = [], notes = [];
+  const D = Object.fromEntries(PARAMS.map(q => [q.key, q.value]));
+  const strip = (nx, dx, dt) => ({ nx, ny: 2, dx, dt });          // y-uniform strip = exact 1D reduction
+  const pct = v => `${(100 * v).toFixed(3)} %`;
+
+  // 1. closed-form T(E) vs independent shooting integration of the stationary equation
+  let worst = 0;
+  for (const [E, V0, a] of [[100, 150, 1.5], [60, 300, 3], [250, 150, 1.5], [150, 150, 1], [80, 400, 4], [100, 20, 1]]) {
+    worst = Math.max(worst, Math.abs(barrierT(E, V0, a) / shootingT(E, V0, a) - 1));
+  }
+  checks.push({ label: 'Closed-form T(E) vs RK4 shooting of the stationary equation (6 cases incl. E > V₀ and 8mV₀w²/ħ² < 1)', value: `max rel. diff ${worst.toExponential(1)}`, pass: worst < 1e-8 });
+
+  // 2. free packet on the production grid: centroid and width vs exact
+  {
+    const s = createSim({ ...D, V0: 0 }, GRID, { history: false });
+    const t1 = 200;
+    while (s.t < t1 - 1e-9) s.step();
+    const { nx, ny, dx } = GRID, Lx = nx * dx;
+    let m = 0, mx = 0, mxx = 0;
+    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) { const k = i + nx * j, q = s.re[k] ** 2 + s.im[k] ** 2, x = -Lx / 2 + i * dx; m += q; mx += q * x; mxx += q * x * x; }
+    const xc = mx / m, sx = Math.sqrt(mxx / m - xc * xc), an = s.an;
+    const dxc = Math.abs(xc - (an.x0 + an.vx * s.t)), dsx = Math.abs(sx / an.sig(s.t) - 1);
+    checks.push({ label: `Free 2D packet (V₀ = 0) after ${s.t} fs: centre ⟨x⟩ = x₀ + ħk_x t/m`, value: `|Δ⟨x⟩| = ${dxc.toExponential(1)} nm`, pass: dxc < 1e-6 });
+    checks.push({ label: 'Free packet width σ(t) = √(σ₀² + (ħt/2mσ₀)²)', value: `rel. err ${dsx.toExponential(1)}`, pass: dsx < 1e-6 });
+  }
+
+  // 3. production run, default parameters (oblique incidence) vs exact momentum-averaged T̄
+  const prod = measureT(D);
+  const eProd = Math.abs(prod.T / prod.Tbar - 1);
+  {
+    const steps = prod.sim.t / GRID.dt, dN = Math.abs(prod.norm - 1);
+    checks.push({ label: `Norm conserved (unitary): 2D run of ${steps} steps on ${GRID.nx}×${GRID.ny} cells, round-off budget 1e-14 per step`, value: `|ΔN| = ${dN.toExponential(1)} (${(dN / steps).toExponential(1)} per step)`, pass: dN / steps < 1e-14 });
+  }
+  checks.push({ label: `Default case (E₀ = 100, V₀ = 150 meV, a = 1.5 nm, θ = 20°): T measured vs exact T̄ = ${prod.Tbar.toFixed(5)}`, value: `T = ${prod.T.toFixed(5)}, Δ ${pct(eProd)}`, pass: eProd < 0.005 });
+  {
+    const e = prod.sim.energy().H, e0 = prod.sim.E0;
+    const dE = Math.abs(e / e0 - 1);
+    checks.push({ label: '⟨H⟩ after the collision (Strang splitting: bounded, not exact)', value: `rel. change ${dE.toExponential(1)}`, pass: dE < 1e-3 });
+  }
+
+  // 4. separability: θ = 20° equals normal incidence at the same k_x (same normal energy)
+  {
+    const th = D.theta * Math.PI / 180;
+    const normal = measureT({ ...D, theta: 0, E: D.E * Math.cos(th) ** 2 });
+    const d = Math.abs(normal.T - prod.T);
+    checks.push({ label: `Only normal energy tunnels: θ = 20° vs θ = 0° at E₀cos²θ = ${(D.E * Math.cos(th) ** 2).toFixed(2)} meV`, value: `|ΔT| = ${d.toExponential(1)}`, pass: d < 1e-6 });
+    const plain = packetT(Math.sqrt(D.E / H2M), 1 / (2 * D.sigma), D.V0, D.a);
+    notes.push(`At θ = 20° the packet transmits T̄ = ${prod.Tbar.toFixed(4)}; the same packet at normal incidence (E_x = 100 meV) would transmit ${plain.toFixed(4)}.`);
+  }
+
+  // 5. other regimes on the exact y-uniform strip reduction (same x-grid, dx, dt)
+  for (const [lab, q] of [
+    ['Deep tunnelling (E₀ = 60, V₀ = 300 meV, a = 2 nm)', { E: 60, V0: 300, a: 2, theta: 0, sigma: 8 }],
+    ['Over-barrier reflection (E₀ = 250, V₀ = 150 meV, a = 1 nm)', { E: 250, V0: 150, a: 1, theta: 0, sigma: 6 }],
+    ['Thick barrier (E₀ = 120, V₀ = 160 meV, a = 4 nm)', { E: 120, V0: 160, a: 4, theta: 0, sigma: 8 }],
+    ['Narrowest, fastest (E₀ = 300, V₀ = 400 meV, a = 1 nm, σ₀ = 5 nm)', { E: 300, V0: 400, a: 1, theta: 0, sigma: 5 }],
+  ]) {
+    const r = measureT(q, strip(GRID.nx, GRID.dx, GRID.dt));
+    const e = Math.abs(r.T / r.Tbar - 1);
+    checks.push({ label: `${lab}: T vs exact T̄ = ${r.Tbar.toPrecision(4)}`, value: `T = ${r.T.toPrecision(4)}, Δ ${pct(e)}`, pass: e < 0.005 });
+  }
+
+  // 6. convergence: time step and grid spacing (strip, default normal-incidence physics)
+  {
+    const q = { ...D, theta: 0 };
+    const ts = [GRID.dt * 2, GRID.dt, GRID.dt / 2, GRID.dt / 4].map(dt => measureT(q, strip(GRID.nx, GRID.dx, dt)).T);
+    const e1 = Math.abs(ts[0] - ts[1]), e2 = Math.abs(ts[1] - ts[2]), e3 = Math.abs(ts[2] - ts[3]);
+    const order = Math.log2(e1 / e2);
+    checks.push({ label: `Time-step order (Strang splitting, dt = ${GRID.dt * 2} → ${GRID.dt / 4} fs)`, value: `p = ${order.toFixed(2)}, |T(dt) − T(dt/2)| = ${e2.toExponential(1)}`, pass: Math.abs(order - 2) < 0.3 });
+    const xs = [[GRID.nx, GRID.dx], [GRID.nx * 2, GRID.dx / 2], [GRID.nx * 4, GRID.dx / 4]].map(([nx, dx]) => measureT(q, strip(nx, dx, GRID.dt)));
+    const d1 = Math.abs(xs[0].T - xs[1].T), d2 = Math.abs(xs[1].T - xs[2].T), Tb = xs[0].Tbar;
+    checks.push({ label: `Grid refinement dx = ${GRID.dx} → ${GRID.dx / 4} nm`, value: `T = ${xs.map(r => r.T.toFixed(6)).join(' → ')}; exact ${Tb.toFixed(6)}`, pass: d1 < 1e-4 && d2 <= d1 + 1e-6 });
+    notes.push(`Time-step errors at the production dt = ${GRID.dt} fs: ${e2.toExponential(1)} in T; dt/2 vs dt/4: ${e3.toExponential(1)}.`);
+  }
+
+  notes.push('The exact benchmark T̄ assumes an infinite domain and infinite time; the box is periodic and T is read at t_sep. Remaining differences come from the time step and the finite measurement time (slow momentum tail).');
+  notes.push('A sharp-edged rectangular barrier was tried first: on this spectral grid it converged only to first order in dx (6–26 % off at dx = 0.5 nm), so the smooth sech² barrier with an exact T(E) is used instead.');
+  notes.push('Model scope: one free electron in vacuum-like conditions (free-electron mass), static ideal rectangular barrier; no spin, image-charge, many-body or phonon effects.');
+  return {
+    summary: 'Split-operator 2D Schrödinger solver checked against the exact square-barrier transmission averaged over the packet momenta, free-packet motion, norm, separability, and dt/dx refinement.',
+    checks, notes,
+  };
+}
+
+return { HBAR, MASS, H2M, GRID, PARAMS, FWHM_PER_W, barrierV, barrierT, packetT, analytic, createSim, measureT, verify };
+})();
+
+// ---- page
+const { createInstrument } = __psim["ui/instrument-app.mjs"];
+const { sci, select, el } = __psim["ui/instrument.mjs"];
+const { PARAMS, createSim, barrierT, barrierV, H2M, HBAR, MASS, FWHM_PER_W, GRID } = __psim["local:physics.mjs"];
+// ------------------------------------------------------------------ presentation-only state
+const display = { mode: 'sqrt' };   // 'sqrt' | 'log' | 'phase' : colour transfer, never touches the physics
+const hexRgb = s => {
+  s = s.trim();
+  if (s.startsWith('#')) { const h = s.length === 4 ? s.slice(1).split('').map(c => c + c).join('') : s.slice(1, 7); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); }
+  const m = s.match(/[\d.]+/g); return m ? m.slice(0, 3).map(Number) : [0, 0, 0];
+};
+const hue = (ph) => {   // phase → RGB on a hue circle (domain colouring)
+  const h = ((ph / (2 * Math.PI)) % 1 + 1) % 1 * 6, x = 1 - Math.abs(h % 2 - 1), i = Math.floor(h);
+  const c = [[1, x, 0], [x, 1, 0], [0, 1, x], [0, x, 1], [x, 0, 1], [1, 0, x]][i] ?? [1, 0, 0];
+  return c.map(v => 40 + 215 * v);
+};
+
+let off = null, img = null;
+function draw(ctx, sim, view) {
+  const { W, H } = view, C = view.color, { nx, ny, dx } = sim.grid, Lx = nx * dx, Ly = ny * dx;
+  const narrow = W < 640;
+  // Crop x on narrow screens so the packet stays legible; the full box is 256 nm × 64 nm.
+  const xr = narrow ? 64 : Lx / 2, i0 = Math.round((Lx / 2 - xr) / dx), i1 = Math.round((Lx / 2 + xr) / dx);
+  const cols = i1 - i0;
+  const top = narrow ? 186 : 136, left = 16, right = 16;
+  const mapW = W - left - right, mapH = Math.max(40, Math.min(H - top - 150, mapW * Ly / (2 * xr)));
+  const profH = Math.max(100, Math.min(170, H - top - mapH - (narrow ? 130 : 50)));
+  const sx = mapW / (2 * xr), X = x => left + (x + xr) * sx, yTop = top;
+
+  // --- |ψ|² map (one texel per grid cell, bilinear upscaling)
+  if (!off || off.width !== cols) { off = document.createElement('canvas'); off.width = cols; off.height = ny; img = off.getContext('2d').createImageData(cols, ny); }
+  const bg = hexRgb(C('--stage') || C('--bg')), fg = hexRgb(C('--body-1')), d = img.data;
+  const peak0 = 1 / (2 * Math.PI * sim.params.sigma ** 2);           // initial peak density, nm⁻²
+  const { re, im } = sim;
+  for (let j = 0; j < ny; j++) for (let c = 0; c < cols; c++) {
+    const k = (i0 + c) + nx * j, a = re[k], b = im[k], q = (a * a + b * b) / peak0;
+    let s, col = fg;
+    if (display.mode === 'log') s = Math.max(0, 1 + Math.log10(q + 1e-30) / 5);
+    else s = Math.min(1, Math.sqrt(q));
+    if (display.mode === 'phase') col = hue(Math.atan2(b, a));
+    s = Math.min(1, s);
+    const o = 4 * (c + cols * (ny - 1 - j));
+    d[o] = bg[0] + s * (col[0] - bg[0]); d[o + 1] = bg[1] + s * (col[1] - bg[1]); d[o + 2] = bg[2] + s * (col[2] - bg[2]); d[o + 3] = 255;
+  }
+  off.getContext('2d').putImageData(img, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(off, left, yTop, mapW, mapH);
+
+  // barrier overlay: hairlines at the half-height edges (±a/2) and the crest x = 0
+  const a = sim.params.a, crest = X(0);
+  ctx.fillStyle = C('--body-0'); ctx.globalAlpha = 0.10; ctx.fillRect(X(-a / 2), yTop, X(a / 2) - X(-a / 2), mapH); ctx.globalAlpha = 1;
+  ctx.strokeStyle = C('--body-0'); ctx.lineWidth = 1; ctx.setLineDash([3, 4]);
+  ctx.beginPath(); ctx.moveTo(crest + 0.5, yTop); ctx.lineTo(crest + 0.5, yTop + mapH); ctx.stroke(); ctx.setLineDash([]);
+  ctx.strokeStyle = C('--line-strong'); ctx.strokeRect(left + 0.5, yTop + 0.5, mapW - 1, mapH - 1);
+  // region readouts
+  const P = sim.parts;
+  ctx.font = '600 12px ui-monospace, Menlo, monospace'; ctx.fillStyle = C('--ink');
+  ctx.textAlign = 'right'; ctx.fillText(narrow ? `← P_R ${P.PR.toFixed(4)}` : `P_R = ${P.PR.toFixed(4)}  ← reflected`, crest - 10, yTop + mapH - 10);
+  ctx.textAlign = 'left'; ctx.fillText(narrow ? `P_T ${P.PT.toFixed(4)} →` : `transmitted →  P_T = ${P.PT.toFixed(4)}`, crest + 10, yTop + mapH - 10);
+  ctx.textAlign = 'start';
+  // scale bar 10 nm
+  ctx.strokeStyle = C('--ink'); ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(left + 10, yTop + 14); ctx.lineTo(left + 10 + 10 * sx, yTop + 14); ctx.stroke();
+  ctx.font = '10.5px ui-monospace, Menlo, monospace'; ctx.fillStyle = C('--ink'); ctx.fillText('10 nm', left + 14 + 10 * sx, yTop + 18);
+
+  // --- potential-energy profile strip: V(x) to scale in meV, with E₀ and the normal energy E_x
+  const p0 = yTop + mapH + 26, p1 = p0 + profH - 26, eMax = Math.max(sim.params.V0, sim.params.E) * 1.15 || 1;
+  const Y = e => p1 - e / eMax * (p1 - p0);
+  ctx.strokeStyle = C('--line-strong'); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(left, p1 + 0.5); ctx.lineTo(left + mapW, p1 + 0.5); ctx.stroke();
+  ctx.fillStyle = C('--body-0'); ctx.globalAlpha = 0.25; ctx.beginPath(); ctx.moveTo(left, p1);
+  for (let px = 0; px <= mapW; px++) { const x = -xr + px / sx; ctx.lineTo(left + px, Y(barrierV(x, sim.params.V0, a))); }
+  ctx.lineTo(left + mapW, p1); ctx.fill(); ctx.globalAlpha = 1;
+  ctx.strokeStyle = C('--body-0'); ctx.lineWidth = 1.6; ctx.beginPath();
+  for (let px = 0; px <= mapW; px++) { const x = -xr + px / sx, yv = Y(barrierV(x, sim.params.V0, a)); px ? ctx.lineTo(left + px, yv) : ctx.moveTo(left + px, yv); }
+  ctx.stroke();
+  const hl = (e, col, dash) => {
+    ctx.strokeStyle = C(col); ctx.setLineDash(dash); ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(left, Y(e) + 0.5); ctx.lineTo(left + mapW, Y(e) + 0.5); ctx.stroke(); ctx.setLineDash([]);
+  };
+  hl(sim.params.E, '--muted', [2, 4]); hl(sim.an.Ex, '--body-1', [6, 4]);
+  ctx.font = '10.5px ui-monospace, Menlo, monospace';
+  ctx.fillStyle = C('--muted'); ctx.fillText(narrow ? `E₀ ${sim.params.E.toFixed(0)} meV` : `E₀ = ${sim.params.E.toFixed(0)} meV (total)`, left + 4, Y(sim.params.E) - 4);
+  ctx.textAlign = 'right'; ctx.fillStyle = C('--body-1');
+  ctx.fillText(narrow ? `E_x ${sim.an.Ex.toFixed(1)} meV` : `E_x = E₀cos²θ = ${sim.an.Ex.toFixed(1)} meV (normal)`, left + mapW - 4, Y(sim.an.Ex) + 13);
+  ctx.textAlign = 'left'; ctx.fillStyle = C('--body-0'); ctx.fillText(`V₀ = ${sim.params.V0.toFixed(0)} meV`, crest + 8, Math.max(p0 - 8, Y(sim.params.V0)) + 4);
+  ctx.textAlign = 'center'; ctx.fillStyle = C('--muted');
+  for (let x = -Math.floor(xr / 32) * 32; x <= xr; x += 32) ctx.fillText(`${x}`, X(x), p1 + 14);
+  ctx.fillText(narrow ? 'x (nm), central 128 nm of the 256 nm box' : 'x (nm) · upper map: plane (x, y), y spans 64 nm, periodic', left + mapW / 2, p1 + 30);
+  ctx.textAlign = 'start';
+}
+
+// ------------------------------------------------------------------ workbench
+function bench({ eqs, figs, createPlot, createEquation, M }) {
+  const prob = createPlot({ title: 'Probability each side of the barrier crest', height: 260,
+    x: { label: 'time t', unit: 'fs', min: 0, max: 600 }, y: { label: 'probability', min: 0, max: 1 } });
+  const spec = createPlot({ title: 'Exact transmission vs normal energy', height: 260,
+    x: { label: 'normal energy E_x', unit: 'meV', min: 0, max: 450 }, y: { label: 'T(E_x)', log: true, min: 1e-6, max: 1.5 } });
+  figs.append(prob.el, spec.el);
+
+  let S = null;
+  const kx = M.sub(M.i('k'), M.i('x')), hb = M.i('ħ');
+  const tdse = createEquation({
+    title: 'Time-dependent Schrödinger equation, term by term (expectation values now)',
+    lhs: { mathml: `${M.i('i')}${hb}<mfrac><mrow><mo>∂</mo><mi>ψ</mi></mrow><mrow><mo>∂</mo><mi>t</mi></mrow></mfrac>`, label: '⟨H⟩ total energy', unit: 'meV', value: () => S?.energy().H },
+    terms: [
+      { id: 'kin', mathml: `<mo>−</mo>${M.frac(M.sup(hb, M.n(2)), `<mn>2</mn>${M.sub(M.i('m'), M.i('e'))}`)}<msup><mo>∇</mo><mn>2</mn></msup><mi>ψ</mi>`, label: 'kinetic ⟨K⟩: spreading and motion', color: '--body-1', unit: 'meV', value: () => S?.energy().K },
+      { id: 'pot', mathml: `${M.i('V')}${M.paren(M.i('x'))}<mi>ψ</mi>`, label: 'barrier ⟨V⟩: rises only during the collision', color: '--body-0', unit: 'meV', value: () => S?.energy().U },
+    ],
+    where: [
+      { mathml: `${M.i('V')}${M.paren(M.i('x'))}`, meaning: 'V₀ sech²(x/w), uniform along y; w = a/1.763', value: () => S && S.params.a / FWHM_PER_W, unit: 'nm (w)' },
+      { mathml: `${M.sup(hb, M.n(2))}<mo>/</mo><mn>2</mn>${M.sub(M.i('m'), M.i('e'))}`, meaning: 'free-electron value (CODATA 2018)', value: () => H2M, unit: 'meV nm²' },
+    ],
+  });
+  const trans = createEquation({
+    title: 'Transmitted fraction: exact prediction vs the simulation',
+    lhs: { mathml: '<mover><mi>T</mi><mo>¯</mo></mover>', label: 'exact, averaged over the packet’s momenta', value: () => S?.an.Tbar, digits: 5 },
+    terms: [{ id: 'T', mathml: `<mo>∫</mo>${M.sup(M.row(`<mo>|</mo><mi>φ</mi>${M.paren(kx)}<mo>|</mo>`), M.n(2))}<mi>T</mi>${M.paren(M.frac(`${M.sup(hb, M.n(2))}${M.sup(kx, M.n(2))}`, `<mn>2</mn>${M.i('m')}`))}<mi>d</mi>${kx}`, label: 'only k_x (normal momentum) enters', color: '--body-1', value: () => S?.an.Tbar, digits: 5 }],
+    where: [
+      { mathml: `<mi>T</mi>${M.paren(M.sub(M.i('E'), M.i('x')))}`, meaning: 'sech² barrier, closed form (Landau–Lifshitz §25)', value: () => S && barrierT(S.an.Ex, S.params.V0, S.params.a), digits: 4 },
+      { mathml: M.sub(M.i('P'), M.i('T')), meaning: 'simulated probability at x > 0 at t_sep', value: () => S?.measured ? S.measured.PT : 'waiting', digits: 5 },
+      { mathml: M.sub(M.i('t'), M.i('sep')), meaning: 'packet clear of the barrier', value: () => S?.an.tSep, unit: 'fs' },
+    ],
+    link: spec,
+  });
+  eqs.append(tdse.el, trans.el);
+
+  let n = 0;
+  return {
+    update(sim, t, { rebuilt }) {
+      S = sim;
+      if (rebuilt) {
+        const an = sim.an, tMax = Math.ceil(Math.min(an.tWrap, an.tSep * 1.5) / 50) * 50;
+        prob.setX({ min: 0, max: tMax });
+        prob.hline('Tbar', an.Tbar, { color: '--body-1', dash: true, label: `exact T̄ = ${an.Tbar.toFixed(4)}` });
+        prob.hline('Rbar', 1 - an.Tbar, { color: '--body-2', dash: true, label: `1 − T̄ = ${(1 - an.Tbar).toFixed(4)}` });
+        prob.vline('tsep', an.tSep, { color: '--muted', label: 'T measured here' });
+        prob.remove('PT').remove('PR');
+        const V0 = sim.params.V0, a = sim.params.a, xm = Math.max(450, V0 * 1.6, sim.params.E * 1.3);
+        const E = k => H2M * k * k, lo = Math.max(0, an.kx - 2 * an.sk);
+        spec.setX({ min: 0, max: xm });
+        spec.band('pk', E(lo), E(an.kx + 2 * an.sk), { color: '--grid-strong', alpha: 0.6, label: 'packet ±2σ' });
+        spec.fn('T', e => Math.max(1e-7, barrierT(Math.max(e, 1e-6), V0, a)), { color: '--body-1', label: `T(E_x), V₀ = ${V0.toFixed(0)} meV, a = ${a.toFixed(2)} nm` });
+        spec.vline('V0', V0, { color: '--body-0', label: 'V₀' });
+        spec.hline('Tbar', Math.max(1e-6, an.Tbar), { color: '--muted', dash: true, label: 'T̄ (packet average)' });
+        spec.remove('meas');
+        n = 0;
+      }
+      const h = sim.hist;
+      if (h.length !== n) {
+        n = h.length;
+        const stride = Math.max(1, Math.floor(n / 400)), pt = [], pr = [];
+        for (let i = 0; i < n; i += stride) { pt.push([h[i][0], h[i][1]]); pr.push([h[i][0], h[i][2]]); }
+        if (n) { pt.push([h[n - 1][0], h[n - 1][1]]); pr.push([h[n - 1][0], h[n - 1][2]]); }
+        prob.data('PT', pt, { color: '--body-1', label: 'P_T (x > 0)', width: 2 });
+        prob.data('PR', pr, { color: '--body-2', label: 'P_R (x < 0)', width: 2 });
+        if (sim.measured) spec.marker('meas', sim.an.Ex, Math.max(1e-6, sim.measured.PT), { color: '--body-1', label: `simulated ${sim.measured.PT.toPrecision(4)}` });
+      }
+      tdse.update(); trans.update();
+      prob.invalidate(); spec.invalidate(); prob.draw(); spec.draw();
+    },
+  };
+}
+
+createInstrument({
+  title: 'Quantum tunnelling in 2D',
+  subtitle: 'An electron wave packet meets a smooth barrier: 2D Schrödinger equation, split-operator FFT, with exact transmission',
+  tier: 'validated',
+  tierReason: 'The 2D time-dependent Schrödinger equation is solved with a unitary split-operator FFT method. The transmitted probability matches the exact sech²-barrier transmission averaged over the packet’s momenta to 0.1–0.3 % in five regimes; norm, free-packet motion and dt/dx refinement are checked (Verification). Scope: one electron, static ideal barrier.',
+  layout: 'workbench',
+  params: PARAMS, create: createSim, draw, bench,
+  timeUnit: 'fs', timeLabel: 'time since release', speed: 40, duration: 600,
+  controls(body) {
+    body.append(el('div', { class: 'psim-field' }, el('div', { class: 'top' }, el('span', {}, 'Colour scale (display only)')),
+      select([
+        { value: 'sqrt', label: '|ψ|², square-root scale' },
+        { value: 'log', label: '|ψ|², log scale (5 decades)' },
+        { value: 'phase', label: 'phase of ψ as hue, brightness √|ψ|²' },
+      ], display.mode, v => { display.mode = v; })));
+  },
+  hudLine: sim => sim.measured
+    ? `T = ${sim.measured.PT.toPrecision(4)} simulated · ${sim.an.Tbar.toPrecision(4)} exact`
+    : sim.t > sim.an.tWrap ? 'past wrap-around: periodic images' : `exact T̄ = ${sim.an.Tbar.toPrecision(4)} · measuring at ${sim.an.tSep.toFixed(0)} fs`,
+  model: {
+    legend: ['brightness: probability density |ψ|² vs initial peak (scale: see Parameters)', 'orange: barrier V(x); dashed line: crest x = 0'],
+    equations: [{ caption: 'Model', mathml: '<math display="block"><mi>i</mi><mi>ħ</mi><mfrac><mrow><mo>∂</mo><mi>ψ</mi></mrow><mrow><mo>∂</mo><mi>t</mi></mrow></mfrac><mo>=</mo><mo>−</mo><mfrac><msup><mi>ħ</mi><mn>2</mn></msup><mrow><mn>2</mn><msub><mi>m</mi><mi>e</mi></msub></mrow></mfrac><msup><mo>∇</mo><mn>2</mn></msup><mi>ψ</mi><mo>+</mo><msub><mi>V</mi><mn>0</mn></msub><msup><mi>sech</mi><mn>2</mn></msup><mo>(</mo><mi>x</mi><mo>/</mo><mi>w</mi><mo>)</mo><mi>ψ</mi></math>' }],
+    assumptions: [
+      'One electron with the free-electron mass in a plane; a static, ideal barrier V₀ sech²(x/w) that is uniform along y (a ridge). No spin, image charges, many-body screening, phonons or decoherence.',
+      'The barrier is smooth (sech², full width at half height a = 1.763 w), not rectangular: a sharp-edged rectangle on this spectral grid converged only to first order (6–26 % errors in T), while sech² has an exact transmission formula and converges spectrally.',
+      'Initial state: isotropic Gaussian packet, width σ₀, central wavevector k₀ at angle θ to the barrier normal; it starts clear of the barrier.',
+      `Grid: ${GRID.nx} × ${GRID.ny} cells, ${GRID.dx} nm spacing (256 nm × 64 nm), periodic; time step ${GRID.dt} fs, Strang splitting (second order). No absorbing layer: the transmitted fraction is read at t_sep, before the packet front can wrap around in x.`,
+      'Because V depends only on x the problem separates: the x-probabilities are those of a 1D packet with k_x = k₀cosθ, which is why the exact benchmark is a 1D integral. Wrapping across the y edges does not change them.',
+      'T is a probability for each electron (the fraction of many identical runs that end up on the far side), not a fraction of a split particle.',
+    ],
+    conventions: [
+      'Map: physical plane (x right, y up). Brightness = |ψ|² divided by the initial peak density, then square-root (default) or log scale; colour scale is a display choice and does not affect the computation.',
+      'Phase view: hue = arg ψ (domain colouring); the stripes are wavefronts, spaced by the de Broglie wavelength 2π/k₀.',
+      'Profile strip: V(x) to scale in meV, with E₀ (total kinetic energy) and E_x = E₀cos²θ (energy of motion normal to the barrier).',
+      'On phones the map shows the central 128 nm of the 256 nm box. Playback is compressed: 40 fs of physical time per second by default.',
+    ],
+    references: [
+      'L. D. Landau & E. M. Lifshitz, Quantum Mechanics (3rd ed.), §25 Problem 4: transmission through U₀/cosh²(αx).',
+      'C. Eckart, Phys. Rev. 35, 1303 (1930).',
+      'M. D. Feit, J. A. Fleck & A. Steiger, J. Comput. Phys. 47, 412 (1982): split-operator FFT method.',
+      'E. Tiesinga et al., CODATA 2018, Rev. Mod. Phys. 93, 025010 (2021): ħ, mₑ, e.',
+    ],
+  },
+});
+
+</script>
+</body>
+</html>

@@ -99,8 +99,9 @@ export const M = {
   i: s => `<mi>${s}</mi>`,
   n: s => `<mn>${s}</mn>`,
   o: s => `<mo>${s}</mo>`,
-  sub: (b, s) => `<msub>${b}${s}</msub>`,
-  sup: (b, s) => `<msup>${b}${s}</msup>`,
+  // msub/msup take exactly two children: wrap both, so a multi-part exponent such as −x survives
+  sub: (b, s) => `<msub><mrow>${b}</mrow><mrow>${s}</mrow></msub>`,
+  sup: (b, s) => `<msup><mrow>${b}</mrow><mrow>${s}</mrow></msup>`,
   frac: (a, b) => `<mfrac><mrow>${a}</mrow><mrow>${b}</mrow></mfrac>`,
   sqrt: a => `<msqrt>${a}</msqrt>`,
   row: (...a) => `<mrow>${a.join('')}</mrow>`,

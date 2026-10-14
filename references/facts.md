@@ -21,10 +21,14 @@ Use data from `core/` where it exists: planets' orbits and moon counts (`core/so
 | Sound travels in space | Sound needs a medium | Light or other signals |
 | Galaxies are held together by their visible stars | Visible matter is far too little: dark matter (or modified gravity) is needed | The rotation-curve comparison |
 | Relativity matters only near light speed | GPS clocks need it daily (38 µs/day) | Clock-rate effects at everyday speeds and gravity |
+| Quarks are literally red, green or blue | Colour charge is a physical quantum property; the colour names and screen pigments are symbolic, not optical colours | Label the charge diagram or measured field quantity beside the view; see [QCD](particle-physics.md) |
+| The Higgs field gives mass by dragging particles to a stop | Mass terms arise through field couplings; a friction animation does not model the Higgs mechanism | Potential/mass relations or an explicitly reduced scalar-field calculation; see [Higgs](higgs.md) |
+| More visually chaotic molecules always mean more entropy | Entropy depends on the stated ensemble, state space and coarse-graining; fluctuations and exported entropy matter | A defined probability/partition-function calculation with scope and uncertainty; see [entropy](entropy.md) |
 
 ## Rules
 
 - **Correct kindly and briefly**, one sentence, then move on to what can be built.
+- **Clarify ambiguity separately from errors.** A broad topic name is not a false premise. Ask about the scientific aim instead of correcting a claim the user never made. Check unfamiliar claims against sources even when they have no entry in the example table.
 - **Never invent objects** as if they were real. A hypothetical is fine when it is labelled in the page and in the reply.
 - **Uncertain or changing facts** (moon counts, new measurements): say "as of <year>, per <source>".
 - **When the user insists on a counterfactual** ("what if Mercury had a moon?"), build it gladly. Label it as hypothetical, and point out which physics is real (the orbital mechanics) and which part is invented (the moon).

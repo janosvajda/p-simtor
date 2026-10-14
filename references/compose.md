@@ -1,6 +1,6 @@
 # Composing a simulation for any domain
 
-Use this when no built-in template fits. The reference implementation is `examples/proton-magnetic-field/` (`physics.mjs`, `page.html` and the built page). Copy its structure.
+Use this when no built-in model fits the scientific question. First define that question, state and observables using [method selection](method-selection.md). The reference implementation is `examples/proton-magnetic-field/` (`physics.mjs`, `page.html` and the built page). Reuse its structure, replacing its physics and verification as needed.
 
 ## Layout in the user's project
 
@@ -29,8 +29,8 @@ export const PARAMS = [   // generates the controls; any change rebuilds the sim
 
 export function createSim(params) {
   return {
-    t,                       // getter: physical time in the page's timeUnit
-    step(),                  // one integrator step (time-dependent models)
+    t,                       // getter: physical time, or clearly labelled sampling/scan coordinate
+    step(),                  // one dynamics or sampling step for evolving models
     diagnostics(),           // [{ key, label, value, kind: 'error'|'value', unit?, good?, warn?, text? }]
     state(),                 // JSON-serialisable state (export + automated checks)
     record?(),               // { header, rows } for CSV export
@@ -44,16 +44,19 @@ export function verify() {   // run by psim verify-module / build --verify-modul
 ```
 
 Rules:
+- Keep calculation, observation and representation distinct. The calculation updates/samples the model state; observation functions derive the requested quantities; `draw()` maps these results to the declared visual channels. Document units, conditions, provenance and the progress axis alongside the model. A new subject uses this same contract without needing a new recipe or domain guide.
 - `createSim` must be deterministic for given params. Use a seeded RNG (e.g. mulberry32) for stochastic models and expose the seed as a param.
 - Diagnostics of `kind: 'error'` are relative errors (plotted on a log axis; the first one also appears in the HUD). Use `good`/`warn` thresholds from `verification.md`.
-- `verify()` compares against **exact or published** results, not against the code itself. Include at least one convergence check for numerical methods.
+- `verify()` compares against **exact or published** results, not against the code itself. Use refinement for numerical dynamics and sampling/equilibration checks for statistical methods; see [verification](verification.md).
 - Static (time-independent) visualisations: pass `timeDependent: false` to `createInstrument`. Then `step()` is not needed.
+- Set the title/subtitle, `tierReason`, `model.assumptions`, `model.conventions` and references from the selected specification. Derive each legend/convention from the renderer's mapping of quantities to visual channels. Use `timeUnit` and `timeLabel` (what the clock measures, e.g. "time since strike"; default "simulated time") for the actual progress coordinate, so the readout never shows a bare number; a static parameter scan needs no artificial playback.
 
 ## The toolkit: don't rewrite it
 
+All general mathematics (numerical primitives, ODEs and particles, matrices, grid fields and PDEs, probability, stochastic dynamics, data) is catalogued in [math-toolkit.md](math-toolkit.md), with APIs, conventions, conditions and benchmarks. The table below lists the remaining components.
+
 | Need | Use |
 |---|---|
-| Random numbers (seeded), FFT, RK4, adaptive ODE (Dormand–Prince 5(4)), Gauss–Legendre / adaptive / semi-infinite quadrature, Brent root, Γ, erf, Bessel I, Laguerre, Legendre, real Yₗₘ, tridiagonal solve, linear fit, blocking error bars | `psim:core/numerics.mjs` |
 | Plots: log/linear axes with 1-2-5 ticks, function and data series, error bars, shaded validity bands, reference lines, markers, draggable cursor, highlight linked to equations | `psim:ui/plot.mjs` → `createPlot` |
 | Equations split into physical terms with live values and colour links; a "where" block; numbered derivations | `psim:ui/equation.mjs` → `createEquation`, `createDerivation`, `M` helpers |
 | Black-body, colour | `psim:core/radiation.mjs` |
@@ -73,7 +76,7 @@ createInstrument({
   params: PARAMS, create: createSim,
   draw(ctx, sim, view, t) { /* view.W, view.H (CSS px), view.color('--body-1'), view.color('--glow') */ },
   onPointer(canvas, view, getSim) { /* camera drag etc. */ },
-  timeUnit: 'ns', speed: 30, duration: 1000,
+  timeUnit: 'ns', timeLabel: 'time since injection', speed: 30, duration: 1000,   // HUD shows "time since injection  12.4 ns"
   hudLine: sim => '…',
   model: { legend: [], equations: [{ caption, mathml }], assumptions: [], conventions: [], references: [] },
 });
