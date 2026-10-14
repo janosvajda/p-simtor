@@ -5,6 +5,7 @@
 //   node scripts/gallery.mjs add PAGE.html --prompt "/p-simtor show why galaxies need dark matter" [--title T] [--id ID]
 //   node scripts/gallery.mjs remove ID
 //   node scripts/gallery.mjs list
+//   node scripts/gallery.mjs order ID…      put these demos first, in this order
 //   node scripts/gallery.mjs build           regenerate docs/index.html (add/remove do this too)
 //
 // `add` copies the page into docs/, takes a thumbnail (if Chrome is available) and records the
@@ -157,8 +158,16 @@ if (cmd === 'add') {
   const { demos } = load();
   if (!demos.length) console.log('No demos yet.');
   for (const d of demos) console.log(`  ${d.id.padEnd(28)} ${d.date}  ${d.prompt}`);
+} else if (cmd === 'order') {
+  // move the named demos to the front, in the given order; the rest keep their order after them
+  const ids = args.slice(1), m = load();
+  const unknown = ids.filter(id => !m.demos.some(d => d.id === id));
+  if (!ids.length || unknown.length) fail(unknown.length ? `no demo "${unknown.join('", "')}"` : 'order needs demo ids (see list)');
+  m.demos = [...ids.map(id => m.demos.find(d => d.id === id)), ...m.demos.filter(d => !ids.includes(d.id))];
+  save(m);
+  build();
 } else if (cmd === 'build') {
   build();
 } else {
-  console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 11).map(l => l.replace(/^\/\/ ?/, '')).join('\n'));
+  console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 12).map(l => l.replace(/^\/\/ ?/, '')).join('\n'));
 }
