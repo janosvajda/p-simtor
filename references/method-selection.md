@@ -1,71 +1,95 @@
-# Method selection
+# Model and method selection
 
-How to go from "simulate X" to a defensible mathematical model and numerical method. Work through the questions in order and write the answers down. They become the page's model panel.
+Apply this workflow to any requested scientific system. Select a mathematical problem and measurable outputs before looking for a recipe. Optional domain notes at the end provide shortcuts; they are not a catalogue of what the agent may simulate.
 
-## 1. What kind of physics is this?
+## 1. Establish the scientific aim
 
-| Signal in the request | Nature | Representation | Typical tier |
-|---|---|---|---|
-| Orbits, planets, stars, gravity, "three-body" | Classical Hamiltonian ODE | Trajectories, phase space | validated |
-| Charged particle, cyclotron, magnetic bottle, beam | Classical (relativistic) ODE in fields | Trajectories plus field lines | validated |
-| Gas, liquid, "atoms bouncing", temperature, Lennard-Jones | Many-body ODE plus statistical mechanics | Particles plus distributions (speed histogram, g(r)) | approximate or validated within the potential |
-| Orbital shapes, electron cloud, "where is the electron" | Stationary quantum states | Probability density \|ψ\|², phase colour, nodes | analytical |
-| Wavepacket, tunnelling, double slit, time evolution | Time-dependent Schrödinger PDE | ψ(x,t) as amplitude plus phase, \|ψ\|², T/R coefficients | validated |
-| Energy levels, spectra, transitions | Eigenvalue problem | Level diagram, spectrum | analytical or validated |
-| Quarks, gluons, confinement, proton structure | Quantum field theory (non-perturbative) | Potentials, flux-tube results, parton distributions (cited) | analytical or conceptual |
-| Nuclear decay, fission | Stochastic and quantum | Decay statistics (exact exponential law), not nucleon trajectories | analytical, or approximate (Monte Carlo) |
-| Fluids, turbulence, weather | PDE, often infeasible at full fidelity | Reduced model (2D, low Re, lattice Boltzmann) with stated limits | approximate |
+Identify what the user wants to explain, compare or predict, at what scale and fidelity. Determine which question an interaction should answer. A phenomenon's name does not specify its observables, experiment or interpretation.
 
-## 2. Is there an exact solution?
+Ask when alternatives change the scientific result, relevant theory or scope. Preserve given choices and resolve routine implementation details yourself. If the equations, quantities or experimental conditions are unknown, obtain or research them; do not fill the gap with whatever existing recipe looks similar.
 
-Use it whenever one exists, even inside a numerical page, as the benchmark:
+Check factual premises separately from ambiguity. A hypothetical system is valid when its assumptions are identified. Correct an impossible premise and agree on the resulting scientific scope before building a different system.
 
-- Kepler two-body orbit (`core/kepler.mjs`), figure-eight and Lagrange solutions of three-body problem
-- Uniform-field charged-particle motion: helix, gyroradius, E×B drift
-- Hydrogen-like eigenfunctions ψ_nlm and energies E_n = −Z²·13.6057 eV / n²
-- Free Gaussian wavepacket spreading; square-barrier transmission T(E)
-- Harmonic oscillator (classical and quantum)
-- Radioactive decay N(t) = N₀ e^(−λt)
+## 2. Write the mathematical specification
 
-If the whole request is answered by the exact solution, evaluate it (tier `analytical`). Don't integrate numerically just to look busier.
+Record these decisions in the physics module and page's model panel; a separate planning document is optional.
 
-## 3. Choose the numerical method
+| Decision | What to establish |
+|---|---|
+| State | Variables actually calculated: scalar/vector/tensor fields, finite coordinates, amplitudes, populations, distributions, graph states or other justified objects |
+| Law or data | Governing equations, constraints, transition rules, target probability measure or sourced dataset; signs, coordinate/basis conventions and approximations |
+| Inputs | Parameters, units, dimensionality, spatial domain, initial/boundary conditions, external drives, environment or ensemble where relevant |
+| Observables | Functions or estimators of the state that answer the scientific question; normalization, units, measurement interpretation and uncertainty |
+| Progress axis | Physical time, sample/sweep number, iteration, parameter value, or a static view; iteration is not automatically physical evolution |
+| Representation | The meaning of each axis, geometric object, colour, glyph and displayed number; physical quantities versus symbols |
+| Validity and evidence | Applicable scale/regime, neglected processes, reference results, required accuracy, resource constraints and checks supporting each claim |
 
-| Problem | Method | Why | Avoid |
-|---|---|---|---|
-| Few-body gravity with close encounters | LogH leapfrog with Yoshida-4 composition (`logh4`) | Time-transformed symplectic: steps shrink near encounters; exact Kepler shape | Fixed-step anything (energy error ~1e2 on Pythagorean problem, see tests) |
-| Softened N-body (N ≳ 10), long runs | Yoshida-4 or KDK leapfrog, fixed step | Symplectic: bounded energy error | RK4 (secular energy drift) |
-| Charged particle in B (± E) | Boris pusher (relativistic form) | Exact energy conservation in pure B; phase-space volume preserving | RK4 (spirals out or in) |
-| Molecular dynamics (NVE) | Velocity Verlet | Symplectic, time-reversible, standard | Euler; changing dt mid-run |
-| Thermostatted MD (NVT) | Langevin (BAOAB) or Nosé–Hoover | Samples the canonical ensemble correctly | Velocity rescaling presented as physical dynamics |
-| 1D/2D time-dependent Schrödinger | Split-operator FFT (periodic), Crank–Nicolson (boxed) | Unitary: norm conserved to round-off | Explicit Euler (unstable) |
-| Stationary states without closed form | Finite differences plus tridiagonal eigensolver, or shooting | Converges at known order | Guessing shapes |
-| Smooth non-Hamiltonian ODEs | Adaptive RK45/DOP853 with error control | Error estimate per step | Fixed RK4 without a convergence test |
+Separate the three operations:
 
-## 4. Units, scales and precision
+```text
+calculation:     equations, samples or source data -> state
+observation:     state -> requested quantities and uncertainty
+representation: state/observables -> pixels, labels and interaction
+```
 
-- Pick a unit system where numbers are O(1): Hénon N-body units (G = 1), AU–M☉–yr (G ≈ 4π², `G_AU_MSUN_YR`), reduced Lennard-Jones units (σ = ε = m = 1), atomic units (ħ = mₑ = e = a₀ = 1), SI for single particles in lab fields. Show the unit system in the page and convert to physical units on display when it helps.
-- Constants come from `core/constants.mjs` (CODATA 2018 / IAU). Never type them from memory.
-- Doubles have ~16 digits. Relative errors below ~1e-14 are round-off. Chaotic systems amplify round-off exponentially. Report the predictability horizon, not a false long-term trajectory.
+The renderer reads results; it does not invent or alter the state. A model may have no physical trajectories or no physical time at all. For a data view, identify interpolation/filtering separately from a newly simulated result. Choose what the mathematics means before deciding what it looks like.
 
-## 5. Time stepping and the display clock
+## 3. Establish sources and validity
 
-- The step size is set by the physics (crossing time, gyroperiod, vibrational period, CFL condition), never by the frame rate.
-- The shells advance the integrator to a target **physical** time each frame, within a compute budget. If the budget is hit, playback slows ("compute-limited") rather than taking larger steps.
-- Positions between steps come from interpolation of computed states (cubic Hermite for ODEs). Interpolation is drawing, not physics.
+Use primary scientific literature, authoritative documentation or user-supplied equations/data. Verify units, normalization, sign conventions, assumptions and the regime in which the model answers the question. Locate a benchmark or independently derivable limit before coding.
 
-## 6. Hard requests: compute the strongest real thing
+Use checked repository constants and algorithms when they apply. For missing inputs, record the source, units, uncertainty and version/date when relevant. Clearly identify illustrative parameter values. Do not invent empirical coefficients, measurements or a new physical law to complete an animation.
 
-Never open with "this can't be simulated". Find the most first-principles calculation that fits in a page:
+If sources conflict or the model does not answer the requested question, resolve the issue or narrow the claim explicitly. A convenient effective model, fitted curve or dataset is not an automatic substitute for a requested theory. Ask before a material scope change.
 
-| Request | Build this (real computation) | Then add |
+## 4. Select a method by mathematical structure
+
+These criteria apply across subjects. A name in the request is not a solver choice.
+
+| Mathematical structure | Selection criteria | Evidence to seek |
 |---|---|---|
-| QCD, confinement | SU(2) lattice gauge Monte Carlo (`core/lattice-gauge.mjs`): Wilson loops, area law, measured string tension | Cornell fit to the measured potential; one-line limits (SU(2), quenched, finite lattice) |
-| Black holes | GPU null-geodesic ray tracing (`core/schwarzschild.mjs`) | Accretion disk, black-body colours, redshift, shadow check |
-| Molecules | Classical MD with a cited force field; small-molecule normal modes | Hydrogen-like orbitals for single-electron intuition |
-| Many-electron atoms | Numerical radial Schrödinger (Numerov) in a screened potential | Hydrogen-like comparison |
-| Nuclear structure | Woods–Saxon single-particle levels by numerical diagonalisation; shell gaps at magic numbers | Semi-empirical mass formula |
-| Turbulence | 2D Navier–Stokes (spectral, FFT in `core/numerics.mjs`) at moderate Re | Energy spectrum vs k^(−5/3) / k^(−3) |
-| Cosmology | Friedmann equations with Planck 2018 parameters (ODE) | Ages, distances, horizon |
+| Closed-form relationship | Evaluate directly when it answers the question; identify its assumptions and domain | Identities, derivatives, normalization and limiting cases |
+| Finite-dimensional evolution | Identify stiffness, Hamiltonian structure, constraints, dissipation and characteristic times; choose a compatible integrator | Independent trajectory/solution, applicable invariants or balances, timestep refinement |
+| Spatial evolution | Identify transport/wave/diffusion structure, geometry, boundary conditions and stability restrictions; select spatial and time discretizations together | Known mode or manufactured solution, boundary checks, independent spatial/time refinement |
+| Stationary/eigenvalue/constraint problem | Match the operator and constraints; control conditioning, normalization and residuals | Residuals plus independent limits/eigenvalues, resolution and constraint checks |
+| Stochastic physical dynamics | Derive transition rates or noise from the model; preserve the meaning of elapsed time and the correct measure | Rate/distribution benchmarks, ensemble statistics, applicable time/space refinement |
+| Equilibrium sampling | Specify the target distribution and updates that sample it; diagnose warm-up and correlations | Distribution benchmarks, effective independent information, sample-length and seed studies |
+| Statistical observable or integral | Specify the state space, estimator, normalization and approximation/truncation | Independent identity/limit, uncertainty, sample/bin/truncation or quadrature refinement |
+| Empirical data or fitted model | Preserve provenance and uncertainties; distinguish observations, interpolation, fit and extrapolation | Independent validation data and stated fit/residual uncertainty; no solver-accuracy claim for imported data |
 
-State the remaining limits in one line, in the model panel and at the end of the reply.
+Hybrid systems may combine rows. Identify which controls and diagnostics apply to each part, and check the coupling/interface as well as individual components. A method being available in `core/` is useful only if its assumptions match the specification.
+
+Concrete reusable implementations of general mathematics are catalogued in [math-toolkit.md](math-toolkit.md). Check their conditions and reported convergence before writing another implementation or using a result.
+
+## 5. Check feasibility without changing the question
+
+Estimate degrees of freedom, memory, spatial/temporal resolution, equilibration/sampling work and rendering cost. Bound user inputs by physical validity and a measured compute budget. Test demanding allowed cases, not just a visually pleasing initial state.
+
+Choose a unit system that keeps relevant scales numerically manageable and display its physical meaning. Set resolution from the phenomenon and error requirement, not from frame rate. When a compute budget is reached, reduce playback throughput rather than silently changing the equations or timestep.
+
+If the requested fidelity needs another backend or more resources, present the concrete choices: the requested calculation with available resources, a sourced data view, or a reduced model with specific lost capabilities. Get agreement before changing scientific scope; do not claim the full request was solved by the reduction.
+
+For dynamics, label physical time. For sampling, label samples/sweeps and define which results have equilibrated. For a scan or static calculation, label the independent parameter and avoid artificial physical-time playback.
+
+## 6. Derive the representation and checks from the specification
+
+Every visual channel needs a meaning: source quantity, mapping/scale, units where applicable, coordinate space and uncertainty/aggregation. Classify it as a computed quantity, imported observation or disclosed symbol. Put conventions that affect interpretation beside the view, with detail in the model panel. A palette does not become a literal physical property because it resembles a photograph.
+
+Choose checks for the stated claims using [verification](verification.md). Conservation is required only where the equations conserve that quantity; otherwise check the correct source/loss balance. Refinement tests discretization, sampling tests estimates, and measurement comparisons test physical applicability. Do not let one stand in for the others.
+
+A verification result attaches to the model, parameters, conditions and tested regime. If those change, withdraw unsupported claims or recompute the relevant evidence. If a signal cannot be resolved, report the missing evidence and withhold the claim instead of forcing the expected shape.
+
+Use the [compose contract](compose.md) to implement the calculation, observables, tests and page. Reuse a matching solver or suitable UI components independently; a new model does not require a new topic-specific skill guide.
+
+## Optional domain notes
+
+Read a note only when it helps the model already selected. If none fits, use the same workflow with researched sources.
+
+- [Gravity](gravity.md)
+- [Electromagnetism](electromagnetism.md)
+- [Radiation and relativity](radiation-relativity.md)
+- [Particle physics](particle-physics.md)
+- [Scalar/Higgs examples](higgs.md)
+- [Molecular dynamics](molecular.md)
+- [Entropy examples](entropy.md)
+- [Quantum mechanics](quantum.md)

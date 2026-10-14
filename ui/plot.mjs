@@ -113,6 +113,7 @@ export function createPlot({ title = '', x = {}, y = {}, height = 220, legend = 
     const C = cssVar;
     ctx.font = '10.5px ui-monospace, Menlo, monospace';
 
+    const labelBoxes = [];                              // band and vertical-line labels placed this frame
     // bands (behind everything)
     for (const id of order) {
       const it = items.get(id);
@@ -122,7 +123,7 @@ export function createPlot({ title = '', x = {}, y = {}, height = 220, legend = 
       ctx.globalAlpha = it.alpha ?? 0.5;
       ctx.fillRect(x0, pad.t, x1 - x0, H - pad.t - pad.b);
       ctx.globalAlpha = 1;
-      if (it.label) { ctx.fillStyle = C('--muted'); ctx.fillText(it.label, x0 + 6, pad.t + 14); }
+      if (it.label) { ctx.fillStyle = C('--muted'); ctx.fillText(it.label, x0 + 6, pad.t + 12); labelBoxes.push({ x: x0 + 6, w: ctx.measureText(it.label).width, y: pad.t + 12 }); }
     }
 
     // grid + ticks
@@ -171,10 +172,14 @@ export function createPlot({ title = '', x = {}, y = {}, height = 220, legend = 
         if (it.fill) { ctx.globalAlpha = 0.12 * dim; ctx.lineTo(W - pad.r, Y(Math.max(ax.y.min, 0))); ctx.lineTo(pad.l, Y(Math.max(ax.y.min, 0))); ctx.fill(); }
       } else if (it.kind === 'data') {
         if (it.dots) {
-          for (const [a, b] of it.pts) { ctx.beginPath(); ctx.arc(X(a), Y(b), it.r ?? 2.4, 0, 7); ctx.fill(); }
+          const shown = ([a, b]) => Number.isFinite(a) && Number.isFinite(b) && (!ax.y.log || b > 0) && (!ax.x.log || a > 0);
+          for (const p of it.pts) { if (!shown(p)) continue; ctx.beginPath(); ctx.arc(X(p[0]), Y(p[1]), it.r ?? 2.4, 0, 7); ctx.fill(); }
           if (it.errors) {for (let i = 0; i < it.pts.length; i++) {
-            const [a, b] = it.pts[i], e = it.errors[i];
-            ctx.beginPath(); ctx.moveTo(X(a), Y(b - e)); ctx.lineTo(X(a), Y(b + e)); ctx.stroke();
+            const [a, b] = it.pts[i], e = Math.abs(it.errors[i]);
+            if (!shown(it.pts[i]) || !Number.isFinite(e)) continue;
+            // On a log axis a bar reaching zero or below has no finite end: run it to the axis floor.
+            const lo = ax.y.log && b - e <= ax.y.min ? ax.y.min : b - e;
+            ctx.beginPath(); ctx.moveTo(X(a), Y(lo)); ctx.lineTo(X(a), Y(b + e)); ctx.stroke();
           }}
         } else {
           ctx.beginPath();
@@ -189,8 +194,15 @@ export function createPlot({ title = '', x = {}, y = {}, height = 220, legend = 
         ctx.stroke();
         if (it.label) {
           ctx.setLineDash([]); ctx.font = '10.5px ui-monospace, Menlo, monospace';
-          if (it.kind === 'hline') ctx.fillText(it.label, W - pad.r - ctx.measureText(it.label).width - 4, Y(it.y) - 5);
-          else ctx.fillText(it.label, X(it.x) + 5, pad.t + 12);
+          if (it.kind === 'hline') ctx.fillText(it.label, W - pad.r - ctx.measureText(it.label).width - 4, Y(it.y) - 5 < pad.t + 10 ? Y(it.y) + 13 : Y(it.y) - 5);   // below the line near the top edge
+          else {
+            // stack labels of nearby vertical lines instead of drawing them on top of each other
+            const x0 = X(it.x) + 5, w = ctx.measureText(it.label).width;
+            let ly = pad.t + 12;
+            while (labelBoxes.some(b => x0 < b.x + b.w + 4 && b.x < x0 + w + 4 && Math.abs(b.y - ly) < 12)) ly += 13;
+            labelBoxes.push({ x: x0, w, y: ly });
+            ctx.fillText(it.label, x0, ly);
+          }
         }
       } else if (it.kind === 'marker') {
         ctx.setLineDash([]);

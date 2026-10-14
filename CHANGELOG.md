@@ -1,6 +1,50 @@
 # Changelog
 
+## Unreleased — gaps found by ten real builds
+
+Ten simulations were generated in a test project from single prompts through the installed skill. Their reports listed the following gaps; each fix is tested against exact results.
+
+- `psim check`: pages publish their first frame at once (slow pages were reported as "frames 0"), the check waits for a live page, and it now screenshots everything below the first screen (figures, control column, phone page). SKILL.md asks for those screenshots to be inspected.
+- Plots: error bars on log axes no longer break when value − error ≤ 0; reference-line labels near the top edge are no longer clipped; band and vertical-line labels that would overlap are stacked.
+- Equations: `M.sup`/`M.sub` wrap both parts, so a multi-part exponent such as e⁻ˣ renders (it showed as "e − x" in the black-body derivation, found by the new scrolled screenshots).
+- Particles: optional periodic `box` with the minimum image, cell-list neighbour search (`forEachPairWithin`), and a `lennardJones` force (shifted-force cutoff, Lorentz–Berthelot mixing). Gravity and Coulomb refuse a periodic box (Ewald summation is not provided).
+- `metropolisSites` for discrete states (checked against exact enumeration of the 4×4 Ising model); `langevinBAOAB` reports the heat exchanged with the bath.
+- `diffusion1D`: walls held at a value or given a flux (constant or time-dependent), switchable mid-run, with exact `inflow` bookkeeping.
+- `schrodingerND`: optional absorbing layers; `absorbed()` reports the probability removed.
+- `lyapunovExponent` (linearised equations or twin trajectory; Lorenz λ₁ ≈ 0.906 reproduced), `linearChain` (Bateman with branching) and `expm` (matrix exponential).
+- `complexYlm` and `hydrogenRadial`; `contourLines` (marching squares) and `densityLevel` (probability-enclosing level).
+
+## Unreleased — reusable matrix, field and probability maths
+
+- Added 20 importable functions across `core/linalg.mjs`, `core/fields.mjs` and `core/probability.mjs`: real dense/sparse equations, nonlinear roots, eigenmodes, multidimensional derivatives/FFT and periodic field solves, stable probabilities, entropy/covariance and finite-spectrum equilibrium.
+- Solvers reject invalid dimensions/domains and report unresolved iteration budgets. Matrix methods handle dimensional rescaling; probabilities use shifted weights and preserve tiny thermodynamic/relative-entropy signals.
+- Added 28 numerical and bundling tests against independent solutions, identities, residuals, orthogonality, conservation and measured spatial/time convergence. All new modules compute identical results in Node and a self-contained bundle.
+- Added a mathematical API guide and routed skill/model-selection/compose instructions to the implementations and their conditions. No new topic-specific recipes are required to use them.
+
+## Unreleased — general building blocks by mathematical structure
+
+- `core/ode.mjs`: general ODE stepping (RK4, adaptive Dormand–Prince with Hermite dense output) and symplectic mechanics (leapfrog, Yoshida-4); `refinementOrder` measures the convergence order.
+- `core/particles.mjs`: interacting bodies built from force terms (gravity, Coulomb, uniform E/B, central body with optional 1PN, drag, springs, external potential). Chooses a symplectic method for position-only forces, otherwise an adaptive one. Reports energy balance including dissipated work, and momentum drift.
+- `core/pde.mjs`: Crank–Nicolson diffusion with walls and sources, `waveND` (leapfrog in any dimension on `laplacianND`, CFL-checked, exactly conserved discrete energy), stationary states. `eigenTridiagonal` added to `core/numerics.mjs`. Merged with `core/fields.mjs`: `schrodinger1D` and `laplacian1D` removed in favour of `schrodingerND` and `laplacianND`; `wave1D`/`wave2D` replaced by `waveND`; Neumann now means the same (cell-centred zero flux) in every module.
+- One catalogue for general mathematics: `references/math-toolkit.md`.
+- `besselJ` and `besselJZeros` in `core/numerics.mjs` (checked against published values, an independent integral representation, the power series and McMahon asymptotics).
+- Irregular domains: optional `mask`/`maskBc` for `laplacianND`, `gradientND`, `divergenceND` and `waveND`. Symmetric, so energy is still conserved to round-off. A curved boundary is a staircase (first order, measured against the exact Bessel mode of a clamped disk).
+- `core/stochastic.mjs`: Gillespie, Euler–Maruyama, Langevin BAOAB, Metropolis, autocorrelation time and effective sample size.
+- `core/data.mjs`: monotone or linear interpolation, histograms with Poisson errors, Kolmogorov–Smirnov test.
+- Every module is tested against exact results: analytic solutions, conservation laws, stationary distributions and measured convergence orders. No topic modules were added.
+
+## Unreleased — general model selection
+
+- A shared workflow formulates any subject as a mathematical specification: scientific aim, state, governing law/data, conditions, observables, representation, method and evidence. Unfamiliar subjects require researched foundations, not another mandatory topic guide.
+- Method selection uses mathematical structure rather than a table of topic keywords. Reuse of a solver and reuse of a layout are independent; recipes and domain notes are optional shortcuts.
+- Calculation, observation and representation are explicit separate responsibilities. Legends derive from the mapping of quantities to visual channels, and tests derive from each scientific claim. Ask about material ambiguity or a reduction that changes scientific scope.
+- Domain notes remain optional worked guidance. Clarified pure SU(2) versus QCD and the meaning of symbolic visuals; general rules apply the same distinctions to unfamiliar representations.
+- Verification and trust tiers describe the selected model's scope. Clarifying replies do not require invented artifact links or verification reports.
+- Added a shared generalisation rubric and seven cross-cutting evaluation specifications covering unfamiliar supplied laws, missing foundations, observables, representations and scope changes. These are not recorded as completed agent evaluations. No new simulation recipes or solver code were added.
+
 ## Unreleased — review fixes
+
+- Removed `scripts/install.mjs`: install with `npx skills add janosvajda/p-simtor` (see README).
 
 - Dormand–Prince enforces local error tolerance at any time scale and throws on step underflow or an exhausted budget.
 - Schwarzschild deflection uses a scaled turning-point root and cancellation-free quadrature; relativistic orbits complete the requested radial periods with refined periapsis events, retaining coordinate-time animation support.

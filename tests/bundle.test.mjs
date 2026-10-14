@@ -75,3 +75,38 @@ test('multi-declarator exports are bundled, including nested commas and comments
   vm.runInNewContext(code, ctx);
   assert.deepEqual([...ctx.result], [1, 3, 5, 'x, y', 2]);
 });
+
+test('all new maths modules compute the same results in a self-contained bundle as in Node', async () => {
+  const exercise = (L, F, P) => {
+    const A = [[2, 1], [1, 3]], b = [1, 2], x = L.solveLinear(A, b);
+    const eigen = L.eigenSymmetric(A), cg = L.conjugateGradient(A, b);
+    const root = L.newtonSolve(v => [v[0] * v[0] - 2], [1]);
+    const fit = L.leastSquares([[1, -1], [1, 0], [1, 1]], [1, 0, 3]);
+    const re = new Float64Array([1, 0, -1, 0]), im = new Float64Array(4), shape = [4];
+    F.fftND(re, im, shape); F.fftND(re, im, shape, true);
+    const source = new Float64Array([2, 0, -2, 0]), grid = { shape, discretization: 'finite-difference' };
+    const field = F.solvePoissonPeriodic(source, grid).u;
+    const grad = F.gradientND(field, grid), lap = F.laplacianND(field, grid), div = F.divergenceND(grad, grid);
+    const diffusion = F.diffusionPeriodic({ u0: field, ...grid, D: 0.1, dt: 0.1 }); diffusion.step();
+    const quantum = F.schrodingerND({ re0: field, shape, dt: 0.01 }); quantum.step();
+    const p = P.normalizeWeights([1, 2]), q = P.normalizeLogWeights([-3, -4]);
+    const covariance = P.covarianceMatrix([[0, 1], [1, 3], [2, 5]]);
+    const ensemble = P.canonicalEnsemble([0, 1, 2], { kT: 0.7, degeneracies: [1, 2, 1] });
+    return JSON.stringify({ x, product: L.matrixVector(A, x), eigen, cg, root, fit, field, grad, lap, div,
+      re, im, diffusion: diffusion.u, quantum: quantum.probability(), norm: quantum.norm(),
+      p, q, H: P.shannonEntropy(p), KL: P.relativeEntropy(p, q), logZ: P.logSumExp([-3, -4]), covariance, ensemble });
+  };
+  const entry = `
+import * as L from 'psim:core/linalg.mjs';
+import * as F from 'psim:core/fields.mjs';
+import * as P from 'psim:core/probability.mjs';
+result = (${exercise.toString()})(L, F, P);
+`;
+  const source = `<script type="application/json" id="psim-verification">null</script><script type="module">${entry}</script>`;
+  const html = bundleHtml(source, { skillDir: SKILL_DIR, verification: { checks: [] } });
+  assert.deepEqual(auditHtml(html), []);
+  const ctx = { result: null };
+  vm.runInNewContext(html.match(/<script type="module">([\s\S]*?)<\/script>/)[1], ctx);
+  const [L, F, P] = await Promise.all([import('../core/linalg.mjs'), import('../core/fields.mjs'), import('../core/probability.mjs')]);
+  assert.equal(ctx.result, exercise(L, F, P));
+});

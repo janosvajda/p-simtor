@@ -2,6 +2,8 @@
 
 Status: **compose**. No template yet. Follow `compose.md`, and use this guide for the physics and checks.
 
+For entropy, mixing or irreversibility, also read [entropy guidance](entropy.md). Decide whether the user wants particle dynamics, thermodynamic entropy changes or internal molecular-state populations; an MD trajectory or speed histogram alone does not answer all three.
+
 ## Lennard-Jones fluid (the standard first model)
 
 V(r) = 4ε[(σ/r)¹² − (σ/r)⁶]. Work in reduced units: σ = ε = m = k_B = 1, time unit τ = σ√(m/ε). For argon (a validated LJ fit): σ = 3.405 Å, ε/k_B = 119.8 K, m = 39.948 u, so τ ≈ 2.15 ps (Rahman 1964; standard textbook values, Allen & Tildesley).

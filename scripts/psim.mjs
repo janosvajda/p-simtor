@@ -316,9 +316,10 @@ async function cmdCheck(args) {
   for (const r of res.runs) {
     console.log(`  ${r.label.padEnd(18)} ${r.ok ? 'ok ' : 'FAIL'}  ${r.summary}`);
     if (r.screenshot) console.log(`  ${''.padEnd(18)} screenshot: ${r.screenshot}`);
+    for (const f of r.more ?? []) console.log(`  ${''.padEnd(18)} scrolled:   ${f}`);
   }
   if (res.problems.length) { console.log(`Problems:\n  - ${res.problems.join('\n  - ')}`); process.exitCode = 2; }
-  else console.log('All runtime checks passed. Now look at every screenshot before delivering.');
+  else console.log('All runtime checks passed. Now look at every screenshot, including the scrolled ones, before delivering.');
 }
 
 const HELP = `p-simtor — scientifically verified interactive physics simulations

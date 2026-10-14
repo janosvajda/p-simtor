@@ -1,3 +1,134 @@
 {
-  "demos": []
+  "demos": [
+    {
+      "id": "double-pendulum",
+      "title": "Why a double pendulum is chaotic",
+      "prompt": "/p-simtor show why a double pendulum is chaotic",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/double-pendulum.html",
+      "checks": {
+        "total": 11,
+        "passed": 11
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "three-level-thermal",
+      "title": "Three-level system heating up",
+      "prompt": "/p-simtor show how the populations of a three-level quantum system change as it heats up",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/three-level-thermal.html",
+      "checks": {
+        "total": 10,
+        "passed": 10
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "hydrogen-2p",
+      "title": "Hydrogen 2p orbital",
+      "prompt": "/p-simtor visualize the probability density of a hydrogen 2p orbital",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/hydrogen-2p.html",
+      "checks": {
+        "total": 16,
+        "passed": 16
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "tunnelling-2d",
+      "title": "Quantum tunnelling in 2D",
+      "prompt": "/p-simtor simulate a quantum wave packet tunnelling through a barrier in 2D",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/tunnelling-2d.html",
+      "checks": {
+        "total": 13,
+        "passed": 13
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "lennard-jones",
+      "title": "Lennard-Jones fluid (2D)",
+      "prompt": "/p-simtor create an interactive Lennard-Jones particle simulation",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/lennard-jones.html",
+      "checks": {
+        "total": 14,
+        "passed": 14
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "brownian-motion",
+      "title": "Brownian motion of a pollen grain",
+      "prompt": "/p-simtor simulate Brownian motion of a pollen grain in water",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/brownian-motion.html",
+      "checks": {
+        "total": 9,
+        "passed": 9
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "magnet-heating",
+      "title": "Heating a magnet",
+      "prompt": "/p-simtor show how a magnet loses its magnetism when heated",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/magnet-heating.html",
+      "checks": {
+        "total": 9,
+        "passed": 9
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "decay-chain",
+      "title": "Radioactive decay chain, atom by atom",
+      "prompt": "/p-simtor simulate a radioactive decay chain atom by atom",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/decay-chain.html",
+      "checks": {
+        "total": 12,
+        "passed": 12
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "salt-dissolving",
+      "title": "Salt dissolving in still water",
+      "prompt": "/p-simtor simulate how salt dissolves in a glass of water",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/salt-dissolving.html",
+      "checks": {
+        "total": 11,
+        "passed": 11
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "quark-confinement",
+      "title": "Quark confinement",
+      "prompt": "/p-simtor explain quark confinement with an interactive, scientifically qualified visualization",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/quark-confinement.html",
+      "checks": {
+        "total": 14,
+        "passed": 14
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    }
+  ]
 }

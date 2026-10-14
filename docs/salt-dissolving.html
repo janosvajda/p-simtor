@@ -1,0 +1,2821 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="p-simtor">
+<title>Salt dissolving in still water</title>
+<style>/* psim:ui/instrument.css */
+/* p-simtor instrument shell.
+   A simulation page is a scientific instrument: a large stage for the physics,
+   a quiet control column, and numbers you can trust at a glance.
+   Colours are tokens so every domain view (orbits, fields, densities) can read them. */
+
+:root {
+  --bg: #07090d;
+  --stage: #0a0d13;
+  --panel: #0e1219;
+  --raise: #141923;
+  --line: rgba(196, 214, 255, 0.09);
+  --line-strong: rgba(196, 214, 255, 0.18);
+  --ink: #e6e9ef;
+  --ink-2: #b6bdcb;
+  --muted: #7b8396;
+  --faint: #4a5163;
+  --accent: #8cc8ff;
+  --accent-ink: #06121f;
+  --good: #7fd8a4;
+  --warn: #f2c46d;
+  --bad: #ff7a85;
+  --grid: rgba(150, 175, 230, 0.06);
+  --grid-strong: rgba(150, 175, 230, 0.13);
+  --glow: 1;
+  --body-0: #ffb35c;
+  --body-1: #68c3ff;
+  --body-2: #ff6f9a;
+  --body-3: #9be08a;
+  --body-4: #c49bff;
+  --body-5: #ffe07a;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --sans: ui-sans-serif, -apple-system, "Segoe UI", "Inter", system-ui, sans-serif;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --radius: 10px;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg: #efede7;
+  --stage: #f7f5f0;
+  --panel: #fbfaf7;
+  --raise: #ffffff;
+  --line: rgba(30, 34, 46, 0.09);
+  --line-strong: rgba(30, 34, 46, 0.18);
+  --ink: #171a21;
+  --ink-2: #3a3f4b;
+  --muted: #6b7180;
+  --faint: #a4a8b2;
+  --accent: #1c6fd1;
+  --accent-ink: #ffffff;
+  --good: #23864f;
+  --warn: #a8700f;
+  --bad: #c43b4a;
+  --grid: rgba(30, 40, 70, 0.055);
+  --grid-strong: rgba(30, 40, 70, 0.12);
+  --glow: 0;
+  --body-0: #d4731c;
+  --body-1: #1a78bf;
+  --body-2: #cf2f63;
+  --body-3: #3a8f33;
+  --body-4: #7a48cf;
+  --body-5: #a88600;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 13px/1.45 var(--sans);
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
+
+.psim-app {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 372px;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* ---------- header ---------- */
+.psim-head {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.psim-mark {
+  width: 22px; height: 22px; flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  position: relative;
+}
+.psim-mark::before, .psim-mark::after {
+  content: ""; position: absolute; border-radius: 50%;
+}
+.psim-mark::before { inset: 5px; border: 1px solid var(--accent); transform: scaleX(1.6) rotate(-25deg); opacity: .8; }
+.psim-mark::after { width: 4px; height: 4px; left: 9px; top: 9px; background: var(--ink); }
+.psim-title { min-width: 0; flex: 0 1 auto; }
+.psim-title h1 {
+  margin: 0; font: 600 15px/1.2 var(--sans); letter-spacing: .01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.psim-title p { margin: 2px 0 0; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.psim-head .spacer { flex: 1; }
+
+.psim-tier {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 4px 10px 4px 8px; border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  font: 500 11px/1 var(--sans); letter-spacing: .04em; text-transform: uppercase;
+  color: var(--ink-2); background: transparent; cursor: pointer; white-space: nowrap;
+}
+.psim-tier i { width: 7px; height: 7px; border-radius: 50%; background: var(--good); }
+.psim-tier[data-tier="approximate"] i { background: var(--warn); }
+.psim-tier[data-tier="unverified"] i { background: var(--warn); }
+.psim-tier[data-tier="analytical"] i { background: var(--accent); }
+.psim-tier[data-tier="conceptual"] i { background: var(--muted); }
+
+.psim-iconbtn {
+  width: 32px; height: 32px; display: grid; place-items: center;
+  border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink-2);
+  cursor: pointer;
+}
+.psim-iconbtn:hover { border-color: var(--line-strong); color: var(--ink); }
+.psim-iconbtn svg { width: 16px; height: 16px; }
+
+/* ---------- stage ---------- */
+.psim-stage {
+  position: relative; min-height: 0; overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 92%, var(--accent) 8%) 0%, var(--stage) 60%);
+}
+.psim-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.psim-stage canvas.grab { cursor: grab; }
+.psim-stage canvas.grabbing { cursor: grabbing; }
+.psim-stage canvas.move { cursor: move; }
+
+.psim-hud {
+  position: absolute; left: 16px; top: 14px;
+  display: grid; gap: 2px; pointer-events: none;
+  font: 12px/1.35 var(--mono); color: var(--ink-2);
+}
+.psim-hud b { font-weight: 500; color: var(--ink); font-size: 20px; letter-spacing: -.01em; }
+.psim-hud .dim { color: var(--muted); }
+.psim-hud .flag { color: var(--warn); }
+
+.psim-legend {
+  position: absolute; right: 16px; top: 14px; display: grid; gap: 4px; justify-items: end;
+  font: 11px/1.3 var(--sans); color: var(--muted); pointer-events: none; text-align: right;
+}
+
+.psim-transport {
+  position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 4px;
+  padding: 5px; border-radius: 12px;
+  background: color-mix(in srgb, var(--panel) 86%, transparent);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  max-width: calc(100% - 32px);
+}
+.psim-transport button {
+  height: 32px; min-width: 32px; padding: 0 9px; border-radius: 8px;
+  border: 0; background: transparent; color: var(--ink-2); cursor: pointer;
+  display: inline-grid; place-items: center; font: 500 12px var(--sans);
+}
+.psim-transport button:hover { background: var(--raise); color: var(--ink); }
+.psim-transport button.primary { background: var(--ink); color: var(--bg); width: 40px; }
+.psim-transport svg { width: 15px; height: 15px; }
+.psim-transport .sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
+.psim-transport label { display: flex; align-items: center; gap: 8px; padding: 0 8px; color: var(--muted); font-size: 11px; }
+.psim-transport input[type=range] { width: 110px; }
+.psim-transport output { font: 12px var(--mono); color: var(--ink-2); min-width: 64px; }
+
+.psim-scalebar {
+  position: absolute; left: 16px; bottom: 22px; pointer-events: none;
+  font: 11px var(--mono); color: var(--muted);
+}
+.psim-scalebar span { display: block; height: 6px; border: 1px solid var(--muted); border-top: 0; margin-bottom: 4px; }
+
+/* ---------- side column ---------- */
+.psim-side {
+  min-height: 0; overflow: auto;
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+  scrollbar-width: thin;
+}
+.psim-sec { border-bottom: 1px solid var(--line); }
+.psim-sec > summary {
+  list-style: none; cursor: pointer; user-select: none;
+  display: flex; align-items: center; gap: 8px;
+  padding: 13px 18px;
+  font: 600 11px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+}
+.psim-sec > summary::-webkit-details-marker { display: none; }
+.psim-sec > summary::after {
+  content: ""; margin-left: auto; width: 6px; height: 6px;
+  border-right: 1.5px solid var(--faint); border-bottom: 1.5px solid var(--faint);
+  transform: rotate(-45deg); transition: transform .15s;
+}
+.psim-sec[open] > summary::after { transform: rotate(45deg); }
+.psim-sec > summary .aside { margin-left: auto; text-transform: none; letter-spacing: 0; font: 11px var(--mono); color: var(--faint); }
+.psim-sec > summary .aside + ::after { margin-left: 8px; }
+.psim-body { padding: 2px 18px 16px; display: grid; gap: 10px; }
+
+.psim-row { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 10px; }
+.psim-row .k { color: var(--muted); }
+.psim-row .v { font: 12px var(--mono); color: var(--ink); text-align: right; }
+.psim-row .v.good { color: var(--good); }
+.psim-row .v.warn { color: var(--warn); }
+.psim-row .v.bad { color: var(--bad); }
+
+.psim-field { display: grid; gap: 6px; }
+.psim-field .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.psim-field .top span { color: var(--ink-2); }
+.psim-field .top input[type=number], .psim-num {
+  width: 108px; text-align: right;
+  font: 12px var(--mono); color: var(--ink);
+  background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 2px 6px;
+}
+.psim-field .top input[type=number]:hover, .psim-num:hover { border-color: var(--line); }
+.psim-field .top input[type=number]:focus, .psim-num:focus { outline: none; border-color: var(--accent); }
+.psim-hint { color: var(--muted); font-size: 12px; margin: 0; }
+.psim-limit { color: var(--warn); font: 11px var(--mono); }
+.psim-limit:empty { display: none; }
+.psim-hint b { color: var(--ink-2); font-weight: 500; }
+
+select.psim-select {
+  width: 100%; height: 34px; padding: 0 10px; border-radius: 8px;
+  background: var(--raise); color: var(--ink); border: 1px solid var(--line);
+  font: 13px var(--sans);
+}
+
+input[type=range] {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 18px; background: transparent; margin: 0;
+}
+input[type=range]::-webkit-slider-runnable-track { height: 2px; background: var(--line-strong); border-radius: 2px; }
+input[type=range]::-moz-range-track { height: 2px; background: var(--line-strong); border-radius: 2px; }
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 12px; height: 12px; margin-top: -5px; border-radius: 50%;
+  background: var(--ink); border: 2px solid var(--panel); box-shadow: 0 0 0 1px var(--line-strong);
+}
+input[type=range]::-moz-range-thumb {
+  width: 10px; height: 10px; border-radius: 50%; background: var(--ink); border: 2px solid var(--panel);
+}
+input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 40%, transparent); }
+
+.psim-btn {
+  height: 32px; padding: 0 12px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--line-strong); background: transparent; color: var(--ink);
+  font: 500 12px var(--sans);
+}
+.psim-btn:hover { background: var(--raise); }
+.psim-btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.psim-btn:disabled { opacity: .5; cursor: progress; }
+.psim-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.psim-toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--ink-2); cursor: pointer; }
+.psim-toggle input { appearance: none; -webkit-appearance: none; width: 28px; height: 16px; border-radius: 99px; background: var(--line-strong); position: relative; cursor: pointer; margin: 0; flex: none; transition: background .15s; }
+.psim-toggle input::after { content: ""; position: absolute; left: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--ink); transition: transform .15s; }
+.psim-toggle input:checked { background: var(--accent); }
+.psim-toggle input:checked::after { transform: translateX(12px); background: var(--accent-ink); }
+
+/* body cards */
+.psim-bodycard { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; display: grid; gap: 8px; }
+.psim-bodycard header { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.psim-bodycard header i { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 10px currentColor; }
+.psim-bodycard header .m { margin-left: auto; font: 12px var(--mono); color: var(--muted); font-weight: 400; }
+.psim-vec { display: grid; grid-template-columns: 22px repeat(3, minmax(0, 1fr)); gap: 4px; align-items: center; }
+.psim-vec span { color: var(--muted); font: 11px var(--mono); }
+.psim-vec input { width: 100%; min-width: 0; text-align: right; font: 11.5px var(--mono); color: var(--ink); background: var(--raise); border: 1px solid var(--line); border-radius: 6px; padding: 4px 5px; }
+.psim-vec input:focus { outline: none; border-color: var(--accent); }
+
+/* plots */
+.psim-plot { position: relative; height: 112px; border-radius: 8px; background: color-mix(in srgb, var(--stage) 70%, transparent); border: 1px solid var(--line); }
+.psim-plot canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.psim-plot .cap { position: absolute; left: 8px; top: 6px; font: 10.5px var(--mono); color: var(--muted); pointer-events: none; }
+
+/* model / maths */
+.psim-math { overflow-x: auto; padding: 10px 12px; border-radius: 8px; background: color-mix(in srgb, var(--stage) 60%, transparent); border: 1px solid var(--line); }
+.psim-math math { font-size: 15px; color: var(--ink); }
+.psim-prose { color: var(--ink-2); font-size: 12.5px; }
+.psim-prose p { margin: 0 0 8px; }
+.psim-prose ul { margin: 0; padding-left: 18px; }
+.psim-prose li { margin: 3px 0; }
+.psim-prose cite { font-style: normal; color: var(--muted); }
+
+.psim-check { display: grid; grid-template-columns: 16px 1fr; column-gap: 8px; row-gap: 2px; align-items: baseline; }
+.psim-check code { grid-column: 2; overflow-wrap: anywhere; }
+.psim-check i { width: 8px; height: 8px; border-radius: 50%; background: var(--good); transform: translateY(-1px); }
+.psim-check i.warn { background: var(--warn); }
+.psim-check i.bad { background: var(--bad); }
+.psim-check span { color: var(--ink-2); }
+.psim-check code { font: 11.5px var(--mono); color: var(--ink); }
+
+.psim-toast {
+  position: absolute; left: 50%; top: 16px; transform: translate(-50%, -8px); opacity: 0;
+  padding: 8px 12px; border-radius: 8px; background: var(--ink); color: var(--bg); font-size: 12px;
+  transition: opacity .2s, transform .2s; pointer-events: none;
+}
+.psim-toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (max-width: 860px) {
+  .psim-app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 64vh auto; height: auto; }
+  .psim-head { gap: 10px; }
+  .psim-title { flex: 1; }
+  .psim-tier { padding: 6px; }
+  .psim-tier span { display: none; }
+  .psim-side { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+  .psim-head { padding: 10px 16px; }
+  .psim-title p { display: none; }
+  .psim-transport label.speed { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+
+/* ---------- figures (ui/plot.mjs) ---------- */
+.psim-figure { margin: 0; display: grid; gap: 6px; min-width: 0; }
+.psim-plot-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.psim-plot-head .t { font: 600 12px/1.3 var(--sans); color: var(--ink-2); }
+.psim-plot-head .l { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.psim-plot-head .k { display: inline-flex; align-items: center; gap: 6px; font: 11px var(--sans); color: var(--muted); cursor: default; }
+.psim-plot-head .k.on { color: var(--ink); }
+.psim-plot-head .k i { width: 12px; height: 2.5px; border-radius: 2px; }
+.psim-plot2 { position: relative; border-radius: 10px; background: color-mix(in srgb, var(--stage) 75%, transparent); border: 1px solid var(--line); }
+.psim-plot2 canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* ---------- equations split into terms (ui/equation.mjs) ---------- */
+.psim-equation { display: grid; gap: 10px; }
+.psim-equation h3, .psim-derivation h3 { margin: 0; font: 600 11px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.psim-eqrow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 6px; }
+.psim-eqrow .op { align-self: center; font: 20px var(--serif); color: var(--muted); padding: 0 2px; }
+.psim-term {
+  display: grid; grid-template-rows: auto 3px auto auto; justify-items: center; align-content: start; gap: 5px;
+  padding: 10px 12px 9px; border-radius: 10px; min-width: 88px;
+  background: color-mix(in srgb, var(--stage) 70%, transparent); border: 1px solid var(--line);
+  transition: opacity .15s, border-color .15s; outline: none;
+}
+.psim-term[data-id]:not([data-id=""]) { cursor: default; }
+.psim-term:hover, .psim-term:focus-visible { border-color: var(--line-strong); }
+.psim-term.dim { opacity: .35; }
+.psim-term.lhs { background: transparent; border-style: dashed; }
+.psim-term .mx { font-size: 19px; line-height: 1.2; color: var(--ink); min-height: 30px; display: grid; place-items: center; }
+.psim-term .mx math { font-size: 19px; }
+.psim-term .bar { width: 100%; height: 3px; border-radius: 2px; background: var(--line); }
+.psim-term .lb { font: 11px/1.25 var(--sans); color: var(--muted); text-align: center; max-width: 150px; }
+.psim-term .v { font: 12px var(--mono); color: var(--ink-2); white-space: nowrap; }
+.psim-where { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: baseline; padding: 8px 12px; border-left: 2px solid var(--line-strong); }
+.psim-where .kw { grid-column: 1 / -1; font: italic 12px var(--serif); color: var(--muted); }
+.psim-where .w { display: contents; }
+.psim-where .mx math { font-size: 15px; color: var(--ink); }
+.psim-where .mean { color: var(--ink-2); font-size: 12.5px; }
+.psim-where .v { font: 12px var(--mono); color: var(--ink); text-align: right; }
+.psim-derivation ol { margin: 8px 0 0; padding: 0; list-style: none; counter-reset: step; display: grid; gap: 8px; }
+.psim-derivation li { counter-increment: step; display: grid; grid-template-columns: 22px 1fr; column-gap: 8px; align-items: center; }
+.psim-derivation li::before { content: counter(step); grid-row: span 2; align-self: start; margin-top: 8px; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--line-strong); font: 10.5px/18px var(--mono); text-align: center; color: var(--muted); }
+.psim-derivation .mx { overflow-x: auto; padding: 4px 0; }
+.psim-derivation .mx math { font-size: 17px; color: var(--ink); }
+.psim-derivation .why { font-size: 12px; color: var(--muted); }
+
+/* ---------- workbench layout: stage + figures + equations (instrument-app layout: 'workbench') ---------- */
+.psim-app.workbench .psim-stage { overflow: auto; background: var(--stage); }
+.psim-bench { position: relative; display: grid; gap: 18px; padding: 18px 18px 84px; min-height: 100%; }
+.psim-bench .psim-canvaswrap { position: relative; height: clamp(300px, 52vh, 620px); border-radius: 12px; overflow: hidden; border: 1px solid var(--line);
+  background: radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 90%, var(--accent) 10%) 0%, var(--stage) 65%); }
+.psim-bench .psim-canvaswrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+.psim-bench .psim-figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+.psim-bench .psim-eqs { display: grid; gap: 18px; }
+.psim-app.workbench .psim-transport { position: fixed; left: calc((100vw - 372px) / 2); }
+.psim-app.workbench .psim-hud { left: 30px; top: 30px; }
+.psim-app.workbench .psim-legend { right: 30px; top: 30px; }
+@media (max-width: 860px) {
+  .psim-app.workbench .psim-transport { left: 50%; }
+  .psim-bench { padding: 12px 12px 84px; }
+}
+
+@media (max-width: 860px) {
+  /* phones: legend bottom-right, clear of HUD (top-left), scale bars (bottom-left) and transport */
+  .psim-legend { top: auto; bottom: 70px; left: auto; right: 14px; max-width: 58%; justify-items: end; text-align: right; font-size: 10.5px; }
+  .psim-app.workbench { grid-template-rows: auto auto auto; }
+  .psim-app.workbench .psim-stage { overflow: visible; }
+  .psim-app.workbench .psim-transport { position: absolute; }
+  .psim-app.workbench .psim-legend { top: auto; bottom: 14px; left: auto; right: 26px; }
+  .psim-bench .psim-canvaswrap { height: 70vh; }
+}
+</style>
+</head>
+<body>
+<script type="application/json" id="psim-verification">{
+ "summary": "Crank–Nicolson diffusion column and suspended-grain ODE checked against exact solutions of the same model:",
+ "checks": [
+  {
+   "label": "Dissolved mass after 1 h vs exact 2c_sat√(Dt/π)",
+   "value": "0.83009 vs 0.83069 kg/m² (rel. 7.24e-4)",
+   "pass": true
+  },
+  {
+   "label": "Profile after 1 h vs c_sat·erfc(z/2√(Dt))",
+   "value": "max |Δc|/c_sat = 3.76e-4",
+   "pass": true
+  },
+  {
+   "label": "Spatial convergence order (dx = 0.5, 0.25, 0.125 mm)",
+   "value": "2.00, 2.00",
+   "pass": true
+  },
+  {
+   "label": "Profile at t = 0.3H²/D (5.8 d, H = 5 cm) vs exact series",
+   "value": "max |Δc|/c_sat = 3.69e-6",
+   "pass": true
+  },
+  {
+   "label": "6 g in a 7 cm glass: solid gone at (vs semi-infinite exact)",
+   "value": "3.524 h vs 3.523 h (rel. 4.1e-4)",
+   "pass": true
+  },
+  {
+   "label": "Mass conserved after the solid is gone (Σc·V vs m₀; vs ∫flux dt)",
+   "value": "9.7e-14; 1.3e-13",
+   "pass": true
+  },
+  {
+   "label": "Exhaustion time, dt = 10 s vs 5 s",
+   "value": "rel. diff 9.1e-10",
+   "pass": true
+  },
+  {
+   "label": "Uniform end state m₀/V after 2H²/D (H = 2 cm)",
+   "value": "max deviation 5.58e-9",
+   "pass": true
+  },
+  {
+   "label": "Single grain, dilute limit vs ρ_sR₀²/(2Dc_sat)",
+   "value": "142.374 s vs 142.374 s (rel. 1.9e-12)",
+   "pass": true
+  },
+  {
+   "label": "Grains, 6 g in 385 mL: ODE vs quadrature",
+   "value": "146.74 s vs 146.74 s (rel. 6.1e-11)",
+   "pass": true
+  },
+  {
+   "label": "Grains, 50 g in 385 mL: ODE vs quadrature",
+   "value": "193.80 s vs 193.80 s (rel. 1.9e-9)",
+   "pass": true
+  }
+ ],
+ "notes": [
+  "These checks verify the numerics of the stated reduced model against its exact solutions; they do not test the model against a laboratory measurement of dissolving salt.",
+  "Neglected: volume change of the solution (a few % for a teaspoon, ~10 % near saturation), concentration dependence of D (±7 %), heat of solution (+3.9 kJ/mol, makes the bottom slightly colder and even more stable), thickness of the salt layer and diffusion through its pores, evaporation, vibration and thermal convection in a real kitchen."
+ ],
+ "generated": "2026-10-14T08:07:38.338Z",
+ "runtimeMs": 375
+}</script>
+<script type="module">
+const __psim = {};
+// ---- psim:ui/instrument.mjs
+__psim["ui/instrument.mjs"] = (() => {
+// Reusable instrument UI: DOM helpers, controls, log-scale plots, the simulation
+// clock, number formatting, theme handling and data export.
+// Domain-agnostic: orbit, field and density views all build on these pieces.
+
+function el(tag, attrs = {}, ...children) {
+  const node = document.createElementNS(
+    tag === 'svg' || attrs.xmlns === 'svg' ? 'http://www.w3.org/2000/svg' : 'http://www.w3.org/1999/xhtml', tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false || k === 'xmlns') continue;
+    if (k.startsWith('on') && typeof v === 'function') node.addEventListener(k.slice(2), v);
+    else if (k === 'class') node.className = v;
+    else if (k === 'html') node.innerHTML = v;
+    else if (k in node && typeof v !== 'string') node[k] = v;
+    else node.setAttribute(k, v === true ? '' : v);
+  }
+  for (const c of children.flat()) if (c != null && c !== false) node.append(c.nodeType ? c : document.createTextNode(String(c)));
+  return node;
+}
+
+const ICONS = {
+  play: '<svg viewBox="0 0 16 16"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg>',
+  pause: '<svg viewBox="0 0 16 16"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg>',
+  step: '<svg viewBox="0 0 16 16"><path d="M3 2.5v11l7-5.5zM11 2.5h2v11h-2z" fill="currentColor"/></svg>',
+  restart: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8a5 5 0 1 0 1.6-3.7"/><path d="M3 2.5v3h3"/></svg>',
+  fit: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg>',
+  sun: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6L13 13M3 13l1.4-1.4M11.6 4.4L13 3"/></svg>',
+  moon: '<svg viewBox="0 0 16 16"><path d="M13.5 10A6 6 0 0 1 6 2.5a6 6 0 1 0 7.5 7.5z" fill="currentColor"/></svg>',
+  info: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 7v4.5M8 4.6v.1"/></svg>',
+};
+
+// ---------- formatting ----------
+
+const SUP = { '-': '⁻', 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹' };
+
+/** 2.44e-11 -> "2.4×10⁻¹¹". */
+function sci(x, digits = 2) {
+  if (x == null || Number.isNaN(x)) return '—';
+  if (x === 0) return '0';
+  if (!Number.isFinite(x)) return x > 0 ? '∞' : '−∞';
+  const e = Math.floor(Math.log10(Math.abs(x)));
+  if (e >= -2 && e < 4) return fix(x, Math.max(0, digits - 1 - e));
+  const m = x / Math.pow(10, e);
+  return `${m.toFixed(digits - 1)}×10${String(e).split('').map(c => SUP[c]).join('')}`;
+}
+
+function fix(x, d = 3) {
+  if (x == null || Number.isNaN(x)) return '—';
+  return x.toFixed(d).replace('-', '−');
+}
+
+/** Classify a relative error against thresholds -> 'good' | 'warn' | 'bad'. */
+function grade(x, good, warn) {
+  if (!(x <= warn)) return 'bad';
+  return x <= good ? 'good' : 'warn';
+}
+
+// ---------- theme ----------
+
+function initTheme(toggleButton) {
+  const root = document.documentElement;
+  let stored = null;
+  try { stored = localStorage.getItem('psim-theme'); } catch { /* storage unavailable */ }
+  const query = new URLSearchParams(location.search).get('theme');
+  const sys = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  const apply = t => {
+    root.dataset.theme = t;
+    if (toggleButton) toggleButton.innerHTML = t === 'dark' ? ICONS.sun : ICONS.moon;
+    if (toggleButton) toggleButton.title = t === 'dark' ? 'Light theme' : 'Dark theme';
+    root.dispatchEvent(new CustomEvent('psim-theme', { detail: t }));
+  };
+  apply(query || stored || root.dataset.theme || sys);
+  toggleButton?.addEventListener('click', () => {
+    const t = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    try { localStorage.setItem('psim-theme', t); } catch { /* ignore */ }
+    apply(t);
+  });
+}
+
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+// ---------- layout pieces ----------
+
+function section(title, { open = true, aside } = {}) {
+  const body = el('div', { class: 'psim-body' });
+  const asideEl = aside != null ? el('span', { class: 'aside' }, aside) : null;
+  const sec = el('details', { class: 'psim-sec', open }, el('summary', {}, title, asideEl), body);
+  sec.body = body;
+  sec.aside = asideEl;
+  return sec;
+}
+
+function row(label, value = '—', cls = '') {
+  const v = el('span', { class: `v ${cls}` }, value);
+  const r = el('div', { class: 'psim-row' }, el('span', { class: 'k' }, label), v);
+  r.set = (text, c) => { v.textContent = text; v.className = `v ${c ?? ''}`; };
+  return r;
+}
+
+/** Value for a numeric input: short, exact enough, scientific notation for small or huge numbers. */
+const inputValue = v => {
+  const a = Math.abs(v);
+  return a !== 0 && (a < 1e-3 || a >= 1e7) ? v.toExponential(4) : String(+Number(v).toPrecision(6));
+};
+
+/**
+ * Slider + exact numeric entry, linear or logarithmic. onInput receives the number.
+ * Typed values are clamped to `limits` (default: the slider's [min, max]) and rounded when
+ * `integer` is set, so a typo like 100000000 can never freeze the page. Pass wider `limits`
+ * when a quantity may legitimately exceed the slider's range.
+ */
+function slider({ label, min, max, step = 'any', value, log = false, unit = '', digits = 3, integer = false, limits = [min, max], onInput }) {
+  const toS = v => log ? Math.log10(v) : v;
+  const fromS = s => log ? Math.pow(10, s) : s;
+  const [lo, hi] = limits;
+  const tidy = v => {
+    const c = Math.min(hi, Math.max(lo, v));
+    return integer ? Math.round(c) : c;
+  };
+  const range = el('input', { type: 'range', min: toS(min), max: toS(max), step: log ? 'any' : step, value: toS(value), 'aria-label': label });
+  const num = el('input', { type: 'number', step: integer ? 1 : 'any', min: lo, max: hi, value: inputValue(value), 'aria-label': `${label} value` });
+  const unitEl = unit ? el('span', { style: 'color:var(--muted);font:11px var(--mono)' }, unit) : null;
+  const note = el('span', { class: 'psim-limit', role: 'status' });
+  const field = el('label', { class: 'psim-field' },
+    el('div', { class: 'top' }, el('span', {}, label), el('div', { style: 'display:flex;align-items:baseline;gap:4px' }, num, unitEl)),
+    range, note);
+  range.addEventListener('input', () => {
+    const v = tidy(+(+fromS(+range.value)).toPrecision(digits + 1));
+    num.value = inputValue(v);
+    note.textContent = '';
+    onInput?.(v);
+  });
+  num.addEventListener('change', () => {
+    const raw = +num.value;
+    if (!Number.isFinite(raw)) { num.value = inputValue(tidy(fromS(+range.value))); return; }
+    const v = tidy(raw);
+    note.textContent = v !== raw ? `limited to ${inputValue(v)} (allowed ${inputValue(lo)}–${inputValue(hi)})` : '';
+    num.value = inputValue(v);
+    range.value = toS(v);
+    onInput?.(v);
+  });
+  field.setValue = v => { range.value = toS(v); num.value = inputValue(v); };
+  return field;
+}
+
+function toggle(label, checked, onChange) {
+  const input = el('input', { type: 'checkbox', checked });
+  input.addEventListener('change', () => onChange(input.checked));
+  const t = el('label', { class: 'psim-toggle' }, el('span', {}, label), input);
+  t.input = input;
+  return t;
+}
+
+function select(options, value, onChange) {
+  const s = el('select', { class: 'psim-select' },
+    options.map(o => el('option', { value: o.value, selected: o.value === value }, o.label)));
+  s.addEventListener('change', () => onChange(s.value));
+  return s;
+}
+
+function button(label, onClick, cls = '') {
+  return el('button', { class: `psim-btn ${cls}`, type: 'button', onclick: onClick }, label);
+}
+
+function toast(stage, text) {
+  let t = stage.querySelector('.psim-toast');
+  if (!t) { t = el('div', { class: 'psim-toast', role: 'status' }); stage.append(t); }
+  t.textContent = text;
+  t.classList.add('on');
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove('on'), 1800);
+}
+
+// ---------- transport ----------
+
+function transport({ onToggle, onStep, onRestart, onFit, speed, speedLabel, onSpeed }) {
+  const play = el('button', { class: 'primary', title: 'Play / pause (Space)', 'aria-label': 'Play or pause', html: ICONS.play, onclick: onToggle });
+  const out = el('output', {}, speedLabel(speed));
+  const range = el('input', { type: 'range', min: -2, max: 2, step: 'any', value: Math.log10(speed), 'aria-label': 'Playback speed' });
+  range.addEventListener('input', () => { const s = Math.pow(10, +range.value); out.textContent = speedLabel(s); onSpeed(s); });
+  const bar = el('div', { class: 'psim-transport' },
+    el('button', { title: 'Restart from initial conditions (R)', 'aria-label': 'Restart', html: ICONS.restart, onclick: onRestart }),
+    play,
+    el('button', { title: 'Advance one integrator step (.)', 'aria-label': 'Step', html: ICONS.step, onclick: onStep }),
+    el('span', { class: 'sep' }),
+    el('label', { class: 'speed' }, 'speed', range, out),
+    el('span', { class: 'sep' }),
+    el('button', { title: 'Fit view to bodies (F)', 'aria-label': 'Fit view', html: ICONS.fit, onclick: onFit }));
+  bar.setPlaying = p => { play.innerHTML = p ? ICONS.pause : ICONS.play; };
+  return bar;
+}
+
+/**
+ * Simulation clock. Converts wall-clock frames into a target *physical* time.
+ * The integrator then advances to that target with its own step sequence, so
+ * the physics never depends on frame rate. Long frames (background tabs) are capped.
+ */
+function createClock({ speed = 1 } = {}) {
+  return {
+    speed, playing: false, last: null,
+    tick(now, t) {
+      if (this.last == null || !this.playing) { this.last = now; return t; }
+      const dt = Math.min(0.1, (now - this.last) / 1000);
+      this.last = now;
+      return t + dt * this.speed;
+    },
+  };
+}
+
+// ---------- plots ----------
+
+/**
+ * Lightweight log-y line plot for diagnostics (energy error, separations).
+ * series: [{ color: cssVarName, data: [[x, y], ...] }]
+ */
+function logPlot({ caption, yMin = 1e-16, yMax = 1, height = 112 }) {
+  const canvas = el('canvas');
+  const box = el('div', { class: 'psim-plot', style: `height:${height}px` }, canvas, el('span', { class: 'cap' }, caption));
+  const series = [];
+  let xMax = 1, dirty = true, refLines = [];
+  const ctx = canvas.getContext('2d');
+  const plot = {
+    el: box,
+    addSeries(color, opts = {}) { const s = { color, data: [], ...opts }; series.push(s); return s; },
+    push(s, x, y) { s.data.push([x, y]); if (s.data.length > 4000) decimate(s); xMax = Math.max(xMax, x); dirty = true; },
+    clear() { for (const s of series) s.data.length = 0; xMax = 1; dirty = true; },
+    setXMax(x) { xMax = x; dirty = true; },
+    setRefLines(lines) { refLines = lines; dirty = true; },
+    invalidate() { dirty = true; },
+    draw() {
+      if (!dirty) return;
+      dirty = false;
+      const dpr = devicePixelRatio || 1;
+      const w = box.clientWidth, h = box.clientHeight;
+      if (!w) return;
+      if (canvas.width !== Math.round(w * dpr)) { canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      const l0 = Math.log10(yMin), l1 = Math.log10(yMax);
+      const pad = { l: 34, r: 8, t: 20, b: 14 };
+      const X = x => pad.l + (x / xMax) * (w - pad.l - pad.r);
+      const Y = y => {
+        const ly = Math.min(l1, Math.max(l0, Math.log10(Math.max(y, 1e-300))));
+        return pad.t + (1 - (ly - l0) / (l1 - l0)) * (h - pad.t - pad.b);
+      };
+      ctx.font = '9.5px ui-monospace, Menlo, monospace';
+      ctx.fillStyle = cssVar('--faint');
+      ctx.strokeStyle = cssVar('--grid-strong');
+      ctx.lineWidth = 1;
+      const stepDec = Math.max(1, Math.round((l1 - l0) / 4));
+      for (let e = Math.ceil(l0); e <= l1; e += stepDec) {
+        const y = Math.round(Y(Math.pow(10, e))) + 0.5;
+        ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+        ctx.fillText(`1e${e}`, 2, y + 3);
+      }
+      for (const r of refLines) {
+        ctx.setLineDash([3, 3]); ctx.strokeStyle = cssVar(r.color);
+        const y = Y(r.y); ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      for (const s of series) {
+        if (!s.data.length) continue;
+        ctx.strokeStyle = cssVar(s.color);
+        ctx.lineWidth = s.width ?? 1.4;
+        ctx.globalAlpha = s.alpha ?? 1;
+        ctx.beginPath();
+        s.data.forEach(([x, y], i) => i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)));
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+    },
+  };
+  new ResizeObserver(() => { dirty = true; plot.draw(); }).observe(box);
+  document.documentElement.addEventListener('psim-theme', () => { dirty = true; plot.draw(); });
+  return plot;
+}
+
+function decimate(s) {
+  // Keep the envelope: max of each pair (errors are what matter, so keep the worse one).
+  const out = [];
+  for (let i = 0; i < s.data.length; i += 2) {
+    const a = s.data[i], b = s.data[i + 1];
+    out.push(!b || a[1] >= b[1] ? a : b);
+  }
+  s.data = out;
+}
+
+// ---------- export ----------
+
+function download(filename, text, mime = 'text/plain') {
+  const url = URL.createObjectURL(new Blob([text], { type: mime }));
+  const a = el('a', { href: url, download: filename });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function readJsonScript(id) {
+  const node = document.getElementById(id);
+  if (!node) return null;
+  const text = node.textContent.trim();
+  return text ? JSON.parse(text) : null;
+}
+
+/**
+ * Status beacon read by scripts/psim.mjs check (headless Chrome).
+ * Pages set fields on it; it is mirrored into <html data-psim-*> attributes.
+ */
+function beacon() {
+  const root = document.documentElement;
+  const errors = [];
+  addEventListener('error', e => { errors.push(String(e.message)); root.dataset.psimErrors = JSON.stringify(errors); });
+  addEventListener('unhandledrejection', e => { errors.push(String(e.reason)); root.dataset.psimErrors = JSON.stringify(errors); });
+  root.dataset.psimErrors = '[]';
+  return {
+    set(key, value) { root.dataset[`psim${key[0].toUpperCase()}${key.slice(1)}`] = typeof value === 'string' ? value : JSON.stringify(value); },
+  };
+}
+
+return { el, ICONS, sci, fix, grade, initTheme, cssVar, section, row, inputValue, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon };
+})();
+
+// ---- psim:ui/plot.mjs
+__psim["ui/plot.mjs"] = (() => {
+// Scientific 2D plot: linear or log axes with 1-2-5 ticks, function and data
+// series, shaded validity bands, reference lines, markers, a draggable cursor,
+// and highlighting linked to equation terms. Theme-aware (reads CSS tokens).
+//
+//   const p = createPlot({ title: 'Spectral radiance', x: { label: 'λ', unit: 'nm', min: 100, max: 3000 },
+//                          y: { label: 'B_λ', unit: 'W sr⁻¹ m⁻³', log: false } });
+//   p.fn('planck', λ => B(λ, T), { color: '--body-0', label: 'T = 5772 K' });
+//   p.vline(λmax, { label: 'λ_max' });  p.draw();
+const { el, cssVar, sci } = __psim["ui/instrument.mjs"];
+function niceTicks(min, max, target = 5) {
+  const span = max - min;
+  if (!(span > 0)) return [min];
+  const raw = span / target, e = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / e;
+  const step = (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * e;
+  const out = [];
+  for (let v = Math.ceil(min / step) * step; v <= max + step * 1e-9; v += step) out.push(Math.abs(v) < step * 1e-9 ? 0 : v);
+  return out;
+}
+
+const SUPS = { '-': '⁻', 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹' };
+/** Powers of ten on log axes read as 10ⁿ. */
+function fmtPow10(v) {
+  const e = Math.round(Math.log10(v));
+  if (e >= 0 && e <= 3) return String(10 ** e);
+  return `10${String(e).split('').map(ch => SUPS[ch]).join('')}`;
+}
+
+function fmtTick(v) {
+  const a = Math.abs(v);
+  if (a !== 0 && (a < 1e-3 || a >= 1e5)) return sci(v, 2);
+  return String(+v.toPrecision(6)).replace('-', '−');
+}
+
+function createPlot({ title = '', x = {}, y = {}, height = 220, legend = true, onCursor } = {}) {
+  const canvas = el('canvas');
+  const head = el('div', { class: 'psim-plot-head' }, el('span', { class: 't' }, title), el('span', { class: 'l' }));
+  const box = el('div', { class: 'psim-plot2', style: `height:${height}px` }, canvas);
+  const root = el('figure', { class: 'psim-figure' }, head, box);
+  const ctx = canvas.getContext('2d');
+  const items = new Map();
+  let order = [], focus = null, cursor = null, dirty = true;
+  const ax = { x: { min: 0, max: 1, log: false, ...x }, y: { min: 0, max: 1, log: false, auto: y.min == null || y.max == null, ...y } };
+  const pad = { l: 60, r: 14, t: 10, b: 34 };
+  let W = 0, H = 0;
+
+  const tr = (a, v) => a.log ? Math.log10(v) : v;
+  const X = v => pad.l + (tr(ax.x, v) - tr(ax.x, ax.x.min)) / (tr(ax.x, ax.x.max) - tr(ax.x, ax.x.min)) * (W - pad.l - pad.r);
+  const Y = v => H - pad.b - (tr(ax.y, v) - tr(ax.y, ax.y.min)) / (tr(ax.y, ax.y.max) - tr(ax.y, ax.y.min)) * (H - pad.t - pad.b);
+  const invX = px => {
+    const f = (px - pad.l) / (W - pad.l - pad.r);
+    const v = tr(ax.x, ax.x.min) + f * (tr(ax.x, ax.x.max) - tr(ax.x, ax.x.min));
+    return ax.x.log ? Math.pow(10, v) : v;
+  };
+
+  const add = (id, item) => { if (!items.has(id)) order.push(id); items.set(id, item); dirty = true; return api; };
+
+  const api = {
+    el: root,
+    /** Plot a function y = f(x), sampled per pixel column. */
+    fn(id, f, opts = {}) { return add(id, { kind: 'fn', f, ...opts }); },
+    /** Plot data points [[x, y], ...] as a line (or dots with { dots: true }). */
+    data(id, pts, opts = {}) { return add(id, { kind: 'data', pts, ...opts }); },
+    /** Shaded x-range, e.g. where a formula is invalid. */
+    band(id, x0, x1, opts = {}) { return add(id, { kind: 'band', x0, x1, ...opts }); },
+    hline(id, yv, opts = {}) { return add(id, { kind: 'hline', y: yv, ...opts }); },
+    vline(id, xv, opts = {}) { return add(id, { kind: 'vline', x: xv, ...opts }); },
+    marker(id, xv, yv, opts = {}) { return add(id, { kind: 'marker', x: xv, y: yv, ...opts }); },
+    remove(id) { items.delete(id); order = order.filter(o => o !== id); dirty = true; return api; },
+    setX(o) { Object.assign(ax.x, o); dirty = true; return api; },
+    setY(o) { Object.assign(ax.y, o); dirty = true; return api; },
+    /** Highlight one series (dims the others); null clears. Used by equation terms. */
+    highlight(id) { focus = id; dirty = true; api.draw(); },
+    /** Show a draggable vertical cursor at x; drag calls onCursor(x). */
+    cursor(xv) { cursor = xv; dirty = true; return api; },
+    invalidate() { dirty = true; },
+    draw,
+  };
+
+  function autoY() {
+    let lo = Infinity, hi = -Infinity;
+    for (const it of items.values()) {
+      if (it.kind === 'fn' && !it.ignoreScale) {
+        for (let i = 0; i <= 200; i++) {
+          const xv = ax.x.log ? Math.pow(10, Math.log10(ax.x.min) + i / 200 * (Math.log10(ax.x.max) - Math.log10(ax.x.min))) : ax.x.min + i / 200 * (ax.x.max - ax.x.min);
+          const v = it.f(xv);
+          if (Number.isFinite(v) && (!ax.y.log || v > 0)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+        }
+      } else if (it.kind === 'data' && !it.ignoreScale) {
+        for (const [, v] of it.pts) if (Number.isFinite(v) && (!ax.y.log || v > 0)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+      }
+    }
+    if (!Number.isFinite(lo)) return;
+    if (ax.y.log) { ax.y.min = Math.pow(10, Math.floor(Math.log10(lo))); ax.y.max = Math.pow(10, Math.ceil(Math.log10(hi))); }
+    else {
+      const span = hi - lo || Math.abs(hi) || 1;
+      ax.y.min = ax.y.zero !== false && lo >= 0 ? 0 : lo - 0.06 * span;
+      ax.y.max = hi + 0.08 * span;
+    }
+  }
+
+  function draw() {
+    if (!dirty) return;
+    dirty = false;
+    const dpr = devicePixelRatio || 1;
+    W = box.clientWidth; H = box.clientHeight;
+    if (!W) return;
+    if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) { canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr); }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    if (ax.y.auto) autoY();
+    const C = cssVar;
+    ctx.font = '10.5px ui-monospace, Menlo, monospace';
+
+    const labelBoxes = [];                              // band and vertical-line labels placed this frame
+    // bands (behind everything)
+    for (const id of order) {
+      const it = items.get(id);
+      if (it.kind !== 'band') continue;
+      const x0 = Math.max(pad.l, X(it.x0)), x1 = Math.min(W - pad.r, X(it.x1));
+      ctx.fillStyle = C(it.color ?? '--grid-strong');
+      ctx.globalAlpha = it.alpha ?? 0.5;
+      ctx.fillRect(x0, pad.t, x1 - x0, H - pad.t - pad.b);
+      ctx.globalAlpha = 1;
+      if (it.label) { ctx.fillStyle = C('--muted'); ctx.fillText(it.label, x0 + 6, pad.t + 12); labelBoxes.push({ x: x0 + 6, w: ctx.measureText(it.label).width, y: pad.t + 12 }); }
+    }
+
+    // grid + ticks
+    ctx.strokeStyle = C('--grid'); ctx.fillStyle = C('--faint'); ctx.lineWidth = 1;
+    const xt = ax.x.log ? logTicks(ax.x.min, ax.x.max) : niceTicks(ax.x.min, ax.x.max, Math.max(3, Math.floor(W / 90)));
+    const yt = ax.y.log ? logTicks(ax.y.min, ax.y.max) : niceTicks(ax.y.min, ax.y.max, Math.max(3, Math.floor(H / 45)));
+    ctx.textAlign = 'center';
+    for (const v of xt) { const px = Math.round(X(v)) + 0.5; ctx.beginPath(); ctx.moveTo(px, pad.t); ctx.lineTo(px, H - pad.b); ctx.stroke(); ctx.fillText(ax.x.log ? fmtPow10(v) : fmtTick(v), px, H - pad.b + 14); }
+    ctx.textAlign = 'right';
+    for (const v of yt) { const py = Math.round(Y(v)) + 0.5; ctx.beginPath(); ctx.moveTo(pad.l, py); ctx.lineTo(W - pad.r, py); ctx.stroke(); ctx.fillText(ax.y.log ? fmtPow10(v) : fmtTick(v), pad.l - 6, py + 3.5); }
+    ctx.textAlign = 'start';
+    ctx.strokeStyle = C('--line-strong');
+    ctx.beginPath(); ctx.moveTo(pad.l + 0.5, pad.t); ctx.lineTo(pad.l + 0.5, H - pad.b + 0.5); ctx.lineTo(W - pad.r, H - pad.b + 0.5); ctx.stroke();
+    // axis labels
+    ctx.fillStyle = C('--muted'); ctx.font = '11px ui-sans-serif, -apple-system, system-ui, sans-serif';
+    const xl = `${ax.x.label ?? ''}${ax.x.unit ? ` (${ax.x.unit})` : ''}`;
+    ctx.textAlign = 'right'; ctx.fillText(xl, W - pad.r, H - 4); ctx.textAlign = 'start';
+    const yl = `${ax.y.label ?? ''}${ax.y.unit ? ` (${ax.y.unit})` : ''}`;
+    ctx.save(); ctx.translate(11, pad.t); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'right'; ctx.fillText(yl, 0, 0); ctx.restore();
+
+    // clip to plot area
+    ctx.save();
+    ctx.beginPath(); ctx.rect(pad.l, pad.t - 2, W - pad.l - pad.r, H - pad.t - pad.b + 4); ctx.clip();
+    const legendItems = [];
+    for (const id of order) {
+      const it = items.get(id);
+      const dim = focus && focus !== id && it.kind !== 'band' ? 0.18 : 1;
+      const col = C(it.color ?? '--accent');
+      ctx.globalAlpha = dim * (it.alpha ?? 1);
+      ctx.strokeStyle = col; ctx.fillStyle = col;
+      ctx.lineWidth = (it.width ?? 1.8) * (focus === id ? 1.6 : 1);
+      ctx.setLineDash(it.dash ? [5, 4] : it.dot ? [1.5, 3.5] : []);
+      if (it.kind === 'fn') {
+        ctx.beginPath();
+        let pen = false;
+        const n = Math.max(2, Math.round((W - pad.l - pad.r) * (it.oversample ?? 1)));
+        for (let i = 0; i <= n; i++) {
+          const px = pad.l + i / n * (W - pad.l - pad.r);
+          const v = it.f(invX(px));
+          if (!Number.isFinite(v) || (ax.y.log && v <= 0)) { pen = false; continue; }
+          const py = Y(v);
+          pen ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+          pen = true;
+        }
+        ctx.stroke();
+        if (it.fill) { ctx.globalAlpha = 0.12 * dim; ctx.lineTo(W - pad.r, Y(Math.max(ax.y.min, 0))); ctx.lineTo(pad.l, Y(Math.max(ax.y.min, 0))); ctx.fill(); }
+      } else if (it.kind === 'data') {
+        if (it.dots) {
+          const shown = ([a, b]) => Number.isFinite(a) && Number.isFinite(b) && (!ax.y.log || b > 0) && (!ax.x.log || a > 0);
+          for (const p of it.pts) { if (!shown(p)) continue; ctx.beginPath(); ctx.arc(X(p[0]), Y(p[1]), it.r ?? 2.4, 0, 7); ctx.fill(); }
+          if (it.errors) {for (let i = 0; i < it.pts.length; i++) {
+            const [a, b] = it.pts[i], e = Math.abs(it.errors[i]);
+            if (!shown(it.pts[i]) || !Number.isFinite(e)) continue;
+            // On a log axis a bar reaching zero or below has no finite end: run it to the axis floor.
+            const lo = ax.y.log && b - e <= ax.y.min ? ax.y.min : b - e;
+            ctx.beginPath(); ctx.moveTo(X(a), Y(lo)); ctx.lineTo(X(a), Y(b + e)); ctx.stroke();
+          }}
+        } else {
+          ctx.beginPath();
+          it.pts.forEach(([a, b], i) => i ? ctx.lineTo(X(a), Y(b)) : ctx.moveTo(X(a), Y(b)));
+          ctx.stroke();
+        }
+      } else if (it.kind === 'hline' || it.kind === 'vline') {
+        ctx.lineWidth = 1; ctx.setLineDash(it.solid ? [] : [3, 4]);
+        ctx.beginPath();
+        if (it.kind === 'hline') { ctx.moveTo(pad.l, Y(it.y)); ctx.lineTo(W - pad.r, Y(it.y)); }
+        else { ctx.moveTo(X(it.x), pad.t); ctx.lineTo(X(it.x), H - pad.b); }
+        ctx.stroke();
+        if (it.label) {
+          ctx.setLineDash([]); ctx.font = '10.5px ui-monospace, Menlo, monospace';
+          if (it.kind === 'hline') ctx.fillText(it.label, W - pad.r - ctx.measureText(it.label).width - 4, Y(it.y) - 5 < pad.t + 10 ? Y(it.y) + 13 : Y(it.y) - 5);   // below the line near the top edge
+          else {
+            // stack labels of nearby vertical lines instead of drawing them on top of each other
+            const x0 = X(it.x) + 5, w = ctx.measureText(it.label).width;
+            let ly = pad.t + 12;
+            while (labelBoxes.some(b => x0 < b.x + b.w + 4 && b.x < x0 + w + 4 && Math.abs(b.y - ly) < 12)) ly += 13;
+            labelBoxes.push({ x: x0, w, y: ly });
+            ctx.fillText(it.label, x0, ly);
+          }
+        }
+      } else if (it.kind === 'marker') {
+        ctx.setLineDash([]);
+        ctx.beginPath(); ctx.arc(X(it.x), Y(it.y), it.r ?? 4.5, 0, 7); ctx.fill();
+        ctx.strokeStyle = C('--panel'); ctx.lineWidth = 1.5; ctx.stroke();
+        if (it.label) { ctx.fillStyle = C('--ink-2'); ctx.font = '10.5px ui-monospace, Menlo, monospace'; ctx.fillText(it.label, X(it.x) + 8, Y(it.y) - 7); }
+      }
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+      if (it.label && (it.kind === 'fn' || it.kind === 'data') && legend) legendItems.push([col, it.label, it.dash, id]);
+    }
+    if (cursor != null) {
+      ctx.strokeStyle = C('--ink'); ctx.lineWidth = 1; ctx.setLineDash([2, 3]);
+      ctx.beginPath(); ctx.moveTo(X(cursor), pad.t); ctx.lineTo(X(cursor), H - pad.b); ctx.stroke(); ctx.setLineDash([]);
+    }
+    ctx.restore();
+    const l = head.querySelector('.l');
+    l.replaceChildren(...legendItems.map(([c, t, dash, id]) => el('span', {
+      class: `k${focus === id ? ' on' : ''}`, onmouseenter: () => api.highlight(id), onmouseleave: () => api.highlight(null),
+    }, el('i', { style: `background:${c};${dash ? 'opacity:.6' : ''}` }), t)));
+  }
+
+  function logTicks(min, max) {
+    const out = [], e0 = Math.ceil(Math.log10(min) - 1e-9), e1 = Math.floor(Math.log10(max) + 1e-9);
+    const stride = Math.max(1, Math.ceil((e1 - e0 + 1) / 6));
+    for (let e = e0; e <= e1; e += stride) out.push(Math.pow(10, e));
+    return out;
+  }
+
+  // cursor dragging
+  let dragging = false;
+  const setFromEvent = e => {
+    if (cursor == null || !onCursor) return;
+    const r = canvas.getBoundingClientRect();
+    const xv = Math.min(ax.x.max, Math.max(ax.x.min, invX(e.clientX - r.left)));
+    cursor = xv; dirty = true; onCursor(xv); draw();
+  };
+  canvas.addEventListener('pointerdown', e => { if (cursor == null || !onCursor) return; dragging = true; canvas.setPointerCapture(e.pointerId); setFromEvent(e); });
+  canvas.addEventListener('pointermove', e => { if (dragging) setFromEvent(e); });
+  canvas.addEventListener('pointerup', () => { dragging = false; });
+  if (onCursor) canvas.style.cursor = 'ew-resize';
+
+  new ResizeObserver(() => { dirty = true; draw(); }).observe(box);
+  document.documentElement.addEventListener('psim-theme', () => { dirty = true; draw(); });
+  return api;
+}
+
+return { createPlot };
+})();
+
+// ---- psim:ui/equation.mjs
+__psim["ui/equation.mjs"] = (() => {
+// Equations split into their physical terms.
+//
+// An equation is shown as a row of term cards. Each card holds one term's maths,
+// its name, its live numerical value with units, and a colour that matches the
+// curve or element it produces in the plots. Hovering a term highlights its curve.
+// A "where" block defines every symbol with its value; a derivation lists steps.
+//
+//   const eq = createEquation({
+//     lhs: { mathml: '<mi>V</mi><mo>(</mo><mi>r</mi><mo>)</mo>', label: 'potential', value: () => V, unit: 'GeV' },
+//     terms: [
+//       { id: 'coul', mathml: '<mo>−</mo><mfrac>…</mfrac>', label: 'Coulomb (gluon exchange)', color: '--body-1', value: () => Vc, unit: 'GeV' },
+//       { id: 'lin', sign: '+', mathml: '<mi>σ</mi><mi>r</mi>', label: 'string (confinement)', color: '--body-0', value: () => s * r, unit: 'GeV' },
+//     ],
+//     where: [{ mathml: '<mi>σ</mi>', meaning: 'string tension', value: () => 0.926, unit: 'GeV/fm' }],
+//     link: plot,
+//   });
+//   eq.update();   // refresh live values (call every UI tick)
+const { el, sci } = __psim["ui/instrument.mjs"];
+const m = inner => `<math display="inline">${inner}</math>`;
+
+function fmt(v, digits = 4) {
+  if (typeof v === 'string') return v;
+  if (v == null || Number.isNaN(v)) return '—';
+  const a = Math.abs(v);
+  if (a !== 0 && (a < 1e-3 || a >= 1e5)) return sci(v, digits - 1);
+  return (+v.toPrecision(digits)).toString().replace('-', '−');
+}
+
+function createEquation({ title, lhs, op = '=', terms = [], where = [], note, link, onFocus } = {}) {
+  const valueEls = [];
+  const focusTerm = id => {
+    for (const c of root.querySelectorAll('.psim-term')) c.classList.toggle('dim', id != null && c.dataset.id !== id);
+    const targets = Array.isArray(link) ? link : link ? [link] : [];
+    targets.forEach(p => p.highlight(id));
+    onFocus?.(id);
+  };
+
+  const card = (t, kind) => {
+    const v = el('span', { class: 'v' });
+    if (t.value) valueEls.push([v, t]);
+    const c = el('div', {
+      class: `psim-term ${kind}`, 'data-id': t.id ?? '', tabindex: t.id ? 0 : null,
+      onmouseenter: () => t.id && focusTerm(t.id), onmouseleave: () => t.id && focusTerm(null),
+      onfocus: () => t.id && focusTerm(t.id), onblur: () => t.id && focusTerm(null),
+    },
+    el('div', { class: 'mx', html: m(t.mathml) }),
+    el('i', { class: 'bar', style: t.color ? `background:var(${t.color})` : '' }),
+    t.label ? el('span', { class: 'lb' }, t.label) : null,
+    v);
+    return c;
+  };
+
+  const row = el('div', { class: 'psim-eqrow' });
+  if (lhs) row.append(card(lhs, 'lhs'), el('span', { class: 'op' }, op));
+  terms.forEach((t, i) => {
+    if (i > 0) row.append(el('span', { class: 'op' }, t.sign ?? '+'));
+    row.append(card(t, 'rhs'));
+  });
+
+  const whereEl = where.length ? el('div', { class: 'psim-where' },
+    el('span', { class: 'kw' }, 'where'),
+    ...where.map(w => {
+      const v = el('span', { class: 'v' });
+      if (w.value) valueEls.push([v, w]);
+      return el('div', { class: 'w' }, el('span', { class: 'mx', html: m(w.mathml) }), el('span', { class: 'mean' }, w.meaning), v);
+    })) : null;
+
+  const root = el('section', { class: 'psim-equation' },
+    title ? el('h3', {}, title) : null, row, whereEl, note ? el('p', { class: 'psim-hint' }, note) : null);
+
+  const api = {
+    el: root,
+    update() {
+      for (const [node, t] of valueEls) {
+        let v;
+        try { v = t.value(); } catch { v = NaN; }
+        node.textContent = `${fmt(v, t.digits)}${t.unit ? ` ${t.unit}` : ''}`;
+      }
+    },
+    focus: focusTerm,
+  };
+  api.update();
+  return api;
+}
+
+/** Numbered derivation: each step is one line of maths plus the reason for it. */
+function createDerivation(steps, { title } = {}) {
+  return el('section', { class: 'psim-derivation' },
+    title ? el('h3', {}, title) : null,
+    el('ol', {}, steps.map(s => el('li', {},
+      el('div', { class: 'mx', html: `<math display="inline">${s.mathml}</math>` }),
+      s.note ? el('span', { class: 'why' }, s.note) : null))));
+}
+
+/** Helpers for writing MathML compactly. */
+const M = {
+  i: s => `<mi>${s}</mi>`,
+  n: s => `<mn>${s}</mn>`,
+  o: s => `<mo>${s}</mo>`,
+  // msub/msup take exactly two children: wrap both, so a multi-part exponent such as −x survives
+  sub: (b, s) => `<msub><mrow>${b}</mrow><mrow>${s}</mrow></msub>`,
+  sup: (b, s) => `<msup><mrow>${b}</mrow><mrow>${s}</mrow></msup>`,
+  frac: (a, b) => `<mfrac><mrow>${a}</mrow><mrow>${b}</mrow></mfrac>`,
+  sqrt: a => `<msqrt>${a}</msqrt>`,
+  row: (...a) => `<mrow>${a.join('')}</mrow>`,
+  paren: a => `<mo>(</mo>${a}<mo>)</mo>`,
+  /** Vector symbol: Unicode mathematical bold (MathML Core ignores mathvariant). */
+  vec: s => `<mi>${{ r: '𝐫', v: '𝐯', E: '𝐄', B: '𝐁', u: '𝐮', F: '𝐅', p: '𝐩', k: '𝐤', x: '𝐱', a: '𝐚' }[s] ?? s}</mi>`,
+};
+
+return { createEquation, createDerivation, M };
+})();
+
+// ---- psim:core/verification.mjs
+__psim["core/verification.mjs"] = (() => {
+// Shared verification gates for the CLI and browser. Reports are evidence only
+// when every check is explicit and the tested settings still match the simulation.
+
+function validateModuleReport(report) {
+  if (!report || !Array.isArray(report.checks) || !report.checks.length) throw new Error('verification: need a non-empty checks array');
+  for (const [i, check] of report.checks.entries()) {
+    const where = `verification check ${i + 1}`;
+    if (!check || typeof check.label !== 'string' || !check.label.trim()) throw new Error(`${where}: label is required`);
+    if (typeof check.pass !== 'boolean') throw new Error(`${where}: pass must be explicitly true or false`);
+    if (typeof check.value === 'number') {
+      if (!Number.isFinite(check.value)) throw new Error(`${where}: measured value must be finite`);
+    } else if (typeof check.value !== 'string' || !check.value.trim() || /NaN|Infinity|∞|^\s*—\s*$/.test(check.value)) {
+      throw new Error(`${where}: measured value must be finite and present`);
+    }
+    if (check.state != null && check.state !== 'warn') throw new Error(`${where}: optional state must be 'warn'`);
+  }
+  return report;
+}
+
+/** Reasons a gravity report cannot support a successful verification claim. */
+function gravityReportProblems(report) {
+  const problems = [];
+  const finiteError = (value, limit, label) => {
+    if (!(Number.isFinite(value) && value >= 0)) problems.push(`${label} is missing or non-finite`);
+    else if (value > limit) problems.push(`${label} ${value.toExponential(2)} exceeds ${limit.toExponential(0)}`);
+  };
+  const c = report?.conservation, cv = report?.convergence;
+  finiteError(c?.dE, report?.settings?.softening > 0 ? 1e-4 : 1e-8, 'energy error');
+  finiteError(c?.dP, 1e-10, 'momentum drift');
+  finiteError(c?.dL, 1e-10, 'angular momentum drift');
+  if (!(Number.isFinite(c?.h) && c.h > 0)) problems.push('step parameter is missing or non-finite');
+  if (!(Number.isFinite(report?.duration) && report.duration > 0)) problems.push('verification duration is invalid');
+  if (!(Number.isFinite(cv?.observedOrder) && Number.isFinite(cv?.expectedOrder) && cv.expectedOrder > 0)) problems.push('convergence order is unresolved or non-finite');
+  else if (Math.abs(cv.observedOrder - cv.expectedOrder) > 0.6) problems.push('observed convergence order differs from theory');
+  if (!(Number.isFinite(cv?.horizon) && cv.horizon >= 0 && cv.horizon <= report.duration && typeof cv.converged === 'boolean')) problems.push('convergence horizon is invalid');
+  finiteError(cv?.finalDifference, Infinity, 'final refinement difference');
+  if (report?.determinism?.identical !== true || report?.frameIndependence?.identical !== true) problems.push('reproducibility check failed');
+  if (!Array.isArray(report?.benchmarks) || !report.benchmarks.length) problems.push('benchmarks are missing');
+  else {for (const b of report.benchmarks) {
+    const name = b?.name ?? 'unnamed benchmark';
+    finiteError(b?.dE, 1e-9, `${name}: energy error`);
+    if (b && Object.hasOwn(b, 'positionError')) finiteError(b.positionError, 1e-3, `${name}: position error`);
+    else if (b && Object.hasOwn(b, 'returnError')) finiteError(b.returnError, 1e-6, `${name}: return error`);
+    else if (b?.matchesLiterature !== true) problems.push(`benchmark failed: ${name}`);
+  }}
+  return problems;
+}
+
+/** Match solver settings, allowing only round-off in the computed step parameter. */
+function gravityReportMatches(report, settings) {
+  if (!report?.settings || report.integrator !== settings.integrator) return false;
+  for (const key of ['integrator', 'G', 'softening', 'stepsPerCrossing']) {
+    if (report.settings[key] !== settings[key]) return false;
+  }
+  const h = report.conservation?.h;
+  return Number.isFinite(h) && h > 0 && Number.isFinite(settings.h) && Math.abs(h - settings.h) <= 1e-12 * Math.abs(h);
+}
+
+return { validateModuleReport, gravityReportProblems, gravityReportMatches };
+})();
+
+// ---- psim:ui/instrument-app.mjs
+__psim["ui/instrument-app.mjs"] = (() => {
+// Generic instrument shell for composed simulations (any domain).
+//
+// The page supplies a physics module that follows the simulation contract
+// (see references/compose.md) and a draw function; this shell provides the
+// header, trust tier, theme, transport, frame-rate-independent clock,
+// parameter controls, live diagnostics, verification report, model panel,
+// export and the window.psim hook used by automated checks.
+//
+// Simulation contract (returned by create(params)):
+//   sim.t                    physical time of the latest computed state
+//   sim.step()               advance by one integrator step (or one analytic tick)
+//   sim.sample?(t)           state at t between steps, for drawing (default: current state)
+//   sim.diagnostics()        [{ key, label, value, kind: 'error'|'value', unit?, good?, warn? }]
+//   sim.state()              JSON-serialisable state (export, tests)
+//   sim.record?()            { header: [...], rows: [[...], ...] } for CSV export
+//   sim.timeDependent        false for static analytic visualisations (no transport)
+const { el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon, cssVar } = __psim["ui/instrument.mjs"];
+const { createPlot } = __psim["ui/plot.mjs"];
+const { createEquation, createDerivation, M } = __psim["ui/equation.mjs"];
+const { validateModuleReport } = __psim["core/verification.mjs"];
+const TIERS = {
+  validated: 'Validated numerical',
+  approximate: 'Approximate numerical',
+  analytical: 'Analytical',
+  conceptual: 'Conceptual illustration',
+};
+
+function createInstrument(spec) {
+  const {
+    title, subtitle = '', tier, tierReason, create, draw, params = [], model = {},
+    timeUnit = 'T', timeLabel = 'simulated time', speed: speed0 = 1, controls, onPointer, layout = 'stage', bench,
+  } = spec;
+  if (!TIERS[tier]) throw new Error(`tier must be one of ${Object.keys(TIERS).join(', ')}`);
+  const report = readJsonScript('psim-verification');
+  if (report) validateModuleReport(report);
+  const verified = report?.checks.every(c => c.pass === true) === true;
+  const trustLabel = verified ? TIERS[tier] : 'Verification needed';
+  const status = beacon();
+  const query = new URLSearchParams(location.search);
+
+  document.title = title;
+  document.body.innerHTML = `
+  <div class="psim-app ${layout === 'workbench' ? 'workbench' : ''}">
+    <header class="psim-head">
+      <div class="psim-mark" aria-hidden="true"></div>
+      <div class="psim-title"><h1></h1><p></p></div>
+      <div class="spacer"></div>
+      <button class="psim-tier" type="button"><i></i><span></span></button>
+      <button class="psim-iconbtn" type="button" aria-label="Toggle theme"></button>
+    </header>
+    <main class="psim-stage"><canvas></canvas>
+      <div class="psim-hud"><span class="dim"></span><b>0</b><span class="h1"></span><span class="dim h2"></span><span class="flag"></span></div>
+      <div class="psim-legend"></div>
+    </main>
+    <aside class="psim-side"></aside>
+  </div>`;
+  const $ = s => document.querySelector(s);
+  $('.psim-title h1').textContent = title;
+  $('.psim-title p').textContent = subtitle;
+  const tierBtn = $('.psim-tier');
+  tierBtn.dataset.tier = verified ? tier : 'unverified';
+  tierBtn.querySelector('span').textContent = trustLabel;
+  initTheme($('.psim-iconbtn'));
+  const stage = $('.psim-stage'), side = $('.psim-side');
+  // Workbench layout: the live canvas on top, then term-split equations and figures that
+  // update with the model (spec.bench builds them; see references/compose.md).
+  let benchParts = null;
+  if (layout === 'workbench') {
+    const wrap = el('div', { class: 'psim-canvaswrap' }, stage.querySelector('canvas'), stage.querySelector('.psim-hud'), stage.querySelector('.psim-legend'));
+    const eqs = el('div', { class: 'psim-eqs' }), figs = el('div', { class: 'psim-figs' });
+    stage.prepend(el('div', { class: 'psim-bench' }, wrap, eqs, figs));
+    benchParts = { wrap, eqs, figs };
+  }
+  const canvas = stage.querySelector('canvas');
+  const ctx = canvas.getContext('2d');
+  $('.psim-hud .dim').textContent = timeLabel;
+  const hud = { t: $('.psim-hud b'), a: $('.psim-hud .h1'), b: $('.psim-hud .h2'), flag: $('.psim-hud .flag') };
+  if (model.legend) $('.psim-legend').append(...model.legend.map(t => el('span', {}, t)));
+
+  // ------------------------------------------------------------ state
+  const values = Object.fromEntries(params.map(p => [p.key, p.value]));
+  let sim, tDisplay = 0, limited = false;
+  const clock = createClock({ speed: speed0 });
+  const view = { W: 0, H: 0, dpr: 1, color: cssVar, opts: {}, pointer: null };
+
+  let benchApi = null;
+  function rebuild() {
+    sim = create({ ...values });
+    tDisplay = sim.t ?? 0;
+    diagPlot.clear();
+    renderDiag(true);
+    benchApi?.update?.(sim, tDisplay, { rebuilt: true });
+    status.set('params', values);
+  }
+
+  // ------------------------------------------------------------ transport
+  const timeDependent = spec.timeDependent !== false;
+  let tp = null;
+  if (timeDependent) {
+    tp = transport({
+      speed: speed0, speedLabel: s => `${sci(s, 2)} ${timeUnit}/s`,
+      onToggle: () => setPlaying(!clock.playing),
+      onStep: () => { setPlaying(false); sim.step(); tDisplay = sim.t; },
+      onRestart: () => rebuild(),
+      onFit: () => spec.onFit?.(view),
+      onSpeed: s => { clock.speed = s; },
+    });
+    stage.append(tp);
+  } else {
+    stage.querySelector('.psim-hud').querySelector('.dim').textContent = '';
+  }
+  function setPlaying(p) { clock.playing = p; tp?.setPlaying(p); }
+
+  // ------------------------------------------------------------ side panel
+  const secParams = section('Parameters');
+  const paramInputs = new Map();
+  if (params.length) {
+    secParams.body.append(el('p', { class: 'psim-hint' }, 'Changing a parameter recomputes the model from its initial state.'));
+    for (const p of params) {
+      if (p.options) {
+        secParams.body.append(el('div', { class: 'psim-field' }, el('div', { class: 'top' }, el('span', {}, p.label)),
+          select(p.options, p.value, v => { values[p.key] = isNaN(+v) ? v : +v; rebuild(); })));
+      } else {
+        const sl = slider({
+          label: p.label, min: p.min, max: p.max, value: p.value, log: p.log, unit: p.unit ?? '', digits: p.digits ?? 3,
+          integer: p.integer, limits: p.limits,
+          onInput: v => { values[p.key] = v; rebuild(); },
+        });
+        paramInputs.set(p.key, sl);
+        secParams.body.append(sl);
+      }
+      if (p.hint) secParams.body.append(el('p', { class: 'psim-hint', style: 'margin-top:-4px;font-size:11.5px' }, p.hint));
+    }
+  }
+  if (controls) controls(secParams.body, { values, rebuild });
+
+  const secDiag = section('Diagnostics', { aside: 'live' });
+  const diagPlot = logPlot({ caption: '', yMin: 1e-16, yMax: 1 });
+  const diagSeries = diagPlot.addSeries('--accent');
+  const diagRows = new Map();
+  secDiag.body.append(diagPlot.el);
+  let nextPlot = 0;
+  function renderDiag(reset = false) {
+    const d = sim.diagnostics();
+    if (reset) {
+      diagRows.forEach(r => r.remove());
+      diagRows.clear();
+      nextPlot = 0;
+      const firstErr = d.find(x => x.kind === 'error');
+      diagPlot.el.style.display = firstErr ? '' : 'none';
+      diagPlot.el.querySelector('.cap').textContent = firstErr ? `${firstErr.label}   vs   t` : '';
+      if (spec.duration) diagPlot.setXMax(spec.duration);
+    }
+    for (const x of d) {
+      let r = diagRows.get(x.key);
+      if (!r) { r = row(x.label); diagRows.set(x.key, r); secDiag.body.append(r); }
+      const text = x.text ?? (x.kind === 'error' ? sci(x.value) : `${sci(x.value, 4)}${x.unit ? ` ${x.unit}` : ''}`);
+      r.set(text, x.kind === 'error' && x.good != null ? grade(x.value, x.good, x.warn ?? x.good * 1000) : '');
+    }
+    const firstErr = d.find(x => x.kind === 'error');
+    if (firstErr && timeDependent && sim.t >= nextPlot) {
+      diagPlot.push(diagSeries, sim.t, Math.max(firstErr.value, 1e-17));
+      nextPlot = sim.t + (spec.duration ?? 10) / 800;
+    }
+    diagPlot.draw();
+    return d;
+  }
+
+  const secVerify = section('Verification', { aside: report ? 'report embedded' : 'no report' });
+  if (report?.checks) {
+    secVerify.body.append(el('p', { class: 'psim-hint' }, report.summary ?? `Measured when this page was built (${(report.generated ?? '').slice(0, 10)}):`));
+    for (const c of report.checks) {
+      secVerify.body.append(el('div', { class: 'psim-check' },
+        el('i', { class: c.pass !== true ? 'bad' : c.state === 'warn' ? 'warn' : '' }),
+        el('span', {}, c.label), el('code', {}, c.value)));
+    }
+    if (report.notes) for (const n of report.notes) secVerify.body.append(el('p', { class: 'psim-hint' }, n));
+  } else {
+    secVerify.body.append(el('p', { class: 'psim-hint' }, 'No build-time verification report is embedded in this page.'));
+  }
+
+  const secModel = section('Model, assumptions & limits', { open: false });
+  secModel.body.append(
+    el('div', { class: 'psim-prose' }, el('p', {}, el('b', {}, `${trustLabel}. `), tierReason ?? '')),
+    ...(model.equations ?? []).flatMap(eq => [
+      eq.caption ? el('p', { class: 'psim-hint' }, eq.caption) : null,
+      el('div', { class: 'psim-math', html: eq.mathml }),
+    ]),
+    model.assumptions ? el('div', { class: 'psim-prose' }, el('p', {}, el('b', {}, 'Assumptions and limits')), el('ul', {}, model.assumptions.map(a => el('li', {}, a)))) : null,
+    model.conventions ? el('div', { class: 'psim-prose' }, el('p', {}, el('b', {}, 'Visual conventions')), el('ul', {}, model.conventions.map(a => el('li', {}, a)))) : null,
+    model.references ? el('div', { class: 'psim-prose' }, el('p', {}, el('b', {}, 'References')), el('ul', {}, model.references.map(a => el('li', {}, el('cite', {}, a))))) : null,
+  );
+  tierBtn.addEventListener('click', () => { secModel.open = true; secModel.scrollIntoView({ behavior: 'smooth' }); });
+
+  const secExport = section('Export', { open: false });
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  secExport.body.append(el('div', { class: 'psim-btns' },
+    button('State JSON', () => download(`${slug}-state.json`, JSON.stringify({
+      generator: 'p-simtor', title, tier: tierBtn.dataset.tier, params: values, t: sim.t, state: sim.state(), diagnostics: sim.diagnostics(), verification: report,
+    }, null, 2), 'application/json')),
+    button('Data CSV', () => {
+      const r = sim.record?.();
+      if (!r) { toast(stage, 'This model records no tabular data'); return; }
+      download(`${slug}-data.csv`, [`# p-simtor | ${title}`, r.header.join(','), ...r.rows.map(x => x.join(','))].join('\n'), 'text/csv');
+    }),
+    button('PNG image', () => canvas.toBlob(b => el('a', { href: URL.createObjectURL(b), download: `${slug}.png` }).click())),
+  ));
+
+  side.append(...[secParams, secDiag, secVerify, secModel, secExport].filter(s => s !== secParams || params.length || controls));
+  if (spec.extraSections) spec.extraSections(side, { section, el, row, slider, toggle, button, values, rebuild, view });
+
+  // ------------------------------------------------------------ canvas & loop
+  function resize() {
+    view.dpr = devicePixelRatio || 1;
+    view.W = canvas.clientWidth; view.H = canvas.clientHeight;
+    canvas.width = Math.round(view.W * view.dpr); canvas.height = Math.round(view.H * view.dpr);
+  }
+  new ResizeObserver(resize).observe(canvas);
+  resize();
+  if (onPointer) onPointer(canvas, view, () => sim);
+
+  let frames = 0, lastUi = 0;
+  function frame(now) {
+    if (timeDependent) {
+      const target = clock.tick(now, tDisplay);
+      if (target > tDisplay) {
+        const deadline = performance.now() + 9;
+        let k = 0;
+        while (sim.t < target) {
+          sim.step();
+          if ((++k & 63) === 0 && performance.now() > deadline) break;
+        }
+        limited = sim.t < target;
+        tDisplay = Math.min(target, sim.t);
+      }
+    }
+    ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
+    ctx.clearRect(0, 0, view.W, view.H);
+    draw(ctx, sim, view, tDisplay);
+    if (now - lastUi > 100) {
+      lastUi = now;
+      const d = renderDiag();
+      hud.t.textContent = timeDependent ? `${fix(tDisplay, 3)} ${timeUnit}` : '';
+      const firstErr = d.find(x => x.kind === 'error');
+      hud.a.textContent = firstErr ? `${firstErr.label} ${sci(firstErr.value)}` : '';
+      hud.b.textContent = spec.hudLine?.(sim) ?? '';
+      hud.flag.textContent = limited ? 'compute-limited: playback slowed to keep the calculation exact' : '';
+      benchApi?.update?.(sim, tDisplay, { rebuilt: false });
+      status.set('t', timeDependent ? tDisplay : 1);
+      if (firstErr) status.set('drift', firstErr.value);
+    }
+    if (++frames === 1 || frames % 30 === 0) status.set('frames', frames);   // first frame at once: slow pages count as live
+    requestAnimationFrame(frame);
+  }
+
+  window.psim = {
+    model: 'generic',
+    get t() { return tDisplay; },
+    state: () => ({ t: sim.t, ...sim.state() }),
+    params: () => ({ ...values }),
+    advanceTo: t => { while (sim.t < t) sim.step(); tDisplay = Math.max(tDisplay, Math.min(t, sim.t)); return window.psim.state(); },
+    restart: () => rebuild(),
+    steps: n => { if (typeof sim.step === "function") for (let i = 0; i < n; i++) sim.step(); tDisplay = sim.t ?? 0; return window.psim.state(); },
+  };
+
+  if (bench && benchParts) {
+    benchApi = bench({
+      ...benchParts, createPlot, createEquation, createDerivation, M, values,
+      setParam: (k, v) => { values[k] = v; paramInputs.get(k)?.setValue?.(v); rebuild(); },
+      getSim: () => sim,
+    }) ?? null;
+  }
+  rebuild();
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  setPlaying(timeDependent && (query.get('autoplay') ? query.get('autoplay') !== '0' : !reduced));
+  addEventListener('keydown', e => {
+    if (e.target.closest('input, select, textarea') || !timeDependent) return;
+    if (e.code === 'Space') { e.preventDefault(); setPlaying(!clock.playing); }
+    else if (e.key === '.') { setPlaying(false); sim.step(); tDisplay = sim.t; }
+    else if (e.key === 'r' || e.key === 'R') rebuild();
+  });
+  status.set('model', 'generic');
+  status.set('ready', true);
+  requestAnimationFrame(frame);
+  return { values, rebuild, view, get sim() { return sim; } };
+}
+
+return { createInstrument };
+})();
+
+// ---- psim:core/numerics.mjs
+__psim["core/numerics.mjs"] = (() => {
+// General numerical toolkit: random numbers, FFT, ODE solvers, quadrature, root
+// finding, special functions, linear algebra. Pure functions, browser + Node.
+// Every routine is tested against known values in tests/numerics.test.mjs.
+// Import these instead of writing them again in a page.
+
+// ---------------------------------------------------------------- random numbers
+
+/** Seeded PRNG (mulberry32), uniform in [0, 1). Deterministic for a given seed. */
+function rng(seed = 1) {
+  let a = seed >>> 0;
+  const next = () => {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  let spare = null;
+  next.normal = () => {               // standard normal (Box–Muller, cached pair)
+    if (spare != null) { const s = spare; spare = null; return s; }
+    let u = 0; while (u === 0) u = next();
+    const v = next(), r = Math.sqrt(-2 * Math.log(u));
+    spare = r * Math.sin(2 * Math.PI * v);
+    return r * Math.cos(2 * Math.PI * v);
+  };
+  return next;
+}
+
+// ---------------------------------------------------------------- FFT
+
+/** In-place radix-2 complex FFT. re/im: Float64Array, length a power of two.
+ *  Forward: X_k = Σ x_n e^{−2πikn/N}. Inverse (inverse = true) includes the 1/N factor. */
+function fft(re, im, inverse = false) {
+  const n = re.length;
+  if (n & (n - 1)) throw new Error('fft: length must be a power of two');
+  for (let i = 1, j = 0; i < n; i++) {
+    let bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; }
+  }
+  const sign = inverse ? 1 : -1;
+  for (let len = 2; len <= n; len <<= 1) {
+    const ang = sign * 2 * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang);
+    for (let i = 0; i < n; i += len) {
+      let cr = 1, ci = 0;
+      for (let k = 0; k < len / 2; k++) {
+        const a = i + k, b = a + len / 2;
+        const xr = re[b] * cr - im[b] * ci, xi = re[b] * ci + im[b] * cr;
+        re[b] = re[a] - xr; im[b] = im[a] - xi;
+        re[a] += xr; im[a] += xi;
+        const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t;
+      }
+    }
+  }
+  if (inverse) for (let i = 0; i < n; i++) { re[i] /= n; im[i] /= n; }
+}
+
+/** Angular wavenumbers k for an FFT grid of n points with spacing dx (FFT ordering). */
+function fftFreq(n, dx) {
+  const k = new Float64Array(n);
+  for (let i = 0; i < n; i++) k[i] = 2 * Math.PI * (i < n / 2 ? i : i - n) / (n * dx);
+  return k;
+}
+
+// ---------------------------------------------------------------- ODEs
+
+/** Classical RK4 step for y' = f(t, y). y: array; returns new array. */
+function rk4Step(f, t, y, h) {
+  const k1 = f(t, y);
+  const k2 = f(t + h / 2, y.map((v, i) => v + h / 2 * k1[i]));
+  const k3 = f(t + h / 2, y.map((v, i) => v + h / 2 * k2[i]));
+  const k4 = f(t + h, y.map((v, i) => v + h * k3[i]));
+  return y.map((v, i) => v + h / 6 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]));
+}
+
+// Dormand–Prince 5(4) coefficients (Dormand & Prince 1980; Hairer, Nørsett & Wanner, Table 5.2).
+const DP = {
+  c: [0, 1 / 5, 3 / 10, 4 / 5, 8 / 9, 1, 1],
+  a: [[], [1 / 5], [3 / 40, 9 / 40], [44 / 45, -56 / 15, 32 / 9],
+    [19372 / 6561, -25360 / 2187, 64448 / 6561, -212 / 729],
+    [9017 / 3168, -355 / 33, 46732 / 5247, 49 / 176, -5103 / 18656],
+    [35 / 384, 0, 500 / 1113, 125 / 192, -2187 / 6784, 11 / 84]],
+  b: [35 / 384, 0, 500 / 1113, 125 / 192, -2187 / 6784, 11 / 84, 0],
+  e: [71 / 57600, 0, -71 / 16695, 71 / 1920, -17253 / 339200, 22 / 525, -1 / 40],
+};
+
+/** The Dormand–Prince 5(4) tableau (for steppers built on top of dopri5). */
+const DORMAND_PRINCE = DP;
+
+/**
+ * Adaptive Dormand–Prince 5(4) integration of y' = f(t, y) from t0 to t1.
+ * Error control per component: |err_i| <= atol + rtol·max(|y_i|, |y_new_i|).
+ * onStep(t, y) is called after every accepted step (return false to stop early).
+ * Returns { t, y, steps, rejected, stopped }. Throws if tolerance cannot be met or
+ * the step budget is exhausted; stopped is reserved for an intentional onStep stop.
+ */
+function dopri5(f, t0, y0, t1, { rtol = 1e-9, atol = 1e-12, h0, hmax = Infinity, maxSteps = 1e6, onStep } = {}) {
+  if (!Number.isFinite(t0) || !Number.isFinite(t1) || !y0.length || !Array.from(y0).every(Number.isFinite)) throw new Error('dopri5: finite times and a non-empty finite state are required');
+  if (!(Number.isFinite(rtol) && rtol > 0 && Number.isFinite(atol) && atol > 0)) throw new Error('dopri5: tolerances must be finite and positive');
+  if (!(hmax > 0) || (hmax !== Infinity && !Number.isFinite(hmax)) || (h0 != null && !(Number.isFinite(h0) && h0 !== 0))) throw new Error('dopri5: step sizes must be non-zero and finite (hmax may be Infinity)');
+  if (!(Number.isSafeInteger(maxSteps) && maxSteps > 0)) throw new Error('dopri5: maxSteps must be a positive integer');
+  const n = y0.length, dir = Math.sign(t1 - t0) || 1;
+  let t = t0;
+  const y = Float64Array.from(y0);
+  let h = dir * Math.min(Math.abs(h0 ?? (t1 - t0) / 100), hmax);
+  const k = Array.from({ length: 7 }, () => new Float64Array(n));
+  const yt = new Float64Array(n), yn = new Float64Array(n);
+  let steps = 0, rejected = 0, stopped = false;
+  const maxAttempts = 4 * maxSteps;
+  k[0].set(f(t, y));
+  while (dir * (t1 - t) > 0 && steps < maxSteps && steps + rejected < maxAttempts) {
+    if (dir * (t + h - t1) > 0) h = t1 - t;
+    // This checks floating-point progress, not a dimensional time threshold. A
+    // femtosecond step can be perfectly resolvable and still need error control.
+    if (h === 0 || t + h === t) throw new Error(`dopri5: step underflow at t = ${t}; cannot meet tolerance`);
+    for (let s = 1; s < 7; s++) {
+      for (let i = 0; i < n; i++) {
+        let acc = y[i];
+        for (let j = 0; j < s; j++) acc += h * DP.a[s][j] * k[j][i];
+        yt[i] = acc;
+      }
+      k[s].set(f(t + DP.c[s] * h, yt));
+    }
+    let err = 0;
+    for (let i = 0; i < n; i++) {
+      let acc = y[i], e = 0;
+      for (let j = 0; j < 7; j++) { acc += h * DP.b[j] * k[j][i]; e += h * DP.e[j] * k[j][i]; }
+      yn[i] = acc;
+      const sc = atol + rtol * Math.max(Math.abs(y[i]), Math.abs(acc));
+      err = Math.max(err, Math.abs(e) / sc);
+    }
+    if (!Number.isFinite(err)) throw new Error(`dopri5: non-finite derivative or state at t = ${t}`);
+    if (err <= 1) {
+      t += h; y.set(yn); k[0].set(k[6]); steps++;      // FSAL: k7 of this step = k1 of the next
+      if (onStep && onStep(t, y) === false) { stopped = true; break; }
+    } else rejected++;
+    const fac = err === 0 ? 5 : Math.min(5, Math.max(0.2, 0.9 * Math.pow(err, -0.2)));
+    h = dir * Math.min(Math.abs(h * fac), hmax);
+  }
+  if (!stopped && dir * (t1 - t) > 0) throw new Error(`dopri5: step budget exhausted at t = ${t}, before t = ${t1}`);
+  return { t, y, steps, rejected, stopped };
+}
+
+// ---------------------------------------------------------------- quadrature
+
+const GL_CACHE = new Map();
+/** Gauss–Legendre nodes and weights on [−1, 1] (Newton iteration on P_n). */
+function gaussLegendreNodes(n) {
+  if (GL_CACHE.has(n)) return GL_CACHE.get(n);
+  const x = new Float64Array(n), w = new Float64Array(n);
+  for (let i = 0; i < Math.ceil(n / 2); i++) {
+    let z = Math.cos(Math.PI * (i + 0.75) / (n + 0.5)), dp = 0;
+    for (let it = 0; it < 100; it++) {
+      let p0 = 1, p1 = z;
+      for (let k = 2; k <= n; k++) { const p2 = ((2 * k - 1) * z * p1 - (k - 1) * p0) / k; p0 = p1; p1 = p2; }
+      const pn = n === 1 ? z : p1, pm = n === 1 ? 1 : p0;
+      dp = n * (z * pn - pm) / (z * z - 1);
+      const dz = pn / dp;
+      z -= dz;
+      if (Math.abs(dz) < 1e-16) break;
+    }
+    x[i] = -z; x[n - 1 - i] = z;
+    w[i] = w[n - 1 - i] = 2 / ((1 - z * z) * dp * dp);
+  }
+  const out = { x, w };
+  GL_CACHE.set(n, out);
+  return out;
+}
+
+/** ∫_a^b f(x) dx with n-point Gauss–Legendre (exact for polynomials of degree 2n−1). */
+function gaussLegendre(f, a, b, n = 32) {
+  const { x, w } = gaussLegendreNodes(n);
+  const m = (b - a) / 2, c = (a + b) / 2;
+  let s = 0;
+  for (let i = 0; i < n; i++) s += w[i] * f(m * x[i] + c);
+  return s * m;
+}
+
+/** Adaptive Simpson quadrature to absolute tolerance tol. */
+function adaptiveSimpson(f, a, b, tol = 1e-10, maxDepth = 50) {
+  const simpson = (fl, fmid, fr, lo, hi) => (hi - lo) / 6 * (fl + 4 * fmid + fr);
+  const recurse = (lo, hi, fl, fmid, fr, whole, eps, depth) => {
+    const mid = (lo + hi) / 2, lm = (lo + mid) / 2, rm = (mid + hi) / 2;
+    const flm = f(lm), frm = f(rm);
+    const left = simpson(fl, flm, fmid, lo, mid), right = simpson(fmid, frm, fr, mid, hi);
+    if (depth <= 0 || Math.abs(left + right - whole) <= 15 * eps) return left + right + (left + right - whole) / 15;
+    return recurse(lo, mid, fl, flm, fmid, left, eps / 2, depth - 1) + recurse(mid, hi, fmid, frm, fr, right, eps / 2, depth - 1);
+  };
+  const fa = f(a), fb = f(b), fm = f((a + b) / 2);
+  return recurse(a, b, fa, fm, fb, simpson(fa, fm, fb, a, b), tol, maxDepth);
+}
+
+/** ∫_0^∞ f(x) dx via the substitution x = t/(1−t) and Gauss–Legendre panels. */
+function integrateToInfinity(f, { panels = 16, n = 32 } = {}) {
+  const g = t => { const x = t / (1 - t); return f(x) / ((1 - t) * (1 - t)); };
+  let s = 0;
+  for (let p = 0; p < panels; p++) s += gaussLegendre(g, p / panels, (p + 1) / panels, n);   // nodes never hit t = 1
+  return s;
+}
+
+// ---------------------------------------------------------------- roots
+
+/** Brent's method: root of f in [a, b] where f(a)·f(b) < 0. */
+function brent(f, lo, hi, tol = 1e-14, maxIter = 200) {
+  let a = lo, b = hi;                      // b: best estimate; a: previous; c: bracket partner
+  let fa = f(a), fb = f(b);
+  if (fa * fb > 0) throw new Error('brent: root not bracketed');
+  let c = a, fc = fa, d = b - a, e = d;
+  for (let i = 0; i < maxIter; i++) {
+    if (fb * fc > 0) { c = a; fc = fa; d = e = b - a; }
+    if (Math.abs(fc) < Math.abs(fb)) { a = b; b = c; c = a; fa = fb; fb = fc; fc = fa; }
+    const tol1 = 2 * Number.EPSILON * Math.abs(b) + tol / 2, m = (c - b) / 2;
+    if (Math.abs(m) <= tol1 || fb === 0) return b;
+    if (Math.abs(e) >= tol1 && Math.abs(fa) > Math.abs(fb)) {
+      let p, q, r;
+      const s = fb / fa;
+      if (a === c) { p = 2 * m * s; q = 1 - s; }
+      else { q = fa / fc; r = fb / fc; p = s * (2 * m * q * (q - r) - (b - a) * (r - 1)); q = (q - 1) * (r - 1) * (s - 1); }
+      if (p > 0) q = -q; else p = -p;
+      if (2 * p < Math.min(3 * m * q - Math.abs(tol1 * q), Math.abs(e * q))) { e = d; d = p / q; }
+      else { d = m; e = d; }
+    } else { d = m; e = d; }
+    a = b; fa = fb;
+    b += Math.abs(d) > tol1 ? d : (m > 0 ? tol1 : -tol1);
+    fb = f(b);
+  }
+  return b;
+}
+
+// ---------------------------------------------------------------- special functions
+
+const LANCZOS = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313,
+  -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+
+/** ln Γ(x) for x > 0 (Lanczos, g = 7, n = 9; relative error ~1e-15). */
+function lgamma(z) {
+  if (z <= 0 && Number.isInteger(z)) return Infinity;   // poles of Γ
+  if (z < 0.5) return Math.log(Math.PI / Math.abs(Math.sin(Math.PI * z))) - lgamma(1 - z);
+  const x = z - 1;
+  let a = LANCZOS[0];
+  const t = x + 7.5;
+  for (let i = 1; i < 9; i++) a += LANCZOS[i] / (x + i);
+  return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a);
+}
+
+function gamma(x) {
+  if (x <= 0 && Number.isInteger(x)) return NaN;        // poles of Γ
+  if (x < 0.5) return Math.PI / (Math.sin(Math.PI * x) * gamma(1 - x));
+  return Math.exp(lgamma(x));
+}
+
+function factorial(n) {
+  let f = 1;
+  for (let i = 2; i <= n; i++) f *= i;
+  return f;
+}
+
+/** Error function (Abramowitz–Stegun 7.1.26 is too coarse; this uses a series / continued fraction, |err| < 1e-14). */
+function erf(x) {
+  const ax = Math.abs(x);
+  if (ax > 6) return Math.sign(x);                      // erfc(6) ≈ 2e-17 < double precision near 1
+  if (ax < 2.5) {
+    let sum = ax, term = ax;
+    for (let n = 1; n < 100; n++) {
+      term *= -ax * ax / n;
+      const add = term / (2 * n + 1);
+      sum += add;
+      if (Math.abs(add) < 1e-17 * Math.abs(sum)) break;
+    }
+    return Math.sign(x) * 2 / Math.sqrt(Math.PI) * sum;
+  }
+  // erfc continued fraction (Lentz)
+  let f = ax, C = ax, D = 0;
+  for (let n = 1; n < 200; n++) {
+    const an = n / 2;
+    D = ax + an * D; D = 1 / (D === 0 ? 1e-300 : D);
+    C = ax + an / C; if (C === 0) C = 1e-300;
+    const delta = C * D;
+    f *= delta;
+    if (Math.abs(delta - 1) < 1e-16) break;
+  }
+  const erfc = Math.exp(-ax * ax) / Math.sqrt(Math.PI) / f;
+  return Math.sign(x) * (1 - erfc);
+}
+
+/** Modified Bessel function of the first kind I_n(x), integer n ≥ 0 (power series; fine for x ≲ 50). */
+function besselI(n, x) {
+  let term = Math.pow(x / 2, n) / factorial(n), sum = term;
+  for (let k = 1; k < 500; k++) {
+    term *= (x * x / 4) / (k * (k + n));
+    sum += term;
+    if (Math.abs(term) < 1e-17 * Math.abs(sum)) break;
+  }
+  return sum;
+}
+
+/**
+ * Bessel function of the first kind J_n(x), integer n ≥ 0, any real x. Miller's backward
+ * recurrence normalised by J₀ + 2ΣJ₂ₖ = 1: relative accuracy also where J_n is tiny (x ≪ n),
+ * absolute accuracy ~1e-15·√(x) for large x. J_n(−x) = (−1)ⁿJ_n(x).
+ */
+function besselJ(n, x) {
+  if (!(Number.isInteger(n) && n >= 0)) throw new Error('besselJ: order must be an integer ≥ 0');
+  if (!Number.isFinite(x)) return Number.isNaN(x) ? NaN : 0;     // J_n(±∞) = 0
+  if (x < 0) return (n % 2 ? -1 : 1) * besselJ(n, -x);
+  if (x === 0) return n === 0 ? 1 : 0;
+  const top = Math.max(n, x);
+  const m = 2 * Math.ceil((top + 20 + Math.sqrt(60 * top)) / 2);    // even start index well above n and x
+  let jp = 0, j = 1e-300, norm = 0, result = 0;
+  for (let k = m; k > 0; k--) {
+    const jm = (2 * k / x) * j - jp;                                  // J_{k−1} from J_k, J_{k+1}
+    jp = j; j = jm;
+    if (Math.abs(j) > 1e250) { j *= 1e-250; jp *= 1e-250; norm *= 1e-250; result *= 1e-250; }
+    if (k - 1 === n) result = j;
+    if ((k - 1) % 2 === 0 && k - 1 > 0) norm += 2 * j;
+  }
+  return result / (norm + j);
+}
+
+/**
+ * First `count` positive zeros j_{n,1} < j_{n,2} < … of J_n (integer n ≥ 0): bracketed by a scan
+ * finer than the zero spacing (always > π), refined with Brent. Mode frequencies of circular
+ * membranes, waveguides and diffraction minima: ω_{n,s} = c·j_{n,s}/R.
+ */
+function besselJZeros(n, count) {
+  if (!(Number.isInteger(n) && n >= 0 && Number.isInteger(count) && count > 0)) throw new Error('besselJZeros: need integers n ≥ 0, count > 0');
+  const zeros = [], step = 0.5;
+  let a = n === 0 ? 1 : n, fa = besselJ(n, a);                        // j_{n,1} > n for n > 0, j_{0,1} > 2
+  while (zeros.length < count) {
+    const b = a + step, fb = besselJ(n, b);
+    if (fa === 0) zeros.push(a);
+    else if (fa * fb < 0) zeros.push(brent(x => besselJ(n, x), a, b, 1e-15));
+    a = b; fa = fb;
+  }
+  return zeros;
+}
+
+/**
+ * Complete elliptic integral of the first kind K(m) = ∫₀^{π/2} dθ / √(1 − m sin²θ), parameter
+ * m = k² < 1, by the arithmetic–geometric mean: K = π / (2 AGM(1, √(1 − m))).
+ */
+function ellipticK(m) {
+  if (!(m < 1)) return m === 1 ? Infinity : NaN;
+  let a = 1, b = Math.sqrt(1 - m);
+  for (let i = 0; i < 40 && Math.abs(a - b) > 1e-16 * a; i++) [a, b] = [(a + b) / 2, Math.sqrt(a * b)];
+  return Math.PI / (2 * a);
+}
+
+/** Generalised Laguerre polynomial L_n^(α)(x) by three-term recurrence. */
+function laguerre(n, alpha, x) {
+  if (n === 0) return 1;
+  let l0 = 1, l1 = 1 + alpha - x;
+  for (let k = 1; k < n; k++) {
+    const l2 = ((2 * k + 1 + alpha - x) * l1 - (k + alpha) * l0) / (k + 1);
+    l0 = l1; l1 = l2;
+  }
+  return l1;
+}
+
+/** Associated Legendre P_l^m(x), m ≥ 0, with the Condon–Shortley phase (−1)^m. */
+function legendreP(l, m, x) {
+  let pmm = 1;
+  if (m > 0) {
+    const s = Math.sqrt((1 - x) * (1 + x));
+    let fact = 1;
+    for (let i = 1; i <= m; i++) { pmm *= -fact * s; fact += 2; }
+  }
+  if (l === m) return pmm;
+  let pmmp1 = x * (2 * m + 1) * pmm;
+  if (l === m + 1) return pmmp1;
+  let pll = 0;
+  for (let ll = m + 2; ll <= l; ll++) {
+    pll = ((2 * ll - 1) * x * pmmp1 - (ll + m - 1) * pmm) / (ll - m);
+    pmm = pmmp1; pmmp1 = pll;
+  }
+  return pll;
+}
+
+/**
+ * Fully normalised associated Legendre function P̄_l^m(x) = N_lm P_l^m(x) with
+ * N_lm = √((2l+1)/(4π) · (l−m)!/(l+m)!), Condon–Shortley phase included. Uses the standard
+ * stable recurrences (no factorials), so it is accurate for large l and m.
+ */
+function normalizedLegendre(l, m, x) {
+  const s = Math.sqrt(Math.max(0, (1 - x) * (1 + x)));
+  let pmm = 1 / Math.sqrt(4 * Math.PI);
+  for (let i = 1; i <= m; i++) pmm *= -Math.sqrt((2 * i + 1) / (2 * i)) * s;
+  if (l === m) return pmm;
+  let pm1 = x * Math.sqrt(2 * m + 3) * pmm;
+  if (l === m + 1) return pm1;
+  let pl = 0;
+  for (let ll = m + 2; ll <= l; ll++) {
+    const a = Math.sqrt((4 * ll * ll - 1) / (ll * ll - m * m));
+    const b = Math.sqrt(((ll - 1) ** 2 - m * m) / (4 * (ll - 1) ** 2 - 1));
+    pl = a * (x * pm1 - b * pmm);
+    pmm = pm1; pm1 = pl;
+  }
+  return pl;
+}
+
+/**
+ * Real (tesseral) spherical harmonic, orthonormal on the sphere.
+ * m > 0: √2 P̄_l^m cos(mφ); m < 0: √2 P̄_l^|m| sin(|m|φ); m = 0: P̄_l^0.
+ * The Condon–Shortley phase is removed, so p_x ∝ +x, p_y ∝ +y.
+ */
+function realYlm(l, m, theta, phi) {
+  const am = Math.abs(m);
+  const P = normalizedLegendre(l, am, Math.cos(theta)) * (am % 2 ? -1 : 1);
+  if (m === 0) return P;
+  return Math.SQRT2 * P * (m > 0 ? Math.cos(am * phi) : Math.sin(am * phi));
+}
+
+/**
+ * Complex spherical harmonic Y_l^m(θ, φ) with the Condon–Shortley phase (the quantum-mechanics
+ * convention): Y_l^m = P̄_l^|m|(cos θ) e^{imφ} for m ≥ 0 and Y_l^{−m} = (−1)^m conj(Y_l^m).
+ * Orthonormal on the sphere; eigenfunctions of L² and L_z. Returns { re, im }.
+ */
+function complexYlm(l, m, theta, phi) {
+  if (!(Number.isInteger(l) && Number.isInteger(m) && l >= 0 && Math.abs(m) <= l)) throw new Error('complexYlm: need integers l ≥ 0, |m| ≤ l');
+  const am = Math.abs(m), P = normalizedLegendre(l, am, Math.cos(theta));
+  const sign = m < 0 && am % 2 ? -1 : 1;
+  return { re: sign * P * Math.cos(m * phi), im: sign * P * Math.sin(m * phi) };
+}
+
+/**
+ * Radial function R_nl(r) of a hydrogen-like atom (one electron, nuclear charge Z, point nucleus,
+ * non-relativistic), normalised so ∫R²r²dr = 1:
+ *   R_nl = √((2Z/na₀)³ (n−l−1)!/(2n (n+l)!)) e^{−ρ/2} ρ^l L_{n−l−1}^{(2l+1)}(ρ),  ρ = 2Zr/(na₀).
+ * Lengths in units of a₀ unless a0 is given (use the reduced-mass a₀ for exact spectroscopy).
+ */
+function hydrogenRadial(n, l, r, { Z = 1, a0 = 1 } = {}) {
+  if (!(Number.isInteger(n) && Number.isInteger(l) && n >= 1 && l >= 0 && l < n)) throw new Error('hydrogenRadial: need integers n ≥ 1, 0 ≤ l < n');
+  const rho = 2 * Z * r / (n * a0);
+  const lnNorm = 1.5 * Math.log(2 * Z / (n * a0)) + 0.5 * (lgamma(n - l) - lgamma(n + l + 1) - Math.log(2 * n));
+  return Math.exp(lnNorm - rho / 2) * rho ** l * laguerre(n - l - 1, 2 * l + 1, rho);
+}
+
+// ---------------------------------------------------------------- linear algebra
+
+/** Solve a tridiagonal system (Thomas algorithm). a: sub, b: diag, c: super, d: rhs. Works for complex via callers. */
+function solveTridiagonal(a, b, c, d) {
+  const n = b.length, cp = new Float64Array(n), dp = new Float64Array(n), x = new Float64Array(n);
+  cp[0] = c[0] / b[0]; dp[0] = d[0] / b[0];
+  for (let i = 1; i < n; i++) {
+    const m = b[i] - a[i] * cp[i - 1];
+    cp[i] = c[i] / m;
+    dp[i] = (d[i] - a[i] * dp[i - 1]) / m;
+  }
+  x[n - 1] = dp[n - 1];
+  for (let i = n - 2; i >= 0; i--) x[i] = dp[i] - cp[i] * x[i + 1];
+  return x;
+}
+
+/**
+ * All eigenvalues and eigenvectors of a real symmetric tridiagonal matrix (implicit QL with
+ * Wilkinson shifts; Numerical Recipes "tqli"). diag: n diagonal entries; off: n−1 entries
+ * coupling i and i+1. Returns { values, vectors } with vectors[i] the unit eigenvector of
+ * values[i] (unsorted). Cost O(n³) with eigenvectors: fine to n ≈ 500 in a browser.
+ */
+function eigenTridiagonal(diag, off) {
+  const n = diag.length;
+  if (off.length !== n - 1) throw new Error('eigenTridiagonal: off must have n − 1 entries');
+  const d = Float64Array.from(diag), e = new Float64Array(n);
+  e.set(off);
+  const z = new Float64Array(n * n);
+  for (let i = 0; i < n; i++) z[i * n + i] = 1;
+  for (let l = 0; l < n; l++) {
+    let iter = 0, m;
+    do {
+      for (m = l; m < n - 1; m++) {
+        const dd = Math.abs(d[m]) + Math.abs(d[m + 1]);
+        if (Math.abs(e[m]) <= Number.EPSILON * dd) break;
+      }
+      if (m !== l) {
+        if (iter++ === 60) throw new Error('eigenTridiagonal: no convergence');
+        let g = (d[l + 1] - d[l]) / (2 * e[l]);
+        let r = Math.hypot(g, 1);
+        g = d[m] - d[l] + e[l] / (g + (g >= 0 ? r : -r));
+        let s = 1, c = 1, p = 0, i;
+        for (i = m - 1; i >= l; i--) {
+          let f = s * e[i];
+          const b = c * e[i];
+          r = Math.hypot(f, g);
+          e[i + 1] = r;
+          if (r === 0) { d[i + 1] -= p; e[m] = 0; break; }
+          s = f / r; c = g / r;
+          g = d[i + 1] - p;
+          r = (d[i] - g) * s + 2 * c * b;
+          p = s * r;
+          d[i + 1] = g + p;
+          g = c * r - b;
+          for (let k = 0; k < n; k++) {
+            f = z[k * n + i + 1];
+            z[k * n + i + 1] = s * z[k * n + i] + c * f;
+            z[k * n + i] = c * z[k * n + i] - s * f;
+          }
+        }
+        if (r === 0 && i >= l) continue;
+        d[l] -= p; e[l] = g; e[m] = 0;
+      }
+    } while (m !== l);
+  }
+  const vectors = Array.from({ length: n }, (_v, i) => Float64Array.from({ length: n }, (_w, k) => z[k * n + i]));
+  return { values: Array.from(d), vectors };
+}
+
+/** Least-squares fit y ≈ a + b x. Returns { a, b, r2 }. */
+function linearFit(xs, ys) {
+  // two-pass (centred) sums: no cancellation when x has a large offset (e.g. timestamps)
+  const n = xs.length;
+  let mx = 0, my = 0;
+  for (let i = 0; i < n; i++) { mx += xs[i]; my += ys[i]; }
+  mx /= n; my /= n;
+  let sxx = 0, sxy = 0, syy = 0;
+  for (let i = 0; i < n; i++) { const dx = xs[i] - mx, dy = ys[i] - my; sxx += dx * dx; sxy += dx * dy; syy += dy * dy; }
+  const b = sxy / sxx, a = my - b * mx;
+  const r2 = syy === 0 ? 1 : (sxy * sxy) / (sxx * syy);
+  return { a, b, r2 };
+}
+
+/**
+ * Mean and standard error of a correlated series by binning (blocking) analysis. Returns the
+ * largest error over block sizes with ≥ minBins blocks: conservative (≈ 10 % high for
+ * uncorrelated data). Series too short for blocking fall back to the naive standard error.
+ */
+function meanWithError(xs, minBins = 16) {
+  const n = xs.length;
+  const mean = xs.reduce((s, v) => s + v, 0) / n;
+  if (n < minBins) {
+    const v = n > 1 ? xs.reduce((s, x) => s + (x - mean) ** 2, 0) / (n - 1) : NaN;
+    return { mean, error: Math.sqrt(v / n), naive: true };
+  }
+  let best = 0;
+  for (let size = 1; n / size >= minBins; size *= 2) {
+    const nb = Math.floor(n / size), means = [];
+    for (let b = 0; b < nb; b++) { let s = 0; for (let i = 0; i < size; i++) s += xs[b * size + i]; means.push(s / size); }
+    const m = means.reduce((s, v) => s + v, 0) / nb;
+    const v = means.reduce((s, x) => s + (x - m) ** 2, 0) / (nb - 1);
+    best = Math.max(best, Math.sqrt(v / nb));
+  }
+  return { mean, error: best };
+}
+
+return { rng, fft, fftFreq, rk4Step, DORMAND_PRINCE, dopri5, gaussLegendreNodes, gaussLegendre, adaptiveSimpson, integrateToInfinity, brent, lgamma, gamma, factorial, erf, besselI, besselJ, besselJZeros, ellipticK, laguerre, legendreP, normalizedLegendre, realYlm, complexYlm, hydrogenRadial, solveTridiagonal, eigenTridiagonal, linearFit, meanWithError };
+})();
+
+// ---- psim:core/ode.mjs
+__psim["core/ode.mjs"] = (() => {
+// General time integration for finite-dimensional evolution, independent of subject.
+//
+//   odeStepper       y' = f(t, y)            any first-order system (RK4 or adaptive Dormand–Prince)
+//   mechanicsStepper q'' = a(t, q)           position-only accelerations (symplectic leapfrog / Yoshida-4)
+//
+// Both keep the previous step so the state can be evaluated at any time between steps
+// (cubic Hermite), which makes playback independent of frame rate: the step sequence
+// depends only on the problem and the step parameters, never on when frames are drawn.
+const { DORMAND_PRINCE: DP } = __psim["core/numerics.mjs"];
+/** Cubic Hermite interpolation of values y with derivatives d between (t0, t1). */
+function hermite(t0, y0, d0, t1, y1, d1, t, out) {
+  const h = t1 - t0;
+  if (!(h !== 0)) { out.set(y1); return out; }
+  const u = Math.min(1, Math.max(0, (t - t0) / h)), u2 = u * u, u3 = u2 * u;
+  const a = 2 * u3 - 3 * u2 + 1, b = u3 - 2 * u2 + u, c = -2 * u3 + 3 * u2, d = u3 - u2;
+  for (let i = 0; i < y0.length; i++) out[i] = a * y0[i] + b * h * d0[i] + c * y1[i] + d * h * d1[i];
+  return out;
+}
+
+const finiteArray = (a, who) => {
+  if (!a.length || !Array.from(a).every(Number.isFinite)) throw new Error(`${who}: state must be non-empty and finite`);
+};
+
+/**
+ * Stepper for y' = f(t, y).
+ *   method 'rk4'    fixed step h (classical 4th order)
+ *   method 'dopri5' adaptive Dormand–Prince 5(4) with error control (rtol, atol); h is the first trial step
+ * f(t, y) returns the derivative (array-like of the same length).
+ * Returns { t, y, step(), advanceTo(t, maxSteps), sampleAt(t, out), steps, rejected }.
+ */
+function odeStepper({ f, y0, t0 = 0, method = 'dopri5', h, rtol = 1e-9, atol = 1e-12, hmax = Infinity }) {
+  if (typeof f !== 'function') throw new Error('odeStepper: f(t, y) is required');
+  finiteArray(y0, 'odeStepper');
+  if (!(Number.isFinite(h) && h > 0)) throw new Error('odeStepper: a positive finite step h is required');
+  if (method !== 'rk4' && method !== 'dopri5') throw new Error(`odeStepper: unknown method "${method}"`);
+  const n = y0.length;
+  const y = Float64Array.from(y0), dy = Float64Array.from(f(t0, y));
+  const prev = { t: t0, y: y.slice(), dy: dy.slice() };
+  const k = Array.from({ length: 7 }, () => new Float64Array(n));
+  const tmp = new Float64Array(n), yn = new Float64Array(n);
+  let hNext = h;
+  const s = {
+    t: t0, y, dy, steps: 0, rejected: 0, method,
+    step() {
+      prev.t = s.t; prev.y.set(y); prev.dy.set(dy);
+      if (method === 'rk4') {
+        const k1 = dy, k2 = new Float64Array(n), k3 = new Float64Array(n), k4 = new Float64Array(n);
+        for (let i = 0; i < n; i++) tmp[i] = y[i] + h / 2 * k1[i];
+        k2.set(f(s.t + h / 2, tmp));
+        for (let i = 0; i < n; i++) tmp[i] = y[i] + h / 2 * k2[i];
+        k3.set(f(s.t + h / 2, tmp));
+        for (let i = 0; i < n; i++) tmp[i] = y[i] + h * k3[i];
+        k4.set(f(s.t + h, tmp));
+        for (let i = 0; i < n; i++) y[i] += h / 6 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]);
+        s.t += h;
+      } else {
+        for (let attempt = 0; ; attempt++) {
+          if (attempt > 60) throw new Error(`odeStepper: cannot meet tolerance at t = ${s.t}`);
+          const hh = Math.min(hNext, hmax);
+          if (s.t + hh === s.t) throw new Error(`odeStepper: step underflow at t = ${s.t}`);
+          k[0].set(dy);
+          for (let st = 1; st < 7; st++) {
+            for (let i = 0; i < n; i++) {
+              let acc = y[i];
+              for (let j = 0; j < st; j++) acc += hh * DP.a[st][j] * k[j][i];
+              tmp[i] = acc;
+            }
+            k[st].set(f(s.t + DP.c[st] * hh, tmp));
+          }
+          let err = 0;
+          for (let i = 0; i < n; i++) {
+            let acc = y[i], e = 0;
+            for (let j = 0; j < 7; j++) { acc += hh * DP.b[j] * k[j][i]; e += hh * DP.e[j] * k[j][i]; }
+            yn[i] = acc;
+            err = Math.max(err, Math.abs(e) / (atol + rtol * Math.max(Math.abs(y[i]), Math.abs(acc))));
+          }
+          if (!Number.isFinite(err)) throw new Error(`odeStepper: non-finite derivative or state at t = ${s.t}`);
+          const fac = err === 0 ? 5 : Math.min(5, Math.max(0.2, 0.9 * Math.pow(err, -0.2)));
+          hNext = hh * fac;
+          if (err <= 1) { y.set(yn); s.t += hh; break; }
+          s.rejected++;
+        }
+      }
+      dy.set(f(s.t, y));
+      if (!Array.from(y).every(Number.isFinite)) throw new Error(`odeStepper: state became non-finite at t = ${s.t}`);
+      s.steps++;
+    },
+    /** Advance until t ≥ target. Returns false if maxSteps were used first. */
+    advanceTo(target, maxSteps = Infinity) {
+      let i = 0;
+      while (s.t < target) { if (i++ >= maxSteps) return false; s.step(); }
+      return true;
+    },
+    /** State at time t within the last step (cubic Hermite with the derivatives at both ends). */
+    sampleAt(t, out = new Float64Array(n)) { return hermite(prev.t, prev.y, prev.dy, s.t, y, dy, t, out); },
+  };
+  return s;
+}
+
+const CBRT2 = Math.cbrt(2);
+const YOSHIDA4 = [1 / (2 - CBRT2), -CBRT2 / (2 - CBRT2), 1 / (2 - CBRT2)];
+
+/**
+ * Symplectic stepper for q'' = a(t, q) with position-only accelerations (conservative,
+ * separable mechanics). accel(t, q, out) writes the acceleration into out.
+ *   method 'leapfrog' (kick–drift–kick, 2nd order) or 'yoshida4' (4th order composition)
+ * Bounded energy error over long runs; time-reversible. Fixed step h.
+ * Returns { t, q, v, step(), advanceTo(t, maxSteps), sampleAt(t, outQ, outV), steps }.
+ */
+function mechanicsStepper({ accel, q0, v0, t0 = 0, h, method = 'yoshida4' }) {
+  if (typeof accel !== 'function') throw new Error('mechanicsStepper: accel(t, q, out) is required');
+  finiteArray(q0, 'mechanicsStepper'); finiteArray(v0, 'mechanicsStepper');
+  if (q0.length !== v0.length) throw new Error('mechanicsStepper: q0 and v0 must have the same length');
+  if (!(Number.isFinite(h) && h !== 0)) throw new Error('mechanicsStepper: a non-zero finite step h is required');
+  const weights = method === 'leapfrog' ? [1] : method === 'yoshida4' ? YOSHIDA4 : null;
+  if (!weights) throw new Error(`mechanicsStepper: unknown method "${method}"`);
+  const n = q0.length;
+  const q = Float64Array.from(q0), v = Float64Array.from(v0), a = new Float64Array(n);
+  const prev = { t: t0, q: q.slice(), v: v.slice() };
+  accel(t0, q, a);
+  const s = {
+    t: t0, q, v, steps: 0, h, method,
+    step() {
+      prev.t = s.t; prev.q.set(q); prev.v.set(v);
+      for (const w of weights) {
+        const dt = w * s.h;
+        for (let i = 0; i < n; i++) v[i] += dt / 2 * a[i];
+        for (let i = 0; i < n; i++) q[i] += dt * v[i];
+        s.t += dt;
+        accel(s.t, q, a);
+        for (let i = 0; i < n; i++) v[i] += dt / 2 * a[i];
+      }
+      if (!q.every(Number.isFinite) || !v.every(Number.isFinite)) throw new Error(`mechanicsStepper: state became non-finite at t = ${s.t}`);
+      s.steps++;
+    },
+    advanceTo(target, maxSteps = Infinity) {
+      let i = 0;
+      while ((s.h > 0 ? s.t < target : s.t > target)) { if (i++ >= maxSteps) return false; s.step(); }
+      return true;
+    },
+    /** Positions (and velocities) at time t within the last step: cubic Hermite, O(h⁴). */
+    sampleAt(t, outQ = new Float64Array(n), outV) {
+      hermite(prev.t, prev.q, prev.v, s.t, q, v, t, outQ);
+      if (outV) {
+        // velocity: linear blend of end velocities (adequate for display; use step states for analysis)
+        const span = s.t - prev.t, u = span ? Math.min(1, Math.max(0, (t - prev.t) / span)) : 1;
+        for (let i = 0; i < n; i++) outV[i] = (1 - u) * prev.v[i] + u * v[i];
+      }
+      return outQ;
+    },
+  };
+  return s;
+}
+
+/**
+ * Observed order of accuracy of any solver: run(h) returns a result vector at a fixed end
+ * time; the order is log2(|r(h) − r(h/2)| / |r(h/2) − r(h/4)|) using the max-norm.
+ * Works for ODEs, PDEs and quadrature alike. Returns { order, errors: [e1, e2], results }.
+ */
+function refinementOrder(run, h) {
+  const r = [h, h / 2, h / 4].map(x => Array.from(run(x)));
+  const diff = (a, b) => a.reduce((m, ai, i) => Math.max(m, Math.abs(ai - b[i])), 0);
+  const e1 = diff(r[0], r[1]), e2 = diff(r[1], r[2]);
+  return { order: e2 > 0 ? Math.log2(e1 / e2) : Infinity, errors: [e1, e2], results: r };
+}
+
+/**
+ * Largest Lyapunov exponent of dy/dt = f(t, y): the average exponential growth rate of a small
+ * perturbation (> 0: sensitive dependence on initial conditions; ≈ 0: regular motion).
+ * With jvp(t, y, w) (the Jacobian–vector product J·w) it integrates the linearised equations;
+ * otherwise a twin trajectory d0·max(1, |y|) away (Benettin's method). Both share the same adaptive steps and
+ * are renormalised about every `interval`. Discard a `transient` before averaging.
+ * Returns { lambda, history: [{ t, lambda }] } — a finite-time estimate: report how it settles.
+ */
+function lyapunovExponent({ f, jvp, y0, t0 = 0, duration, interval = 1, transient = 0, d0 = 1e-8, h = 1e-3, rtol = 1e-10, atol = 1e-14 }) {
+  if (typeof f !== 'function') throw new Error('lyapunovExponent: f(t, y) is required');
+  finiteArray(y0, 'lyapunovExponent');
+  if (!(duration > 0 && interval > 0 && transient >= 0 && d0 > 0)) throw new Error('lyapunovExponent: need duration, interval, d0 > 0 and transient ≥ 0');
+  const n = y0.length, out = new Float64Array(2 * n), dir = new Float64Array(n).fill(1 / Math.sqrt(n));
+  const aug = jvp
+    ? (t, z) => { const y = z.subarray(0, n); out.set(f(t, y)); out.set(jvp(t, y, z.subarray(n)), n); return out; }
+    : (t, z) => { out.set(f(t, z.subarray(0, n))); out.set(f(t, z.subarray(n)), n); return out; };
+  const z = new Float64Array(2 * n);
+  let eps = d0;                                     // twin offset, scaled with |y| so rounding cannot swamp it
+  const restart = (y, u) => {
+    z.set(y);
+    eps = d0 * Math.max(1, Math.hypot(...y));
+    for (let i = 0; i < n; i++) z[n + i] = jvp ? u[i] : y[i] + eps * u[i];
+  };
+  restart(y0, dir);
+  const end = t0 + transient + duration, history = [];
+  let t = t0, sum = 0, step = h;
+  while (t < end - 1e-12 * interval) {
+    const s = odeStepper({ f: aug, y0: z, t0: t, method: 'dopri5', h: step, rtol, atol });
+    const stop = Math.min(t + interval, end);
+    while (s.t < stop) s.step();
+    step = Math.max((s.t - t) / Math.max(s.steps, 1), 1e-12);
+    const y = s.y.subarray(0, n), sep = new Float64Array(n);
+    for (let i = 0; i < n; i++) sep[i] = jvp ? s.y[n + i] : s.y[n + i] - y[i];
+    const len = Math.hypot(...sep), growth = len / (jvp ? 1 : eps);
+    if (!(growth > 0 && Number.isFinite(growth))) throw new Error('lyapunovExponent: perturbation collapsed or overflowed; shorten interval');
+    if (s.t > t0 + transient + 1e-12 * interval) {
+      sum += Math.log(growth) * (s.t - Math.max(t, t0 + transient)) / (s.t - t);
+      history.push({ t: s.t, lambda: sum / (s.t - t0 - transient) });
+    }
+    restart(y, sep.map(v => v / len));
+    t = s.t;
+  }
+  return { lambda: history.at(-1)?.lambda ?? NaN, history };
+}
+
+/**
+ * Exact solution of first-order linear chains with branching (radioactive decay series, sequential
+ * first-order reactions, compartment chains): species i is lost at rate rates[i] (0 = stable), and
+ * links [[from, to, fraction]] send that fraction of from's losses to `to` (from < to).
+ * Bateman's solution, generalised to branching: eigen-decomposition of the triangular rate matrix.
+ * Rates must be distinct (Bateman's formula divides by their differences; for equal or nearly
+ * equal rates use expm from core/linalg.mjs). Returns { at(t, x0) → amounts, matrix }.
+ */
+function linearChain({ rates, links = [] }) {
+  const n = rates.length;
+  if (!n || !rates.every(r => Number.isFinite(r) && r >= 0)) throw new Error('linearChain: rates must be finite and ≥ 0');
+  const A = Array.from({ length: n }, (_, i) => { const row = new Float64Array(n); row[i] = -rates[i]; return row; });
+  const out = new Float64Array(n);
+  for (const [from, to, fraction] of links) {
+    if (!(Number.isInteger(from) && Number.isInteger(to) && from < to && to < n && fraction >= 0)) throw new Error('linearChain: links are [from, to, fraction] with from < to');
+    A[to][from] += fraction * rates[from];
+    out[from] += fraction;
+  }
+  if (out.some(f => f > 1 + 1e-12)) throw new Error('linearChain: branching fractions from one species exceed 1');
+  for (let i = 0; i < n; i++) {for (let j = 0; j < i; j++) {
+    if (Math.abs(rates[i] - rates[j]) <= 1e-9 * Math.max(rates[i], rates[j])) throw new Error('linearChain: equal rates; use expm from core/linalg.mjs');
+  }}
+  // eigenvector k (eigenvalue −λ_k) of the lower-triangular matrix, unit at position k
+  const V = Array.from({ length: n }, (_, k) => {
+    const v = new Float64Array(n); v[k] = 1;
+    for (let i = k + 1; i < n; i++) { let s = 0; for (let j = k; j < i; j++) s += A[i][j] * v[j]; v[i] = s / (rates[i] - rates[k]); }
+    return v;
+  });
+  return {
+    matrix: A,
+    at(t, x0) {
+      if (x0.length !== n) throw new Error('linearChain: x0 must have one amount per species');
+      const c = new Float64Array(n);                       // V c = x0, V unit lower triangular (columns = eigenvectors)
+      for (let i = 0; i < n; i++) { let s = x0[i]; for (let k = 0; k < i; k++) s -= V[k][i] * c[k]; c[i] = s; }
+      const x = new Float64Array(n);
+      for (let k = 0; k < n; k++) { const e = c[k] * Math.exp(-rates[k] * t); for (let i = k; i < n; i++) x[i] += e * V[k][i]; }
+      return x;
+    },
+  };
+}
+
+return { odeStepper, mechanicsStepper, refinementOrder, lyapunovExponent, linearChain };
+})();
+
+// ---- local:physics.mjs
+__psim["local:physics.mjs"] = (() => {
+// Salt (NaCl) dissolving in an unstirred glass of water.
+//
+// Scientific aim: how fast does a spoonful of table salt dissolve when it lies on the
+// bottom of a still glass, where does the dissolved salt go, and why does stirring matter?
+//
+// Model (reduced, 1D; tier "approximate"):
+//   State      c(z, t): dissolved NaCl concentration [kg m⁻³] versus height z above the salt layer,
+//              plus the remaining solid mass m_s(t) [kg].
+//   Law        ∂c/∂t = D ∂²c/∂z²  (Fick, constant mutual diffusion coefficient D)
+//              z = 0 while solid remains: c = c_sat (dissolution at the crystal surface is fast;
+//                 transport away from it limits the rate)
+//              z = 0 after the solid is used up: ∂c/∂z = 0
+//              z = H (free surface): ∂c/∂z = 0
+//              dm_s/dt = −A·D ∂c/∂z|₀  (mass leaving the layer enters the solution)
+//   Why 1D     Brine is denser than water (1.198 g cm⁻³ when saturated), so dissolved salt
+//              lying under fresh water is stably stratified: there is no density-driven
+//              convection and molecular diffusion is the transport mechanism.
+//   Grains     Comparison: the same salt kept suspended as spheres of radius R in well-mixed
+//              water, quasi-steady diffusion (Sherwood number 2):
+//              R dR/dt = −D (c_sat − c_bulk)/ρ_s, c_bulk = dissolved mass / V. Sh = 2 is the
+//              still-fluid minimum, so this is an upper bound on dissolution time for
+//              stirred, suspended grains.
+//   Progress   physical time (hours).
+//
+// Numerics: cell-centred finite volumes, Crank–Nicolson in time (own tridiagonal assembly,
+// core solveTridiagonal), because core/pde.mjs diffusion1D supports only homogeneous,
+// identical boundary conditions on both ends and cannot switch the bottom boundary from
+// c = c_sat to zero flux when the salt is used up. Grain ODE: core/ode.mjs Dormand–Prince
+// in s = R² (smooth through R → 0).
+//
+// Inputs (25 °C):
+//   c_sat = 316.8 kg m⁻³: solubility 26.45 wt % NaCl × saturated density 1.1978 g cm⁻³
+//           (CRC Handbook of Chemistry and Physics, aqueous solubility / concentrative properties).
+//   D     = 1.5×10⁻⁹ m² s⁻¹ default: measured mutual diffusion coefficient of aqueous NaCl at
+//           25 °C lies between 1.47 and 1.61 ×10⁻⁹ m² s⁻¹ over 0–6 mol/kg (Rard & Miller,
+//           J. Solution Chem. 8, 701 (1979)); the slider covers that range.
+//   ρ_s   = 2165 kg m⁻³ (halite crystal density, CRC).
+//   Halite dissolution at 25 °C is transport-controlled (Alkattan et al., Chem. Geol. 137,
+//   201 (1997)), which justifies c = c_sat at the surface.
+const { solveTridiagonal, erf, gaussLegendre } = __psim["core/numerics.mjs"];
+const { odeStepper } = __psim["core/ode.mjs"];
+const C_SAT = 316.8;        // kg/m³ at 25 °C
+const RHO_S = 2165;         // kg/m³ halite
+const RHO_BULK = 1200;      // kg/m³ poured table salt: DISPLAY ONLY (drawn layer thickness)
+const DX = 2.5e-4;                 // m, cell size (sets resolution; verified by refinement)
+const DT = 10;                     // s, time step (r = D dt/dx² ≤ 0.28: CN damps every mode)
+
+const PARAMS = [
+  { key: 'mass', label: 'Salt poured in', min: 0.5, max: 200, value: 6, log: true, unit: 'g', digits: 3, hint: 'A level teaspoon of table salt is about 6 g. Above ~120 g the default glass saturates.' },
+  { key: 'depth', label: 'Water depth', min: 2, max: 20, value: 10, unit: 'cm', digits: 3 },
+  { key: 'diam', label: 'Glass inner diameter', min: 3, max: 12, value: 7, unit: 'cm', digits: 3 },
+  { key: 'D', label: 'Diffusion coefficient D', min: 1.4, max: 1.7, value: 1.5, unit: '×10⁻⁹ m²/s', digits: 3, hint: 'Measured range for NaCl(aq) at 25 °C: 1.47–1.61 (Rard & Miller 1979).' },
+  { key: 'grain', label: 'Grain diameter (stirred comparison)', min: 0.1, max: 2, value: 0.5, log: true, unit: 'mm', digits: 2, hint: 'Only affects the dashed "suspended grains" curve.' },
+];
+
+const erfc = x => 1 - erf(x);
+
+/** Dissolved mass per unit area from a semi-infinite column with c(0) = c_sat: 2c_sat√(Dt/π). */
+const semiInfiniteMass = (D, t) => 2 * C_SAT * Math.sqrt(D * t / Math.PI);
+/** Semi-infinite profile c_sat·erfc(z / 2√(Dt)). */
+const semiInfiniteProfile = (D, t, z) => (t > 0 ? C_SAT * erfc(z / (2 * Math.sqrt(D * t))) : 0);
+/** Finite column, c(0) = c_sat, zero flux at H, c(z, 0) = 0: exact eigenfunction series. */
+function finiteColumnProfile(D, H, t, z, terms = 400) {
+  let sum = 0;
+  for (let n = 0; n < terms; n++) {
+    const k = (2 * n + 1) * Math.PI / (2 * H);
+    const e = Math.exp(-k * k * D * t);
+    if (e < 1e-18) break;
+    sum += 4 / ((2 * n + 1) * Math.PI) * Math.sin(k * z) * e;
+  }
+  return C_SAT * (1 - sum);
+}
+
+/**
+ * The layer-in-a-still-glass model: 1D Crank–Nicolson finite volumes.
+ * All arguments SI. Returns a stepper with time in seconds.
+ */
+function createColumn({ m0, H, A, D, dx = DX, dt = DT }) {
+  const N = Math.max(8, Math.round(H / dx)), h = H / N, r = D * dt / (h * h);
+  const c = new Float64Array(N), rhs = new Float64Array(N);
+  const lo = new Float64Array(N), up = new Float64Array(N), diD = new Float64Array(N), diN = new Float64Array(N);
+  for (let i = 0; i < N; i++) { lo[i] = -r / 2; up[i] = -r / 2; diD[i] = diN[i] = 1 + r; }
+  lo[0] = 0; up[N - 1] = 0;
+  diD[N - 1] = diN[N - 1] = 1 + r / 2;     // top: zero flux (ghost = c_{N-1})
+  diD[0] = 1 + 3 * r / 2;                  // bottom Dirichlet: ghost = 2c_sat − c_0
+  diN[0] = 1 + r / 2;                      // bottom zero flux after the solid is gone
+  const s = {
+    N, h, c, t: 0, steps: 0, exhausted: m0 <= 0, tEx: m0 <= 0 ? 0 : null,
+    fluxIntegral: 0,                       // ∫ A·flux dt [kg], accumulated independently of Σc
+    dissolved() { let m = 0; for (let i = 0; i < N; i++) m += c[i]; return m * h * A; },
+    solid() { return Math.max(0, m0 - s.dissolved()); },
+    flux() { return s.exhausted ? 0 : 2 * D * (C_SAT - c[0]) / h; },   // kg m⁻² s⁻¹ into the water
+    step() {
+      const M0 = s.dissolved(), F0 = s.flux();
+      if (!s.exhausted) {
+        cnRhs(true);
+        const next = solveTridiagonal(lo, diD, up, rhs);
+        let M1 = 0; for (let i = 0; i < N; i++) M1 += next[i]; M1 *= h * A;
+        if (M1 < m0) {
+          c.set(next); s.t += dt; s.steps++;
+          s.fluxIntegral += A * dt / 2 * (F0 + s.flux());
+          return;
+        }
+        // The last of the solid dissolves during this step: deposit exactly what is left into
+        // the bottom cell, switch the bottom to zero flux and take a conservative step.
+        const rem = m0 - M0;
+        s.tEx = s.t + dt * rem / (M1 - M0);
+        c[0] += rem / (h * A);
+        s.fluxIntegral += rem;
+        s.exhausted = true;
+      }
+      cnRhs(false);
+      c.set(solveTridiagonal(lo, diN, up, rhs));
+      s.t += dt; s.steps++;
+    },
+  };
+  function cnRhs(dirichlet) {
+    for (let i = 0; i < N; i++) {
+      const left = i === 0 ? (dirichlet ? 2 * C_SAT - c[0] : c[0]) : c[i - 1];
+      const right = i === N - 1 ? c[i] : c[i + 1];
+      rhs[i] = c[i] + r / 2 * (left - 2 * c[i] + right);
+    }
+    if (dirichlet) rhs[0] += r * C_SAT;     // implicit half of the 2c_sat ghost term
+  }
+  return s;
+}
+
+/**
+ * Suspended grains in well-mixed water, quasi-steady diffusion (Sh = 2). s = R².
+ * Returns { t: [...s], frac: [...] dissolved fraction, tDone (s) or null if it saturates first }.
+ */
+function grainHistory({ m0, V, D, R0, tMax = 1e8 }) {
+  const s0 = R0 * R0;
+  const cb = s => Math.min(C_SAT, (m0 - m0 * Math.pow(Math.max(s, 0) / s0, 1.5)) / V);
+  const f = (t, y) => [-2 * D * (C_SAT - cb(y[0])) / RHO_S];
+  const tScale = RHO_S * s0 / (2 * D * C_SAT);
+  const ode = odeStepper({ f, y0: [s0], method: 'dopri5', h: tScale * 1e-4, rtol: 1e-10, atol: s0 * 1e-13, hmax: tScale / 20 });
+  const pts = [[0, 0]];
+  let tDone = null;
+  while (ode.t < tMax) {
+    const tp = ode.t, sp = ode.y[0];
+    ode.step();
+    if (ode.y[0] <= 0) { tDone = tp + (ode.t - tp) * sp / (sp - ode.y[0]); pts.push([tDone, 1]); break; }
+    pts.push([ode.t, 1 - Math.pow(ode.y[0] / s0, 1.5)]);
+    if (Math.abs(cb(ode.y[0]) - C_SAT) < 1e-9 * C_SAT) break;   // saturated: grains stop shrinking
+  }
+  return { pts, tDone, tScale };
+}
+
+/** Grain dissolution time by direct quadrature of dt = ds / ṡ(s) (independent of the ODE solver). */
+function grainTimeQuadrature({ m0, V, D, R0 }) {
+  const s0 = R0 * R0;
+  // Substitute s = s0 (1 − u²) to remove nothing singular; integrand is smooth when m0 < c_sat V.
+  const rate = s => 2 * D * (C_SAT - (m0 - m0 * Math.pow(s / s0, 1.5)) / V) / RHO_S;
+  return gaussLegendre(s => 1 / rate(s), 0, s0, 64);
+}
+
+const SI = p => {
+  const H = p.depth / 100, a = p.diam / 200, A = Math.PI * a * a;
+  return { m0: p.mass / 1000, H, A, V: A * H, D: p.D * 1e-9, R0: p.grain / 2000 };
+};
+
+function createSim(params) {
+  const P = SI(params);
+  const col = createColumn(P);
+  const grains = grainHistory({ m0: P.m0, V: P.V, D: P.D, R0: P.R0 });
+  const cEq = Math.min(C_SAT, P.m0 / P.V);                // final uniform concentration
+  const history = [];                                      // [t_h, dissolvedFraction, cBottom, cTop]
+  let nextRec = 0, tHalfTop = null;
+  const record = () => {
+    const N = col.N;
+    history.push([col.t / 3600, col.dissolved() / P.m0, col.c[0], col.c[N - 1]]);
+    nextRec = col.t * 1.03 + 60;
+  };
+  record();
+  const sim = {
+    params, P, col, grains, history, cEq,
+    get t() { return col.t / 3600; },
+    step() {
+      col.step();
+      if (tHalfTop == null && col.c[col.N - 1] >= 0.5 * cEq) tHalfTop = col.t;
+      if (col.t >= nextRec) record();
+    },
+    get tHalfTop() { return tHalfTop; },
+    zOf: i => (i + 0.5) * col.h,
+    analyticValid() { return !col.exhausted && 4 * Math.sqrt(P.D * col.t) < P.H; },
+    diagnostics() {
+      const M = col.dissolved(), N = col.N;
+      const balance = Math.abs(M - col.fluxIntegral) / P.m0;
+      const sat = 100 * cEq / C_SAT;
+      return [
+        { key: 'bal', label: 'mass-balance error', value: balance, kind: 'error', good: 1e-10, warn: 1e-7 },
+        { key: 'diss', label: 'dissolved', value: M * 1000, kind: 'value', unit: 'g', text: `${(M * 1000).toFixed(3)} g of ${params.mass} g` },
+        { key: 'solid', label: 'solid left on the bottom', value: col.solid() * 1000, kind: 'value', unit: 'g', text: `${(col.solid() * 1000).toFixed(3)} g` },
+        { key: 'cb', label: 'concentration at the bottom', value: col.c[0], kind: 'value', text: `${col.c[0].toFixed(1)} kg/m³` },
+        { key: 'ct', label: 'concentration at the surface', value: col.c[N - 1], kind: 'value', text: col.c[N - 1] < 1e-6 ? '< 10⁻⁶ kg/m³ (not reached yet)' : `${col.c[N - 1].toPrecision(3)} kg/m³` },
+        { key: 'ceq', label: 'final uniform concentration', value: cEq, kind: 'value', text: `${cEq.toPrecision(3)} kg/m³ (${sat.toPrecision(3)} % of saturation)` },
+        { key: 'tex', label: 'solid gone after', value: col.tEx ?? NaN, kind: 'value', text: col.tEx != null ? `${(col.tEx / 3600).toPrecision(4)} h` : (P.m0 >= C_SAT * P.V ? 'never: water saturates' : 'not yet') },
+        { key: 'tg', label: 'suspended grains gone after (Sh = 2 bound)', value: grains.tDone ?? NaN, kind: 'value', text: grains.tDone != null ? `${(grains.tDone / 60).toPrecision(3)} min` : 'never: water saturates' },
+      ];
+    },
+    state() {
+      return { t_h: col.t / 3600, dissolved_g: col.dissolved() * 1000, solid_g: col.solid() * 1000, cBottom: col.c[0], cTop: col.c[col.N - 1], exhausted: col.exhausted, tEx_h: col.tEx == null ? null : col.tEx / 3600, cells: col.N };
+    },
+    record: () => ({ header: ['z_mm', 'c_kg_per_m3'], rows: Array.from(col.c, (v, i) => [((i + 0.5) * col.h * 1000).toFixed(4), v.toPrecision(8)]) }),
+  };
+  return sim;
+}
+
+// ------------------------------------------------------------------ verification
+
+function verify() {
+  const checks = [], notes = [];
+  const D = 1.5e-9, A = Math.PI * 0.035 ** 2;
+
+  // 1. Early times: semi-infinite exact result (erfc), salt cannot run out (excess salt).
+  const run = (dx, dt, H, m0, tEnd) => { const s = createColumn({ m0, H, A, D, dx, dt }); while (s.t < tEnd - 1e-9) s.step(); return s; };
+  const t1 = 3600;
+  const s1 = run(2.5e-4, 10, 0.1, 10, t1);
+  const mEx = semiInfiniteMass(D, t1), m1 = s1.dissolved() / A;
+  const e1 = Math.abs(m1 - mEx) / mEx;
+  checks.push({ label: 'Dissolved mass after 1 h vs exact 2c_sat√(Dt/π)', value: `${m1.toFixed(5)} vs ${mEx.toFixed(5)} kg/m² (rel. ${e1.toExponential(2)})`, pass: e1 < 5e-3 });
+  let pe = 0;
+  for (let i = 0; i < s1.N; i++) pe = Math.max(pe, Math.abs(s1.c[i] - semiInfiniteProfile(D, t1, (i + 0.5) * s1.h)));
+  checks.push({ label: 'Profile after 1 h vs c_sat·erfc(z/2√(Dt))', value: `max |Δc|/c_sat = ${(pe / C_SAT).toExponential(2)}`, pass: pe / C_SAT < 5e-3 });
+
+  // 2. Spatial refinement at fixed small dt: measured convergence order of the dissolved mass.
+  const errs = [5e-4, 2.5e-4, 1.25e-4].map(dx => Math.abs(run(dx, 2, 0.05, 10, t1).dissolved() / A - mEx) / mEx);
+  const order = Math.log2(errs[0] / errs[1]), order2 = Math.log2(errs[1] / errs[2]);
+  checks.push({ label: 'Spatial convergence order (dx = 0.5, 0.25, 0.125 mm)', value: `${order.toFixed(2)}, ${order2.toFixed(2)}`, pass: order > 1.6 && order2 > 1.6 });
+
+  // 3. Late times: finite column with zero-flux top, exact eigenfunction series (excess salt).
+  const H3 = 0.05, t3 = 0.3 * H3 * H3 / D;
+  const s3 = run(2.5e-4, 10, H3, 1000, t3);
+  let e3 = 0;
+  for (let i = 0; i < s3.N; i++) e3 = Math.max(e3, Math.abs(s3.c[i] - finiteColumnProfile(D, H3, s3.t, (i + 0.5) * s3.h)));
+  checks.push({ label: `Profile at t = 0.3H²/D (${(t3 / 86400).toFixed(1)} d, H = 5 cm) vs exact series`, value: `max |Δc|/c_sat = ${(e3 / C_SAT).toExponential(2)}`, pass: e3 / C_SAT < 1e-3 });
+
+  // 4. A teaspoon (6 g) in the default glass: time for the solid to vanish vs the semi-infinite
+  //    prediction t = π(m₀/A)²/(4c_sat²D), valid because √(Dt) ≪ H.
+  const m0 = 0.006, sT = createColumn({ m0, H: 0.1, A, D });
+  while (!sT.exhausted) sT.step();
+  const tPred = Math.PI * (m0 / A) ** 2 / (4 * C_SAT * C_SAT * D);
+  const e4 = Math.abs(sT.tEx - tPred) / tPred;
+  checks.push({ label: '6 g in a 7 cm glass: solid gone at (vs semi-infinite exact)', value: `${(sT.tEx / 3600).toFixed(3)} h vs ${(tPred / 3600).toFixed(3)} h (rel. ${e4.toExponential(1)})`, pass: e4 < 5e-3 });
+  for (let k = 0; k < 2000; k++) sT.step();
+  const bal = Math.abs(sT.dissolved() - m0) / m0, bal2 = Math.abs(sT.dissolved() - sT.fluxIntegral) / m0;
+  checks.push({ label: 'Mass conserved after the solid is gone (Σc·V vs m₀; vs ∫flux dt)', value: `${bal.toExponential(1)}; ${bal2.toExponential(1)}`, pass: bal < 1e-12 && bal2 < 1e-12 });
+
+  // 5. Time-step refinement of the exhaustion time (dt = 10 s production vs 5 s).
+  const sH = createColumn({ m0, H: 0.1, A, D, dt: 5 });
+  while (!sH.exhausted) sH.step();
+  const e5 = Math.abs(sH.tEx - sT.tEx) / sT.tEx;
+  checks.push({ label: 'Exhaustion time, dt = 10 s vs 5 s', value: `rel. diff ${e5.toExponential(1)}`, pass: e5 < 1e-3 });
+
+  // 6. Long-time limit: shallow column becomes uniform at m₀/V.
+  const H6 = 0.02, s6 = run(2.5e-4, 10, H6, 0.003, 2 * H6 * H6 / D);
+  const cU = 0.003 / (A * H6);
+  let e6 = 0; for (let i = 0; i < s6.N; i++) e6 = Math.max(e6, Math.abs(s6.c[i] - cU) / cU);
+  checks.push({ label: 'Uniform end state m₀/V after 2H²/D (H = 2 cm)', value: `max deviation ${e6.toExponential(2)}`, pass: e6 < 5e-3 });
+
+  // 7. Suspended grains: dilute limit vs exact R² law t = ρ_s R₀²/(2 D c_sat).
+  const R0 = 2.5e-4;
+  const gd = grainHistory({ m0: 1e-9, V: 1, D, R0 });
+  const tEx7 = RHO_S * R0 * R0 / (2 * D * C_SAT), e7 = Math.abs(gd.tDone - tEx7) / tEx7;
+  checks.push({ label: 'Single grain, dilute limit vs ρ_sR₀²/(2Dc_sat)', value: `${gd.tDone.toFixed(3)} s vs ${tEx7.toFixed(3)} s (rel. ${e7.toExponential(1)})`, pass: e7 < 1e-6 });
+  // 8. Grains with bulk build-up (6 g in 385 mL; 50 g): ODE vs independent quadrature.
+  for (const mg of [0.006, 0.05]) {
+    const V = A * 0.1, g = grainHistory({ m0: mg, V, D, R0 }), tq = grainTimeQuadrature({ m0: mg, V, D, R0 });
+    const e8 = Math.abs(g.tDone - tq) / tq;
+    checks.push({ label: `Grains, ${mg * 1000} g in ${(V * 1e6).toFixed(0)} mL: ODE vs quadrature`, value: `${g.tDone.toFixed(2)} s vs ${tq.toFixed(2)} s (rel. ${e8.toExponential(1)})`, pass: e8 < 1e-6 });
+  }
+
+  notes.push('These checks verify the numerics of the stated reduced model against its exact solutions; they do not test the model against a laboratory measurement of dissolving salt.');
+  notes.push('Neglected: volume change of the solution (a few % for a teaspoon, ~10 % near saturation), concentration dependence of D (±7 %), heat of solution (+3.9 kJ/mol, makes the bottom slightly colder and even more stable), thickness of the salt layer and diffusion through its pores, evaporation, vibration and thermal convection in a real kitchen.');
+  return { summary: 'Crank–Nicolson diffusion column and suspended-grain ODE checked against exact solutions of the same model:', checks, notes };
+}
+
+return { C_SAT, RHO_S, RHO_BULK, PARAMS, semiInfiniteMass, semiInfiniteProfile, finiteColumnProfile, createColumn, grainHistory, grainTimeQuadrature, createSim, verify };
+})();
+
+// ---- page
+const { createInstrument } = __psim["ui/instrument-app.mjs"];
+const { sci } = __psim["ui/instrument.mjs"];
+const { PARAMS, createSim, C_SAT, RHO_S, RHO_BULK, semiInfiniteProfile, semiInfiniteMass } = __psim["local:physics.mjs"];
+// Sequential colour ramp for log10 concentration (display convention, disclosed in the legend).
+const RAMP = [[22, 40, 84], [32, 98, 150], [38, 160, 160], [130, 205, 110], [250, 230, 90]];
+const C_LO = 0.1;                                       // kg/m³: below this the water is drawn uncoloured
+function ramp(c) {
+  if (!(c > C_LO)) return null;
+  const f = Math.min(1, Math.log10(c / C_LO) / Math.log10(C_SAT / C_LO)) * (RAMP.length - 1);
+  const i = Math.min(RAMP.length - 2, Math.floor(f)), u = f - i, a = RAMP[i], b = RAMP[i + 1];
+  return `rgb(${a.map((v, k) => Math.round(v + (b[k] - v) * u)).join(',')})`;
+}
+const nice = v => { const e = 10 ** Math.floor(Math.log10(v)), f = v / e; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * e; };
+const fmtT = h => (h < 1 / 60 ? `${(h * 3600).toFixed(0)} s` : h < 1 ? `${(h * 60).toFixed(1)} min` : h < 48 ? `${h.toFixed(2)} h` : `${(h / 24).toFixed(1)} d`);
+
+function draw(ctx, sim, view) {
+  const { W, H } = view, C = view.color, col = sim.col, P = sim.P;
+  const narrow = W < 560;
+  const top = narrow ? 150 : 130, bot = H - (narrow ? 130 : 58);
+  const gx0 = narrow ? 14 : 30, gw = narrow ? W * 0.3 : Math.min(W * 0.28, 260), gx1 = gx0 + gw;
+  const layerPx = Math.max(2, (sim.P.m0 / (RHO_BULK * P.A)) / P.H * (bot - top));   // to scale, ≥ 2 px
+  const zTop = top, zBot = bot - layerPx * (sim.col.solid() > 0 ? col.solid() / P.m0 : 0);
+  const Y = z => zBot - z / P.H * (zBot - zTop);
+
+  // Water column: one band per cell, coloured by computed c (log ramp).
+  for (let i = 0; i < col.N; i++) {
+    const y0 = Y((i + 1) * col.h), y1 = Y(i * col.h);
+    const cc = ramp(col.c[i]);
+    ctx.fillStyle = cc ?? C('--raise');
+    ctx.fillRect(gx0, y0, gw, y1 - y0 + 0.6);
+  }
+  // Solid salt layer (thickness to scale for a 1.2 g/cm³ packing; display only).
+  if (col.solid() > 0) {
+    ctx.fillStyle = '#f2f2ee';
+    ctx.fillRect(gx0, zBot, gw, bot - zBot);
+  }
+  // Glass walls.
+  ctx.strokeStyle = C('--ink-2'); ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(gx0 - 2, top - 14); ctx.lineTo(gx0 - 2, bot + 2); ctx.lineTo(gx1 + 2, bot + 2); ctx.lineTo(gx1 + 2, top - 14); ctx.stroke();
+  ctx.fillStyle = C('--muted'); ctx.font = '11px ui-sans-serif, system-ui'; ctx.textAlign = 'center';
+  ctx.fillText(col.solid() > 0 ? `salt layer: ${(col.solid() * 1000).toFixed(2)} g left` : 'no solid salt left', (gx0 + gx1) / 2, bot + 16);
+  ctx.textAlign = 'start';
+
+  // Colour bar (log scale).
+  const bx0 = gx0, bx1 = gx1, by = bot + 28;
+  for (let x = bx0; x < bx1; x++) {
+    const c = C_LO * (C_SAT / C_LO) ** ((x - bx0) / (bx1 - bx0));
+    ctx.fillStyle = ramp(c * 1.0001) ?? C('--raise'); ctx.fillRect(x, by, 1.2, 7);
+  }
+  ctx.fillStyle = C('--muted'); ctx.font = '10px ui-monospace, Menlo, monospace';
+  ctx.fillText('0.1', bx0, by + 19); ctx.textAlign = 'end'; ctx.fillText(narrow ? `${C_SAT.toFixed(0)} sat.` : `${C_SAT.toFixed(0)} kg/m³ (sat.)`, bx1, by + 19); ctx.textAlign = 'start';
+
+  // Concentration profile c(z), same vertical axis as the glass.
+  const px0 = gx1 + (narrow ? 44 : 70), px1 = W - (narrow ? 14 : 30);
+  let cmax = sim.cEq; for (let i = 0; i < col.N; i++) cmax = Math.max(cmax, col.c[i]);
+  const xMax = Math.min(nice(cmax * 1.05), 400), X = c => px0 + c / xMax * (px1 - px0);
+  ctx.strokeStyle = C('--grid-strong'); ctx.lineWidth = 1;
+  ctx.fillStyle = C('--muted'); ctx.font = '10px ui-monospace, Menlo, monospace'; ctx.textAlign = 'center';
+  const step = nice(xMax / (narrow ? 3 : 5));
+  for (let v = 0; v <= xMax + 1e-9; v += step) {
+    ctx.beginPath(); ctx.moveTo(X(v), zTop); ctx.lineTo(X(v), zBot); ctx.stroke();
+    ctx.fillText(+v.toPrecision(3), X(v), zBot + 14);
+  }
+  ctx.fillText(narrow ? 'c, kg/m³' : 'dissolved NaCl c, kg/m³', (px0 + px1) / 2, zBot + 30);
+  ctx.textAlign = 'end';
+  const zs = nice(P.H * 100 / 5) / 100;
+  for (let z = 0; z <= P.H + 1e-9; z += zs) {
+    ctx.beginPath(); ctx.moveTo(px0 - 4, Y(z)); ctx.lineTo(px1, Y(z)); ctx.stroke();
+    ctx.fillText(`${+(z * 100).toPrecision(3)}`, px0 - 6, Y(z) + 3);
+  }
+  ctx.save(); ctx.translate(px0 - (narrow ? 30 : 36), (zTop + zBot) / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'center';
+  ctx.fillText('height above the salt z, cm', 0, 0); ctx.restore();
+  // final uniform level (dotted)
+  ctx.setLineDash([2, 4]); ctx.strokeStyle = C('--body-3');
+  ctx.beginPath(); ctx.moveTo(X(sim.cEq), zTop); ctx.lineTo(X(sim.cEq), zBot); ctx.stroke();
+  // semi-infinite exact solution (dashed) while it applies
+  const tS = col.t;
+  if (sim.analyticValid() && tS > 0) {
+    ctx.setLineDash([5, 5]); ctx.strokeStyle = C('--muted'); ctx.lineWidth = 1.4; ctx.beginPath();
+    for (let k = 0; k <= 200; k++) { const z = P.H * k / 200, x = X(semiInfiniteProfile(P.D, tS, z)); k ? ctx.lineTo(x, Y(z)) : ctx.moveTo(x, Y(z)); }
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  // computed profile (cell values)
+  ctx.strokeStyle = C('--body-0'); ctx.lineWidth = 2.2; ctx.lineJoin = 'round'; ctx.beginPath();
+  for (let i = 0; i < col.N; i++) { const x = X(col.c[i]), y = Y((i + 0.5) * col.h); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+  ctx.stroke();
+  ctx.textAlign = 'start'; ctx.font = '10.5px ui-sans-serif, system-ui';
+  ctx.fillStyle = C('--body-3');
+  const lx = Math.min(X(sim.cEq) + 5, px1 - 120);
+  ctx.fillText(`final uniform ${sim.cEq.toPrecision(3)} kg/m³`, lx, zTop + 12);
+}
+
+// ------------------------------------------------------------------ workbench: equations + figures
+function bench({ eqs, figs, createPlot, createEquation, M }) {
+  const frac = createPlot({
+    title: 'Fraction of the salt dissolved', height: 280,
+    x: { label: 'time', unit: 'h', min: 1e-3, max: 1e4, log: true },
+    y: { label: 'dissolved / poured', min: 0, max: 1.05 },
+  });
+  const conc = createPlot({
+    title: 'Concentration at the bottom and at the surface', height: 280,
+    x: { label: 'time', unit: 'h', min: 1e-2, max: 1e4, log: true },
+    y: { label: 'c', unit: 'kg/m³', log: true, min: 1e-3, max: 600 },
+  });
+  figs.append(frac.el, conc.el);
+  let sim = null;
+  const c = M.i('c'), z = M.i('z'), t = M.i('t'), D = M.i('D');
+  const pd = (a, b) => M.frac(`<mi>∂</mi>${a}`, `<mi>∂</mi>${b}`);
+  const fick = createEquation({
+    title: 'Diffusion of dissolved NaCl (Fick’s second law), values at the bottom cell',
+    lhs: { mathml: pd(c, t), label: 'rate of change of concentration', unit: 'kg m⁻³ s⁻¹', value: () => sim && (sim.col.flux() - sim.P.D * (sim.col.c[0] - sim.col.c[1]) / sim.col.h) / sim.col.h },
+    terms: [{ id: 'layer', mathml: `${D}${M.frac(`<msup><mi>∂</mi><mn>2</mn></msup>${c}`, `<mi>∂</mi><msup>${z}<mn>2</mn></msup>`)}`, label: 'net diffusive inflow (computed, Crank–Nicolson)', color: '--body-0', unit: 'kg m⁻³ s⁻¹', value: () => sim && (sim.col.flux() - sim.P.D * (sim.col.c[0] - sim.col.c[1]) / sim.col.h) / sim.col.h }],
+    where: [
+      { mathml: D, meaning: 'mutual diffusion coefficient of NaCl(aq), 25 °C', value: () => sim?.P.D, unit: 'm²/s' },
+      { mathml: M.sub(c, M.i('sat')), meaning: 'saturated concentration at the crystal surface (CRC)', value: () => C_SAT, unit: 'kg/m³' },
+    ],
+    link: frac,
+  });
+  const law = createEquation({
+    title: 'Why it is slow: dissolved mass per area grows only as √t (exact while salt remains and √(Dt) ≪ H)',
+    lhs: { mathml: `${M.frac(M.i('m'), M.i('A'))}`, label: 'dissolved per area (computed)', unit: 'kg/m²', value: () => sim && sim.col.dissolved() / sim.P.A },
+    terms: [{ id: 'sqrt', mathml: `<mn>2</mn>${M.sub(c, M.i('sat'))}${M.sqrt(M.frac(`${D}${t}`, '<mi>π</mi>'))}`, label: 'semi-infinite exact solution', color: '--muted', unit: 'kg/m²', value: () => sim && semiInfiniteMass(sim.P.D, sim.col.t) }],
+    link: frac,
+  });
+  const grain = createEquation({
+    title: 'Stirred comparison: one suspended grain, quasi-steady diffusion (Sherwood number 2)',
+    lhs: { mathml: `${M.i('R')}${M.frac(`<mi>d</mi>${M.i('R')}`, `<mi>d</mi>${t}`)}`, label: 'shrinking rate × radius at t = 0', unit: 'm²/s', value: () => sim && -sim.P.D * C_SAT / RHO_S },
+    terms: [{ id: 'grain', mathml: `<mo>−</mo>${M.frac(`${D}${M.paren(`${M.sub(c, M.i('sat'))}<mo>−</mo>${M.sub(c, M.i('bulk'))}`)}`, M.sub('<mi>ρ</mi>', M.i('s')))}`, label: 'diffusion into well-mixed water', color: '--body-1', unit: 'm²/s', value: () => sim && -sim.P.D * C_SAT / RHO_S }],
+    where: [{ mathml: M.sub('<mi>ρ</mi>', M.i('s')), meaning: 'halite crystal density', value: () => RHO_S, unit: 'kg/m³' }],
+    note: 'Sh = 2 is the minimum for a sphere in still fluid; real stirring raises the transfer rate, so the grain curve is an upper bound on the stirred dissolution time.',
+    link: frac,
+  });
+  eqs.append(fick.el, law.el, grain.el);
+
+  let last = -1;
+  return {
+    update(s, _t, { rebuilt }) {
+      sim = s;
+      fick.update(); law.update(); grain.update();
+      if (rebuilt) {
+        frac.data('grain', s.grains.pts.filter(p => p[0] > 0).map(([ts, f]) => [ts / 3600, f]), { color: '--body-1', label: `suspended ${s.params.grain} mm grains, stirred (Sh = 2 bound)`, width: 2 });
+        frac.fn('sqrt', th => Math.min(1.05, semiInfiniteMass(s.P.D, th * 3600) * s.P.A / s.P.m0), { color: '--muted', dash: true, label: 'semi-infinite exact √t', width: 1.4 });
+        conc.hline('csat', C_SAT, { color: '--muted', label: 'saturation' });
+        conc.hline('ceq', s.cEq, { color: '--body-3', label: 'final uniform' });
+        last = -1;
+      }
+      if (s.history.length !== last || rebuilt) {
+        last = s.history.length;
+        const h = s.history.filter(r => r[0] > 0);
+        frac.data('layer', h.map(r => [r[0], r[1]]), { color: '--body-0', label: 'salt layer, still water (computed)', width: 2.4 });
+        conc.data('bot', h.map(r => [r[0], Math.max(r[2], 1e-4)]), { color: '--body-0', label: 'bottom cell', width: 2 });
+        conc.data('top', h.map(r => [r[0], Math.max(r[3], 1e-4)]), { color: '--body-4', label: 'surface cell', width: 2 });
+        if (s.col.tEx != null) frac.vline('tex', s.col.tEx / 3600, { color: '--body-0', label: `solid gone ${fmtT(s.col.tEx / 3600)}` });
+        else frac.remove('tex');
+        frac.invalidate(); conc.invalidate();
+      }
+      frac.draw(); conc.draw();
+    },
+  };
+}
+
+createInstrument({
+  title: 'Salt dissolving in a still glass of water',
+  subtitle: 'Diffusion-limited dissolution of a salt layer: 1D Fick’s law, Crank–Nicolson · stirred-grain comparison',
+  tier: 'approximate',
+  tierReason: 'Reduced model: salt lies as a layer on the bottom and dissolved NaCl spreads upward by molecular diffusion only (dense brine below fresh water is stably stratified, so it does not convect). Constant D, no volume change. The solver matches the exact erfc and eigenfunction solutions of this model to < 0.1 % and converges at order 2.00 (Verification); the model itself is not compared with a laboratory measurement.',
+  layout: 'workbench',
+  params: PARAMS,
+  create: createSim,
+  draw, bench,
+  timeUnit: 'h', timeLabel: 'time since the salt settled', speed: 1, duration: 24,
+  hudLine: sim => `${sim.col.N} cells of ${(sim.col.h * 1000).toFixed(2)} mm · Δt = 10 s${sim.tHalfTop ? ` · surface reached half the final value at ${fmtT(sim.tHalfTop / 3600)}` : ''}`,
+  model: {
+    legend: ['water colour: computed concentration, log scale', 'orange: computed c(z) · dashed: exact erfc · green dotted: final'],
+    equations: [
+      { caption: 'Model: Fick diffusion with a saturated surface while solid remains, then zero flux',
+        mathml: `<math display="block"><mfrac><mrow><mi>∂</mi><mi>c</mi></mrow><mrow><mi>∂</mi><mi>t</mi></mrow></mfrac><mo>=</mo><mi>D</mi><mfrac><mrow><msup><mi>∂</mi><mn>2</mn></msup><mi>c</mi></mrow><mrow><mi>∂</mi><msup><mi>z</mi><mn>2</mn></msup></mrow></mfrac><mo>,</mo><mspace width="0.8em"/><mi>c</mi><mo>(</mo><mn>0</mn><mo>,</mo><mi>t</mi><mo>)</mo><mo>=</mo><msub><mi>c</mi><mi>sat</mi></msub><mspace width="0.4em"/><mtext>while solid remains</mtext><mo>,</mo><mspace width="0.8em"/><msub><mo>∂</mo><mi>z</mi></msub><mi>c</mi><mo>(</mo><mi>H</mi><mo>)</mo><mo>=</mo><mn>0</mn></math>` },
+      { caption: 'Time for a layer of m₀ on area A to vanish (semi-infinite limit, √(Dt) ≪ H)',
+        mathml: `<math display="block"><msub><mi>t</mi><mi>gone</mi></msub><mo>=</mo><mfrac><mi>π</mi><mn>4</mn></mfrac><mfrac><msup><mrow><mo>(</mo><msub><mi>m</mi><mn>0</mn></msub><mo>/</mo><mi>A</mi><mo>)</mo></mrow><mn>2</mn></msup><mrow><msubsup><mi>c</mi><mi>sat</mi><mn>2</mn></msubsup><mi>D</mi></mrow></mfrac></math>` },
+    ],
+    assumptions: [
+      'The grains reach the bottom before dissolving appreciably and form a thin layer covering the glass floor; dissolution then proceeds only from its top surface (area A). Diffusion through the pores of the layer is ignored.',
+      'At the crystal surface the solution is saturated: halite dissolution at 25 °C is transport-controlled (Alkattan et al. 1997).',
+      'Transport is molecular diffusion only. Brine (up to 1.198 g/cm³) under fresh water is stably stratified, so there is no density-driven convection. Draughts, vibration, temperature differences or a falling plume of grains would mix faster: a real glass can only be faster, never slower, than this model.',
+      'Constant D (measured 1.47–1.61 ×10⁻⁹ m²/s over 0–6 mol/kg, Rard & Miller 1979); constant solution volume (true volume grows a few % for a teaspoon, ~10 % near saturation); 25 °C throughout (heat of solution neglected).',
+      'Stirred comparison: identical spheres kept suspended in perfectly mixed water, quasi-steady diffusion (Sh = 2). Neglects the transient term and the moving surface (c_sat/ρ_s = 0.15). Sh = 2 is the still-fluid minimum, so real stirring dissolves faster than this curve.',
+    ],
+    conventions: [
+      'The glass is a side cross-section. Height is physical (cm); horizontal position inside the glass carries no information (the model is 1D).',
+      'Water colour encodes the computed concentration in each 0.25 mm cell on a log scale from 0.1 kg/m³ to saturation (316.8 kg/m³); uncoloured below 0.1 kg/m³. The colours are a data scale, not the optical appearance: real brine is clear.',
+      'White band: remaining solid, drawn to scale assuming a loose packing of 1.2 g/cm³ (display only, minimum 2 px).',
+      'Profile plot: orange = computed cell values; dashed grey = exact semi-infinite erfc solution, shown only while salt remains and 4√(Dt) < H; green dotted = final uniform concentration.',
+      'Time axis of the figures is logarithmic; playback speed is adjustable (default 1 h of physical time per second).',
+    ],
+    references: [
+      'CRC Handbook of Chemistry and Physics: NaCl solubility 26.45 wt % at 25 °C, saturated density 1.1978 g/cm³, halite density 2.165 g/cm³.',
+      'J. A. Rard & D. G. Miller, J. Solution Chem. 8, 701 (1979): mutual diffusion coefficients of aqueous NaCl at 25 °C.',
+      'M. Alkattan, E. H. Oelkers, J.-L. Dandurand, J. Schott, Chem. Geol. 137, 201 (1997): halite dissolution is transport-controlled.',
+      'J. Crank, The Mathematics of Diffusion, 2nd ed. (1975), §3.3 (erfc solution), §4.3 (finite column series).',
+      'P. S. Epstein & M. S. Plesset, J. Chem. Phys. 18, 1505 (1950): quasi-steady dissolution of a sphere.',
+    ],
+  },
+});
+
+</script>
+</body>
+</html>

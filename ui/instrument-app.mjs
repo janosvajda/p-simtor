@@ -33,7 +33,7 @@ const TIERS = {
 export function createInstrument(spec) {
   const {
     title, subtitle = '', tier, tierReason, create, draw, params = [], model = {},
-    timeUnit = 'T', speed: speed0 = 1, controls, onPointer, layout = 'stage', bench,
+    timeUnit = 'T', timeLabel = 'simulated time', speed: speed0 = 1, controls, onPointer, layout = 'stage', bench,
   } = spec;
   if (!TIERS[tier]) throw new Error(`tier must be one of ${Object.keys(TIERS).join(', ')}`);
   const report = readJsonScript('psim-verification');
@@ -54,7 +54,7 @@ export function createInstrument(spec) {
       <button class="psim-iconbtn" type="button" aria-label="Toggle theme"></button>
     </header>
     <main class="psim-stage"><canvas></canvas>
-      <div class="psim-hud"><span class="dim">t</span><b>0</b><span class="h1"></span><span class="dim h2"></span><span class="flag"></span></div>
+      <div class="psim-hud"><span class="dim"></span><b>0</b><span class="h1"></span><span class="dim h2"></span><span class="flag"></span></div>
       <div class="psim-legend"></div>
     </main>
     <aside class="psim-side"></aside>
@@ -78,6 +78,7 @@ export function createInstrument(spec) {
   }
   const canvas = stage.querySelector('canvas');
   const ctx = canvas.getContext('2d');
+  $('.psim-hud .dim').textContent = timeLabel;
   const hud = { t: $('.psim-hud b'), a: $('.psim-hud .h1'), b: $('.psim-hud .h2'), flag: $('.psim-hud .flag') };
   if (model.legend) $('.psim-legend').append(...model.legend.map(t => el('span', {}, t)));
 
@@ -244,7 +245,7 @@ export function createInstrument(spec) {
     if (now - lastUi > 100) {
       lastUi = now;
       const d = renderDiag();
-      hud.t.textContent = timeDependent ? fix(tDisplay, 3) : '';
+      hud.t.textContent = timeDependent ? `${fix(tDisplay, 3)} ${timeUnit}` : '';
       const firstErr = d.find(x => x.kind === 'error');
       hud.a.textContent = firstErr ? `${firstErr.label} ${sci(firstErr.value)}` : '';
       hud.b.textContent = spec.hudLine?.(sim) ?? '';
@@ -253,7 +254,7 @@ export function createInstrument(spec) {
       status.set('t', timeDependent ? tDisplay : 1);
       if (firstErr) status.set('drift', firstErr.value);
     }
-    if (++frames % 30 === 0) status.set('frames', frames);
+    if (++frames === 1 || frames % 30 === 0) status.set('frames', frames);   // first frame at once: slow pages count as live
     requestAnimationFrame(frame);
   }
 
