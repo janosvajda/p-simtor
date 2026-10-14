@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="generator" content="p-simtor">
-<title>Quantum tunnelling in 2D</title>
+<title>Hydrogen orbitals in 3D</title>
 <style>/* psim:ui/instrument.css */
 /* p-simtor instrument shell.
    A simulation page is a scientific instrument: a large stage for the physics,
@@ -400,87 +400,106 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
   .psim-app.workbench .psim-legend { top: auto; bottom: 14px; left: auto; right: 26px; }
   .psim-bench .psim-canvaswrap { height: 70vh; }
 }
+
+/* GPU layer (ui/gl.mjs): under the 2D canvas, which keeps labels and pointer events */
+.psim-gl { pointer-events: none; }
+</style>
+<style>
+  /* the 3D scene is the centrepiece: it fills the first screen; figures follow below */
+  .psim-bench .psim-canvaswrap { height: clamp(460px, calc(100vh - 150px), 1000px); background: radial-gradient(ellipse at 50% 45%, color-mix(in srgb, var(--stage) 80%, var(--accent) 4%), var(--stage) 70%); }
+  .ho-slice { position: relative; height: 340px; border-radius: 10px; border: 1px solid var(--line); background: color-mix(in srgb, var(--stage) 75%, transparent); }
+  .ho-slice canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .psim-bench .psim-figs { order: 1; } .psim-bench .psim-eqs > :first-child { grid-column: 1 / -1; } .psim-bench .psim-eqs { order: 2; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); align-items: start; }
+  @media (max-width: 860px) { .psim-bench .psim-canvaswrap { height: 74vh; } .psim-app.workbench .psim-legend { display: none; } }
 </style>
 </head>
 <body>
 <script type="application/json" id="psim-verification">{
- "summary": "Split-operator 2D Schrödinger solver checked against the exact square-barrier transmission averaged over the packet momenta, free-packet motion, norm, separability, and dt/dx refinement.",
+ "summary": "Exact hydrogen-like eigenfunctions checked against independent identities (normalisation, orthogonality, Hψ = Eψ, virial energy, exact node positions, Cartesian forms); samples tested against the exact distributions; the displayed density grid measured against the exact |ψ|².",
  "checks": [
   {
-   "label": "Closed-form T(E) vs RK4 shooting of the stationary equation (6 cases incl. E > V₀ and 8mV₀w²/ħ² < 1)",
-   "value": "max rel. diff 2.1e-9",
+   "label": "∫|ψ|² dV = 1 for all 55 states (real and complex basis)",
+   "value": "max |error| 2.8e-14 (4f z³)",
    "pass": true
   },
   {
-   "label": "Free 2D packet (V₀ = 0) after 200 fs: centre ⟨x⟩ = x₀ + ħk_x t/m",
-   "value": "|Δ⟨x⟩| = 1.2e-12 nm",
+   "label": "Orthogonality, all 1485 pairs",
+   "value": "max |⟨ψa|ψb⟩| 3.5e-15",
    "pass": true
   },
   {
-   "label": "Free packet width σ(t) = √(σ₀² + (ħt/2mσ₀)²)",
-   "value": "rel. err 2.1e-13",
+   "label": "Radial equation Hψ = Eψ, E = −Z²/2n² Eh (finite-difference residual, Z = 1, 3)",
+   "value": "max rel. residual 5.9e-6",
    "pass": true
   },
   {
-   "label": "Norm conserved (unitary): 2D run of 765 steps on 512×128 cells, round-off budget 1e-14 per step",
-   "value": "|ΔN| = 6.1e-12 (8.0e-15 per step)",
+   "label": "Energy: virial ⟨V⟩/2 by quadrature vs −Z²Ry/n² (Z = 2, all n, l)",
+   "value": "max rel. diff 5.9e-15 (Eh/2 vs Ry)",
    "pass": true
   },
   {
-   "label": "Default case (E₀ = 100, V₀ = 150 meV, a = 1.5 nm, θ = 20°): T measured vs exact T̄ = 0.12768",
-   "value": "T = 0.12755, Δ 0.100 %",
+   "label": "⟨r⟩ quadrature vs (a₀/2Z)[3n² − l(l+1)], all n ≤ 5",
+   "value": "max rel. error 5.8e-15",
    "pass": true
   },
   {
-   "label": "⟨H⟩ after the collision (Strang splitting: bounded, not exact)",
-   "value": "rel. change 8.6e-10",
+   "label": "Radial nodes: count n−l−1 (all states); positions vs exact 2s, 3s, 3p, 4d roots",
+   "value": "counts all correct; max |Δr| 8.2e-15 a₀",
    "pass": true
   },
   {
-   "label": "Only normal energy tunnels: θ = 20° vs θ = 0° at E₀cos²θ = 88.30 meV",
-   "value": "|ΔT| = 3.1e-14",
+   "label": "Angular nodes: l−|m| cones + |m| planes = l (real basis, l ≤ 4)",
+   "value": "all 15 (l, |m|) correct",
    "pass": true
   },
   {
-   "label": "Deep tunnelling (E₀ = 60, V₀ = 300 meV, a = 2 nm): T vs exact T̄ = 0.00002230",
-   "value": "T = 0.00002226, Δ 0.191 %",
+   "label": "Real-orbital names (p_x … g) match their Cartesian polynomials (23 functions)",
+   "value": "max dev. 5.0e-14; positive lobes match",
    "pass": true
   },
   {
-   "label": "Over-barrier reflection (E₀ = 250, V₀ = 150 meV, a = 1 nm): T vs exact T̄ = 0.9400",
-   "value": "T = 0.9381, Δ 0.208 %",
+   "label": "Page radial evaluator vs core/numerics hydrogenRadial",
+   "value": "max rel. dev. 1.1e-13",
    "pass": true
   },
   {
-   "label": "Thick barrier (E₀ = 120, V₀ = 160 meV, a = 4 nm): T vs exact T̄ = 0.03278",
-   "value": "T = 0.03277, Δ 0.030 %",
+   "label": "Sampling: KS test of 60 000 radii vs exact P(r) (4 states) and cos θ of 2p_z vs (u³+1)/2",
+   "value": "4d p=0.0045, 3s p=0.30, 5f p=0.68, 4f (m=2, complex) p=0.68; cos θ p=0.86",
    "pass": true
   },
   {
-   "label": "Narrowest, fastest (E₀ = 300, V₀ = 400 meV, a = 1 nm, σ₀ = 5 nm): T vs exact T̄ = 0.2533",
-   "value": "T = 0.2525, Δ 0.310 %",
+   "label": "Sampler calibration: KS p-values of 24 seeds (4d, 20 000 each) are uniform",
+   "value": "meta-KS p=0.82, min p 0.054",
    "pass": true
   },
   {
-   "label": "Time-step order (Strang splitting, dt = 1 → 0.125 fs)",
-   "value": "p = 2.00, |T(dt) − T(dt/2)| = 1.3e-4",
+   "label": "⟨r⟩ estimated from 200 000 samples (4d z²) vs exact 21 a₀",
+   "value": "20.997 ± 0.018 a₀ (-0.17 σ)",
    "pass": true
   },
   {
-   "label": "Grid refinement dx = 0.5 → 0.125 nm",
-   "value": "T = 0.195634 → 0.195636 → 0.195636; exact 0.195805",
+   "label": "Rejection envelope ≥ P(r) at 65 points in every cell (1s, 3s, 5s, 5g)",
+   "value": "holds",
+   "pass": true
+  },
+  {
+   "label": "Displayed 96³ volume vs exact |ψ|² (relative L1, trilinear as on the GPU)",
+   "value": "4d z² 1.10 %, 1s 0.27 %, 5s 1.56 %",
+   "pass": true
+  },
+  {
+   "label": "Deterministic for a given seed",
+   "value": "bit-identical",
    "pass": true
   }
  ],
  "notes": [
-  "At θ = 20° the packet transmits T̄ = 0.1277; the same packet at normal incidence (E_x = 100 meV) would transmit 0.1958.",
-  "Time-step errors at the production dt = 0.5 fs: 1.3e-4 in T; dt/2 vs dt/4: 3.2e-5.",
-  "The exact benchmark T̄ assumes an infinite domain and infinite time; the box is periodic and T is read at t_sep. Remaining differences come from the time step and the finite measurement time (slow momentum tail).",
-  "A sharp-edged rectangular barrier was tried first: on this spectral grid it converged only to first order in dx (6–26 % off at dx = 0.5 nm), so the smooth sech² barrier with an exact T(E) is used instead.",
-  "Model scope: one free electron in vacuum-like conditions (free-electron mass), static ideal rectangular barrier; no spin, image-charge, many-body or phonon effects."
+  "Non-relativistic, point-nucleus, infinite-nuclear-mass model: fine structure (~α² ≈ 5×10⁻⁵ relative), Lamb shift, hyperfine splitting and the reduced-mass correction (5.4×10⁻⁴ in energies and lengths) are not included.",
+  "Inner radial shells of 5s are thinner than a few grid cells of the 96³ volume; the sampled points and the P(r) figure resolve them exactly.",
+  "Sample checks use 60 000 draws; KS p-values are random by construction (a correct sampler gives p uniform on [0, 1]), hence the calibration test over 24 seeds."
  ],
- "generated": "2026-10-14T08:07:54.578Z",
- "runtimeMs": 16149
+ "generated": "2026-10-14T16:44:48.175Z",
+ "runtimeMs": 2610
 }</script>
 <script type="module">
 const __psim = {};
@@ -1064,6 +1083,421 @@ function createPlot({ title = '', x = {}, y = {}, height = 220, legend = true, o
 return { createPlot };
 })();
 
+// ---- psim:ui/gl.mjs
+__psim["ui/gl.mjs"] = (() => {
+// GPU rendering (WebGL2) for any subject, organised by what is drawn, not by topic:
+//
+//   createGLLayer(canvas2d)       a WebGL2 canvas behind the shell's 2D canvas (labels stay in 2D)
+//   orbitCamera({...})            3D camera with drag-to-rotate and wheel zoom; project() for 2D labels
+//   createPointRenderer(gl)       glowing point sprites: 10⁵–10⁶ bodies, stars, samples, molecules
+//   createFieldRenderer(gl)       2D scalar field as a colour-mapped image (heat maps, |ψ|², density)
+//   createVolumeRenderer(gl)      3D scalar field by ray marching (orbital clouds, densities, gas)
+//   colormap(name, t)             scientific colour maps (perceptually uniform), also for 2D canvas
+//
+// The renderers only READ arrays the simulation computed; they never change physics. Every
+// mapping (range, log scale, colour map, opacity, glow) is a representation choice: state it
+// in the legend. Matrices are column-major Float32Array(16), as WebGL expects.
+
+// ---------------------------------------------------------------- matrix maths (pure; tested in Node)
+
+function perspective(fovy, aspect, near, far) {
+  const f = 1 / Math.tan(fovy / 2), nf = 1 / (near - far);
+  return new Float32Array([f / aspect, 0, 0, 0, 0, f, 0, 0, 0, 0, (far + near) * nf, -1, 0, 0, 2 * far * near * nf, 0]);
+}
+
+function lookAt(eye, target, up) {
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const unit = a => { const l = Math.hypot(...a) || 1; return a.map(v => v / l); };
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const z = unit(sub(eye, target)), x = unit(cross(up, z)), y = cross(z, x);
+  return new Float32Array([x[0], y[0], z[0], 0, x[1], y[1], z[1], 0, x[2], y[2], z[2], 0, -dot(x, eye), -dot(y, eye), -dot(z, eye), 1]);
+}
+
+function multiply(a, b) {
+  const out = new Float32Array(16);
+  for (let c = 0; c < 4; c++) {for (let r = 0; r < 4; r++) {
+    let s = 0;
+    for (let k = 0; k < 4; k++) s += a[k * 4 + r] * b[c * 4 + k];
+    out[c * 4 + r] = s;
+  }}
+  return out;
+}
+
+/** Inverse of a 4×4 matrix (cofactor expansion, in float64). */
+function invert(m) {
+  const a = Array.from(m), inv = new Array(16);
+  inv[0] = a[5] * a[10] * a[15] - a[5] * a[11] * a[14] - a[9] * a[6] * a[15] + a[9] * a[7] * a[14] + a[13] * a[6] * a[11] - a[13] * a[7] * a[10];
+  inv[4] = -a[4] * a[10] * a[15] + a[4] * a[11] * a[14] + a[8] * a[6] * a[15] - a[8] * a[7] * a[14] - a[12] * a[6] * a[11] + a[12] * a[7] * a[10];
+  inv[8] = a[4] * a[9] * a[15] - a[4] * a[11] * a[13] - a[8] * a[5] * a[15] + a[8] * a[7] * a[13] + a[12] * a[5] * a[11] - a[12] * a[7] * a[9];
+  inv[12] = -a[4] * a[9] * a[14] + a[4] * a[10] * a[13] + a[8] * a[5] * a[14] - a[8] * a[6] * a[13] - a[12] * a[5] * a[10] + a[12] * a[6] * a[9];
+  inv[1] = -a[1] * a[10] * a[15] + a[1] * a[11] * a[14] + a[9] * a[2] * a[15] - a[9] * a[3] * a[14] - a[13] * a[2] * a[11] + a[13] * a[3] * a[10];
+  inv[5] = a[0] * a[10] * a[15] - a[0] * a[11] * a[14] - a[8] * a[2] * a[15] + a[8] * a[3] * a[14] + a[12] * a[2] * a[11] - a[12] * a[3] * a[10];
+  inv[9] = -a[0] * a[9] * a[15] + a[0] * a[11] * a[13] + a[8] * a[1] * a[15] - a[8] * a[3] * a[13] - a[12] * a[1] * a[11] + a[12] * a[3] * a[9];
+  inv[13] = a[0] * a[9] * a[14] - a[0] * a[10] * a[13] - a[8] * a[1] * a[14] + a[8] * a[2] * a[13] + a[12] * a[1] * a[10] - a[12] * a[2] * a[9];
+  inv[2] = a[1] * a[6] * a[15] - a[1] * a[7] * a[14] - a[5] * a[2] * a[15] + a[5] * a[3] * a[14] + a[13] * a[2] * a[7] - a[13] * a[3] * a[6];
+  inv[6] = -a[0] * a[6] * a[15] + a[0] * a[7] * a[14] + a[4] * a[2] * a[15] - a[4] * a[3] * a[14] - a[12] * a[2] * a[7] + a[12] * a[3] * a[6];
+  inv[10] = a[0] * a[5] * a[15] - a[0] * a[7] * a[13] - a[4] * a[1] * a[15] + a[4] * a[3] * a[13] + a[12] * a[1] * a[7] - a[12] * a[3] * a[5];
+  inv[14] = -a[0] * a[5] * a[14] + a[0] * a[6] * a[13] + a[4] * a[1] * a[14] - a[4] * a[2] * a[13] - a[12] * a[1] * a[6] + a[12] * a[2] * a[5];
+  inv[3] = -a[1] * a[6] * a[11] + a[1] * a[7] * a[10] + a[5] * a[2] * a[11] - a[5] * a[3] * a[10] - a[9] * a[2] * a[7] + a[9] * a[3] * a[6];
+  inv[7] = a[0] * a[6] * a[11] - a[0] * a[7] * a[10] - a[4] * a[2] * a[11] + a[4] * a[3] * a[10] + a[8] * a[2] * a[7] - a[8] * a[3] * a[6];
+  inv[11] = -a[0] * a[5] * a[11] + a[0] * a[7] * a[9] + a[4] * a[1] * a[11] - a[4] * a[3] * a[9] - a[8] * a[1] * a[7] + a[8] * a[3] * a[5];
+  inv[15] = a[0] * a[5] * a[10] - a[0] * a[6] * a[9] - a[4] * a[1] * a[10] + a[4] * a[2] * a[9] + a[8] * a[1] * a[6] - a[8] * a[2] * a[5];
+  const det = a[0] * inv[0] + a[1] * inv[4] + a[2] * inv[8] + a[3] * inv[12];
+  if (!det) throw new Error('invert: singular matrix');
+  return new Float32Array(inv.map(v => v / det));
+}
+
+/**
+ * Orbit camera around `target`, z up (physics convention). yaw/pitch in radians.
+ * matrices(aspect) → { view, proj, viewProj, eye }; project([x,y,z], W, H) → CSS-pixel position
+ * (and depth) for 2D labels drawn over the GL scene; attach(element) adds drag-rotate and
+ * wheel-zoom and returns a detach function.
+ */
+function orbitCamera({ target = [0, 0, 0], distance = 5, yaw = 0.6, pitch = 0.45, fov = 0.8, near, far } = {}) {
+  const cam = {
+    target: [...target], distance, yaw, pitch, fov,
+    eye() {
+      const cp = Math.cos(cam.pitch);
+      return [cam.target[0] + cam.distance * cp * Math.cos(cam.yaw), cam.target[1] + cam.distance * cp * Math.sin(cam.yaw), cam.target[2] + cam.distance * Math.sin(cam.pitch)];
+    },
+    matrices(aspect) {
+      const eye = cam.eye();
+      const view = lookAt(eye, cam.target, [0, 0, 1]);
+      const proj = perspective(cam.fov, aspect, near ?? cam.distance * 1e-3, far ?? cam.distance * 1e3);
+      return { view, proj, viewProj: multiply(proj, view), eye };
+    },
+    project(p, W, H) {
+      const m = cam.matrices(W / H).viewProj;
+      const x = m[0] * p[0] + m[4] * p[1] + m[8] * p[2] + m[12], y = m[1] * p[0] + m[5] * p[1] + m[9] * p[2] + m[13];
+      const w = m[3] * p[0] + m[7] * p[1] + m[11] * p[2] + m[15];
+      return { x: (x / w * 0.5 + 0.5) * W, y: (1 - (y / w * 0.5 + 0.5)) * H, depth: w, visible: w > 0 };
+    },
+    attach(el) {
+      let last = null;
+      const down = e => { last = [e.clientX, e.clientY]; el.setPointerCapture?.(e.pointerId); };
+      const move = e => {
+        if (!last) return;
+        cam.yaw -= (e.clientX - last[0]) * 0.006;
+        cam.pitch = Math.max(-1.55, Math.min(1.55, cam.pitch + (e.clientY - last[1]) * 0.006));
+        last = [e.clientX, e.clientY];
+      };
+      const up = () => { last = null; };
+      const wheel = e => { e.preventDefault(); cam.distance *= Math.exp(e.deltaY * 0.001); };
+      el.addEventListener('pointerdown', down); el.addEventListener('pointermove', move);
+      el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+      el.addEventListener('wheel', wheel, { passive: false });
+      return () => { el.removeEventListener('pointerdown', down); el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up); el.removeEventListener('wheel', wheel); };
+    },
+  };
+  return cam;
+}
+
+// ---------------------------------------------------------------- colour maps
+
+// Anchors sampled from matplotlib's perceptually uniform maps (van der Walt & Smith, CC0) and
+// Moreland's diverging "cool-warm". Linear interpolation between anchors.
+const MAPS = {
+  viridis: ['#440154', '#482878', '#3e4989', '#31688e', '#26828e', '#1f9e89', '#35b779', '#6ece58', '#b5de2b', '#fde725'],
+  inferno: ['#000004', '#1b0c41', '#4a0c6b', '#781c6d', '#a52c60', '#cf4446', '#ed6925', '#fb9b06', '#f7d13d', '#fcffa4'],
+  magma: ['#000004', '#180f3d', '#440f76', '#721f81', '#9e2f7f', '#cd4071', '#f1605d', '#fd9668', '#feca8d', '#fcfdbf'],
+  coolwarm: ['#3b4cc0', '#6282ea', '#8db0fe', '#b8d0f9', '#dddddd', '#f5c4ad', '#f49a7b', '#de604d', '#b40426'],
+};
+const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
+const COLORMAPS = Object.keys(MAPS);
+
+/** Colour of map `name` at t ∈ [0, 1] (clamped): [r, g, b] in [0, 1]. */
+function colormap(name, t) {
+  const a = MAPS[name];
+  if (!a) throw new Error(`colormap: unknown map "${name}" (${COLORMAPS.join(', ')})`);
+  const x = Math.min(1, Math.max(0, Number.isFinite(t) ? t : 0)) * (a.length - 1), i = Math.min(a.length - 2, Math.floor(x)), f = x - i;
+  const p = hex(a[i]), q = hex(a[i + 1]);
+  return [p[0] + f * (q[0] - p[0]), p[1] + f * (q[1] - p[1]), p[2] + f * (q[2] - p[2])];
+}
+
+/** Map a value to [0, 1] for a colour map: linear or log10 between range[0] and range[1]. */
+function normalize(v, [lo, hi], log = false) {
+  if (log) { if (!(v > 0 && lo > 0)) return 0; return (Math.log10(v) - Math.log10(lo)) / (Math.log10(hi) - Math.log10(lo)); }
+  return (v - lo) / (hi - lo);
+}
+
+// ---------------------------------------------------------------- GL plumbing
+
+function compile(gl, vs, fs) {
+  const shader = (type, src) => {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(`GL shader: ${gl.getShaderInfoLog(s)}`);
+    return s;
+  };
+  const p = gl.createProgram();
+  gl.attachShader(p, shader(gl.VERTEX_SHADER, vs)); gl.attachShader(p, shader(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(`GL program: ${gl.getProgramInfoLog(p)}`);
+  const u = {};
+  for (let i = 0; i < gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS); i++) { const n = gl.getActiveUniform(p, i).name; u[n] = gl.getUniformLocation(p, n); }
+  return { p, u };
+}
+
+const cmapTextures = new WeakMap();
+function cmapTexture(gl, name) {
+  let cache = cmapTextures.get(gl);
+  if (!cache) cmapTextures.set(gl, cache = {});
+  if (cache[name]) return cache[name];
+  const data = new Uint8Array(256 * 4);
+  for (let i = 0; i < 256; i++) { const c = colormap(name, i / 255); data.set([c[0] * 255, c[1] * 255, c[2] * 255, 255].map(Math.round), 4 * i); }
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 256, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  return (cache[name] = tex);
+}
+const rgb = c => (typeof c === 'string' ? hex(c.length === 4 ? `#${c[1]}${c[1]}${c[2]}${c[2]}${c[3]}${c[3]}` : c) : c);
+
+/**
+ * A WebGL2 canvas stacked under `canvas2d` (same box, same device-pixel ratio). The 2D canvas
+ * stays on top for labels, axes and pointer events. Returns { gl, canvas, ok, reason, sync() };
+ * when WebGL2 is unavailable, ok is false and reason says why (show it; draw a 2D fallback).
+ */
+function createGLLayer(canvas2d) {
+  const canvas = document.createElement('canvas');
+  canvas.className = 'psim-gl';
+  canvas.setAttribute('aria-hidden', 'true');
+  canvas2d.parentNode.insertBefore(canvas, canvas2d);
+  const gl = canvas.getContext('webgl2', { alpha: true, premultipliedAlpha: true, antialias: true, preserveDrawingBuffer: true });
+  const layer = {
+    gl, canvas, ok: !!gl, reason: gl ? '' : 'WebGL2 is not available in this browser',
+    /** Match the 2D canvas size; set the viewport and clear to transparent. */
+    sync(dpr = devicePixelRatio || 1) {
+      const w = Math.round(canvas2d.clientWidth * dpr), h = Math.round(canvas2d.clientHeight * dpr);
+      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+      if (!gl) return;
+      gl.viewport(0, 0, w, h); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    },
+  };
+  return layer;
+}
+
+// ---------------------------------------------------------------- points
+
+/**
+ * Point sprites. update(positions [x,y,z,…], { values, colors }) uploads up to any count;
+ * draw(camera, { aspect, size, sizeUnit: 'px' | 'world', color, colormap, range, log, blend,
+ * opacity }) with blend 'additive' (glow on dark backgrounds) or 'alpha' (light backgrounds).
+ * values + colormap colour each point by a computed quantity; otherwise colors (r,g,b per point)
+ * or a single color. Sizes in 'world' units shrink with distance (true perspective).
+ */
+function createPointRenderer(gl) {
+  const { p, u } = compile(gl, `#version 300 es
+in vec3 aPos; in float aVal; in vec3 aCol;
+uniform mat4 uVP; uniform float uSize, uWorld, uScale, uLog; uniform vec2 uRange;
+out float vVal; out vec3 vCol;
+void main() {
+  gl_Position = uVP * vec4(aPos, 1.0);
+  float px = uWorld > 0.5 ? uSize * uScale / max(gl_Position.w, 1e-6) : uSize;
+  gl_PointSize = clamp(px, 1.0, 256.0);
+  float v = uLog > 0.5 ? (log(max(aVal, 1e-30)) / log(10.0) - uRange.x) / (uRange.y - uRange.x) : (aVal - uRange.x) / (uRange.y - uRange.x);
+  vVal = clamp(v, 0.0, 1.0); vCol = aCol;
+}`, `#version 300 es
+precision highp float;
+in float vVal; in vec3 vCol;
+uniform sampler2D uMap; uniform float uMode, uGlow, uOpacity; uniform vec3 uColor;
+out vec4 frag;
+void main() {
+  vec2 d = gl_PointCoord * 2.0 - 1.0; float r2 = dot(d, d);
+  if (r2 > 1.0) discard;
+  vec3 c = uMode < 0.5 ? uColor : uMode < 1.5 ? texture(uMap, vec2(vVal, 0.5)).rgb : vCol;
+  float a = uGlow > 0.5 ? exp(-r2 * 5.0) + 0.6 * smoothstep(0.25, 0.0, r2) : smoothstep(1.0, 0.75, r2);
+  a *= uOpacity;
+  frag = vec4(c * a, a);
+}`);
+  const vao = gl.createVertexArray(), bufs = {};
+  gl.bindVertexArray(vao);
+  for (const [name, size] of [['aPos', 3], ['aVal', 1], ['aCol', 3]]) {
+    const loc = gl.getAttribLocation(p, name);
+    bufs[name] = { buf: gl.createBuffer(), loc, size };
+    if (loc < 0) continue;
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufs[name].buf);
+    gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0);
+  }
+  gl.bindVertexArray(null);
+  let count = 0, has = { values: false, colors: false };
+  const upload = (name, data) => {
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufs[name].buf);
+    gl.bufferData(gl.ARRAY_BUFFER, data instanceof Float32Array ? data : Float32Array.from(data), gl.DYNAMIC_DRAW);
+  };
+  return {
+    get count() { return count; },
+    update(positions, { values, colors } = {}) {
+      count = Math.floor(positions.length / 3);
+      upload('aPos', positions);
+      has = { values: !!values, colors: !!colors };
+      upload('aVal', values ?? new Float32Array(count));
+      upload('aCol', colors ?? new Float32Array(3 * count));
+    },
+    draw(camera, { aspect, size = 3, sizeUnit = 'px', color = '#ffd27a', colormap: map = 'inferno', range = [0, 1], log = false, blend = 'additive', opacity = 1 } = {}) {
+      if (!count) return;
+      const { viewProj, proj } = camera.matrices(aspect ?? gl.drawingBufferWidth / gl.drawingBufferHeight);
+      gl.useProgram(p); gl.bindVertexArray(vao);
+      gl.uniformMatrix4fv(u.uVP, false, viewProj);
+      gl.uniform1f(u.uSize, size * (sizeUnit === 'px' ? (devicePixelRatio || 1) : 1));
+      gl.uniform1f(u.uWorld, sizeUnit === 'world' ? 1 : 0);
+      gl.uniform1f(u.uScale, proj[5] * gl.drawingBufferHeight / 2);
+      gl.uniform1f(u.uLog, log ? 1 : 0);
+      gl.uniform2f(u.uRange, ...(log ? range.map(Math.log10) : range));
+      gl.uniform1f(u.uMode, has.values ? 1 : has.colors ? 2 : 0);
+      gl.uniform3f(u.uColor, ...rgb(color));
+      gl.uniform1f(u.uGlow, blend === 'additive' ? 1 : 0);
+      gl.uniform1f(u.uOpacity, opacity);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, cmapTexture(gl, map)); gl.uniform1i(u.uMap, 0);
+      gl.enable(gl.BLEND); gl.disable(gl.DEPTH_TEST);
+      if (blend === 'additive') gl.blendFunc(gl.ONE, gl.ONE); else gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      gl.drawArrays(gl.POINTS, 0, count);
+      gl.bindVertexArray(null);
+    },
+  };
+}
+
+// ---------------------------------------------------------------- 2D fields
+
+/**
+ * A 2D scalar field (index i + nx·j, as in core/fields.mjs) drawn as a colour-mapped image.
+ * update(values, nx, ny, { range, log }) normalises on the CPU (NaN or masked cells are
+ * transparent); draw({ rect: [x, y, w, h] in CSS px (default: whole canvas), colormap, smooth,
+ * opacity }) with smooth false showing the grid cells honestly.
+ */
+function createFieldRenderer(gl) {
+  const { p, u } = compile(gl, `#version 300 es
+in vec2 aXY; uniform vec4 uRect; out vec2 vUV;
+void main() { vUV = aXY; vec2 xy = uRect.xy + aXY * uRect.zw; gl_Position = vec4(xy, 0.0, 1.0); }`, `#version 300 es
+precision highp float;
+in vec2 vUV; uniform sampler2D uField, uMap; uniform float uOpacity; out vec4 frag;
+void main() { float v = texture(uField, vUV).r; if (v < 0.0) discard; vec3 c = texture(uMap, vec2(v, 0.5)).rgb; frag = vec4(c * uOpacity, uOpacity); }`);
+  const vao = gl.createVertexArray(), buf = gl.createBuffer(), tex = gl.createTexture();
+  gl.bindVertexArray(vao); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(p, 'aXY'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  gl.bindVertexArray(null);
+  let ready = false;
+  return {
+    update(values, nx, ny, { range, log = false } = {}) {
+      if (values.length !== nx * ny) throw new Error('fieldRenderer: values must have nx·ny entries');
+      let lo = range?.[0], hi = range?.[1];
+      if (lo == null || hi == null) {
+        lo = Infinity; hi = -Infinity;
+        for (const v of values) if (Number.isFinite(v) && (!log || v > 0)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+        if (!(hi > lo)) hi = lo + 1;
+      }
+      const data = Float32Array.from(values, v => (Number.isFinite(v) ? Math.min(1, Math.max(0, normalize(v, [lo, hi], log))) : -1));
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.R16F, nx, ny, 0, gl.RED, gl.FLOAT, data);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      ready = true;
+      return { range: [lo, hi] };
+    },
+    draw({ rect, colormap: map = 'viridis', smooth = true, opacity = 1 } = {}) {
+      if (!ready) return;
+      const W = gl.drawingBufferWidth / (devicePixelRatio || 1), H = gl.drawingBufferHeight / (devicePixelRatio || 1);
+      const [x, y, w, h] = rect ?? [0, 0, W, H];
+      gl.useProgram(p); gl.bindVertexArray(vao);
+      // CSS px (y down) → clip space; the texture's row j = 0 is drawn at the bottom (y up, physics)
+      gl.uniform4f(u.uRect, 2 * x / W - 1, 1 - 2 * (y + h) / H, 2 * w / W, 2 * h / H);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex);
+      const f = smooth ? gl.LINEAR : gl.NEAREST;
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, f); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, f);
+      gl.uniform1i(u.uField, 0);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, cmapTexture(gl, map)); gl.uniform1i(u.uMap, 1);
+      gl.uniform1f(u.uOpacity, opacity);
+      gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.disable(gl.DEPTH_TEST);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.bindVertexArray(null);
+    },
+  };
+}
+
+// ---------------------------------------------------------------- 3D volumes
+
+/**
+ * A 3D scalar field (index i + nx·(j + ny·k)) rendered by ray marching through its box.
+ * update(values, nx, ny, nz, { range, log }); draw(camera, { box: [[x0,y0,z0],[x1,y1,z1]],
+ * colormap, opacity, steps, mode }) with mode 'emission' (glowing gas: colour ∝ density, adds up)
+ * or 'absorption' (emission–absorption: nearer matter hides farther). Opacity is a display
+ * transfer function, not a physical optical depth unless you derive it from one: say which.
+ */
+function createVolumeRenderer(gl) {
+  const { p, u } = compile(gl, `#version 300 es
+in vec2 aXY; out vec2 vNDC;
+void main() { vNDC = aXY * 2.0 - 1.0; gl_Position = vec4(vNDC, 0.0, 1.0); }`, `#version 300 es
+precision highp float; precision highp sampler3D;
+in vec2 vNDC;
+uniform mat4 uInvVP; uniform vec3 uMin, uMax; uniform sampler3D uVol; uniform sampler2D uMap;
+uniform float uOpacity, uSteps, uMode;
+out vec4 frag;
+void main() {
+  vec4 a = uInvVP * vec4(vNDC, -1.0, 1.0), b = uInvVP * vec4(vNDC, 1.0, 1.0);
+  vec3 ro = a.xyz / a.w, rd = normalize(b.xyz / b.w - ro);
+  vec3 t0 = (uMin - ro) / rd, t1 = (uMax - ro) / rd;
+  vec3 tn = min(t0, t1), tf = max(t0, t1);
+  float near = max(max(tn.x, tn.y), max(tn.z, 0.0)), far = min(min(tf.x, tf.y), tf.z);
+  if (far <= near) discard;
+  float dt = (far - near) / uSteps, len = length(uMax - uMin);
+  vec3 col = vec3(0.0); float alpha = 0.0;
+  for (float s = 0.5; s < 1024.0; s += 1.0) {
+    if (s > uSteps) break;
+    vec3 pos = ro + rd * (near + s * dt);
+    float v = texture(uVol, (pos - uMin) / (uMax - uMin)).r;
+    if (v <= 0.0) continue;
+    vec3 c = texture(uMap, vec2(v, 0.5)).rgb;
+    float k = uOpacity * v * dt / len * 8.0;
+    if (uMode < 0.5) { col += c * k; alpha += k; }
+    else { float ak = 1.0 - exp(-k); col += (1.0 - alpha) * c * ak; alpha += (1.0 - alpha) * ak; if (alpha > 0.99) break; }
+  }
+  alpha = clamp(alpha, 0.0, 1.0);
+  frag = vec4(min(col, vec3(1.0)), alpha);
+}`);
+  const vao = gl.createVertexArray(), buf = gl.createBuffer(), tex = gl.createTexture();
+  gl.bindVertexArray(vao); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(p, 'aXY'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  gl.bindVertexArray(null);
+  let ready = false;
+  return {
+    update(values, nx, ny, nz, { range, log = false } = {}) {
+      if (values.length !== nx * ny * nz) throw new Error('volumeRenderer: values must have nx·ny·nz entries');
+      let lo = range?.[0], hi = range?.[1];
+      if (lo == null || hi == null) {
+        lo = Infinity; hi = -Infinity;
+        for (const v of values) if (Number.isFinite(v) && (!log || v > 0)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+        if (!(hi > lo)) hi = lo + 1;
+      }
+      const data = Float32Array.from(values, v => (Number.isFinite(v) ? Math.min(1, Math.max(0, normalize(v, [lo, hi], log))) : 0));
+      gl.bindTexture(gl.TEXTURE_3D, tex);
+      gl.texImage3D(gl.TEXTURE_3D, 0, gl.R16F, nx, ny, nz, 0, gl.RED, gl.FLOAT, data);
+      for (const w of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T, gl.TEXTURE_WRAP_R]) gl.texParameteri(gl.TEXTURE_3D, w, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      ready = true;
+      return { range: [lo, hi] };
+    },
+    draw(camera, { aspect, box = [[-1, -1, -1], [1, 1, 1]], colormap: map = 'inferno', opacity = 1, steps = 160, mode = 'emission' } = {}) {
+      if (!ready) return;
+      const { viewProj } = camera.matrices(aspect ?? gl.drawingBufferWidth / gl.drawingBufferHeight);
+      gl.useProgram(p); gl.bindVertexArray(vao);
+      gl.uniformMatrix4fv(u.uInvVP, false, invert(viewProj));
+      gl.uniform3f(u.uMin, ...box[0]); gl.uniform3f(u.uMax, ...box[1]);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_3D, tex); gl.uniform1i(u.uVol, 0);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, cmapTexture(gl, map)); gl.uniform1i(u.uMap, 1);
+      gl.uniform1f(u.uOpacity, opacity); gl.uniform1f(u.uSteps, Math.min(1000, steps)); gl.uniform1f(u.uMode, mode === 'emission' ? 0 : 1);
+      gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.disable(gl.DEPTH_TEST);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.bindVertexArray(null);
+    },
+  };
+}
+
+return { perspective, lookAt, multiply, invert, orbitCamera, COLORMAPS, colormap, normalize, createGLLayer, createPointRenderer, createFieldRenderer, createVolumeRenderer };
+})();
+
 // ---- psim:ui/equation.mjs
 __psim["ui/equation.mjs"] = (() => {
 // Equations split into their physical terms.
@@ -1262,6 +1696,7 @@ __psim["ui/instrument-app.mjs"] = (() => {
 //   sim.timeDependent        false for static analytic visualisations (no transport)
 const { el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon, cssVar } = __psim["ui/instrument.mjs"];
 const { createPlot } = __psim["ui/plot.mjs"];
+const { createGLLayer } = __psim["ui/gl.mjs"];
 const { createEquation, createDerivation, M } = __psim["ui/equation.mjs"];
 const { validateModuleReport } = __psim["core/verification.mjs"];
 const TIERS = {
@@ -1274,7 +1709,7 @@ const TIERS = {
 function createInstrument(spec) {
   const {
     title, subtitle = '', tier, tierReason, create, draw, params = [], model = {},
-    timeUnit = 'T', timeLabel = 'simulated time', speed: speed0 = 1, controls, onPointer, layout = 'stage', bench,
+    timeUnit = 'T', timeLabel = 'simulated time', speed: speed0 = 1, gl: wantGL = false, drawGL, controls, onPointer, layout = 'stage', bench,
   } = spec;
   if (!TIERS[tier]) throw new Error(`tier must be one of ${Object.keys(TIERS).join(', ')}`);
   const report = readJsonScript('psim-verification');
@@ -1319,6 +1754,8 @@ function createInstrument(spec) {
   }
   const canvas = stage.querySelector('canvas');
   const ctx = canvas.getContext('2d');
+  // optional GPU layer under the 2D canvas (ui/gl.mjs): drawGL renders the scene, draw adds labels
+  const glLayer = wantGL ? createGLLayer(canvas) : null;
   $('.psim-hud .dim').textContent = timeLabel;
   const hud = { t: $('.psim-hud b'), a: $('.psim-hud .h1'), b: $('.psim-hud .h2'), flag: $('.psim-hud .flag') };
   if (model.legend) $('.psim-legend').append(...model.legend.map(t => el('span', {}, t)));
@@ -1327,7 +1764,7 @@ function createInstrument(spec) {
   const values = Object.fromEntries(params.map(p => [p.key, p.value]));
   let sim, tDisplay = 0, limited = false;
   const clock = createClock({ speed: speed0 });
-  const view = { W: 0, H: 0, dpr: 1, color: cssVar, opts: {}, pointer: null };
+  const view = { W: 0, H: 0, dpr: 1, color: cssVar, opts: {}, pointer: null, gl: glLayer?.gl ?? null, glError: glLayer && !glLayer.ok ? glLayer.reason : '' };
 
   let benchApi = null;
   function rebuild() {
@@ -1449,7 +1886,15 @@ function createInstrument(spec) {
       if (!r) { toast(stage, 'This model records no tabular data'); return; }
       download(`${slug}-data.csv`, [`# p-simtor | ${title}`, r.header.join(','), ...r.rows.map(x => x.join(','))].join('\n'), 'text/csv');
     }),
-    button('PNG image', () => canvas.toBlob(b => el('a', { href: URL.createObjectURL(b), download: `${slug}.png` }).click())),
+    button('PNG image', () => {
+      // composite the GPU layer (if any) under the 2D overlay
+      const out = document.createElement('canvas');
+      out.width = canvas.width; out.height = canvas.height;
+      const c = out.getContext('2d');
+      if (glLayer?.ok) c.drawImage(glLayer.canvas, 0, 0);
+      c.drawImage(canvas, 0, 0);
+      out.toBlob(b => el('a', { href: URL.createObjectURL(b), download: `${slug}.png` }).click());
+    }),
   ));
 
   side.append(...[secParams, secDiag, secVerify, secModel, secExport].filter(s => s !== secParams || params.length || controls));
@@ -1480,8 +1925,10 @@ function createInstrument(spec) {
         tDisplay = Math.min(target, sim.t);
       }
     }
+    if (glLayer?.ok) { glLayer.sync(view.dpr); drawGL?.(glLayer.gl, sim, view, tDisplay); }
     ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
     ctx.clearRect(0, 0, view.W, view.H);
+    if (glLayer && !glLayer.ok) { ctx.fillStyle = cssVar('--muted'); ctx.font = '13px system-ui, sans-serif'; ctx.fillText(`${glLayer.reason}: the 3D view cannot be shown.`, 16, view.H - 20); }
     draw(ctx, sim, view, tDisplay);
     if (now - lastUi > 100) {
       lastUi = now;
@@ -1532,51 +1979,6 @@ function createInstrument(spec) {
 }
 
 return { createInstrument };
-})();
-
-// ---- psim:core/constants.mjs
-__psim["core/constants.mjs"] = (() => {
-// Physical constants, SI units. CODATA 2018 recommended values
-// (Tiesinga et al., Rev. Mod. Phys. 93, 025010, 2021). "exact" = defined by the 2019 SI.
-// Import from here instead of typing constants by hand; cite the source in the page.
-
-const CODATA = 'CODATA 2018';
-
-const c = 299792458;                 // m s^-1, exact
-const h = 6.62607015e-34;            // J s, exact
-const hbar = 6.62607015e-34 / (2 * Math.PI);  // J s, exact (h/2π)
-const e = 1.602176634e-19;           // C, exact
-const kB = 1.380649e-23;             // J K^-1, exact
-const NA = 6.02214076e23;            // mol^-1, exact
-const eps0 = 8.8541878128e-12;       // F m^-1
-const mu0 = 1.25663706212e-6;        // N A^-2
-const G = 6.67430e-11;               // m^3 kg^-1 s^-2 (relative uncertainty 2.2e-5)
-const me = 9.1093837015e-31;         // kg
-const mp = 1.67262192369e-27;        // kg
-const mn = 1.67492749804e-27;        // kg
-const u = 1.66053906660e-27;         // kg (atomic mass constant)
-const a0 = 5.29177210903e-11;        // m (Bohr radius)
-const alpha = 7.2973525693e-3;       // fine-structure constant
-const Eh = 4.3597447222071e-18;      // J (Hartree energy)
-const Ry = 13.605693122994;          // eV (Rydberg energy)
-const eV = 1.602176634e-19;          // J, exact
-const MeV = 1.602176634e-13;         // J, exact
-const mpc2MeV = 938.27208816;        // MeV (proton rest energy)
-const mec2MeV = 0.51099895000;       // MeV (electron rest energy)
-const hbarcMeVfm = 197.3269804;      // MeV fm
-
-// Astronomy (IAU 2012/2015 nominal values)
-const AU = 1.495978707e11;           // m, exact (IAU 2012)
-const GMsun = 1.3271244e20;          // m^3 s^-2 (IAU 2015 nominal)
-const Msun = 1.3271244e20 / 6.67430e-11;     // kg, GM☉/G (G-limited, ±2.2e-5)
-const yearJulian = 365.25 * 86400;   // s
-/**
- * G in AU³ M☉⁻¹ yr⁻² with the Julian year and IAU GM☉: 39.47693 (≈ 4π², which is exact only
- * for the Gaussian year 2π/k). Using this value keeps AU–yr runs consistent with SI ones.
- */
-const G_AU_MSUN_YR = 1.3271244e20 * (365.25 * 86400) ** 2 / 1.495978707e11 ** 3;
-
-return { CODATA, c, h, hbar, e, kB, NA, eps0, mu0, G, me, mp, mn, u, a0, alpha, Eh, Ry, eV, MeV, mpc2MeV, mec2MeV, hbarcMeVfm, AU, GMsun, Msun, yearJulian, G_AU_MSUN_YR };
 })();
 
 // ---- psim:core/numerics.mjs
@@ -2475,508 +2877,884 @@ function densityLevel(values, fraction) {
 return { laplacianND, gradientND, divergenceND, fftND, solvePoissonPeriodic, diffusionPeriodic, schrodingerND, contourLines, densityLevel };
 })();
 
+// ---- psim:core/data.mjs
+__psim["core/data.mjs"] = (() => {
+// Working with data, independent of subject: interpolation that does not invent wiggles,
+// histograms with uncertainties, and a goodness-of-fit test against a model distribution.
+
+/**
+ * Interpolate tabulated data (xs strictly increasing). method 'linear' or 'monotone'
+ * (Fritsch–Carlson monotone cubic: no overshoot between data points, so it never invents
+ * maxima that the data do not have). Outside [x₀, x_last] returns NaN unless extrapolate: true
+ * (then linear from the end segment). Returns a function x → y.
+ */
+function interpolate(xs, ys, { method = 'monotone', extrapolate = false } = {}) {
+  const n = xs.length;
+  if (n < 2 || ys.length !== n) throw new Error('interpolate: need ≥ 2 points and equal-length xs, ys');
+  for (let i = 1; i < n; i++) if (!(xs[i] > xs[i - 1])) throw new Error('interpolate: xs must be strictly increasing');
+  const h = Array.from({ length: n - 1 }, (_, i) => xs[i + 1] - xs[i]);
+  const delta = h.map((hi, i) => (ys[i + 1] - ys[i]) / hi);
+  let m = null;
+  if (method === 'monotone') {
+    m = new Float64Array(n);
+    m[0] = delta[0]; m[n - 1] = delta[n - 2];
+    for (let i = 1; i < n - 1; i++) m[i] = delta[i - 1] * delta[i] <= 0 ? 0 : (delta[i - 1] + delta[i]) / 2;
+    for (let i = 0; i < n - 1; i++) {
+      if (delta[i] === 0) { m[i] = 0; m[i + 1] = 0; continue; }
+      const a = m[i] / delta[i], b = m[i + 1] / delta[i], s = a * a + b * b;
+      if (s > 9) { const t = 3 / Math.sqrt(s); m[i] = t * a * delta[i]; m[i + 1] = t * b * delta[i]; }
+    }
+  } else if (method !== 'linear') throw new Error(`interpolate: unknown method "${method}"`);
+  return x => {
+    if (x < xs[0] || x > xs[n - 1]) {
+      if (!extrapolate) return NaN;
+      const i = x < xs[0] ? 0 : n - 2;
+      return ys[i] + delta[i] * (x - xs[i]);
+    }
+    let lo = 0, hi = n - 1;
+    while (hi - lo > 1) { const mid = (lo + hi) >> 1; xs[mid] <= x ? (lo = mid) : (hi = mid); }
+    const t = (x - xs[lo]) / h[lo];
+    if (!m) return ys[lo] + t * (ys[hi] - ys[lo]);
+    const t2 = t * t, t3 = t2 * t;
+    return (2 * t3 - 3 * t2 + 1) * ys[lo] + (t3 - 2 * t2 + t) * h[lo] * m[lo] + (-2 * t3 + 3 * t2) * ys[hi] + (t3 - t2) * h[lo] * m[hi];
+  };
+}
+
+/**
+ * Histogram with Poisson uncertainties, normalised as a probability density if density: true.
+ * Returns { edges, centers, counts, values, errors }.
+ */
+function histogram(samples, { bins = 30, range, density = true } = {}) {
+  const [lo, hi] = range ?? [Math.min(...samples), Math.max(...samples)];
+  if (!(hi > lo)) throw new Error('histogram: empty or degenerate range');
+  const w = (hi - lo) / bins, counts = new Float64Array(bins);
+  let inRange = 0;
+  for (const s of samples) {
+    if (s < lo || s > hi) continue;
+    counts[Math.min(bins - 1, Math.floor((s - lo) / w))]++; inRange++;
+  }
+  const norm = density ? 1 / (samples.length * w) : 1;
+  return {
+    edges: Array.from({ length: bins + 1 }, (_, i) => lo + i * w),
+    centers: Array.from({ length: bins }, (_, i) => lo + (i + 0.5) * w),
+    counts, inRange,
+    values: Array.from(counts, c => c * norm),
+    errors: Array.from(counts, c => Math.sqrt(c) * norm),
+  };
+}
+
+/**
+ * One-sample Kolmogorov–Smirnov test of samples against a model CDF. Returns { D, p }:
+ * D is the largest CDF difference; p the asymptotic probability of a D at least this large if
+ * the samples came from the model (assumes independent samples; thin correlated chains first).
+ */
+function ksTest(samples, cdf) {
+  const s = Float64Array.from(samples).sort(), n = s.length;
+  if (n < 5) throw new Error('ksTest: need at least 5 samples');
+  let D = 0;
+  for (let i = 0; i < n; i++) {
+    const F = cdf(s[i]);
+    D = Math.max(D, Math.abs((i + 1) / n - F), Math.abs(F - i / n));
+  }
+  const l = (Math.sqrt(n) + 0.12 + 0.11 / Math.sqrt(n)) * D;      // Stephens' correction
+  let p = 0;
+  for (let k = 1; k <= 100; k++) p += 2 * (k % 2 ? 1 : -1) * Math.exp(-2 * k * k * l * l);
+  return { D, p: Math.min(1, Math.max(0, p)) };
+}
+
+return { interpolate, histogram, ksTest };
+})();
+
+// ---- psim:core/constants.mjs
+__psim["core/constants.mjs"] = (() => {
+// Physical constants, SI units. CODATA 2018 recommended values
+// (Tiesinga et al., Rev. Mod. Phys. 93, 025010, 2021). "exact" = defined by the 2019 SI.
+// Import from here instead of typing constants by hand; cite the source in the page.
+
+const CODATA = 'CODATA 2018';
+
+const c = 299792458;                 // m s^-1, exact
+const h = 6.62607015e-34;            // J s, exact
+const hbar = 6.62607015e-34 / (2 * Math.PI);  // J s, exact (h/2π)
+const e = 1.602176634e-19;           // C, exact
+const kB = 1.380649e-23;             // J K^-1, exact
+const NA = 6.02214076e23;            // mol^-1, exact
+const eps0 = 8.8541878128e-12;       // F m^-1
+const mu0 = 1.25663706212e-6;        // N A^-2
+const G = 6.67430e-11;               // m^3 kg^-1 s^-2 (relative uncertainty 2.2e-5)
+const me = 9.1093837015e-31;         // kg
+const mp = 1.67262192369e-27;        // kg
+const mn = 1.67492749804e-27;        // kg
+const u = 1.66053906660e-27;         // kg (atomic mass constant)
+const a0 = 5.29177210903e-11;        // m (Bohr radius)
+const alpha = 7.2973525693e-3;       // fine-structure constant
+const Eh = 4.3597447222071e-18;      // J (Hartree energy)
+const Ry = 13.605693122994;          // eV (Rydberg energy)
+const eV = 1.602176634e-19;          // J, exact
+const MeV = 1.602176634e-13;         // J, exact
+const mpc2MeV = 938.27208816;        // MeV (proton rest energy)
+const mec2MeV = 0.51099895000;       // MeV (electron rest energy)
+const hbarcMeVfm = 197.3269804;      // MeV fm
+
+// Astronomy (IAU 2012/2015 nominal values)
+const AU = 1.495978707e11;           // m, exact (IAU 2012)
+const GMsun = 1.3271244e20;          // m^3 s^-2 (IAU 2015 nominal)
+const Msun = 1.3271244e20 / 6.67430e-11;     // kg, GM☉/G (G-limited, ±2.2e-5)
+const yearJulian = 365.25 * 86400;   // s
+/**
+ * G in AU³ M☉⁻¹ yr⁻² with the Julian year and IAU GM☉: 39.47693 (≈ 4π², which is exact only
+ * for the Gaussian year 2π/k). Using this value keeps AU–yr runs consistent with SI ones.
+ */
+const G_AU_MSUN_YR = 1.3271244e20 * (365.25 * 86400) ** 2 / 1.495978707e11 ** 3;
+
+return { CODATA, c, h, hbar, e, kB, NA, eps0, mu0, G, me, mp, mn, u, a0, alpha, Eh, Ry, eV, MeV, mpc2MeV, mec2MeV, hbarcMeVfm, AU, GMsun, Msun, yearJulian, G_AU_MSUN_YR };
+})();
+
 // ---- local:physics.mjs
 __psim["local:physics.mjs"] = (() => {
-// Quantum tunnelling of a 2D electron wave packet through a rectangular barrier.
+// Hydrogen-like orbitals in 3D: exact stationary states ψ_nlm = R_nl(r) Y_lm(θ, φ).
 //
-// Scientific aim: show how much of a localised electron wave packet tunnels through a
-// classically forbidden slab barrier in a plane, and that only the momentum component
-// normal to the barrier matters (oblique incidence lowers the effective energy).
+// Scientific aim: show where the electron of a hydrogen atom (or hydrogen-like ion of charge Z)
+// is likely to be found in each stationary state, i.e. the probability density |ψ|², in 3D.
 //
-// Model (time-dependent Schrödinger equation, one electron, free-electron mass):
-//   iħ ∂ψ/∂t = [−ħ²/(2mₑ) ∇² + V(x)] ψ,   V(x) = V₀ sech²(x/w)  (Eckart / Pöschl–Teller barrier,
-//   a smooth ridge of height V₀ and full width at half maximum a = 1.7627 w, uniform in y)
-// Units: nm, fs, meV. ħ = 658.2 meV·fs, ħ²/2mₑ = 38.10 meV·nm² (CODATA 2018 via core/constants).
-// Initial state: isotropic Gaussian, ψ ∝ exp(−|r − r₀|²/4σ₀²) exp(i k₀·r), k₀ at angle θ to the
-//   barrier normal, centred far enough left that it does not overlap the barrier.
-// Method: Strang split-operator FFT on a periodic 256 nm × 64 nm box (512 × 128 cells,
-//   dx = 0.5 nm), core/fields.mjs schrodingerND. Unitary to round-off; second order in dt.
-//   No absorbing layer: the run is measured before the fastest part of the packet can wrap
-//   around in x (periodic images). Wrapping in y is harmless: V does not depend on y, so the
-//   problem separates and the x-probabilities are unaffected (they are integrals over y).
-//   A smooth barrier is used deliberately: a sharp-edged rectangular barrier on this spectral
-//   grid converged only to first order in dx (measured 6–26 % errors in T at dx = 0.5 nm), whereas
-//   sech² has an exact closed-form T(E) and is resolved spectrally (see verify()).
-// Observables: P_T(t) = ∫_{x>0}|ψ|² (beyond the barrier crest), P_R(t) = ∫_{x<0}|ψ|².
-//   Measured transmission T_meas = P_T at t_sep, the first time the free packet's trailing
-//   edge (centre − 4σ) is beyond the barrier's tail (x > 6w, where V < 2.5×10⁻⁵ V₀).
-// Exact benchmark (separable slab): T̄ = ∫ |φ(k_x)|² T(ħ²k_x²/2m) dk_x, with |φ|² the Gaussian
-//   momentum distribution (mean k₀cosθ, s.d. 1/(2σ₀)) and T(E) the closed-form sech² barrier
-//   coefficient (Landau & Lifshitz, Quantum Mechanics, 3rd ed., §25 Problem 4; Eckart, Phys. Rev.
-//   35, 1303 (1930)), itself checked against RK4 shooting of the stationary equation.
-const { hbar: HBAR_SI, me, eV } = __psim["core/constants.mjs"];
-const { schrodingerND, fftND } = __psim["core/fields.mjs"];
-const { gaussLegendre, rk4Step } = __psim["core/numerics.mjs"];
-const HBAR = HBAR_SI / (1e-3 * eV) * 1e15;          // meV fs
-const MASS = me / (1e-3 * eV * 1e-30 / 1e-18);      // meV fs² nm⁻²
-const H2M = HBAR * HBAR / (2 * MASS);                // ħ²/2m, meV nm²
-const GRID = { nx: 512, ny: 128, dx: 0.5, dt: 0.5 };
+// Model (non-relativistic Schrödinger equation, point nucleus of infinite mass):
+//   [−ħ²/2mₑ ∇² − Z e²/(4πε₀ r)] ψ = E ψ,   E_n = −Z² Ry / n²
+// State: the analytic eigenfunction for chosen (n, l, m), in the real basis (cos mφ / sin mφ,
+// the familiar p_x, d_xy … shapes; superpositions of ±|m|) or the complex basis (e^{imφ}).
+// Lengths in Bohr radii a₀ = 52.918 pm (CODATA 2018); energies in eV.
+//
+// Observables:
+//   |ψ|² on a 3D grid (cell centres)         → ray-marched density volume (representation)
+//   N independent samples drawn from |ψ|²   → a point cloud; each point = one simulated
+//                                             position measurement (not a trajectory)
+//   P(r) = r²R²; ⟨r⟩ = (a₀/2Z)[3n² − l(l+1)]; E_n; node counts
+// Progress axis: none (stationary states; |ψ|² does not change in time). The picture is static;
+// camera rotation is a viewing aid.
+//
+// Method: closed-form evaluation (core/numerics: hydrogenRadial, realYlm, complexYlm, laguerre).
+// Sampling is exact in distribution: r by inverse CDF over 2400 exactly-integrated cells followed
+// by rejection inside the cell against the exact P(r); direction by rejection against |Y|².
+// Tier: analytical. Checks: normalisation, orthogonality, radial Schrödinger residual, nodes
+// against exact positions, ⟨r⟩ and ⟨1/r⟩ (virial → energy) by quadrature, real-orbital labels
+// against Cartesian polynomials, KS tests of the samples, grid fidelity of the displayed volume.
+const { hydrogenRadial, realYlm, complexYlm, normalizedLegendre, gaussLegendre, gaussLegendreNodes, lgamma, laguerre, rng, brent } = __psim["core/numerics.mjs"];
+const { ksTest, histogram } = __psim["core/data.mjs"];
+const { Ry, a0: A0_M, Eh, eV } = __psim["core/constants.mjs"];
+const A0_PM = A0_M * 1e12;          // Bohr radius in pm (CODATA 2018)
+const GRID = 96;                    // display grid for the density volume (cells per axis)
+const NMAX = 5;
+const LETTER = 'spdfg';
+
+// Real-orbital names; each is checked in verify() against its Cartesian polynomial.
+const REAL_NAMES = {
+  0: { 0: '' },
+  1: { 0: 'z', 1: 'x', '-1': 'y' },
+  2: { 0: 'z²', 1: 'xz', '-1': 'yz', 2: 'x²−y²', '-2': 'xy' },
+  3: { 0: 'z³', 1: 'xz²', '-1': 'yz²', 2: 'z(x²−y²)', '-2': 'xyz', 3: 'x(x²−3y²)', '-3': 'y(3x²−y²)' },
+  4: { 0: 'z⁴', 1: 'xz³', '-1': 'yz³', 2: 'z²(x²−y²)', '-2': 'xyz²', 3: 'xz(x²−3y²)', '-3': 'yz(3x²−y²)', 4: 'x⁴−6x²y²+y⁴', '-4': 'xy(x²−y²)' },
+};
+// Cartesian forms ∝ r^l · Y_lm (real), used only by verify()
+const CART = {
+  '1,0': (x, y, z) => z, '1,1': x => x, '1,-1': (x, y) => y,
+  '2,0': (x, y, z, r2) => 3 * z * z - r2, '2,1': (x, y, z) => x * z, '2,-1': (x, y, z) => y * z, '2,2': (x, y) => x * x - y * y, '2,-2': (x, y) => x * y,
+  '3,0': (x, y, z, r2) => z * (5 * z * z - 3 * r2), '3,1': (x, y, z, r2) => x * (5 * z * z - r2), '3,-1': (x, y, z, r2) => y * (5 * z * z - r2),
+  '3,2': (x, y, z) => z * (x * x - y * y), '3,-2': (x, y, z) => x * y * z, '3,3': (x, y) => x * (x * x - 3 * y * y), '3,-3': (x, y) => y * (3 * x * x - y * y),
+  '4,0': (x, y, z, r2) => 35 * z ** 4 - 30 * z * z * r2 + 3 * r2 * r2, '4,1': (x, y, z, r2) => x * z * (7 * z * z - 3 * r2), '4,-1': (x, y, z, r2) => y * z * (7 * z * z - 3 * r2),
+  '4,2': (x, y, z, r2) => (x * x - y * y) * (7 * z * z - r2), '4,-2': (x, y, z, r2) => x * y * (7 * z * z - r2),
+  '4,3': (x, y, z) => x * z * (x * x - 3 * y * y), '4,-3': (x, y, z) => y * z * (3 * x * x - y * y),
+  '4,4': (x, y) => x ** 4 - 6 * x * x * y * y + y ** 4, '4,-4': (x, y) => x * y * (x * x - y * y),
+};
+
+const sup = s => String(s).replace(/-/g, '−');
+function orbitalName(n, l, m, basis = 'real') {
+  if (basis === 'complex') return `${n}${LETTER[l]}, m = ${m > 0 ? '+' : ''}${sup(m)}`;
+  const nm = REAL_NAMES[l][m];
+  return nm ? `${n}${LETTER[l]} ${nm}` : `${n}${LETTER[l]}`;
+}
+
+const ORBITALS = [];
+for (let n = 1; n <= NMAX; n++) {for (let l = 0; l < n; l++) {
+  for (const m of l === 0 ? [0] : [0, ...Array.from({ length: l }, (_, k) => [k + 1, -(k + 1)]).flat()]) {
+    ORBITALS.push({ value: `${n},${l},${m}`, label: l === 0 ? `${n}s` : `${n}${LETTER[l]}, m = ${m > 0 ? '+' : ''}${sup(m)}  (real: ${orbitalName(n, l, m)})` });
+  }
+}}
 
 const PARAMS = [
-  { key: 'E', label: 'Packet energy E₀ = ħ²k₀²/2m', min: 50, max: 300, value: 100, unit: 'meV', digits: 3,
-    hint: 'Central kinetic energy of the electron. Compare with the barrier height.' },
-  { key: 'V0', label: 'Barrier height V₀', min: 0, max: 400, value: 150, unit: 'meV', digits: 3 },
-  { key: 'a', label: 'Barrier width a (FWHM)', min: 1, max: 4, value: 1.5, unit: 'nm', digits: 3,
-    hint: 'Full width at half height of V₀ sech²(x/w), a = 1.763 w. Tunnelling falls roughly exponentially with width.' },
-  { key: 'theta', label: 'Angle of incidence θ', min: 0, max: 40, value: 20, unit: '°', digits: 3,
-    hint: 'Only the normal energy E₀cos²θ meets the barrier; the parallel motion passes freely.' },
-  { key: 'sigma', label: 'Packet width σ₀', min: 5, max: 10, value: 6, unit: 'nm', digits: 3,
-    hint: 'Narrower in space means a broader spread of energies (Δk = 1/2σ₀).' },
+  { key: 'orbital', label: 'State (n, l, m)', value: '4,2,0', options: ORBITALS },
+  { key: 'basis', label: 'Angular basis', value: 'real', options: [
+    { value: 'real', label: 'Real: cos mφ, sin mφ (sign of ψ)' },
+    { value: 'complex', label: 'Complex: e^{imφ}, L_z = mħ (phase)' },
+  ] },
+  { key: 'N', label: 'Samples drawn from |ψ|²', min: 5000, max: 400000, value: 100000, log: true, integer: true, digits: 6,
+    hint: 'Each dot is one independent simulated position measurement. More samples = smoother cloud, same physics.' },
+  { key: 'Z', label: 'Nuclear charge Z', min: 1, max: 10, value: 1, integer: true, digits: 2,
+    hint: 'Z = 1 is hydrogen; Z > 1 is a one-electron ion (He⁺, Li²⁺ …): the cloud shrinks as 1/Z, E grows as Z².' },
+  { key: 'seed', label: 'Random seed', min: 1, max: 9999, value: 7, integer: true, digits: 4 },
 ];
 
-// ------------------------------------------------------------------ exact 1D transmission
-const FWHM_PER_W = 2 * Math.acosh(Math.SQRT2);       // 1.7627…
-const barrierV = (x, V0, a) => V0 / Math.cosh(x * FWHM_PER_W / a) ** 2;
+// ------------------------------------------------------------------ exact functions
 
-/** Closed-form transmission of V₀ sech²(x/w), w = a/1.7627, at energy E > 0 (Landau–Lifshitz §25). */
-function barrierT(E, V0, a) {
-  if (V0 === 0) return 1;
-  const w = a / FWHM_PER_W, k = Math.sqrt(E / H2M), s = Math.sinh(Math.PI * k * w);
-  const g = 4 * V0 * w * w / H2M;                            // 8mV₀w²/ħ²
-  const c = g > 1 ? Math.cosh(Math.PI / 2 * Math.sqrt(g - 1)) : Math.cos(Math.PI / 2 * Math.sqrt(1 - g));
-  return 1 / (1 + (c * c) / (s * s));
+/** Radial function with precomputed normalisation (identical to core hydrogenRadial; verified). */
+function radialFn(n, l, Z) {
+  const k = 2 * Z / n;
+  const lnNorm = 1.5 * Math.log(k) + 0.5 * (lgamma(n - l) - lgamma(n + l + 1) - Math.log(2 * n));
+  const norm = Math.exp(lnNorm);
+  return r => { const rho = k * r; return norm * Math.exp(-rho / 2) * rho ** l * laguerre(n - l - 1, 2 * l + 1, rho); };
 }
 
-/** T̄ = ∫ g(k) T(ħ²k²/2m) dk, g = Gaussian (mean kx, s.d. sk); k ≤ 0 never reaches the barrier. */
-function packetT(kx, sk, V0, a) {
-  const lo = Math.max(1e-9, kx - 9 * sk), hi = kx + 9 * sk, panels = 48, w = (hi - lo) / panels;
-  const g = k => Math.exp(-0.5 * ((k - kx) / sk) ** 2) / (sk * Math.sqrt(2 * Math.PI));
-  let s = 0;
-  for (let i = 0; i < panels; i++) s += gaussLegendre(k => g(k) * barrierT(H2M * k * k, V0, a), lo + i * w, lo + (i + 1) * w, 24);
-  return s;
+/** Angular factor: real Y_lm, or complex Y_lm as {re, im}. */
+function angularFn(l, m, basis) {
+  if (basis === 'complex') return (th, ph) => complexYlm(l, m, th, ph);
+  return (th, ph) => realYlm(l, m, th, ph);
 }
 
-// ------------------------------------------------------------------ setup
-function analytic(p, grid = GRID) {
-  const th = p.theta * Math.PI / 180, k0 = Math.sqrt(p.E / H2M);
-  const kx = k0 * Math.cos(th), ky = k0 * Math.sin(th), sk = 1 / (2 * p.sigma);
-  const vx = HBAR * kx / MASS, vy = HBAR * ky / MASS, sv = HBAR * sk / MASS;   // nm/fs
-  const Lx = grid.nx * grid.dx, xb = 6 * p.a / FWHM_PER_W, x0 = -(xb + 4.5 * p.sigma + 2);
-  const sig = t => Math.hypot(p.sigma, sv * t);                // free width σ(t)
-  const solve = f => { let lo = 0, hi = 1; while (f(hi) < 0) hi *= 2; for (let i = 0; i < 80; i++) { const m = (lo + hi) / 2; if (f(m) < 0) lo = m; else hi = m; } return hi; };
-  const tSep = solve(t => x0 + vx * t - 4 * sig(t) - xb);        // free trailing edge past barrier tail
-  const tWrap = solve(t => x0 + vx * t + 4 * sig(t) - Lx / 2);   // free leading edge at box edge
-  const y0 = -vy * tSep / 2;
-  return { k0, kx, ky, sk, vx, vy, sv, x0, y0, xb, sig, tSep, tWrap, Tbar: packetT(kx, sk, p.V0, p.a), Ex: H2M * kx * kx };
-}
-
-function initialState(p, an, grid) {
-  const { nx, ny, dx } = grid, Lx = nx * dx, Ly = ny * dx, n = nx * ny;
-  const re = new Float64Array(n), im = new Float64Array(n), V = new Float64Array(n);
-  const s2 = 4 * p.sigma * p.sigma;
-  for (let j = 0; j < ny; j++) {
-    let y = -Ly / 2 + j * dx - an.y0;
-    y -= Ly * Math.round(y / Ly);                               // nearest periodic image
-    for (let i = 0; i < nx; i++) {
-      const x = -Lx / 2 + i * dx, k = i + nx * j;
-      const amp = Math.exp(-((x - an.x0) ** 2 + (ny > 2 ? y * y : 0)) / s2);
-      const ph = an.kx * x + an.ky * (ny > 2 ? y : 0);
-      re[k] = amp * Math.cos(ph); im[k] = amp * Math.sin(ph);
-      V[k] = barrierV(x, p.V0, p.a);
-    }
+function energyEV(n, Z) { return -Z * Z * Ry / (n * n); }
+function meanRExact(n, l, Z) { return (3 * n * n - l * (l + 1)) / (2 * Z); }
+function rMostProbableNodes(n, l, Z) {
+  // radial nodes located numerically (Brent) between sign changes of R on a fine grid
+  const R = radialFn(n, l, Z), rEnd = n * (2 * n + 25) / Z, nodes = [];
+  const M = 6000;
+  let prev = R(rEnd / M);
+  for (let i = 2; i <= M; i++) {
+    const r = rEnd * i / M, v = R(r);
+    if (prev * v < 0) nodes.push(brent(R, rEnd * (i - 1) / M, r, 1e-13));
+    prev = v;
   }
-  let norm = 0;
-  for (let k = 0; k < n; k++) norm += re[k] * re[k] + im[k] * im[k];
-  const c = 1 / Math.sqrt(norm * dx * dx);
-  for (let k = 0; k < n; k++) { re[k] *= c; im[k] *= c; }
-  return { re, im, V };
+  return nodes;
 }
 
-// ------------------------------------------------------------------ simulation
-function createSim(p, grid = GRID, { history = true } = {}) {
-  const { nx, ny, dx } = grid, Lx = nx * dx, Ly = ny * dx, dA = dx * dx;
-  const an = analytic(p, grid);
-  const { re, im, V } = initialState(p, an, grid);
-  const solver = schrodingerND({ re0: re, im0: im, V, shape: [nx, ny], spacing: dx, dt: grid.dt, mass: MASS, hbar: HBAR });
-  const iL = nx / 2, iR = nx / 2 + 1;   // x_i < 0 for i < iL, x_i > 0 for i ≥ iR; the x = 0 column is split evenly
-  const xs = Float64Array.from({ length: nx }, (_, i) => -Lx / 2 + i * dx);
-  let measured = null;
-  const hist = [];
+// Radial probability table: exact cell integrals of P(r) = r² R² (8-point Gauss–Legendre each)
+const CELLS = 2400;
+function radialTable(n, l, Z) {
+  const R = radialFn(n, l, Z), P = r => { const v = R(r); return r * r * v * v; };
+  const rEnd = n * (2 * n + 25) / Z, dr = rEnd / CELLS;
+  const cdf = new Float64Array(CELLS + 1), bound = new Float64Array(CELLS);
+  for (let i = 0; i < CELLS; i++) {
+    cdf[i + 1] = cdf[i] + gaussLegendre(P, i * dr, (i + 1) * dr, 8);
+    let mx = 0;
+    for (let k = 0; k <= 8; k++) mx = Math.max(mx, P((i + k / 8) * dr));
+    bound[i] = 1.06 * mx + 1e-300;
+  }
+  return { R, P, rEnd, dr, cdf, bound, total: cdf[CELLS] };
+}
+/** Exact radial CDF (cell table + in-cell quadrature) for KS tests. */
+function radialCDF(tab) {
+  return r => {
+    if (r <= 0) return 0;
+    if (r >= tab.rEnd) return 1;
+    const i = Math.floor(r / tab.dr);
+    return (tab.cdf[i] + gaussLegendre(tab.P, i * tab.dr, r, 8)) / tab.total;
+  };
+}
 
-  function parts() {
-    let L = 0, B = 0, R = 0;
-    const { re: r, im: m } = solver;
-    for (let j = 0; j < ny; j++) {
-      const o = nx * j;
-      for (let i = 0; i < nx; i++) {
-        const q = r[o + i] * r[o + i] + m[o + i] * m[o + i];
-        if (i < iL) L += q; else if (i >= iR) R += q; else B += q;
+// ------------------------------------------------------------------ the simulation
+
+function parseOrbital(s) {
+  const [n, l, m] = String(s).split(',').map(Number);
+  if (!(Number.isInteger(n) && n >= 1 && n <= NMAX && Number.isInteger(l) && l >= 0 && l < n && Number.isInteger(m) && Math.abs(m) <= l)) throw new Error(`bad orbital ${s}`);
+  return { n, l, m };
+}
+
+function createSim(params) {
+  const { n, l, m } = parseOrbital(params.orbital);
+  const basis = params.basis === 'complex' ? 'complex' : 'real';
+  const Z = Math.round(params.Z), N = Math.round(params.N), seed = Math.round(params.seed);
+  const tab = radialTable(n, l, Z), Rf = tab.R, Y = angularFn(l, m, basis);
+  const absY2 = basis === 'complex' ? (th, ph) => { const y = Y(th, ph); return y.re * y.re + y.im * y.im; } : (th, ph) => { const y = Y(th, ph); return y * y; };
+  const cdfR = radialCDF(tab);
+
+  // Box for the volume: the cube of half-width L encloses the sphere holding 99.9 % of P.
+  let iL = 0; while (iL < CELLS && tab.cdf[iL] / tab.total < 0.999) iL++;
+  const L = Math.max(1.5 / Z, iL * tab.dr);
+
+  // |ψ|² on the display grid (cell centres, axis 0 fastest, as ui/gl.mjs expects)
+  const G = params.grid === false ? 0 : GRID, h = 2 * L / GRID, rho = new Float32Array(G * G * G);
+  let rhoMax = 0, gridSum = 0;
+  // Angular factor depends only on direction: evaluate the |Y|² through realYlm/complexYlm directly.
+  for (let k = 0; k < G; k++) {
+    const z = -L + (k + 0.5) * h;
+    for (let j = 0; j < G; j++) {
+      const y = -L + (j + 0.5) * h;
+      for (let i = 0; i < G; i++) {
+        const x = -L + (i + 0.5) * h, r = Math.hypot(x, y, z);
+        const th = Math.acos(Math.max(-1, Math.min(1, z / r))), ph = Math.atan2(y, x);
+        const R = Rf(r), v = R * R * absY2(th, ph);
+        rho[i + G * (j + G * k)] = v; gridSum += v; if (v > rhoMax) rhoMax = v;
       }
     }
-    return { PR: (L + B / 2) * dA, PT: (R + B / 2) * dA, norm: (L + B + R) * dA };
   }
+  gridSum *= h * h * h;
 
-  /** ⟨H⟩ = ⟨T⟩ + ⟨V⟩, kinetic part evaluated spectrally (same operator as the propagator). */
-  function energy() {
-    const a = Float64Array.from(solver.re), b = Float64Array.from(solver.im);
-    fftND(a, b, [nx, ny]);
-    let kin = 0, tot = 0, pot = 0, nrm = 0;
-    for (let j = 0; j < ny; j++) {
-      const ky = 2 * Math.PI * (j < ny / 2 ? j : j - ny) / Ly;
-      for (let i = 0; i < nx; i++) {
-        const kx = 2 * Math.PI * (i < nx / 2 ? i : i - nx) / Lx, k = i + nx * j, q = a[k] * a[k] + b[k] * b[k];
-        kin += q * H2M * (kx * kx + ky * ky); tot += q;
-      }
+  // Samples from |ψ|²: r and direction are independent because |ψ|² = R(r)² |Y(θ, φ)|².
+  const rand = rng(seed);
+  let y2max = 0;
+  for (let a = 0; a <= 360; a++) {for (let b = 0; b <= 360; b++) y2max = Math.max(y2max, absY2(Math.PI * a / 360, 2 * Math.PI * b / 360));}
+  y2max *= 1.05;
+  const pos = new Float32Array(3 * N), val = new Float32Array(N), radii = new Float64Array(N), cosT = new Float64Array(N);
+  let sumR = 0, sumR2 = 0, inside = 0, proposals = 0;
+  for (let s = 0; s < N; s++) {
+    // radius: choose the cell by its exact probability, then accept/reject against P(r)
+    let r;
+    for (;;) {
+      const u = rand() * tab.total;
+      let lo = 0, hi = CELLS;
+      while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (tab.cdf[mid] <= u) lo = mid; else hi = mid; }
+      r = (lo + rand()) * tab.dr;
+      proposals++;
+      if (rand() * tab.bound[lo] <= tab.P(r)) break;
     }
-    for (let k = 0; k < nx * ny; k++) { const q = solver.re[k] ** 2 + solver.im[k] ** 2; pot += q * V[k]; nrm += q; }
-    return { K: kin / tot, U: pot / nrm, H: kin / tot + pot / nrm };
+    // direction: uniform on the sphere, accept with |Y|² / max|Y|²
+    let th, ph;
+    for (;;) {
+      const c = 2 * rand() - 1; ph = 2 * Math.PI * rand(); th = Math.acos(c);
+      if (rand() * y2max <= absY2(th, ph)) break;
+    }
+    const st = Math.sin(th), x = r * st * Math.cos(ph), y = r * st * Math.sin(ph), z = r * Math.cos(th);
+    pos[3 * s] = x; pos[3 * s + 1] = y; pos[3 * s + 2] = z;
+    radii[s] = r; cosT[s] = Math.cos(th);
+    sumR += r; sumR2 += r * r;
+    if (Math.abs(x) <= L && Math.abs(y) <= L && Math.abs(z) <= L) inside++;
+    // colour value: sign of ψ (real basis) or phase arg ψ in [0, 2π) (complex basis)
+    const R = Rf(r);
+    if (basis === 'complex') { const yc = Y(th, ph); let a = Math.atan2(R * yc.im, R * yc.re); if (a < 0) a += 2 * Math.PI; val[s] = a; }
+    else val[s] = R * Y(th, ph) >= 0 ? 1 : -1;
   }
-  const E0 = energy().H;
-  let eCache = null;
-  const energyNow = () => (eCache && eCache.t === solver.t ? eCache : (eCache = { t: solver.t, ...energy() }));
-  let cur = parts();
+  const meanR = sumR / N, sdR = Math.sqrt(Math.max(0, sumR2 / N - meanR * meanR)), seR = sdR / Math.sqrt(N);
+  const ks = ksTest(radii, cdfR);
+  const nodes = rMostProbableNodes(n, l, Z);
+  const mR = meanRExact(n, l, Z), E = energyEV(n, Z);
+  // most probable radius: maximum of P(r) on the cell grid, refined by golden section
+  let iMax = 0; for (let i = 1; i <= CELLS; i++) if (tab.P(i * tab.dr) > tab.P(iMax * tab.dr)) iMax = i;
+  let a = Math.max(0, (iMax - 1) * tab.dr), b = (iMax + 1) * tab.dr;
+  for (let it = 0; it < 80; it++) { const c1 = b - 0.618 * (b - a), c2 = a + 0.618 * (b - a); if (tab.P(c1) > tab.P(c2)) b = c2; else a = c1; }
+  const rMP = (a + b) / 2;
+  const hist = histogram(radii, { bins: 72, range: [0, Math.min(tab.rEnd, L * 1.25)], density: true });
 
-  const sim = {
-    params: p, grid, an, V, xs, iL, iR,
-    get t() { return solver.t; },
-    get re() { return solver.re; },
-    get im() { return solver.im; },
-    get measured() { return measured; },
-    get parts() { return cur; },
-    hist,
-    step() {
-      solver.step();
-      cur = parts();
-      if (history) hist.push([solver.t, cur.PT, cur.PR]);
-      if (!measured && solver.t >= an.tSep) measured = { t: solver.t, ...cur };
-    },
-    energy: energyNow, E0,
+  const psi = (x, y, z) => {
+    const r = Math.hypot(x, y, z), th = r > 0 ? Math.acos(Math.max(-1, Math.min(1, z / r))) : 0, ph = Math.atan2(y, x), R = Rf(r);
+    if (basis === 'complex') { const yc = Y(th, ph); return { re: R * yc.re, im: R * yc.im }; }
+    return { re: R * Y(th, ph), im: 0 };
+  };
+
+  const name = orbitalName(n, l, m, basis);
+  return {
+    t: 0, timeDependent: false,
+    n, l, m, Z, N, basis, name, L, G, rho, rhoMax, gridSum, positions: pos, values: val, radii, cosT,
+    P: tab.P, R: Rf, cdfR, meanR, seR, ks, nodes, meanRExact: mR, E, rMP, hist, psi,
+    angularNodes: { cones: l - Math.abs(m), planes: basis === 'real' ? Math.abs(m) : 0 },
+    acceptance: N / proposals,
     diagnostics() {
-      const m = measured;
       return [
-        { key: 'norm', label: 'Norm error |∫|ψ|² − 1|', value: Math.max(Math.abs(cur.norm - 1), 1e-17), kind: 'error', good: 1e-10, warn: 1e-8 },
-        { key: 'dH', label: '⟨H⟩ change (relative)', value: Math.max(Math.abs(energyNow().H / E0 - 1), 1e-17), kind: 'error', good: 1e-6, warn: 1e-3 },
-        { key: 'PT', label: 'Probability beyond crest P_T (x > 0)', value: cur.PT, kind: 'value', text: cur.PT.toPrecision(4) },
-        { key: 'PR', label: 'Probability before crest P_R (x < 0)', value: cur.PR, kind: 'value', text: cur.PR.toPrecision(4) },
-        { key: 'Tbar', label: 'Exact T̄ (momentum-averaged)', value: an.Tbar, kind: 'value', text: an.Tbar.toPrecision(4) },
-        { key: 'Tm', label: `Measured T at t = ${an.tSep.toFixed(0)} fs`, value: m ? m.PT : 0, kind: 'value',
-          text: m ? `${m.PT.toPrecision(4)} (Δ = ${(m.PT / an.Tbar - 1 >= 0 ? '+' : '')}${(100 * (m.PT / an.Tbar - 1)).toFixed(2)} %)` : 'not yet (packet still at barrier)' },
-        { key: 'sep', label: 'Clean measurement window', value: an.tWrap - an.tSep, kind: 'value',
-          text: an.tSep < an.tWrap ? `${an.tSep.toFixed(0)}–${an.tWrap.toFixed(0)} fs` : 'none: packet too slow/broad for this box' },
+        { key: 'E', label: `Energy E${sub(n)} = −Z²Ry/n²`, kind: 'value', text: `${E.toPrecision(6).replace('-', '−')} eV` },
+        { key: 'r', label: '⟨r⟩ exact', kind: 'value', text: `${mR.toPrecision(5)} a₀ = ${(mR * A0_PM).toPrecision(4)} pm` },
+        { key: 'rs', label: '⟨r⟩ from the samples', kind: 'value', text: `${meanR.toFixed(3)} ± ${seR.toFixed(3)} a₀ (${((meanR - mR) / seR).toFixed(1).replace('-', '−')} σ)` },
+        { key: 'rmp', label: 'most probable r', kind: 'value', text: `${rMP.toPrecision(4)} a₀` },
+        { key: 'nodes', label: 'nodes: radial / angular', kind: 'value', text: `${nodes.length} / ${l}  (n−l−1 = ${n - l - 1}, l = ${l})` },
+        { key: 'ks', label: 'KS test, samples vs P(r)', kind: 'value', text: `D = ${ks.D.toExponential(2)}, p = ${ks.p.toFixed(2)}` },
+        { key: 'grid', label: 'Σ|ψ|²ΔV on display grid', kind: 'value', text: `${gridSum.toFixed(4)} (exact in box ≥ 0.999)` },
+        { key: 'in', label: 'samples inside volume box', kind: 'value', text: `${(100 * inside / N).toFixed(2)} %` },
       ];
     },
-    state() { return { t: solver.t, ...cur, Tbar: an.Tbar, measured, tSep: an.tSep, tWrap: an.tWrap }; },
-    record() { return { header: ['t_fs', 'P_T', 'P_R'], rows: hist.map(r => r.map(v => +v.toPrecision(10))) }; },
+    state() {
+      return { orbital: params.orbital, basis, Z, N, seed, name, meanR, seR, ksD: ks.D, ksP: ks.p, firstSamples: Array.from(pos.slice(0, 12)) };
+    },
+    record() {
+      const header = ['x_a0', 'y_a0', 'z_a0', basis === 'complex' ? 'phase_rad' : 'sign_psi'];
+      const rows = [];
+      for (let s = 0; s < N; s++) rows.push([pos[3 * s].toPrecision(6), pos[3 * s + 1].toPrecision(6), pos[3 * s + 2].toPrecision(6), basis === 'complex' ? val[s].toFixed(4) : val[s]]);
+      return { header, rows };
+    },
   };
-  return sim;
 }
-
-/** Run to the measurement time and return P_T there (verification helper). */
-function measureT(p, grid = GRID) {
-  const s = createSim(p, grid, { history: false });
-  while (!s.measured) s.step();
-  return { T: s.measured.PT, norm: s.measured.norm, Tbar: s.an.Tbar, sim: s };
-}
+const sub = n => String(n).replace(/\d/g, d => '₀₁₂₃₄₅₆₇₈₉'[d]);
 
 // ------------------------------------------------------------------ verification
-/** Independent T(E): integrate ψ'' = (2m/ħ²)(V − E)ψ through the barrier with RK4 from a pure
- *  outgoing wave on the right, then project onto e^{±ikx} on the left: T = 1/|A|². */
-function shootingT(E, V0, a, n = 20000) {
-  const k = Math.sqrt(E / H2M), X = 18 * a / FWHM_PER_W, h = -2 * X / n;
-  let x = X, y = [Math.cos(k * x), Math.sin(k * x), -k * Math.sin(k * x), k * Math.cos(k * x)];
-  const f = (t, u) => { const q = (barrierV(t, V0, a) - E) / H2M; return [u[2], u[3], q * u[0], q * u[1]]; };
-  for (let i = 0; i < n; i++) { y = rk4Step(f, x, y, h); x += h; }
-  // |A| from A e^{ikx} = (ψ + ψ'/(ik))/2 at x = −X (the phase e^{ikx} does not change |A|)
-  const Are = (y[0] + y[3] / k) / 2, Aim = (y[1] - y[2] / k) / 2;
-  return 1 / (Are * Are + Aim * Aim);
-}
 
 function verify() {
-  const checks = [], notes = [];
-  const D = Object.fromEntries(PARAMS.map(q => [q.key, q.value]));
-  const strip = (nx, dx, dt) => ({ nx, ny: 2, dx, dt });          // y-uniform strip = exact 1D reduction
-  const pct = v => `${(100 * v).toFixed(3)} %`;
+  const checks = [];
+  const states = ORBITALS.map(o => parseOrbital(o.value));
 
-  // 1. closed-form T(E) vs independent shooting integration of the stationary equation
-  let worst = 0;
-  for (const [E, V0, a] of [[100, 150, 1.5], [60, 300, 3], [250, 150, 1.5], [150, 150, 1], [80, 400, 4], [100, 20, 1]]) {
-    worst = Math.max(worst, Math.abs(barrierT(E, V0, a) / shootingT(E, V0, a) - 1));
+  // 1. normalisation of every offered state: radial ∫R²r²dr (Gauss–Legendre panels) × angular ∫|Y|²dΩ
+  const angGrid = (() => {   // product rule: 48-pt GL in cos θ × 64-pt trapezoid in φ (exact for |m| ≤ 4 products)
+    const pts = [], nth = 48, nph = 64, { x: xs, w: ws } = gaussLegendreNodes(nth);
+    for (let i = 0; i < nth; i++) for (let j = 0; j < nph; j++) pts.push({ th: Math.acos(xs[i]), ph: 2 * Math.PI * j / nph, w: ws[i] * 2 * Math.PI / nph });
+    return pts;
+  })();
+  const radialInt = (f, n, Z = 1) => { const rEnd = n * (2 * n + 25) / Z, P = 60; let s = 0; for (let p = 0; p < P; p++) s += gaussLegendre(f, rEnd * p / P, rEnd * (p + 1) / P, 24); return s; };
+  let normErr = 0, normWorst = '';
+  for (const { n, l, m } of states) {
+    const R = radialFn(n, l, 1);
+    const rad = radialInt(r => r * r * R(r) ** 2, n);
+    let ang = 0; for (const q of angGrid) ang += q.w * realYlm(l, m, q.th, q.ph) ** 2;
+    let angC = 0; for (const q of angGrid) { const y = complexYlm(l, m, q.th, q.ph); angC += q.w * (y.re * y.re + y.im * y.im); }
+    const e = Math.max(Math.abs(rad * ang - 1), Math.abs(rad * angC - 1));
+    if (e > normErr) { normErr = e; normWorst = orbitalName(n, l, m); }
   }
-  checks.push({ label: 'Closed-form T(E) vs RK4 shooting of the stationary equation (6 cases incl. E > V₀ and 8mV₀w²/ħ² < 1)', value: `max rel. diff ${worst.toExponential(1)}`, pass: worst < 1e-8 });
+  checks.push({ label: `∫|ψ|² dV = 1 for all ${states.length} states (real and complex basis)`, value: `max |error| ${normErr.toExponential(1)} (${normWorst})`, pass: normErr < 1e-9 });
 
-  // 2. free packet on the production grid: centroid and width vs exact
-  {
-    const s = createSim({ ...D, V0: 0 }, GRID, { history: false });
-    const t1 = 200;
-    while (s.t < t1 - 1e-9) s.step();
-    const { nx, ny, dx } = GRID, Lx = nx * dx;
-    let m = 0, mx = 0, mxx = 0;
-    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) { const k = i + nx * j, q = s.re[k] ** 2 + s.im[k] ** 2, x = -Lx / 2 + i * dx; m += q; mx += q * x; mxx += q * x * x; }
-    const xc = mx / m, sx = Math.sqrt(mxx / m - xc * xc), an = s.an;
-    const dxc = Math.abs(xc - (an.x0 + an.vx * s.t)), dsx = Math.abs(sx / an.sig(s.t) - 1);
-    checks.push({ label: `Free 2D packet (V₀ = 0) after ${s.t} fs: centre ⟨x⟩ = x₀ + ħk_x t/m`, value: `|Δ⟨x⟩| = ${dxc.toExponential(1)} nm`, pass: dxc < 1e-6 });
-    checks.push({ label: 'Free packet width σ(t) = √(σ₀² + (ħt/2mσ₀)²)', value: `rel. err ${dsx.toExponential(1)}`, pass: dsx < 1e-6 });
-  }
+  // 2. orthogonality of every pair: ⟨ψ_a|ψ_b⟩ = (radial overlap if l, m equal) × angular overlap
+  let ortho = 0;
+  const angOv = new Map();
+  const angKey = (a, b) => `${a.l},${a.m}|${b.l},${b.m}`;
+  for (let i = 0; i < states.length; i++) {for (let j = i + 1; j < states.length; j++) {
+    const a = states[i], b = states[j];
+    let A = angOv.get(angKey(a, b));
+    if (A == null) { A = 0; for (const q of angGrid) A += q.w * realYlm(a.l, a.m, q.th, q.ph) * realYlm(b.l, b.m, q.th, q.ph); angOv.set(angKey(a, b), A); }
+    let ov = Math.abs(A);
+    if (a.l === b.l && a.m === b.m) { const Ra = radialFn(a.n, a.l, 1), Rb = radialFn(b.n, b.l, 1); ov = Math.abs(radialInt(r => r * r * Ra(r) * Rb(r), Math.max(a.n, b.n))); }
+    ortho = Math.max(ortho, ov);
+  }}
+  checks.push({ label: `Orthogonality, all ${states.length * (states.length - 1) / 2} pairs`, value: `max |⟨ψa|ψb⟩| ${ortho.toExponential(1)}`, pass: ortho < 1e-9 });
 
-  // 3. production run, default parameters (oblique incidence) vs exact momentum-averaged T̄
-  const prod = measureT(D);
-  const eProd = Math.abs(prod.T / prod.Tbar - 1);
-  {
-    const steps = prod.sim.t / GRID.dt, dN = Math.abs(prod.norm - 1);
-    checks.push({ label: `Norm conserved (unitary): 2D run of ${steps} steps on ${GRID.nx}×${GRID.ny} cells, round-off budget 1e-14 per step`, value: `|ΔN| = ${dN.toExponential(1)} (${(dN / steps).toExponential(1)} per step)`, pass: dN / steps < 1e-14 });
-  }
-  checks.push({ label: `Default case (E₀ = 100, V₀ = 150 meV, a = 1.5 nm, θ = 20°): T measured vs exact T̄ = ${prod.Tbar.toFixed(5)}`, value: `T = ${prod.T.toFixed(5)}, Δ ${pct(eProd)}`, pass: eProd < 0.005 });
-  {
-    const e = prod.sim.energy().H, e0 = prod.sim.E0;
-    const dE = Math.abs(e / e0 - 1);
-    checks.push({ label: '⟨H⟩ after the collision (Strang splitting: bounded, not exact)', value: `rel. change ${dE.toExponential(1)}`, pass: dE < 1e-3 });
-  }
+  // 3. radial Schrödinger equation residual (atomic units): −½(R'' + 2R'/r) + [l(l+1)/2r² − Z/r] R = E R
+  let resid = 0;
+  for (const Z of [1, 3]) {for (let n = 1; n <= NMAX; n++) {for (let l = 0; l < n; l++) {
+    const R = radialFn(n, l, Z), E = -Z * Z / (2 * n * n), rEnd = n * (2 * n + 25) / Z;
+    let scale = 0, worst = 0;
+    for (let k = 1; k <= 400; k++) {
+      const r = rEnd * k / 401 * 0.6, d = 1e-4 * r + 1e-5;
+      const R0 = R(r), Rp = (R(r + d) - R(r - d)) / (2 * d), Rpp = (R(r + d) - 2 * R0 + R(r - d)) / (d * d);
+      const lhs = -0.5 * (Rpp + 2 * Rp / r) + (l * (l + 1) / (2 * r * r) - Z / r) * R0;
+      worst = Math.max(worst, Math.abs(lhs - E * R0)); scale = Math.max(scale, Math.abs(E * R0));
+    }
+    resid = Math.max(resid, worst / scale);
+  }}}
+  checks.push({ label: 'Radial equation Hψ = Eψ, E = −Z²/2n² Eh (finite-difference residual, Z = 1, 3)', value: `max rel. residual ${resid.toExponential(1)}`, pass: resid < 1e-5 });
 
-  // 4. separability: θ = 20° equals normal incidence at the same k_x (same normal energy)
-  {
-    const th = D.theta * Math.PI / 180;
-    const normal = measureT({ ...D, theta: 0, E: D.E * Math.cos(th) ** 2 });
-    const d = Math.abs(normal.T - prod.T);
-    checks.push({ label: `Only normal energy tunnels: θ = 20° vs θ = 0° at E₀cos²θ = ${(D.E * Math.cos(th) ** 2).toFixed(2)} meV`, value: `|ΔT| = ${d.toExponential(1)}`, pass: d < 1e-6 });
-    const plain = packetT(Math.sqrt(D.E / H2M), 1 / (2 * D.sigma), D.V0, D.a);
-    notes.push(`At θ = 20° the packet transmits T̄ = ${prod.Tbar.toFixed(4)}; the same packet at normal incidence (E_x = 100 meV) would transmit ${plain.toFixed(4)}.`);
-  }
+  // 4. energy from the virial theorem: E = ⟨V⟩/2 = −Z⟨1/r⟩/2 Eh, compared with −Z²Ry/n² (CODATA Ry, Eh)
+  let eErr = 0;
+  for (let n = 1; n <= NMAX; n++) {for (let l = 0; l < n; l++) {
+    const R = radialFn(n, l, 2), inv = radialInt(r => r * R(r) ** 2, n, 2);
+    const Evir = -2 * inv / 2 * Eh / eV;
+    eErr = Math.max(eErr, Math.abs(Evir / energyEV(n, 2) - 1));
+  }}
+  checks.push({ label: 'Energy: virial ⟨V⟩/2 by quadrature vs −Z²Ry/n² (Z = 2, all n, l)', value: `max rel. diff ${eErr.toExponential(1)} (Eh/2 vs Ry)`, pass: eErr < 1e-8 });
 
-  // 5. other regimes on the exact y-uniform strip reduction (same x-grid, dx, dt)
-  for (const [lab, q] of [
-    ['Deep tunnelling (E₀ = 60, V₀ = 300 meV, a = 2 nm)', { E: 60, V0: 300, a: 2, theta: 0, sigma: 8 }],
-    ['Over-barrier reflection (E₀ = 250, V₀ = 150 meV, a = 1 nm)', { E: 250, V0: 150, a: 1, theta: 0, sigma: 6 }],
-    ['Thick barrier (E₀ = 120, V₀ = 160 meV, a = 4 nm)', { E: 120, V0: 160, a: 4, theta: 0, sigma: 8 }],
-    ['Narrowest, fastest (E₀ = 300, V₀ = 400 meV, a = 1 nm, σ₀ = 5 nm)', { E: 300, V0: 400, a: 1, theta: 0, sigma: 5 }],
-  ]) {
-    const r = measureT(q, strip(GRID.nx, GRID.dx, GRID.dt));
-    const e = Math.abs(r.T / r.Tbar - 1);
-    checks.push({ label: `${lab}: T vs exact T̄ = ${r.Tbar.toPrecision(4)}`, value: `T = ${r.T.toPrecision(4)}, Δ ${pct(e)}`, pass: e < 0.005 });
-  }
+  // 5. ⟨r⟩ by quadrature vs (3n² − l(l+1))/2Z
+  let rErr = 0;
+  for (let n = 1; n <= NMAX; n++) {for (let l = 0; l < n; l++) {
+    const R = radialFn(n, l, 1);
+    rErr = Math.max(rErr, Math.abs(radialInt(r => r ** 3 * R(r) ** 2, n) / meanRExact(n, l, 1) - 1));
+  }}
+  checks.push({ label: '⟨r⟩ quadrature vs (a₀/2Z)[3n² − l(l+1)], all n ≤ 5', value: `max rel. error ${rErr.toExponential(1)}`, pass: rErr < 1e-9 });
 
-  // 6. convergence: time step and grid spacing (strip, default normal-incidence physics)
-  {
-    const q = { ...D, theta: 0 };
-    const ts = [GRID.dt * 2, GRID.dt, GRID.dt / 2, GRID.dt / 4].map(dt => measureT(q, strip(GRID.nx, GRID.dx, dt)).T);
-    const e1 = Math.abs(ts[0] - ts[1]), e2 = Math.abs(ts[1] - ts[2]), e3 = Math.abs(ts[2] - ts[3]);
-    const order = Math.log2(e1 / e2);
-    checks.push({ label: `Time-step order (Strang splitting, dt = ${GRID.dt * 2} → ${GRID.dt / 4} fs)`, value: `p = ${order.toFixed(2)}, |T(dt) − T(dt/2)| = ${e2.toExponential(1)}`, pass: Math.abs(order - 2) < 0.3 });
-    const xs = [[GRID.nx, GRID.dx], [GRID.nx * 2, GRID.dx / 2], [GRID.nx * 4, GRID.dx / 4]].map(([nx, dx]) => measureT(q, strip(nx, dx, GRID.dt)));
-    const d1 = Math.abs(xs[0].T - xs[1].T), d2 = Math.abs(xs[1].T - xs[2].T), Tb = xs[0].Tbar;
-    checks.push({ label: `Grid refinement dx = ${GRID.dx} → ${GRID.dx / 4} nm`, value: `T = ${xs.map(r => r.T.toFixed(6)).join(' → ')}; exact ${Tb.toFixed(6)}`, pass: d1 < 1e-4 && d2 <= d1 + 1e-6 });
-    notes.push(`Time-step errors at the production dt = ${GRID.dt} fs: ${e2.toExponential(1)} in T; dt/2 vs dt/4: ${e3.toExponential(1)}.`);
-  }
+  // 6. radial nodes: count n−l−1 for all, positions vs exact roots (2s: 2; 3s: (9 ± 3√3)/2; 3p: 6; 4d: 12)
+  let countOK = true;
+  for (let n = 1; n <= NMAX; n++) for (let l = 0; l < n; l++) if (rMostProbableNodes(n, l, 1).length !== n - l - 1) countOK = false;
+  const exact = [[2, 0, [2]], [3, 0, [(9 - 3 * Math.sqrt(3)) / 2, (9 + 3 * Math.sqrt(3)) / 2]], [3, 1, [6]], [4, 2, [12]]];
+  let nodeErr = 0;
+  for (const [n, l, want] of exact) { const got = rMostProbableNodes(n, l, 1); want.forEach((w, i) => { nodeErr = Math.max(nodeErr, Math.abs(got[i] - w)); }); }
+  checks.push({ label: 'Radial nodes: count n−l−1 (all states); positions vs exact 2s, 3s, 3p, 4d roots', value: `counts ${countOK ? 'all correct' : 'WRONG'}; max |Δr| ${nodeErr.toExponential(1)} a₀`, pass: countOK && nodeErr < 1e-9 });
 
-  notes.push('The exact benchmark T̄ assumes an infinite domain and infinite time; the box is periodic and T is read at t_sep. Remaining differences come from the time step and the finite measurement time (slow momentum tail).');
-  notes.push('A sharp-edged rectangular barrier was tried first: on this spectral grid it converged only to first order in dx (6–26 % off at dx = 0.5 nm), so the smooth sech² barrier with an exact T(E) is used instead.');
-  notes.push('Model scope: one free electron in vacuum-like conditions (free-electron mass), static ideal rectangular barrier; no spin, image-charge, many-body or phonon effects.');
+  // 7. angular nodes: l − |m| nodal cones (zeros of P_l^|m| in θ) and |m| nodal planes (zeros of cos/sin mφ)
+  let angOK = true;
+  for (let l = 0; l <= 4; l++) {for (let am = 0; am <= l; am++) {
+    let zc = 0, prev = normalizedLegendre(l, am, Math.cos(1e-6));
+    for (let k = 1; k <= 4000; k++) { const v = normalizedLegendre(l, am, Math.cos(Math.PI * k / 4000 - 1e-6 * (k === 4000))); if (prev * v < 0) zc++; prev = v; }
+    let zp = 0, pv = Math.cos(am * 1e-6);
+    for (let k = 1; k <= 4000; k++) { const v = Math.cos(am * (Math.PI * k / 4000 + 1e-6)); if (pv * v < 0) zp++; pv = v; }
+    if (zc !== l - am || zp !== am) angOK = false;
+  }}
+  checks.push({ label: 'Angular nodes: l−|m| cones + |m| planes = l (real basis, l ≤ 4)', value: angOK ? 'all 15 (l, |m|) correct' : 'mismatch', pass: angOK });
+
+  // 8. real-orbital labels: realYlm = c × (Cartesian polynomial)/r^l with one constant c > 0
+  const rr = rng(11);
+  let labelDev = 0, labelSign = true;
+  for (const key of Object.keys(CART)) {
+    const [l, m] = key.split(',').map(Number);
+    let c0 = null;
+    for (let s = 0; s < 40; s++) {
+      const th = Math.acos(2 * rr() - 1), ph = 2 * Math.PI * rr();
+      const x = Math.sin(th) * Math.cos(ph), y = Math.sin(th) * Math.sin(ph), z = Math.cos(th);
+      const p = CART[key](x, y, z, 1);
+      if (Math.abs(p) < 1e-3) continue;
+      const c = realYlm(l, m, th, ph) / p;
+      if (c0 == null) c0 = c;
+      labelDev = Math.max(labelDev, Math.abs(c / c0 - 1));
+    }
+    if (!(c0 > 0)) labelSign = false;
+  }
+  checks.push({ label: 'Real-orbital names (p_x … g) match their Cartesian polynomials (23 functions)', value: `max dev. ${labelDev.toExponential(1)}; positive lobes ${labelSign ? 'match' : 'flipped'}`, pass: labelDev < 1e-9 && labelSign });
+
+  // 9. fast radial evaluator ≡ core hydrogenRadial
+  let rfDev = 0;
+  for (const { n, l } of states) { const f = radialFn(n, l, 2); for (let k = 1; k < 50; k++) { const r = k * 0.37, a = hydrogenRadial(n, l, r, { Z: 2 }), b = f(r); rfDev = Math.max(rfDev, Math.abs(a - b) / (Math.abs(a) + 1e-300) * (Math.abs(a) > 1e-200)); } }
+  checks.push({ label: 'Page radial evaluator vs core/numerics hydrogenRadial', value: `max rel. dev. ${rfDev.toExponential(1)}`, pass: rfDev < 1e-12 });
+
+  // 10. samples follow |ψ|²: KS tests of r against the exact radial CDF and of cos θ for 2p_z
+  const ksCases = [['4,2,0', 'real'], ['3,0,0', 'real'], ['5,3,-2', 'real'], ['4,3,2', 'complex']];
+  let minP = 1, ksText = [];
+  for (const [o, basis] of ksCases) {
+    const s = createSim({ orbital: o, basis, N: 60000, Z: 1, seed: 3 });
+    minP = Math.min(minP, s.ks.p); ksText.push(`${s.n}${LETTER[s.l]}${basis === 'complex' ? ` (m=${s.m}, complex)` : ''} p=${s.ks.p.toPrecision(2)}`);
+  }
+  const pz = createSim({ orbital: '2,1,0', basis: 'real', N: 60000, Z: 1, seed: 5 });
+  const ksCos = ksTest(pz.cosT, u => (u ** 3 + 1) / 2);   // |Y10|² ∝ cos²θ → CDF of cos θ = (u³ + 1)/2
+  // five tests: Bonferroni threshold 0.001 each (family-wise false-alarm rate 0.5 %)
+  checks.push({ label: 'Sampling: KS test of 60 000 radii vs exact P(r) (4 states) and cos θ of 2p_z vs (u³+1)/2', value: `${ksText.join(', ')}; cos θ p=${ksCos.p.toFixed(2)}`, pass: minP > 1e-3 && ksCos.p > 1e-3 });
+  // a correct sampler gives KS p-values uniform on [0, 1]: test 24 seeds' p-values for uniformity
+  const pv = [];
+  for (let seed = 100; seed < 124; seed++) pv.push(createSim({ orbital: '4,2,0', basis: 'real', N: 20000, Z: 1, seed, grid: false }).ks.p);
+  const meta = ksTest(pv, u => Math.min(1, Math.max(0, u)));
+  checks.push({ label: 'Sampler calibration: KS p-values of 24 seeds (4d, 20 000 each) are uniform', value: `meta-KS p=${meta.p.toFixed(2)}, min p ${Math.min(...pv).toFixed(3)}`, pass: meta.p > 1e-3 });
+
+  // 11. sample mean ⟨r⟩ agrees with the exact value within its standard error
+  const big = createSim({ orbital: '4,2,0', basis: 'real', N: 200000, Z: 1, seed: 9 });
+  const zScore = (big.meanR - big.meanRExact) / big.seR;
+  checks.push({ label: '⟨r⟩ estimated from 200 000 samples (4d z²) vs exact 21 a₀', value: `${big.meanR.toFixed(3)} ± ${big.seR.toFixed(3)} a₀ (${zScore.toFixed(2)} σ)`, pass: Math.abs(zScore) < 4 });
+
+  // 12. rejection envelope: the in-cell bound must exceed the exact P(r) everywhere (else sampling is biased)
+  let envOK = true;
+  for (const [n, l] of [[1, 0], [3, 0], [5, 0], [5, 4]]) {
+    const tab = radialTable(n, l, 1);
+    for (let i = 0; i < CELLS && envOK; i++) for (let k = 0; k <= 64; k++) if (tab.P((i + k / 64) * tab.dr) > tab.bound[i]) { envOK = false; break; }
+  }
+  checks.push({ label: 'Rejection envelope ≥ P(r) at 65 points in every cell (1s, 3s, 5s, 5g)', value: envOK ? 'holds' : 'violated', pass: envOK });
+
+  // 13. displayed volume fidelity: trilinear interpolation of the 96³ grid (as the GPU samples it) vs exact |ψ|²
+  const fid = [];
+  for (const o of ['4,2,0', '1,0,0', '5,0,0']) {
+    const s = createSim({ orbital: o, basis: 'real', N: 5000, Z: 1, seed: 1 });
+    const G = s.G, L = s.L, h = 2 * L / G, rnd = rng(4);
+    const at = (i, j, k) => s.rho[Math.min(G - 1, Math.max(0, i)) + G * (Math.min(G - 1, Math.max(0, j)) + G * Math.min(G - 1, Math.max(0, k)))];
+    let num = 0, den = 0;
+    for (let q = 0; q < 200000; q++) {
+      const x = (2 * rnd() - 1) * L, y = (2 * rnd() - 1) * L, z = (2 * rnd() - 1) * L;
+      const fx = (x + L) / h - 0.5, fy = (y + L) / h - 0.5, fz = (z + L) / h - 0.5;
+      const i = Math.floor(fx), j = Math.floor(fy), k = Math.floor(fz), a = fx - i, b = fy - j, c = fz - k;
+      let v = 0;
+      for (const [di, wa] of [[0, 1 - a], [1, a]]) for (const [dj, wb] of [[0, 1 - b], [1, b]]) for (const [dk, wc] of [[0, 1 - c], [1, c]]) v += wa * wb * wc * at(i + di, j + dj, k + dk);
+      const p = s.psi(x, y, z), ex = p.re * p.re;
+      num += Math.abs(v - ex); den += ex;
+    }
+    fid.push({ name: s.name, err: num / den, sum: s.gridSum });
+  }
+  const worstFid = Math.max(...fid.map(f => f.err));
+  checks.push({ label: `Displayed ${GRID}³ volume vs exact |ψ|² (relative L1, trilinear as on the GPU)`, value: fid.map(f => `${f.name} ${(100 * f.err).toFixed(2)} %`).join(', '), pass: worstFid < 0.05, state: worstFid > 0.02 ? 'warn' : undefined });
+
+  // 14. determinism
+  const d1 = createSim({ orbital: '3,2,1', basis: 'real', N: 3000, Z: 1, seed: 42 }), d2 = createSim({ orbital: '3,2,1', basis: 'real', N: 3000, Z: 1, seed: 42 });
+  const same = d1.positions.every((v, i) => v === d2.positions[i]);
+  checks.push({ label: 'Deterministic for a given seed', value: same ? 'bit-identical' : 'differs', pass: same });
+
   return {
-    summary: 'Split-operator 2D Schrödinger solver checked against the exact square-barrier transmission averaged over the packet momenta, free-packet motion, norm, separability, and dt/dx refinement.',
-    checks, notes,
+    summary: 'Exact hydrogen-like eigenfunctions checked against independent identities (normalisation, orthogonality, Hψ = Eψ, virial energy, exact node positions, Cartesian forms); samples tested against the exact distributions; the displayed density grid measured against the exact |ψ|².',
+    checks,
+    notes: [
+      'Non-relativistic, point-nucleus, infinite-nuclear-mass model: fine structure (~α² ≈ 5×10⁻⁵ relative), Lamb shift, hyperfine splitting and the reduced-mass correction (5.4×10⁻⁴ in energies and lengths) are not included.',
+      'Inner radial shells of 5s are thinner than a few grid cells of the 96³ volume; the sampled points and the P(r) figure resolve them exactly.',
+      'Sample checks use 60 000 draws; KS p-values are random by construction (a correct sampler gives p uniform on [0, 1]), hence the calibration test over 24 seeds.',
+    ],
   };
 }
 
-return { HBAR, MASS, H2M, GRID, PARAMS, FWHM_PER_W, barrierV, barrierT, packetT, analytic, createSim, measureT, verify };
+return { A0_PM, GRID, NMAX, sup, orbitalName, ORBITALS, PARAMS, radialFn, energyEV, meanRExact, rMostProbableNodes, parseOrbital, createSim, verify };
 })();
 
 // ---- page
 const { createInstrument } = __psim["ui/instrument-app.mjs"];
-const { sci, select, el } = __psim["ui/instrument.mjs"];
-const { PARAMS, createSim, barrierT, barrierV, H2M, HBAR, MASS, FWHM_PER_W, GRID } = __psim["local:physics.mjs"];
-// ------------------------------------------------------------------ presentation-only state
-const display = { mode: 'sqrt' };   // 'sqrt' | 'log' | 'phase' : colour transfer, never touches the physics
-const hexRgb = s => {
-  s = s.trim();
-  if (s.startsWith('#')) { const h = s.length === 4 ? s.slice(1).split('').map(c => c + c).join('') : s.slice(1, 7); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); }
-  const m = s.match(/[\d.]+/g); return m ? m.slice(0, 3).map(Number) : [0, 0, 0];
+const { section, select, toggle, el } = __psim["ui/instrument.mjs"];
+const { orbitCamera, createPointRenderer, createVolumeRenderer, colormap, invert } = __psim["ui/gl.mjs"];
+const { contourLines } = __psim["core/fields.mjs"];
+const { PARAMS, createSim, A0_PM } = __psim["local:physics.mjs"];
+// ------------------------------------------------------------------ display settings (never touch the model)
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const disp = { view: 'both', transfer: 'log3', cut: false, rotate: !reduced };
+const TRANSFER = {
+  log3: { label: 'log, 3 decades', f: q => Math.max(0, 1 + Math.log10(Math.max(q, 1e-30)) / 3), opacity: 0.9 },
+  sqrt: { label: '√ (gamma ½)', f: q => Math.sqrt(q), opacity: 1.6 },
+  lin: { label: 'linear', f: q => q, opacity: 3.2 },
 };
-const hue = (ph) => {   // phase → RGB on a hue circle (domain colouring)
-  const h = ((ph / (2 * Math.PI)) % 1 + 1) % 1 * 6, x = 1 - Math.abs(h % 2 - 1), i = Math.floor(h);
-  const c = [[1, x, 0], [x, 1, 0], [0, 1, x], [0, x, 1], [x, 0, 1], [1, 0, x]][i] ?? [1, 0, 0];
-  return c.map(v => 40 + 215 * v);
-};
+const VIEWS = [
+  { value: 'both', label: 'Density volume + samples' },
+  { value: 'volume', label: 'Density volume |ψ|² only' },
+  { value: 'samples', label: 'Samples (position measurements) only' },
+];
+const hsl = (h, s, l) => { const a = s * Math.min(l, 1 - l), f = k => { const q = (k + h / 30) % 12; return l - a * Math.max(-1, Math.min(q - 3, 9 - q, 1)); }; return [f(0), f(8), f(4)]; };
+const phaseRGB = a => hsl((a * 180 / Math.PI) % 360, 0.9, 0.6);
+const hexRGB = h => { const s = h.trim(); return [1, 3, 5].map(i => parseInt(s.slice(i, i + 2), 16) / 255); };
+const nice = x => { const e = 10 ** Math.floor(Math.log10(x)), f = x / e; return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * e; };
 
-let off = null, img = null;
-function draw(ctx, sim, view) {
-  const { W, H } = view, C = view.color, { nx, ny, dx } = sim.grid, Lx = nx * dx, Ly = ny * dx;
-  const narrow = W < 640;
-  // Crop x on narrow screens so the packet stays legible; the full box is 256 nm × 64 nm.
-  const xr = narrow ? 64 : Lx / 2, i0 = Math.round((Lx / 2 - xr) / dx), i1 = Math.round((Lx / 2 + xr) / dx);
-  const cols = i1 - i0;
-  const top = narrow ? 186 : 136, left = 16, right = 16;
-  const mapW = W - left - right, mapH = Math.max(40, Math.min(H - top - 150, mapW * Ly / (2 * xr)));
-  const profH = Math.max(100, Math.min(170, H - top - mapH - (narrow ? 130 : 50)));
-  const sx = mapW / (2 * xr), X = x => left + (x + xr) * sx, yTop = top;
+const cam = orbitCamera({ distance: 60, yaw: 0.65, pitch: 0.38, fov: 0.7 });
+let vol, pts, upKey = '', lastL = 0, dragging = false, lastT = performance.now();
 
-  // --- |ψ|² map (one texel per grid cell, bilinear upscaling)
-  if (!off || off.width !== cols) { off = document.createElement('canvas'); off.width = cols; off.height = ny; img = off.getContext('2d').createImageData(cols, ny); }
-  const bg = hexRgb(C('--stage') || C('--bg')), fg = hexRgb(C('--body-1')), d = img.data;
-  const peak0 = 1 / (2 * Math.PI * sim.params.sigma ** 2);           // initial peak density, nm⁻²
-  const { re, im } = sim;
-  for (let j = 0; j < ny; j++) for (let c = 0; c < cols; c++) {
-    const k = (i0 + c) + nx * j, a = re[k], b = im[k], q = (a * a + b * b) / peak0;
-    let s, col = fg;
-    if (display.mode === 'log') s = Math.max(0, 1 + Math.log10(q + 1e-30) / 5);
-    else s = Math.min(1, Math.sqrt(q));
-    if (display.mode === 'phase') col = hue(Math.atan2(b, a));
-    s = Math.min(1, s);
-    const o = 4 * (c + cols * (ny - 1 - j));
-    d[o] = bg[0] + s * (col[0] - bg[0]); d[o + 1] = bg[1] + s * (col[1] - bg[1]); d[o + 2] = bg[2] + s * (col[2] - bg[2]); d[o + 3] = 255;
+function upload(sim, view) {
+  const key = `${sim.name}|${sim.Z}|${sim.N}|${sim.state().firstSamples[0]}|${disp.transfer}|${disp.cut}|${view.color('--body-0')}`;
+  if (key === upKey) return;
+  upKey = key;
+  const G = sim.G, T = TRANSFER[disp.transfer].f, d = new Float32Array(G * G * G);
+  for (let k = 0; k < G; k++) for (let j = 0; j < G; j++) {
+    const cutRow = disp.cut && j >= G / 2;                  // cutaway: half-space y > 0 removed
+    for (let i = 0; i < G; i++) { const idx = i + G * (j + G * k); d[idx] = cutRow ? 0 : T(sim.rho[idx] / sim.rhoMax); }
   }
-  off.getContext('2d').putImageData(img, 0, 0);
-  ctx.imageSmoothingEnabled = true;
-  ctx.drawImage(off, left, yTop, mapW, mapH);
-
-  // barrier overlay: hairlines at the half-height edges (±a/2) and the crest x = 0
-  const a = sim.params.a, crest = X(0);
-  ctx.fillStyle = C('--body-0'); ctx.globalAlpha = 0.10; ctx.fillRect(X(-a / 2), yTop, X(a / 2) - X(-a / 2), mapH); ctx.globalAlpha = 1;
-  ctx.strokeStyle = C('--body-0'); ctx.lineWidth = 1; ctx.setLineDash([3, 4]);
-  ctx.beginPath(); ctx.moveTo(crest + 0.5, yTop); ctx.lineTo(crest + 0.5, yTop + mapH); ctx.stroke(); ctx.setLineDash([]);
-  ctx.strokeStyle = C('--line-strong'); ctx.strokeRect(left + 0.5, yTop + 0.5, mapW - 1, mapH - 1);
-  // region readouts
-  const P = sim.parts;
-  ctx.font = '600 12px ui-monospace, Menlo, monospace'; ctx.fillStyle = C('--ink');
-  ctx.textAlign = 'right'; ctx.fillText(narrow ? `← P_R ${P.PR.toFixed(4)}` : `P_R = ${P.PR.toFixed(4)}  ← reflected`, crest - 10, yTop + mapH - 10);
-  ctx.textAlign = 'left'; ctx.fillText(narrow ? `P_T ${P.PT.toFixed(4)} →` : `transmitted →  P_T = ${P.PT.toFixed(4)}`, crest + 10, yTop + mapH - 10);
-  ctx.textAlign = 'start';
-  // scale bar 10 nm
-  ctx.strokeStyle = C('--ink'); ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(left + 10, yTop + 14); ctx.lineTo(left + 10 + 10 * sx, yTop + 14); ctx.stroke();
-  ctx.font = '10.5px ui-monospace, Menlo, monospace'; ctx.fillStyle = C('--ink'); ctx.fillText('10 nm', left + 14 + 10 * sx, yTop + 18);
-
-  // --- potential-energy profile strip: V(x) to scale in meV, with E₀ and the normal energy E_x
-  const p0 = yTop + mapH + 26, p1 = p0 + profH - 26, eMax = Math.max(sim.params.V0, sim.params.E) * 1.15 || 1;
-  const Y = e => p1 - e / eMax * (p1 - p0);
-  ctx.strokeStyle = C('--line-strong'); ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(left, p1 + 0.5); ctx.lineTo(left + mapW, p1 + 0.5); ctx.stroke();
-  ctx.fillStyle = C('--body-0'); ctx.globalAlpha = 0.25; ctx.beginPath(); ctx.moveTo(left, p1);
-  for (let px = 0; px <= mapW; px++) { const x = -xr + px / sx; ctx.lineTo(left + px, Y(barrierV(x, sim.params.V0, a))); }
-  ctx.lineTo(left + mapW, p1); ctx.fill(); ctx.globalAlpha = 1;
-  ctx.strokeStyle = C('--body-0'); ctx.lineWidth = 1.6; ctx.beginPath();
-  for (let px = 0; px <= mapW; px++) { const x = -xr + px / sx, yv = Y(barrierV(x, sim.params.V0, a)); px ? ctx.lineTo(left + px, yv) : ctx.moveTo(left + px, yv); }
-  ctx.stroke();
-  const hl = (e, col, dash) => {
-    ctx.strokeStyle = C(col); ctx.setLineDash(dash); ctx.lineWidth = 1.2;
-    ctx.beginPath(); ctx.moveTo(left, Y(e) + 0.5); ctx.lineTo(left + mapW, Y(e) + 0.5); ctx.stroke(); ctx.setLineDash([]);
-  };
-  hl(sim.params.E, '--muted', [2, 4]); hl(sim.an.Ex, '--body-1', [6, 4]);
-  ctx.font = '10.5px ui-monospace, Menlo, monospace';
-  ctx.fillStyle = C('--muted'); ctx.fillText(narrow ? `E₀ ${sim.params.E.toFixed(0)} meV` : `E₀ = ${sim.params.E.toFixed(0)} meV (total)`, left + 4, Y(sim.params.E) - 4);
-  ctx.textAlign = 'right'; ctx.fillStyle = C('--body-1');
-  ctx.fillText(narrow ? `E_x ${sim.an.Ex.toFixed(1)} meV` : `E_x = E₀cos²θ = ${sim.an.Ex.toFixed(1)} meV (normal)`, left + mapW - 4, Y(sim.an.Ex) + 13);
-  ctx.textAlign = 'left'; ctx.fillStyle = C('--body-0'); ctx.fillText(`V₀ = ${sim.params.V0.toFixed(0)} meV`, crest + 8, Math.max(p0 - 8, Y(sim.params.V0)) + 4);
-  ctx.textAlign = 'center'; ctx.fillStyle = C('--muted');
-  for (let x = -Math.floor(xr / 32) * 32; x <= xr; x += 32) ctx.fillText(`${x}`, X(x), p1 + 14);
-  ctx.fillText(narrow ? 'x (nm), central 128 nm of the 256 nm box' : 'x (nm) · upper map: plane (x, y), y spans 64 nm, periodic', left + mapW / 2, p1 + 30);
-  ctx.textAlign = 'start';
+  vol.update(d, G, G, G, { range: [0, 1] });
+  const pos = [], col = [], plus = hexRGB(view.color('--body-0')), minus = hexRGB(view.color('--body-1'));
+  for (let s = 0; s < sim.N; s++) {
+    if (disp.cut && sim.positions[3 * s + 1] > 0) continue;
+    pos.push(sim.positions[3 * s], sim.positions[3 * s + 1], sim.positions[3 * s + 2]);
+    col.push(...(sim.basis === 'complex' ? phaseRGB(sim.values[s]) : sim.values[s] > 0 ? plus : minus));
+  }
+  pts.update(new Float32Array(pos), { colors: new Float32Array(col) });
+  // framing: fit the cube's 99.9 % sphere to the narrower screen side (portrait screens need more distance)
+  if (sim.L !== lastL) { const a = view.W / view.H; cam.distance = 2.55 * sim.L * (a < 1 ? Math.pow(1 / a, 0.85) : 1); lastL = sim.L; }
 }
 
-// ------------------------------------------------------------------ workbench
+function drawGL(gl, sim, view) {
+  if (!vol) { vol = createVolumeRenderer(gl); pts = createPointRenderer(gl); }
+  upload(sim, view);
+  const now = performance.now();
+  if (disp.rotate && !dragging) cam.yaw += Math.min(0.05, (now - lastT) / 1000) * 0.12;
+  lastT = now;
+  const dark = view.color('--glow') === '1', aspect = view.W / view.H, L = sim.L;
+  if (disp.view !== 'samples') vol.draw(cam, { aspect, box: [[-L, -L, -L], [L, L, L]], colormap: 'magma', steps: 240, mode: dark ? 'emission' : 'absorption',
+    opacity: TRANSFER[disp.transfer].opacity * (disp.view === 'both' ? 0.7 : 1) * (dark ? 1 : 1.4) });
+  if (disp.view !== 'volume') {
+    const many = Math.max(1, Math.sqrt(sim.N / 40000));
+    // alpha blending keeps each dot's sign/phase colour readable where many dots overlap
+    pts.draw(cam, { aspect, size: (view.W < 600 ? 1.7 : 2.2), blend: 'alpha', opacity: 0.45 / many * (disp.view === 'both' ? 1 : 1.4) });
+  }
+}
+
+// ------------------------------------------------------------------ 2D overlay: axes, nucleus, legends
+function draw(ctx, sim, view) {
+  const { W, H } = view, C = view.color, L = sim.L, P = p => cam.project(p, W, H), step = nice(L / 2.2);
+  ctx.lineWidth = 1; ctx.font = '11px ui-monospace, Menlo, monospace';
+  for (const [axis, name] of [[0, 'x'], [1, 'y'], [2, 'z']]) {
+    const e = [0, 0, 0]; e[axis] = 1;
+    const a = P(e.map(v => -v * L)), b = P(e.map(v => v * L));
+    ctx.strokeStyle = C('--line-strong'); ctx.setLineDash([2, 4]);
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); ctx.setLineDash([]);
+    for (let v = -Math.floor(L / step) * step; v <= L; v += step) {
+      if (Math.abs(v) < 1e-9) continue;
+      const p = P(e.map(q => q * v));
+      ctx.fillStyle = C('--muted'); ctx.fillRect(p.x - 1.5, p.y - 1.5, 3, 3);
+    }
+    ctx.fillStyle = C('--ink-2'); ctx.fillText(name, b.x + 5, b.y - 4);
+  }
+  const o = P([0, 0, 0]);
+  ctx.fillStyle = C('--ink'); ctx.beginPath(); ctx.arc(o.x, o.y, 2.2, 0, 7); ctx.fill();
+  // legend card, bottom-left: what each colour means
+  const x0 = 16, w = Math.min(250, W - 32), y0 = H - (W < 600 ? 118 : 104) - (disp.cut ? 16 : 0);
+  ctx.save(); ctx.globalAlpha = 0.6; ctx.fillStyle = C('--stage');
+  ctx.beginPath(); ctx.roundRect(x0 - 8, y0 - 16, Math.min(420, W - 16), disp.cut ? 124 : 108, 8); ctx.fill(); ctx.restore();
+  ctx.fillStyle = C('--muted'); ctx.font = '10.5px ui-sans-serif, system-ui';
+  if (disp.view !== 'samples') {
+    ctx.fillText(`glow: |ψ|² / max, ${TRANSFER[disp.transfer].label} (magma)`, x0, y0);
+    for (let i = 0; i < w; i++) { const c = colormap('magma', i / w).map(v => Math.round(v * 255)); ctx.fillStyle = `rgb(${c})`; ctx.fillRect(x0 + i, y0 + 5, 1, 7); }
+    ctx.fillStyle = C('--muted'); ctx.font = '10px ui-monospace, Menlo, monospace';
+    const ends = disp.transfer === 'log3' ? ['10⁻³', '10⁻²', '10⁻¹', '1'] : ['0', '', '', '1'];
+    ends.forEach((s, i) => { ctx.textAlign = i === 0 ? 'left' : i === 3 ? 'right' : 'center'; ctx.fillText(s, x0 + w * i / 3, y0 + 24); });
+    ctx.textAlign = 'left';
+  }
+  const y1 = y0 + 44;
+  if (disp.view !== 'volume') {
+    ctx.font = '10.5px ui-sans-serif, system-ui';
+    if (sim.basis === 'complex') {
+      for (let i = 0; i < 64; i++) { const c = phaseRGB(2 * Math.PI * i / 64).map(v => Math.round(v * 255)); ctx.fillStyle = `rgb(${c})`; ctx.beginPath(); ctx.moveTo(x0 + 8, y1); ctx.arc(x0 + 8, y1, 8, -2 * Math.PI * i / 64, -2 * Math.PI * (i + 1.2) / 64, true); ctx.fill(); }
+      ctx.fillStyle = C('--muted'); ctx.fillText('dot hue: phase arg ψ (0 → 2π, anticlockwise)', x0 + 24, y1 + 4);
+    } else {
+      ctx.fillStyle = C('--body-0'); ctx.beginPath(); ctx.arc(x0 + 4, y1, 4, 0, 7); ctx.fill();
+      ctx.fillStyle = C('--muted'); ctx.fillText('ψ > 0', x0 + 13, y1 + 4);
+      ctx.fillStyle = C('--body-1'); ctx.beginPath(); ctx.arc(x0 + 60, y1, 4, 0, 7); ctx.fill();
+      ctx.fillStyle = C('--muted'); ctx.fillText('ψ < 0   (dots: samples of |ψ|²)', x0 + 69, y1 + 4);
+    }
+  }
+  ctx.fillStyle = C('--muted'); ctx.font = '10.5px ui-sans-serif, system-ui';
+  ctx.fillText(`axis ticks every ${step} a₀ = ${+(step * A0_PM / 1000).toPrecision(3)} nm · ● nucleus (not to scale)`, x0, y1 + 24);
+  if (disp.cut) ctx.fillText('cutaway: half-space y > 0 removed (volume and dots)', x0, y1 + 40);
+  // big state label, bottom-right
+  ctx.textAlign = 'right'; ctx.fillStyle = C('--ink'); ctx.font = `600 ${W < 600 ? 20 : 30}px ui-sans-serif, system-ui`;
+  ctx.fillText(sim.name, W - 18, H - (W < 600 ? 150 : 30));
+  ctx.font = '11px ui-sans-serif, system-ui'; ctx.fillStyle = C('--muted');
+  ctx.fillText(sim.basis === 'complex' ? 'complex basis: definite L_z = mħ' : 'real orbital', W - 18, H - (W < 600 ? 132 : 10));
+  ctx.textAlign = 'left';
+}
+
+// ------------------------------------------------------------------ figures below the scene
 function bench({ eqs, figs, createPlot, createEquation, M }) {
-  const prob = createPlot({ title: 'Probability each side of the barrier crest', height: 260,
-    x: { label: 'time t', unit: 'fs', min: 0, max: 600 }, y: { label: 'probability', min: 0, max: 1 } });
-  const spec = createPlot({ title: 'Exact transmission vs normal energy', height: 260,
-    x: { label: 'normal energy E_x', unit: 'meV', min: 0, max: 450 }, y: { label: 'T(E_x)', log: true, min: 1e-6, max: 1.5 } });
-  figs.append(prob.el, spec.el);
-
-  let S = null;
-  const kx = M.sub(M.i('k'), M.i('x')), hb = M.i('ħ');
-  const tdse = createEquation({
-    title: 'Time-dependent Schrödinger equation, term by term (expectation values now)',
-    lhs: { mathml: `${M.i('i')}${hb}<mfrac><mrow><mo>∂</mo><mi>ψ</mi></mrow><mrow><mo>∂</mo><mi>t</mi></mrow></mfrac>`, label: '⟨H⟩ total energy', unit: 'meV', value: () => S?.energy().H },
+  const radial = createPlot({ title: 'Radial probability P(r) = r²R²(r): exact curve vs histogram of the samples', height: 300,
+    x: { label: 'r', unit: 'a₀', min: 0, max: 30 }, y: { label: 'P(r)', unit: 'a₀⁻¹', min: 0, max: 0.1 } });
+  const sliceCanvas = el('canvas'), sliceHead = el('span', { class: 't' }, '');
+  const slice = el('figure', { class: 'psim-figure' }, el('div', { class: 'psim-plot-head' }, sliceHead, el('span', { class: 'l' }, '')), el('div', { class: 'ho-slice' }, sliceCanvas));
+  figs.append(radial.el, slice);
+  let cur = null;
+  const n_ = M.i('n'), l_ = M.i('l'), Z_ = M.i('Z');
+  const psiEq = createEquation({
+    title: 'One stationary state, separated into radial and angular factors',
+    lhs: { mathml: `${M.sub(M.i('ψ'), `${n_}${l_}${M.i('m')}`)}`, label: 'state shown', value: () => cur?.name ?? '' },
+    op: '=',
     terms: [
-      { id: 'kin', mathml: `<mo>−</mo>${M.frac(M.sup(hb, M.n(2)), `<mn>2</mn>${M.sub(M.i('m'), M.i('e'))}`)}<msup><mo>∇</mo><mn>2</mn></msup><mi>ψ</mi>`, label: 'kinetic ⟨K⟩: spreading and motion', color: '--body-1', unit: 'meV', value: () => S?.energy().K },
-      { id: 'pot', mathml: `${M.i('V')}${M.paren(M.i('x'))}<mi>ψ</mi>`, label: 'barrier ⟨V⟩: rises only during the collision', color: '--body-0', unit: 'meV', value: () => S?.energy().U },
-    ],
-    where: [
-      { mathml: `${M.i('V')}${M.paren(M.i('x'))}`, meaning: 'V₀ sech²(x/w), uniform along y; w = a/1.763', value: () => S && S.params.a / FWHM_PER_W, unit: 'nm (w)' },
-      { mathml: `${M.sup(hb, M.n(2))}<mo>/</mo><mn>2</mn>${M.sub(M.i('m'), M.i('e'))}`, meaning: 'free-electron value (CODATA 2018)', value: () => H2M, unit: 'meV nm²' },
+      { id: 'rad', mathml: `${M.sub(M.i('R'), `${n_}${l_}`)}${M.paren(M.i('r'))}`, label: 'radial factor: e^(−Zr/na₀) × Laguerre polynomial', color: '--body-2', value: () => cur ? `${cur.nodes.length} radial node${cur.nodes.length === 1 ? '' : 's'}` : '' },
+      { id: 'ang', sign: '×', mathml: `${M.sub(M.i('Y'), `${l_}${M.i('m')}`)}${M.paren(`${M.i('θ')}<mo>,</mo>${M.i('φ')}`)}`, label: 'angular factor: spherical harmonic', color: '--body-4', value: () => cur ? `${cur.l} angular node${cur.l === 1 ? '' : 's'}` : '' },
     ],
   });
-  const trans = createEquation({
-    title: 'Transmitted fraction: exact prediction vs the simulation',
-    lhs: { mathml: '<mover><mi>T</mi><mo>¯</mo></mover>', label: 'exact, averaged over the packet’s momenta', value: () => S?.an.Tbar, digits: 5 },
-    terms: [{ id: 'T', mathml: `<mo>∫</mo>${M.sup(M.row(`<mo>|</mo><mi>φ</mi>${M.paren(kx)}<mo>|</mo>`), M.n(2))}<mi>T</mi>${M.paren(M.frac(`${M.sup(hb, M.n(2))}${M.sup(kx, M.n(2))}`, `<mn>2</mn>${M.i('m')}`))}<mi>d</mi>${kx}`, label: 'only k_x (normal momentum) enters', color: '--body-1', value: () => S?.an.Tbar, digits: 5 }],
-    where: [
-      { mathml: `<mi>T</mi>${M.paren(M.sub(M.i('E'), M.i('x')))}`, meaning: 'sech² barrier, closed form (Landau–Lifshitz §25)', value: () => S && barrierT(S.an.Ex, S.params.V0, S.params.a), digits: 4 },
-      { mathml: M.sub(M.i('P'), M.i('T')), meaning: 'simulated probability at x > 0 at t_sep', value: () => S?.measured ? S.measured.PT : 'waiting', digits: 5 },
-      { mathml: M.sub(M.i('t'), M.i('sep')), meaning: 'packet clear of the barrier', value: () => S?.an.tSep, unit: 'fs' },
-    ],
-    link: spec,
+  const eEq = createEquation({
+    title: 'Energy depends only on n (all l, m of a shell are degenerate)',
+    lhs: { mathml: M.sub(M.i('E'), n_), label: 'energy', unit: 'eV', digits: 6, value: () => cur?.E },
+    terms: [{ id: 'E', mathml: `<mo>−</mo>${M.frac(`${M.sup(Z_, M.n(2))}${M.i('Ry')}`, M.sup(n_, M.n(2)))}`, label: 'Ry = 13.605693 eV (CODATA 2018)', color: '--warn', unit: 'eV', digits: 6, value: () => cur?.E }],
   });
-  eqs.append(tdse.el, trans.el);
+  const rEq = createEquation({
+    title: 'Mean distance from the nucleus',
+    lhs: { mathml: `<mo>⟨</mo>${M.i('r')}<mo>⟩</mo>`, label: 'expectation value', unit: 'a₀', digits: 5, value: () => cur?.meanRExact },
+    terms: [{ id: 'mean', mathml: `${M.frac(M.sub(M.i('a'), M.n(0)), `${M.n(2)}${Z_}`)}<mo>[</mo>${M.n(3)}${M.sup(n_, M.n(2))}<mo>−</mo>${l_}${M.paren(`${l_}<mo>+</mo>${M.n(1)}`)}<mo>]</mo>`, label: 'closed form; sample mean in Diagnostics', color: '--accent', unit: 'a₀', digits: 5, value: () => cur?.meanRExact }],
+    where: [{ mathml: M.sub(M.i('a'), M.n(0)), meaning: 'Bohr radius (CODATA 2018)', value: () => A0_PM, unit: 'pm' }],
+    link: radial,
+  });
+  eqs.append(psiEq.el, eEq.el, rEq.el);
 
-  let n = 0;
+  function drawSlice() {
+    const sim = cur; if (!sim) return;
+    const box = sliceCanvas.parentNode, dpr = devicePixelRatio || 1, W = box.clientWidth, H = box.clientHeight;
+    sliceCanvas.width = W * dpr; sliceCanvas.height = H * dpr;
+    const ctx = sliceCanvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+    const S = Math.min(W - 70, H - 46), ox = (W - S) / 2 + 14, oy = 10, n = 140, L = sim.L, hh = 2 * L / n;
+    // plane with the most probability (xz, yz or xy through the nucleus)
+    const planes = [['x', 'z', (u, v) => [u, 0, v]], ['y', 'z', (u, v) => [0, u, v]], ['x', 'y', (u, v) => [u, v, 0]]];
+    let best = null;
+    for (const pl of planes) { let s = 0; const vals = new Float64Array(n * n), re = new Float64Array(n * n);
+      for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) { const p = sim.psi(...pl[2](-L + (i + 0.5) * hh, -L + (j + 0.5) * hh)); vals[i + n * j] = p.re * p.re + p.im * p.im; re[i + n * j] = p.re; s += vals[i + n * j]; }
+      if (!best || s > best.s * 1.000001) best = { pl, s, vals, re }; }
+    const { pl, vals, re } = best;
+    let mx = 0; for (const v of vals) mx = Math.max(mx, v);
+    let amax = 0; for (const v of re) amax = Math.max(amax, Math.abs(v));
+    const img = ctx.createImageData(n, n);
+    for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+      const k = i + n * j, c = sim.basis === 'real' ? colormap('coolwarm', 0.5 + 0.5 * Math.sign(re[k]) * Math.sqrt(Math.abs(re[k]) / amax)) : colormap('magma', TRANSFER.log3.f(vals[k] / mx));
+      const q = 4 * (i + n * (n - 1 - j)); img.data[q] = c[0] * 255; img.data[q + 1] = c[1] * 255; img.data[q + 2] = c[2] * 255; img.data[q + 3] = 255;
+    }
+    const off = document.createElement('canvas'); off.width = n; off.height = n; off.getContext('2d').putImageData(img, 0, 0);
+    ctx.imageSmoothingEnabled = true; ctx.drawImage(off, ox, oy, S, S);
+    const X = u => ox + (u + L) / (2 * L) * S, Yp = v => oy + S - (v + L) / (2 * L) * S;
+    if (sim.basis === 'real') {   // nodal lines ψ = 0 in this plane
+      ctx.strokeStyle = view2.color('--ink'); ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+      for (const c of contourLines(re, { shape: [n, n], spacing: hh, origin: [-L + hh / 2, -L + hh / 2] }, 0)) {
+        ctx.beginPath(); c.points.forEach(([u, v], i) => (i ? ctx.lineTo(X(u), Yp(v)) : ctx.moveTo(X(u), Yp(v)))); if (c.closed) ctx.closePath(); ctx.stroke();
+      }
+      ctx.setLineDash([]);
+    }
+    ctx.strokeStyle = view2.color('--line-strong'); ctx.strokeRect(ox, oy, S, S);
+    ctx.fillStyle = view2.color('--muted'); ctx.font = '10.5px ui-monospace, Menlo, monospace'; ctx.textAlign = 'center';
+    const st = nice(L / 2.2);
+    for (let v = -Math.floor(L / st) * st; v <= L + 1e-9; v += st) { ctx.fillText(String(+v.toPrecision(4)).replace('-', '−'), X(v), oy + S + 14); }
+    ctx.fillText(`${pl[0]} (a₀)`, ox + S / 2, oy + S + 30);
+    ctx.textAlign = 'right';
+    for (let v = -Math.floor(L / st) * st; v <= L + 1e-9; v += st) ctx.fillText(String(+v.toPrecision(4)).replace('-', '−'), ox - 6, Yp(v) + 4);
+    ctx.save(); ctx.translate(ox - 36, oy + S / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'center'; ctx.fillText(`${pl[1]} (a₀)`, 0, 0); ctx.restore();
+    ctx.textAlign = 'left';
+    sliceHead.textContent = sim.basis === 'real'
+      ? `Slice through the nucleus (${pl[0]}${pl[1]}-plane): ψ, red > 0, blue < 0 (signed √ scale); dashed: nodes ψ = 0`
+      : `Slice through the nucleus (${pl[0]}${pl[1]}-plane): |ψ|² / max, log 3 decades (magma)`;
+  }
+  new ResizeObserver(() => drawSlice()).observe(slice);
+
   return {
     update(sim, t, { rebuilt }) {
-      S = sim;
-      if (rebuilt) {
-        const an = sim.an, tMax = Math.ceil(Math.min(an.tWrap, an.tSep * 1.5) / 50) * 50;
-        prob.setX({ min: 0, max: tMax });
-        prob.hline('Tbar', an.Tbar, { color: '--body-1', dash: true, label: `exact T̄ = ${an.Tbar.toFixed(4)}` });
-        prob.hline('Rbar', 1 - an.Tbar, { color: '--body-2', dash: true, label: `1 − T̄ = ${(1 - an.Tbar).toFixed(4)}` });
-        prob.vline('tsep', an.tSep, { color: '--muted', label: 'T measured here' });
-        prob.remove('PT').remove('PR');
-        const V0 = sim.params.V0, a = sim.params.a, xm = Math.max(450, V0 * 1.6, sim.params.E * 1.3);
-        const E = k => H2M * k * k, lo = Math.max(0, an.kx - 2 * an.sk);
-        spec.setX({ min: 0, max: xm });
-        spec.band('pk', E(lo), E(an.kx + 2 * an.sk), { color: '--grid-strong', alpha: 0.6, label: 'packet ±2σ' });
-        spec.fn('T', e => Math.max(1e-7, barrierT(Math.max(e, 1e-6), V0, a)), { color: '--body-1', label: `T(E_x), V₀ = ${V0.toFixed(0)} meV, a = ${a.toFixed(2)} nm` });
-        spec.vline('V0', V0, { color: '--body-0', label: 'V₀' });
-        spec.hline('Tbar', Math.max(1e-6, an.Tbar), { color: '--muted', dash: true, label: 'T̄ (packet average)' });
-        spec.remove('meas');
-        n = 0;
-      }
-      const h = sim.hist;
-      if (h.length !== n) {
-        n = h.length;
-        const stride = Math.max(1, Math.floor(n / 400)), pt = [], pr = [];
-        for (let i = 0; i < n; i += stride) { pt.push([h[i][0], h[i][1]]); pr.push([h[i][0], h[i][2]]); }
-        if (n) { pt.push([h[n - 1][0], h[n - 1][1]]); pr.push([h[n - 1][0], h[n - 1][2]]); }
-        prob.data('PT', pt, { color: '--body-1', label: 'P_T (x > 0)', width: 2 });
-        prob.data('PR', pr, { color: '--body-2', label: 'P_R (x < 0)', width: 2 });
-        if (sim.measured) spec.marker('meas', sim.an.Ex, Math.max(1e-6, sim.measured.PT), { color: '--body-1', label: `simulated ${sim.measured.PT.toPrecision(4)}` });
-      }
-      tdse.update(); trans.update();
-      prob.invalidate(); spec.invalidate(); prob.draw(); spec.draw();
+      cur = sim; psiEq.update(); eEq.update(); rEq.update();
+      if (!rebuilt) return;
+      const xmax = sim.hist.edges ? sim.hist.edges[sim.hist.edges.length - 1] : sim.L * 1.25;
+      let pmax = 0; for (let k = 0; k <= 400; k++) pmax = Math.max(pmax, sim.P(xmax * k / 400));
+      radial.setX({ min: 0, max: xmax }).setY({ min: 0, max: pmax * 1.18 });
+      for (const id of ['n0', 'n1', 'n2', 'n3', 'n4']) radial.remove(id);
+      radial.fn('exact', r => sim.P(r), { color: '--body-2', label: 'exact r²R²', width: 2 });
+      const centers = sim.hist.centers ?? [], dens = sim.hist.values ?? [], errs = sim.hist.errors ?? [];
+      radial.data('hist', centers.map((c, i) => [c, dens[i]]), { color: '--ink-2', dots: true, r: 2, errors: errs, label: `histogram of ${sim.N.toLocaleString('en')} sampled r (±1σ)` });
+      sim.nodes.forEach((r, i) => radial.vline(`n${i}`, r, { color: '--muted', label: i === 0 ? 'radial nodes' : '' }));
+      radial.vline('mean', sim.meanRExact, { color: '--accent', label: `⟨r⟩ = ${+sim.meanRExact.toPrecision(4)} a₀` });
+      radial.invalidate(); radial.draw();
+      drawSlice();
     },
   };
 }
 
-createInstrument({
-  title: 'Quantum tunnelling in 2D',
-  subtitle: 'An electron wave packet meets a smooth barrier: 2D Schrödinger equation, split-operator FFT, with exact transmission',
-  tier: 'validated',
-  tierReason: 'The 2D time-dependent Schrödinger equation is solved with a unitary split-operator FFT method. The transmitted probability matches the exact sech²-barrier transmission averaged over the packet’s momenta to 0.1–0.3 % in five regimes; norm, free-packet motion and dt/dx refinement are checked (Verification). Scope: one electron, static ideal barrier.',
-  layout: 'workbench',
-  params: PARAMS, create: createSim, draw, bench,
-  timeUnit: 'fs', timeLabel: 'time since release', speed: 40, duration: 600,
-  controls(body) {
-    body.append(el('div', { class: 'psim-field' }, el('div', { class: 'top' }, el('span', {}, 'Colour scale (display only)')),
-      select([
-        { value: 'sqrt', label: '|ψ|², square-root scale' },
-        { value: 'log', label: '|ψ|², log scale (5 decades)' },
-        { value: 'phase', label: 'phase of ψ as hue, brightness √|ψ|²' },
-      ], display.mode, v => { display.mode = v; })));
+const view2 = { color: n => getComputedStyle(document.documentElement).getPropertyValue(n).trim() };
+const app = createInstrument({
+  title: 'Hydrogen orbitals in 3D',
+  subtitle: 'Exact eigenstates ψnlm = R(r)·Y(θ,φ) of the Schrödinger equation: probability density |ψ|² as a ray-marched volume and as independent samples',
+  tier: 'analytical',
+  tierReason: 'Every value is the closed-form hydrogen-like eigenfunction (non-relativistic, point nucleus); normalisation, orthogonality, Hψ = Eψ, energies, ⟨r⟩, node positions and orbital labels are checked against independent identities, the samples against the exact distributions, and the displayed density grid against the exact |ψ|² (Verification).',
+  layout: 'workbench', gl: true, drawGL, draw, bench,
+  params: PARAMS, create: createSim, timeDependent: false,
+  hudLine: sim => `E${sim.n} = ${sim.E.toPrecision(5).replace('-', '−')} eV · ⟨r⟩ = ${+sim.meanRExact.toPrecision(4)} a₀ · ${sim.N.toLocaleString('en')} samples · static state, drag to rotate`,
+  onPointer(canvas) {
+    cam.attach(canvas);
+    canvas.classList.add('grab');
+    canvas.addEventListener('pointerdown', () => { dragging = true; });
+    addEventListener('pointerup', () => { dragging = false; });
   },
-  hudLine: sim => sim.measured
-    ? `T = ${sim.measured.PT.toPrecision(4)} simulated · ${sim.an.Tbar.toPrecision(4)} exact`
-    : sim.t > sim.an.tWrap ? 'past wrap-around: periodic images' : `exact T̄ = ${sim.an.Tbar.toPrecision(4)} · measuring at ${sim.an.tSep.toFixed(0)} fs`,
   model: {
-    legend: ['brightness: probability density |ψ|² vs initial peak (scale: see Parameters)', 'orange: barrier V(x); dashed line: crest x = 0'],
-    equations: [{ caption: 'Model', mathml: '<math display="block"><mi>i</mi><mi>ħ</mi><mfrac><mrow><mo>∂</mo><mi>ψ</mi></mrow><mrow><mo>∂</mo><mi>t</mi></mrow></mfrac><mo>=</mo><mo>−</mo><mfrac><msup><mi>ħ</mi><mn>2</mn></msup><mrow><mn>2</mn><msub><mi>m</mi><mi>e</mi></msub></mrow></mfrac><msup><mo>∇</mo><mn>2</mn></msup><mi>ψ</mi><mo>+</mo><msub><mi>V</mi><mn>0</mn></msub><msup><mi>sech</mi><mn>2</mn></msup><mo>(</mo><mi>x</mi><mo>/</mo><mi>w</mi><mo>)</mo><mi>ψ</mi></math>' }],
+    legend: ['glow: probability density |ψ|² (exact, on a 96³ grid)', 'dots: independent samples of |ψ|²; colour = sign (or phase) of ψ'],
+    equations: [
+      { caption: 'Time-independent Schrödinger equation of a one-electron atom (point nucleus of charge Ze, infinite mass):', mathml: '<math display="block"><mrow><mo>[</mo><mo>−</mo><mfrac><msup><mi>ħ</mi><mn>2</mn></msup><mrow><mn>2</mn><msub><mi>m</mi><mi>e</mi></msub></mrow></mfrac><msup><mo>∇</mo><mn>2</mn></msup><mo>−</mo><mfrac><mrow><mi>Z</mi><msup><mi>e</mi><mn>2</mn></msup></mrow><mrow><mn>4</mn><mi>π</mi><msub><mi>ε</mi><mn>0</mn></msub><mi>r</mi></mrow></mfrac><mo>]</mo><mi>ψ</mi><mo>=</mo><mi>E</mi><mi>ψ</mi></mrow></math>' },
+      { caption: 'Its bound states, with ρ = 2Zr/(na₀) and generalised Laguerre polynomials L:', mathml: '<math display="block"><mrow><msub><mi>ψ</mi><mrow><mi>n</mi><mi>l</mi><mi>m</mi></mrow></msub><mo>=</mo><msub><mi>N</mi><mrow><mi>n</mi><mi>l</mi></mrow></msub><msup><mi>e</mi><mrow><mo>−</mo><mi>ρ</mi><mo>/</mo><mn>2</mn></mrow></msup><msup><mi>ρ</mi><mi>l</mi></msup><msubsup><mi>L</mi><mrow><mi>n</mi><mo>−</mo><mi>l</mi><mo>−</mo><mn>1</mn></mrow><mrow><mo>(</mo><mn>2</mn><mi>l</mi><mo>+</mo><mn>1</mn><mo>)</mo></mrow></msubsup><mo>(</mo><mi>ρ</mi><mo>)</mo><mspace width="0.2em"/><msub><mi>Y</mi><mrow><mi>l</mi><mi>m</mi></mrow></msub><mo>(</mo><mi>θ</mi><mo>,</mo><mi>φ</mi><mo>)</mo><mo>,</mo><mspace width="0.6em"/><msub><mi>E</mi><mi>n</mi></msub><mo>=</mo><mo>−</mo><mfrac><mrow><msup><mi>Z</mi><mn>2</mn></msup><mi>Ry</mi></mrow><msup><mi>n</mi><mn>2</mn></msup></mfrac></mrow></math>' },
+    ],
     assumptions: [
-      'One electron with the free-electron mass in a plane; a static, ideal barrier V₀ sech²(x/w) that is uniform along y (a ridge). No spin, image charges, many-body screening, phonons or decoherence.',
-      'The barrier is smooth (sech², full width at half height a = 1.763 w), not rectangular: a sharp-edged rectangle on this spectral grid converged only to first order (6–26 % errors in T), while sech² has an exact transmission formula and converges spectrally.',
-      'Initial state: isotropic Gaussian packet, width σ₀, central wavevector k₀ at angle θ to the barrier normal; it starts clear of the barrier.',
-      `Grid: ${GRID.nx} × ${GRID.ny} cells, ${GRID.dx} nm spacing (256 nm × 64 nm), periodic; time step ${GRID.dt} fs, Strang splitting (second order). No absorbing layer: the transmitted fraction is read at t_sep, before the packet front can wrap around in x.`,
-      'Because V depends only on x the problem separates: the x-probabilities are those of a 1D packet with k_x = k₀cosθ, which is why the exact benchmark is a 1D integral. Wrapping across the y edges does not change them.',
-      'T is a probability for each electron (the fraction of many identical runs that end up on the far side), not a fraction of a split particle.',
+      'One electron, non-relativistic, point nucleus of infinite mass. Neglected: fine structure (relative size ~α² ≈ 5×10⁻⁵), Lamb shift, hyperfine structure and the reduced-mass correction (0.054 % in lengths and energies for hydrogen).',
+      'Multi-electron atoms have no such closed-form orbitals; these shapes are exact only for H, He⁺, Li²⁺ … (Z = 1 … 10 offered).',
+      'Stationary states: |ψ|² does not change in time, so there is no physical time axis. The electron does not orbit; the cloud is the probability of finding it at each position in a measurement.',
+      'Real orbitals (p_x, d_xy …) are equal-weight superpositions of m = +|m| and −|m|; they are not eigenstates of L_z. The complex basis shows the states of definite L_z = mħ, whose density is symmetric about the z-axis.',
+      'Overall sign (phase) of ψ is a convention; only the relative sign or phase between regions has meaning.',
     ],
     conventions: [
-      'Map: physical plane (x right, y up). Brightness = |ψ|² divided by the initial peak density, then square-root (default) or log scale; colour scale is a display choice and does not affect the computation.',
-      'Phase view: hue = arg ψ (domain colouring); the stripes are wavefronts, spaced by the de Broglie wavelength 2π/k₀.',
-      'Profile strip: V(x) to scale in meV, with E₀ (total kinetic energy) and E_x = E₀cos²θ (energy of motion normal to the barrier).',
-      'On phones the map shows the central 128 nm of the 256 nm box. Playback is compressed: 40 fs of physical time per second by default.',
+      'Geometry is physical space in Bohr radii (a₀ = 52.918 pm); the camera is a perspective view with z up. Dotted lines are the x, y, z axes through the nucleus, with ticks at the stated spacing.',
+      'Glow (volume): |ψ|² sampled on a 96³ grid filling the cube that contains ≥ 99.9 % of the probability, ray-marched on the GPU with trilinear interpolation (measured error in Verification). Brightness and opacity are display transfer functions of |ψ|²/max (log over 3 decades by default; √ and linear selectable), not a physical optical depth. In the light theme the same density is drawn as absorbing ink.',
+      'Dots: N independent positions drawn from |ψ|² (seeded). The density of dots is the physical probability density; dot brightness and size are display choices. Dot colour: sign of ψ (real basis) or phase arg ψ (complex basis, hue wheel).',
+      'The nucleus marker is not to scale (the proton radius is 1.6×10⁻⁵ a₀). Cutaway removes the half-space y > 0 from both the volume and the dots.',
+      'Camera rotation is a viewing aid; it is off when the system requests reduced motion.',
     ],
     references: [
-      'L. D. Landau & E. M. Lifshitz, Quantum Mechanics (3rd ed.), §25 Problem 4: transmission through U₀/cosh²(αx).',
-      'C. Eckart, Phys. Rev. 35, 1303 (1930).',
-      'M. D. Feit, J. A. Fleck & A. Steiger, J. Comput. Phys. 47, 412 (1982): split-operator FFT method.',
-      'E. Tiesinga et al., CODATA 2018, Rev. Mod. Phys. 93, 025010 (2021): ħ, mₑ, e.',
+      'L. D. Landau & E. M. Lifshitz, Quantum Mechanics (Non-relativistic Theory), 3rd ed., §36 (Coulomb field).',
+      'H. A. Bethe & E. E. Salpeter, Quantum Mechanics of One- and Two-Electron Atoms (Springer, 1957), §1–3.',
+      'D. J. Griffiths & D. F. Schroeter, Introduction to Quantum Mechanics, 3rd ed., §4.2 (hydrogen atom; ⟨r⟩, radial functions).',
+      'E. Tiesinga et al., CODATA 2018, Rev. Mod. Phys. 93, 025010 (2021): a₀, Ry, Eh.',
     ],
   },
+  extraSections(side, { section: sec }) {
+    const d = sec('Display (does not change the model)');
+    d.body.append(
+      el('div', { class: 'psim-field' }, el('div', { class: 'top' }, el('span', {}, 'View')), select(VIEWS, disp.view, v => { disp.view = v; })),
+      el('div', { class: 'psim-field' }, el('div', { class: 'top' }, el('span', {}, 'Glow transfer function')), select(Object.entries(TRANSFER).map(([value, t]) => ({ value, label: t.label })), disp.transfer, v => { disp.transfer = v; })),
+      toggle('Cutaway: remove half-space y > 0', disp.cut, v => { disp.cut = v; }),
+      toggle('Rotate camera slowly', disp.rotate, v => { disp.rotate = v; }),
+      el('p', { class: 'psim-hint' }, 'Drag the scene to rotate, scroll to zoom. The cutaway reveals the nested shells (radial nodes) of s and higher-n states.'),
+    );
+    side.insertBefore(d, side.children[1]);
+  },
 });
+
+// ------------------------------------------------------------------ GPU self-test: renderer output vs a CPU ray march of the same data
+window.psim.selfTest = () => {
+  const gl = document.querySelector('canvas.psim-gl').getContext('webgl2'), sim = app.sim;
+  const W = gl.drawingBufferWidth, H = gl.drawingBufferHeight, L = sim.L, G = sim.G;
+  const c = orbitCamera({ distance: 2.6 * L, yaw: 0.3, pitch: 0.25, fov: 0.7 }), opacity = 0.25, steps = 200;
+  const T = TRANSFER.log3.f, d = new Float32Array(G * G * G);
+  for (let i = 0; i < d.length; i++) d[i] = T(sim.rho[i] / sim.rhoMax);
+  const v = createVolumeRenderer(gl); v.update(d, G, G, G, { range: [0, 1] });
+  gl.viewport(0, 0, W, H); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+  v.draw(c, { aspect: W / H, box: [[-L, -L, -L], [L, L, L]], colormap: 'magma', opacity, steps, mode: 'emission' });
+  const inv = invert(c.matrices(W / H).viewProj), mul = (x, y, z) => { const r = [0, 1, 2, 3].map(i => inv[i] * x + inv[4 + i] * y + inv[8 + i] * z + inv[12 + i]); return r.slice(0, 3).map(q => q / r[3]); };
+  const at = (i, j, k) => d[Math.min(G - 1, Math.max(0, i)) + G * (Math.min(G - 1, Math.max(0, j)) + G * Math.min(G - 1, Math.max(0, k)))];
+  const tri = p => { const f = p.map(q => (q + L) / (2 * L) * G - 0.5), i = f.map(Math.floor), w = f.map((q, a) => q - i[a]); let s = 0;
+    for (let a = 0; a < 2; a++) for (let b = 0; b < 2; b++) for (let e = 0; e < 2; e++) s += (a ? w[0] : 1 - w[0]) * (b ? w[1] : 1 - w[1]) * (e ? w[2] : 1 - w[2]) * at(i[0] + a, i[1] + b, i[2] + e); return s; };
+  const cpuAlpha = (px, py) => {   // same ray set-up and sum as the emission shader
+    const nx = (px + 0.5) / W * 2 - 1, ny = 1 - (py + 0.5) / H * 2, ro = mul(nx, ny, -1), b = mul(nx, ny, 1);
+    let rd = b.map((q, i) => q - ro[i]); const len = Math.hypot(...rd); rd = rd.map(q => q / len);
+    const t0 = rd.map((q, i) => (-L - ro[i]) / q), t1 = rd.map((q, i) => (L - ro[i]) / q);
+    const near = Math.max(...t0.map((q, i) => Math.min(q, t1[i])), 0), far = Math.min(...t0.map((q, i) => Math.max(q, t1[i])));
+    if (far <= near) return 0;
+    const dt = (far - near) / steps; let a = 0;
+    for (let s = 0.5; s <= steps; s += 1) { const p = ro.map((q, i) => q + rd[i] * (near + s * dt)); a += opacity * tri(p) * dt / (2 * L * Math.sqrt(3)) * 8; }
+    return Math.min(1, a);
+  };
+  let worst = 0; const probes = [];
+  for (const [fx, fy] of [[0.5, 0.5], [0.5, 0.35], [0.5, 0.65], [0.38, 0.5], [0.62, 0.42], [0.44, 0.58], [0.02, 0.02]]) {
+    const px = Math.round(fx * W), py = Math.round(fy * H), b = new Uint8Array(4);
+    gl.readPixels(px, H - 1 - py, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, b);
+    const gpu = b[3] / 255, cpu = cpuAlpha(px, py);
+    worst = Math.max(worst, Math.abs(gpu - cpu)); probes.push(`${gpu.toFixed(3)}/${cpu.toFixed(3)}`);
+  }
+  upKey = '';   // let the next frame restore the scene's own upload
+  return { label: 'GPU volume opacity = CPU ray march of the same |ψ|² grid (7 pixels)', pass: worst < 0.03, maxAlphaDiff: +worst.toFixed(4), gpuOverCpu: probes.join(' ') };
+};
 
 </script>
 </body>
