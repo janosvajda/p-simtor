@@ -135,3 +135,14 @@ test('langevinBAOAB: H(t) − H(0) equals the heat from the bath, with O(dt²) e
   assert.ok(b < 5e-3, `imbalance ${b}`);
   assert.ok(a / b > 2.5, `shrinks with dt (${a} → ${b})`);
 });
+
+test('stationaryDistribution: detailed balance in a two-state chain; a birth–death chain spanning 10⁻³⁰ keeps relative accuracy', async () => {
+  const { stationaryDistribution } = await import('../core/stochastic.mjs');
+  const p = stationaryDistribution([[0, 2], [5, 0]]);
+  assert.ok(Math.abs(p[1] / p[0] - 2 / 5) < 1e-15);
+  // levels E_k = 7k (kT = 1): π_k ∝ e^{−7k} down to e^{−70} ≈ 4e−31
+  const n = 11, R = Array.from({ length: n }, () => new Array(n).fill(0));
+  for (let k = 0; k < n - 1; k++) { R[k][k + 1] = Math.exp(-7); R[k + 1][k] = 1; }
+  const pi = stationaryDistribution(R), Z = Array.from({ length: n }, (_, k) => Math.exp(-7 * k)).reduce((a, b) => a + b);
+  for (let k = 0; k < n; k++) assert.ok(Math.abs(pi[k] / (Math.exp(-7 * k) / Z) - 1) < 1e-12, `level ${k}`);
+});

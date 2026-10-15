@@ -151,8 +151,8 @@ export function createInstrument(spec) {
   if (timeDependent) {
     tp = transport({
       speed: speed0, speedLabel: s => `${sci(s, 2)} ${timeUnit}/s`, range: speedRange,
-      onToggle: () => setPlaying(!clock.playing),
-      onStep: () => { setPlaying(false); sim.step(); tDisplay = sim.t; },
+      onToggle: () => togglePlay(),
+      onStep: () => { setPlaying(false); if (!isDone()) { sim.step(); tDisplay = sim.t; } },
       onRestart: () => rebuild(),
       onFit: () => spec.onFit?.(view),
       onFullscreen: () => toggleFullscreen(),
@@ -165,6 +165,14 @@ export function createInstrument(spec) {
     stage.querySelector('.psim-hud').querySelector('.dim').textContent = '';
   }
   function setPlaying(p) { clock.playing = p; tp?.setPlaying(p); }
+  // A model that ends (a merger, everything decayed, the last particle left) sets sim.done (or
+  // sim.ended): the clock stops there instead of counting time in which nothing is computed,
+  // and play starts the run again from the beginning.
+  const isDone = () => sim?.done === true || sim?.ended === true;
+  function togglePlay() {
+    if (!clock.playing && isDone()) { rebuild(); setPlaying(true); return; }
+    setPlaying(!clock.playing);
+  }
 
 
   // ------------------------------------------------------------ side panel
@@ -337,12 +345,13 @@ export function createInstrument(spec) {
         // frameBudget ms of computing per frame, checked after every step, so a slow step
         // (a Monte Carlo sweep) runs at most once past the budget; fast steps run in thousands
         const deadline = performance.now() + frameBudget;
-        while (sim.t < target) {
+        while (sim.t < target && !isDone()) {
           sim.step();
           if (performance.now() > deadline) break;
         }
-        limited = sim.t < target;
+        limited = sim.t < target && !isDone();
         tDisplay = Math.min(target, sim.t);
+        if (isDone()) { tDisplay = sim.t; setPlaying(false); }
       }
     }
     if (glLayer?.ok) { glLayer.sync(view.dpr); drawGL?.(glLayer.gl, sim, view, tDisplay); }
@@ -357,7 +366,8 @@ export function createInstrument(spec) {
       const firstErr = d.find(x => x.kind === 'error' && !x.pending);
       hud.a.textContent = firstErr && hudError ? `${firstErr.label} ${sci(firstErr.value)}` : '';
       hud.b.textContent = spec.hudLine?.(sim) ?? '';
-      hud.flag.textContent = limited ? 'compute-limited: playback slowed to keep the calculation exact' : '';
+      hud.flag.textContent = isDone() ? (texts.finished ?? 'finished: the computed run ends here (play starts again)')
+        : limited ? 'compute-limited: playback slowed to keep the calculation exact' : '';
       benchApi?.update?.(sim, tDisplay, { rebuilt: false });
       status.set('t', timeDependent ? tDisplay : 1);
       if (firstErr) { status.set('drift', firstErr.value); status.set('driftLabel', firstErr.label); }
@@ -372,7 +382,8 @@ export function createInstrument(spec) {
     get t() { return tDisplay; },
     state: () => ({ t: sim.t, ...sim.state() }),
     params: () => ({ ...values }),
-    advanceTo: t => { while (sim.t < t) sim.step(); tDisplay = Math.max(tDisplay, Math.min(t, sim.t)); return window.psim.state(); },
+    advanceTo: t => { while (sim.t < t && !isDone()) sim.step(); tDisplay = Math.max(tDisplay, Math.min(t, sim.t)); return window.psim.state(); },
+    get done() { return isDone(); },
     restart: () => rebuild(),
     setParams: (next, opts) => setParams(next, opts),
     setParam: (k, v) => setParam(k, v),
@@ -400,8 +411,8 @@ export function createInstrument(spec) {
     if ((e.key === 'f' || e.key === 'F') && !e.metaKey && !e.ctrlKey) { e.preventDefault(); toggleFullscreen(); return; }
     if (e.key === 'Escape' && pseudoFs) { setPseudo(false); return; }
     if (!timeDependent) return;
-    if (e.code === 'Space') { e.preventDefault(); setPlaying(!clock.playing); }
-    else if (e.key === '.') { setPlaying(false); sim.step(); tDisplay = sim.t; }
+    if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+    else if (e.key === '.') { setPlaying(false); if (!isDone()) { sim.step(); tDisplay = sim.t; } }
     else if (e.key === 'r' || e.key === 'R') rebuild();
   });
   status.set('model', 'generic');

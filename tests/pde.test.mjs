@@ -168,3 +168,21 @@ test('Schrödinger absorbing layers: outgoing packet leaves (≤ 10⁻³ reflect
   close(absorbing.absorbed() + absorbing.norm(), N0, 1e-12 * N0, 'absorbed + remaining = initial');
   assert.throws(() => schrodingerND({ re0: re, shape: [n], spacing: dx, dt: 0.01, absorb: { width: 600, strength: 1 } }), /half/);
 });
+
+test('stationaryStates1D on 10⁴ points: fast, residual small, a tunnelling doublet stays orthogonal and has the right parity', async () => {
+
+  const n = 10000, L = 12, dx = L / n, xs = Array.from({ length: n }, (_, i) => -L / 2 + (i + 0.5) * dx);
+  const V = Float64Array.from(xs, x => 6 * (x * x - 1) ** 2);               // symmetric double well, barrier 6
+  const t0 = performance.now();
+  const { energies, states } = stationaryStates1D({ V, dx, count: 4 });
+  assert.ok(performance.now() - t0 < 500, `fast: ${performance.now() - t0} ms`);
+  assert.ok(energies[1] - energies[0] > 0 && energies[1] < 6, `doublet below the barrier, splitting ${energies[1] - energies[0]}`);
+  let ov = 0; for (let i = 0; i < n; i++) ov += states[0][i] * states[1][i] * dx;
+  assert.ok(Math.abs(ov) < 1e-8, `overlap ${ov}`);
+  // ground state even, first excited odd
+  assert.ok(Math.abs(states[0][100] - states[0][n - 101]) < 1e-6 && Math.abs(states[1][100] + states[1][n - 101]) < 1e-6);
+  // residual ‖Hψ − Eψ‖ for the ground state (finite-difference H)
+  const tk = 1 / (2 * dx * dx); let r = 0;
+  for (let i = 1; i < n - 1; i++) { const h = -tk * (states[0][i - 1] - 2 * states[0][i] + states[0][i + 1]) + V[i] * states[0][i]; r = Math.max(r, Math.abs(h - energies[0] * states[0][i])); }
+  assert.ok(r < 1e-6, `residual ${r}`);
+});

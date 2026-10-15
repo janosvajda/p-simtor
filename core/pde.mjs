@@ -2,12 +2,15 @@
 //   diffusion1D        ∂u/∂t = D ∂²u/∂x² (+ source)  Crank–Nicolson: walls or periodic, sources, 2nd order
 //   waveND             ∂²u/∂t² = c² ∇²u               leapfrog in any dimension, CFL-checked, exact discrete energy
 //   stationaryStates1D Hψ = Eψ                        finite differences + symmetric tridiagonal eigensolver
+//   transmission1D     scattering T(E), R(E) through any 1D barrier (stationary, integrated from the far side)
+//   thermalAverage     (1/kT)∫ f(E) e^{−E/kT} dE  (Bell's tunnelling rate factor, thermionic emission)
+//   packetTransmission ∫ |φ(k)|² T(k) dk for a Gaussian packet: the exact benchmark for wave-packet runs
 // Source-free periodic diffusion and time-dependent Schrödinger in any dimension: fields.mjs.
 //
 // Boundary conditions as in laplacianND: 'dirichlet' (zero ghost values), 'neumann' (copied
 // edge-cell ghosts: zero face flux, cell-centred) or 'periodic'.
 
-import { solveTridiagonal, eigenTridiagonal } from './numerics.mjs';
+import { solveTridiagonal, lowestTridiagonal, dopri5, gaussLegendre } from './numerics.mjs';
 import { laplacianND } from './fields.mjs';
 
 const BCS = ['dirichlet', 'neumann', 'periodic'];
@@ -154,23 +157,82 @@ export function waveND({ u0, v0, shape, spacing = 1, bc = 'dirichlet', mask, mas
  * Lowest stationary states of H = −ħ²/2m d²/dx² + V(x) on a grid with ψ = 0 beyond both ends
  * (second-order finite differences). Returns { energies, states } with states normalised so that
  * Σ|ψ|²dx = 1. Accuracy O(dx²); confine the domain so ψ is negligible at the walls.
- * Uses the O(n²) tridiagonal eigensolver, so fine grids (thousands of points) stay fast.
+ * The `count` lowest energies by Sturm bisection and their states by shifted inverse iteration
+ * (both O(n) per level), orthogonalised within near-degenerate groups (tunnelling doublets):
+ * 10⁴ grid points take milliseconds.
  */
 export function stationaryStates1D({ V, dx, count = 5, mass = 1, hbar = 1 }) {
   const n = V.length;
   if (!(n >= 3) || !(dx > 0)) throw new Error('stationaryStates1D: need ≥ 3 grid points and dx > 0');
   const t = hbar * hbar / (2 * mass * dx * dx);
   const diag = Float64Array.from(V, v => v + 2 * t), off = new Float64Array(n - 1).fill(-t);
-  const { values, vectors } = eigenTridiagonal(diag, off);
-  const order = [...values.keys()].sort((p, q) => values[p] - values[q]).slice(0, count);
-  return {
-    energies: order.map(i => values[i]),
-    states: order.map(i => {
-      const v = vectors[i];
-      let s2 = 0; for (const a of v) s2 += a * a;
+  const energies = lowestTridiagonal(diag, off, count);
+  const scale = Math.max(...energies.map(Math.abs), t);
+  const states = [];
+  energies.forEach((E, k) => {
+    // shifted inverse iteration: (H − (E + δ)) x = b converges to the eigenvector of E
+    const shift = E + 1e-10 * scale * (1 + k * 1e-3);
+    const a = new Float64Array(n).fill(-t), c = new Float64Array(n).fill(-t), b = Float64Array.from(diag, v => v - shift);
+    let x = Float64Array.from({ length: n }, (_, i) => Math.sin((k + 1) * Math.PI * (i + 1) / (n + 1)) + 1e-3 * Math.cos(7.3 * i));
+    for (let it = 0; it < 4; it++) {
+      x = solveTridiagonal(a, b, c, x);
+      // remove components along already-found states of nearly equal energy (degenerate or doublet pairs)
+      states.forEach((v, j) => {
+        if (Math.abs(energies[j] - E) > 1e-6 * scale) return;
+        let d = 0; for (let i = 0; i < n; i++) d += v[i] * x[i] * dx;
+        for (let i = 0; i < n; i++) x[i] -= d * v[i];
+      });
+      let s2 = 0; for (const v of x) s2 += v * v;
       const f = 1 / Math.sqrt(s2 * dx);
-      const sign = v.find(a => Math.abs(a) > 1e-12) > 0 ? 1 : -1;   // first lobe positive
-      return Float64Array.from(v, a => sign * a * f);
-    }),
-  };
+      for (let i = 0; i < n; i++) x[i] *= f;
+    }
+    let peak = 0; for (const v of x) peak = Math.max(peak, Math.abs(v));
+    const sign = x.find(v => Math.abs(v) > 1e-6 * peak) > 0 ? 1 : -1;   // first lobe positive
+    states.push(Float64Array.from(x, v => sign * v));
+  });
+  return { energies, states };
 }
+
+/**
+ * Stationary scattering through a 1D potential V(x) (a function; constant outside [x0, x1]).
+ * Integrates −(ħ²/2m)ψ'' + Vψ = Eψ from x1 leftwards, starting from the purely transmitted wave
+ * e^{ik_R x}, and decomposes ψ at x0 into incoming and reflected waves, so tunnelling probabilities
+ * down to ~1e−12 stay accurate (no exponentially growing transfer matrices). E must exceed V at
+ * both ends. Returns { T, R } with T + R = 1 to the integration tolerance (a check in itself).
+ */
+export function transmission1D({ V, E, x0, x1, mass = 1, hbar = 1, rtol = 1e-11, atol = 1e-14 }) {
+  if (typeof V !== 'function') throw new Error('transmission1D: V must be a function of x');
+  const VL = V(x0), VR = V(x1);
+  if (!(E > VL && E > VR)) throw new Error('transmission1D: E must lie above the potential at both ends');
+  const c = 2 * mass / (hbar * hbar), kL = Math.sqrt(c * (E - VL)), kR = Math.sqrt(c * (E - VR));
+  // state [Re ψ, Im ψ, Re ψ', Im ψ'] at x; integrate in s = x1 − x (forward in s)
+  const f = (sv, y) => { const x = x1 - sv, q = c * (V(x) - E); return [-y[2], -y[3], -q * y[0], -q * y[1]]; };
+  const y1 = [Math.cos(kR * x1), Math.sin(kR * x1), -kR * Math.sin(kR * x1), kR * Math.cos(kR * x1)];
+  const { y } = dopri5(f, 0, y1, x1 - x0, { rtol, atol, h0: Math.min(1e-3, 0.01 / kR), hmax: Math.PI / (4 * Math.max(kL, kR)) });
+  // ψ = A e^{ik x} + B e^{−ik x}: A = ½ e^{−ikx}(ψ + ψ'/(ik)), B = ½ e^{ikx}(ψ − ψ'/(ik))
+  const [pr, pi, dr, di] = y, cx = Math.cos(kL * x0), sx = Math.sin(kL * x0);
+  const qr = di / kL, qi = -dr / kL;                       // ψ'/(ik)
+  const Ar = 0.5 * ((pr + qr) * cx + (pi + qi) * sx), Ai = 0.5 * ((pi + qi) * cx - (pr + qr) * sx);
+  const Br = 0.5 * ((pr - qr) * cx - (pi - qi) * sx), Bi = 0.5 * ((pi - qi) * cx + (pr - qr) * sx);
+  const A2 = Ar * Ar + Ai * Ai;
+  return { T: (kR / kL) / A2, R: (Br * Br + Bi * Bi) / A2 };
+}
+
+/** (1/kT) ∫_{from}^{∞} f(E) e^{−(E − from)/kT} dE by Gauss–Legendre panels (f bounded, e.g. a transmission). */
+export function thermalAverage(f, kT, { from = 0, panels = 40, n = 16, upto = 50 } = {}) {
+  if (!(kT > 0)) throw new Error('thermalAverage: kT must be positive');
+  let sum = 0;
+  const w = upto * kT / panels;
+  for (let p = 0; p < panels; p++) sum += gaussLegendre(E => f(E) * Math.exp(-(E - from) / kT), from + p * w, from + (p + 1) * w, n);
+  return sum / kT;
+}
+
+/** ∫ |φ(k)|² T(k) dk for a Gaussian packet with |φ(k)|² ∝ exp(−(k − k0)²/(2σ_k²)) (σ_k = 1/(2σ_x)). */
+export function packetTransmission(T, k0, sigmaK, { width = 8, n = 400 } = {}) {
+  const a = k0 - width * sigmaK, b = k0 + width * sigmaK, norm = 1 / (Math.sqrt(2 * Math.PI) * sigmaK);
+  let sum = 0;
+  const panels = Math.ceil(n / 16), w = (b - a) / panels;
+  for (let p = 0; p < panels; p++) sum += gaussLegendre(k => (k > 0 ? T(k) : 0) * norm * Math.exp(-((k - k0) ** 2) / (2 * sigmaK * sigmaK)), a + p * w, a + (p + 1) * w, 16);
+  return sum;
+}
+

@@ -110,6 +110,7 @@ Clarifying questions and discussions before a build need no delivery block. Neve
   - `numerics` (rng, fft, rk4Step, dopri5, gaussLegendre, adaptiveSimpson, integrateToInfinity, brent, lgamma, gammaP, gammaQ, erf, besselI, besselJ, besselJZeros, laguerre, complexYlm, hydrogenRadial, legendreP, realYlm, solveTridiagonal, eigenTridiagonal, linearFit, meanWithError)
   - `constants` (CODATA 2018, IAU, μ_B, g_e, α mass; `PDG` particle data with uncertainties and edition; IUPAC `ATOMIC_WEIGHT`)
   - `matter` (Bethe stopping power, ranges, PDG material table), `spin` (spin ½ / qubits: rotation, Born rule, measurement)
+  - `quantum` (complex matrices, spin operators for any j, tensor products, Hermitian eigensolver, exact propagators, Lindblad open-system dynamics)
   - `linalg` (matrixVector, solveLinear, leastSquares, eigenSymmetric, cholesky, eigenGeneralized, expm, conjugateGradient, newtonSolve)
   - `fields` (laplacianND, gradientND, divergenceND, fftND, solvePoissonPeriodic, diffusionPeriodic, schrodingerND with absorbing edges, probabilityCurrent, contourLines, densityLevel; optional domain masks)
   - `probability` (maxwellSpeed, effusiveSpeed, logSumExp, normalizeWeights, normalizeLogWeights, shannonEntropy, relativeEntropy, covarianceMatrix, canonicalEnsemble)

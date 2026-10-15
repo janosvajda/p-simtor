@@ -183,4 +183,29 @@ export function effectiveSampleSize(xs) {
   return { tau, ess, mean, error: Math.sqrt(variance / ess) };
 }
 
+/**
+ * Stationary distribution of a continuous-time Markov jump process with rates[i][j] (i → j, i ≠ j;
+ * diagonals ignored) by the Grassmann–Taksar–Heyman state reduction: no subtractions, so populations
+ * spanning 10⁻³⁰ … 1 (thermal tautomers, rare states) keep full relative accuracy, where solving
+ * πQ = 0 directly loses them. Irreducible chains only. Returns a Float64Array summing to 1.
+ */
+export function stationaryDistribution(rates) {
+  const n = rates.length, Q = rates.map(r => Float64Array.from(r));
+  for (let i = 0; i < n; i++) { Q[i][i] = 0; for (let j = 0; j < n; j++) if (!(Q[i][j] >= 0)) throw new Error('stationaryDistribution: rates must be ≥ 0'); }
+  for (let k = n - 1; k > 0; k--) {
+    let s = 0; for (let j = 0; j < k; j++) s += Q[k][j];
+    if (!(s > 0)) throw new Error('stationaryDistribution: the chain is not irreducible');
+    for (let i = 0; i < k; i++) { const f = Q[i][k] / s; if (f) for (let j = 0; j < k; j++) if (j !== i) Q[i][j] += f * Q[k][j]; }
+  }
+  const pi = new Float64Array(n); pi[0] = 1;
+  for (let k = 1; k < n; k++) {
+    let num = 0, den = 0;
+    for (let i = 0; i < k; i++) num += pi[i] * Q[i][k];
+    for (let j = 0; j < k; j++) den += Q[k][j];
+    pi[k] = num / den;
+  }
+  let sum = 0; for (const v of pi) sum += v;
+  return pi.map(v => v / sum);
+}
+
 export { makeRng as rng };

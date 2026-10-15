@@ -361,7 +361,8 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 .psim-term .mx math { font-size: 19px; }
 .psim-term .bar { width: 100%; height: 3px; border-radius: 2px; background: var(--line); }
 .psim-term .lb { font: 11px/1.25 var(--sans); color: var(--muted); text-align: center; max-width: 150px; }
-.psim-term .v { font: 12px var(--mono); color: var(--ink-2); white-space: nowrap; }
+.psim-term .v { font: 12px var(--mono); color: var(--ink-2); overflow-wrap: anywhere; }
+.psim-term { min-width: 0; max-width: 100%; }
 .psim-where { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: baseline; padding: 8px 12px; border-left: 2px solid var(--line-strong); }
 .psim-where .kw { grid-column: 1 / -1; font: italic 12px var(--serif); color: var(--muted); }
 .psim-where .w { display: contents; }
@@ -369,9 +370,9 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 .psim-where .mean { color: var(--ink-2); font-size: 12.5px; }
 .psim-where .v { font: 12px var(--mono); color: var(--ink); text-align: right; }
 .psim-derivation ol { margin: 8px 0 0; padding: 0; list-style: none; counter-reset: step; display: grid; gap: 8px; }
-.psim-derivation li { counter-increment: step; display: grid; grid-template-columns: 22px 1fr; column-gap: 8px; align-items: center; }
+.psim-derivation li { counter-increment: step; display: grid; grid-template-columns: 22px minmax(0, 1fr); column-gap: 8px; align-items: center; }
 .psim-derivation li::before { content: counter(step); grid-row: span 2; align-self: start; margin-top: 8px; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--line-strong); font: 10.5px/18px var(--mono); text-align: center; color: var(--muted); }
-.psim-derivation .mx { overflow-x: auto; padding: 4px 0; }
+.psim-derivation .mx { overflow-x: auto; padding: 4px 0; min-width: 0; }
 .psim-derivation .mx math { font-size: 17px; color: var(--ink); }
 .psim-derivation .why { font-size: 12px; color: var(--muted); }
 
@@ -382,7 +383,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
   background: radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 90%, var(--accent) 10%) 0%, var(--stage) 65%); }
 .psim-bench .psim-canvaswrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
 .psim-bench .psim-figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
-.psim-bench .psim-eqs { display: grid; gap: 18px; }
+.psim-bench .psim-eqs { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
 .psim-app.workbench .psim-transport { position: fixed; left: calc((100vw - 372px) / 2); }
 .psim-app.workbench .psim-hud { left: 30px; top: 30px; }
 .psim-app.workbench .psim-legend { right: 30px; top: 30px; }
@@ -712,7 +713,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 }</script>
 <script type="application/json" id="psim-verification">{
  "figure-eight": {
-  "generated": "2026-10-15T00:32:13.518Z",
+  "generated": "2026-10-15T05:06:05.267Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
   "settings": {
@@ -782,10 +783,10 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 202
+  "runtimeMs": 172
  },
  "pythagorean": {
-  "generated": "2026-10-15T00:32:17.046Z",
+  "generated": "2026-10-15T05:06:08.618Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
   "settings": {
@@ -855,10 +856,10 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 4861
+  "runtimeMs": 4642
  },
  "lagrange": {
-  "generated": "2026-10-15T00:32:18.962Z",
+  "generated": "2026-10-15T05:06:10.478Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
   "settings": {
@@ -928,10 +929,10 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 675
+  "runtimeMs": 655
  },
  "hierarchical": {
-  "generated": "2026-10-15T00:32:21.498Z",
+  "generated": "2026-10-15T05:06:12.893Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
   "settings": {
@@ -1001,10 +1002,10 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 3459
+  "runtimeMs": 3289
  },
  "broucke-a2": {
-  "generated": "2026-10-15T00:32:22.772Z",
+  "generated": "2026-10-15T05:06:14.107Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
   "settings": {
@@ -1074,7 +1075,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 258
+  "runtimeMs": 251
  }
 }</script>
 

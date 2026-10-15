@@ -142,6 +142,20 @@ function eigenvalues(spec, discretization) {
     return finite(value, 'fields Fourier operator');
   });
 }
+/** Kinetic energy ħ²Σ k_a²/(2 m_a) of every Fourier mode; mass is a number or one value per axis. */
+function kineticEnergies(spec, mass, hbar) {
+  const m = typeof mass === 'number' ? spec.shape.map(() => mass) : Array.from(mass);
+  if (m.length !== spec.shape.length || !m.every(v => v > 0)) throw new Error('fields: mass must be positive (a number or one per axis)');
+  return Float64Array.from({ length: spec.size }, (_, index) => {
+    let e = 0;
+    for (let axis = 0; axis < spec.shape.length; axis++) {
+      const n = spec.shape[axis], i = Math.floor(index / spec.strides[axis]) % n, mode = i < n / 2 ? i : i - n;
+      const k = 2 * Math.PI * mode / n / spec.spacing[axis];
+      e += hbar * hbar * k * k / (2 * m[axis]);
+    }
+    return e;
+  });
+}
 function mean(values) {
   let result = 0, correction = 0;
   for (const value of values) {
@@ -231,10 +245,10 @@ export function schrodingerND({ re0, im0, V, shape, spacing = 1, dt, mass = 1, h
   const spec = grid(shape, spacing); fftGrid(shape); field(re0, spec.size, 'schrodingerND');
   if (im0) field(im0, spec.size, 'schrodingerND');
   if (V) field(V, spec.size, 'schrodingerND potential');
-  positive(dt, 'schrodingerND dt'); positive(mass, 'schrodingerND mass'); positive(hbar, 'schrodingerND hbar'); finite(t0, 'schrodingerND t0');
-  const lambda = eigenvalues(spec, 'spectral');
+  positive(dt, 'schrodingerND dt'); positive(hbar, 'schrodingerND hbar'); finite(t0, 'schrodingerND t0');
+  const Tk = kineticEnergies(spec, mass, hbar);                // per-axis masses allowed (anisotropic kinetic energy)
   const halfV = Float64Array.from({ length: spec.size }, (_, i) => finite(-(V?.[i] ?? 0) / hbar * (dt / 2), 'schrodingerND potential phase'));
-  const kinetic = Float64Array.from(lambda, value => finite(-hbar / mass * (value / 2) * dt, 'schrodingerND kinetic phase'));
+  const kinetic = Float64Array.from(Tk, value => finite(-value / hbar * dt, 'schrodingerND kinetic phase'));
   const re = Float64Array.from(re0), im = im0 ? Float64Array.from(im0) : new Float64Array(spec.size);
   const workRe = new Float64Array(spec.size), workIm = new Float64Array(spec.size), cellVolume = volume(spec);
   let halfDamp = null;                                    // e^{−W dt/2ħ} per cell, applied with each potential half-step
@@ -285,6 +299,17 @@ export function schrodingerND({ re0, im0, V, shape, spacing = 1, dt, mass = 1, h
     norm() { return finite(mean(s.probability()) * spec.size * cellVolume, 'schrodingerND norm'); },
     /** Probability removed by the absorbing layers so far (0 without absorb). */
     absorbed() { return halfDamp ? Math.max(0, initialNorm - s.norm()) : 0; },
+    /**
+     * ⟨H⟩ = ⟨T⟩ + ⟨V⟩ per unit norm (kinetic part spectral, exact for the grid). The split-operator
+     * scheme keeps it bounded with an O(Δt²) oscillation, not exactly constant: judge it by order.
+     */
+    energy() {
+      workRe.set(re); workIm.set(im); transform(workRe, workIm, spec, false);
+      let t = 0, w = 0, v = 0, nrm = 0;
+      for (let i = 0; i < spec.size; i++) { const a = workRe[i] * workRe[i] + workIm[i] * workIm[i]; t += a * Tk[i]; w += a; }
+      for (let i = 0; i < spec.size; i++) { const a = re[i] * re[i] + im[i] * im[i]; v += a * (V?.[i] ?? 0); nrm += a; }
+      return t / w + v / nrm;
+    },
   };
   const initialNorm = s.norm();
   return s;
@@ -416,3 +441,75 @@ export function densityLevel(values, fraction) {
   for (const x of sorted) { acc += x; if (acc >= fraction * total) return x; }
   return 0;
 }
+
+/**
+ * Two coupled surfaces (nonadiabatic dynamics: conical intersections, avoided crossings, curve
+ * crossing): i ħ ∂ψ_k/∂t = T ψ_k + Σ_l V_kl ψ_l with a real symmetric 2×2 diabatic potential matrix
+ * (V11, V22, V12 arrays on the grid). Strang splitting: exact exp(−iVΔt/2ħ) of the 2×2 matrix at
+ * every point, shared spectral kinetic step (mass a number or per axis). Second order in Δt,
+ * unitary to round-off. Returns { t, psi: [{ re, im }, { re, im }], step(), advanceTo(t),
+ * populations() → [P1, P2] (diabatic), norm(), energy() }.
+ */
+export function coupledSchrodinger2({ psi0, V11, V22, V12, shape, spacing = 1, dt, mass = 1, hbar = 1, t0 = 0 }) {
+  const spec = grid(shape, spacing); fftGrid(shape);
+  if (!Array.isArray(psi0) || psi0.length !== 2) throw new Error('coupledSchrodinger2: psi0 must be [{ re, im }, { re, im }]');
+  for (const a of [V11, V22, V12]) field(a, spec.size, 'coupledSchrodinger2 potential');
+  positive(dt, 'coupledSchrodinger2 dt');
+  const n = spec.size, vol = volume(spec), tau = dt / (2 * hbar);
+  const psi = psi0.map(p => ({ re: Float64Array.from(p.re), im: p.im ? Float64Array.from(p.im) : new Float64Array(n) }));
+  const Tk = kineticEnergies(spec, mass, hbar), kC = Float64Array.from(Tk, e => Math.cos(-e * dt / hbar)), kS = Float64Array.from(Tk, e => Math.sin(-e * dt / hbar));
+  // exp(−iHτ) = e^{−i m τ} [cos(rτ) − i sin(rτ)(d σ_z + c σ_x)/r], H = [[m + d, c], [c, m − d]]
+  const P = { pr: new Float64Array(n), pi: new Float64Array(n), a: new Float64Array(n), b: new Float64Array(n), c: new Float64Array(n) };
+  for (let i = 0; i < n; i++) {
+    const m = (V11[i] + V22[i]) / 2, d = (V11[i] - V22[i]) / 2, c = V12[i], r = Math.hypot(d, c);
+    P.pr[i] = Math.cos(-m * tau); P.pi[i] = Math.sin(-m * tau);
+    P.a[i] = Math.cos(r * tau); const sr = r > 0 ? Math.sin(r * tau) / r : tau;
+    P.b[i] = sr * d; P.c[i] = sr * c;                            // −i·(b σ_z + c σ_x)
+  }
+  const potential = () => {
+    const [u, w] = psi;
+    for (let i = 0; i < n; i++) {
+      // [x1; x2] = (a − i b σz − i c σx)[u; w]
+      const ur = u.re[i], ui = u.im[i], wr = w.re[i], wi = w.im[i], a = P.a[i], b = P.b[i], c = P.c[i];
+      const x1r = a * ur + b * ui + c * wi, x1i = a * ui - b * ur - c * wr;
+      const x2r = a * wr - b * wi + c * ui, x2i = a * wi + b * wr - c * ur;
+      const pr = P.pr[i], pi = P.pi[i];
+      u.re[i] = pr * x1r - pi * x1i; u.im[i] = pr * x1i + pi * x1r;
+      w.re[i] = pr * x2r - pi * x2i; w.im[i] = pr * x2i + pi * x2r;
+    }
+  };
+  const kinetic = () => {
+    for (const p of psi) {
+      transform(p.re, p.im, spec, false);
+      for (let i = 0; i < n; i++) { const a = p.re[i], b = p.im[i]; p.re[i] = a * kC[i] - b * kS[i]; p.im[i] = a * kS[i] + b * kC[i]; }
+      transform(p.re, p.im, spec, true);
+    }
+  };
+  const pop = p => { let s = 0; for (let i = 0; i < n; i++) s += p.re[i] * p.re[i] + p.im[i] * p.im[i]; return s * vol; };
+  const s = {
+    t: t0, psi, steps: 0,
+    step() {
+      potential(); kinetic(); potential();
+      if (!Number.isFinite(psi[0].re[0] + psi[1].re[0])) throw new Error(`coupledSchrodinger2: non-finite state at t = ${s.t}`);
+      s.t += dt; s.steps++;
+    },
+    advanceTo(target) { while (s.t < target - 1e-12 * dt) s.step(); return s; },
+    populations: () => psi.map(pop),
+    norm: () => pop(psi[0]) + pop(psi[1]),
+    energy() {
+      let e = 0;
+      for (const p of psi) {
+        const r = Float64Array.from(p.re), im = Float64Array.from(p.im); transform(r, im, spec, false);
+        let t = 0; for (let i = 0; i < n; i++) t += (r[i] * r[i] + im[i] * im[i]) * Tk[i];
+        e += t / n * vol;                                          // Parseval: Σ|ψ̃|² = n Σ|ψ|²
+      }
+      const [u, w] = psi;
+      for (let i = 0; i < n; i++) {
+        e += vol * (V11[i] * (u.re[i] ** 2 + u.im[i] ** 2) + V22[i] * (w.re[i] ** 2 + w.im[i] ** 2) + 2 * V12[i] * (u.re[i] * w.re[i] + u.im[i] * w.im[i]));
+      }
+      return e / s.norm();
+    },
+  };
+  return s;
+}
+

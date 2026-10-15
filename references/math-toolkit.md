@@ -198,6 +198,16 @@ Benchmarks: massless 3-body phase space gives x = 2E/√s distributed as 2x on [
 
 Subject-specific but reusable: SU(2) sampling, `wilsonLoops` (all R×T at once), `polyakovLoop`, `plaquetteField`, `apeSmear`, `strongCouplingPlaquette(β, d)`, `siteCoords`/`siteIndex`, allocation-free `qmulInto`, gauge tools (`gaugeTransform` with a given g, `centreTransform`, `landauGauge`, `haarSU2`, `qexp`/`qlog`), topology (`topology`: clover s(x), q(x), Q; `bpstInstanton` benchmark; cooling and ranged sweeps via `sweep` options); the MS-bar running coupling `runAlphaS({ loops, thresholds })`, `betaCoefficients(nf, { group })`, `alphaS1Loop`, `exactTwoLoop`. Usage, costs and required checks: [particle physics](particle-physics.md).
 
+## Few-level quantum systems: `core/quantum.mjs`
+
+| Export | Use | Conditions |
+|---|---|---|
+| `cmat`, `identity`, `fromReal`, `cadd`, `cscale`, `cmul`, `dagger`, `kron`, `trace`, `expectation` | Complex dense matrices `{ n, re, im }` (row-major) | Small n (≲ 100); O(n³) products |
+| `spinOps(j)`, `embed(op, k, dims)` | S_x, S_y, S_z, S± for any spin; operators on one factor of a tensor product | Basis m = j … −j |
+| `eigHermitian(H)` | Complex Jacobi → ascending values, unitary eigenvector matrix | Hermitian (checked); degenerate-safe |
+| `propagator(eig, t, hbar)`, `evolve(ρ, U)`, `thermalState(H, kT)` | Exact U(t) = V e^{−iEt/ħ} V†; UρU†; Gibbs state | Time-independent H |
+| `lindblad({ H, jumps, rho0 })`, `checkDensity(ρ)` | Lindblad master equation (adaptive), with `population(i)`, `advanceTo(t, { exact })`; trace/Hermiticity/positivity report | Markovian bath; see [quantum](quantum.md) |
+
 ## Matter, spin and gas: `core/matter.mjs`, `core/spin.mjs`, `core/probability.mjs`
 
 | Export | Use | Conditions |
@@ -205,6 +215,10 @@ Subject-specific but reusable: SU(2) sampling, `wilsonLoops` (all R×T at once),
 | `betheStoppingPower(βγ, { mass, z, material })`, `csdaRange(T, …)`, `MATERIALS` | Mean energy loss (MeV cm²/g) and range (g/cm²) of heavy charged particles in liquid hydrogen, water, silicon, lead, air (PDG data; minimum ionisation within 0.1 %) | 0.1 ≲ βγ ≲ 1000; mean loss only (no straggling); not for e± |
 | `ketAlong`, `rotate`, `bloch`, `probability`, `measure` | Spin ½ / qubit states, precession, Born probabilities, projective measurement | Pure states; see [quantum](quantum.md) for the semiclassical beam model |
 | `maxwellSpeed(T, m)`, `effusiveSpeed(T, m)` | Gas speed laws (∝ v² and ∝ v³ e^{−mv²/2kT}) with pdf, cdf, exact sampler, mean | m in kg (`ATOMIC_WEIGHT[el]·u·1000`) |
+
+Lowest levels of a 1D Hamiltonian: `stationaryStates1D({ V, dx, count })` (milliseconds for 10⁴ points; bisection + inverse iteration) and `lowestTridiagonal(diag, off, k)` in `core/numerics.mjs`. Markov rate networks: `stationaryDistribution(rates)` in `core/stochastic.mjs` (relative accuracy for populations down to 10⁻³⁰). `NUCLIDE_MASS` are atomic masses (with electrons): subtract `me/u` for bare nuclei.
+
+Scattering (`core/pde.mjs`): `transmission1D({ V, E, x0, x1, mass, hbar })` → { T, R } for any 1D barrier (integrated from the transmitted side; exact Eckart and rectangular results reproduced to 1e−6), `thermalAverage(f, kT)`, `packetTransmission(T, k0, σk)`.
 
 Fields: `fftAxis(re, im, shape, axis)` (one axis only), `phaseWinding(re, im, { shape })` (vortex charges of a 2D complex field), `probabilityCurrent(re, im, { shape, spacing, mass, hbar })` from `core/fields.mjs` gives j = (ħ/m)Im(ψ*∇ψ) per axis, spectrally (the flux check for absorbing layers and transmission).
 
