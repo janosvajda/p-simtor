@@ -98,14 +98,24 @@ function fftGrid(shape) {
   if (!spec.shape.every(length => length <= 2 ** 29 && Number.isInteger(Math.log2(length)))) throw new Error('fftND: every extent must be a supported power of two');
   return spec;
 }
+const rows = new Map();
+/** Separable FFT over every axis; callers check finiteness once afterwards (not per element). */
 function transform(re, im, spec, inverse) {
   for (let axis = 0; axis < spec.shape.length; axis++) {
     const length = spec.shape[axis], stride = spec.strides[axis], block = length * stride;
-    const rowRe = new Float64Array(length), rowIm = new Float64Array(length);
+    if (!rows.has(length)) rows.set(length, [new Float64Array(length), new Float64Array(length)]);
+    const [rowRe, rowIm] = rows.get(length);
+    if (stride === 1) {
+      for (let base = 0; base < spec.size; base += block) {
+        const r = re.subarray(base, base + length), m = im.subarray(base, base + length);
+        fft(r, m, inverse);
+      }
+      continue;
+    }
     for (let base = 0; base < spec.size; base += block) { for (let offset = 0; offset < stride; offset++) {
       for (let i = 0; i < length; i++) { const index = base + offset + i * stride; rowRe[i] = re[index]; rowIm[i] = im[index]; }
       fft(rowRe, rowIm, inverse);
-      for (let i = 0; i < length; i++) { const index = base + offset + i * stride; re[index] = finite(rowRe[i], 'fftND'); im[index] = finite(rowIm[i], 'fftND'); }
+      for (let i = 0; i < length; i++) { const index = base + offset + i * stride; re[index] = rowRe[i]; im[index] = rowIm[i]; }
     } }
   }
 }
@@ -116,6 +126,7 @@ export function fftND(re, im, shape, inverse = false) {
   field(re, spec.size, 'fftND'); field(im, spec.size, 'fftND');
   if (overlaps(re, im)) throw new Error('fftND: real and imaginary storage must not overlap');
   transform(re, im, spec, inverse);
+  field(re, spec.size, 'fftND'); field(im, spec.size, 'fftND');
   return { re, im };
 }
 
@@ -242,10 +253,13 @@ export function schrodingerND({ re0, im0, V, shape, spacing = 1, dt, mass = 1, h
       return Math.exp(-W * dt / (2 * hbar));
     });
   }
-  const damp = () => { if (halfDamp) for (let i = 0; i < spec.size; i++) { workRe[i] *= halfDamp[i]; workIm[i] *= halfDamp[i]; } };
-  const rotate = phases => {
+  // precomputed factors: potential half-step (with the absorbing damping folded in) and kinetic step
+  const vC = Float64Array.from(halfV, (p, i) => Math.cos(p) * (halfDamp ? halfDamp[i] : 1));
+  const vS = Float64Array.from(halfV, (p, i) => Math.sin(p) * (halfDamp ? halfDamp[i] : 1));
+  const kC = Float64Array.from(kinetic, Math.cos), kS = Float64Array.from(kinetic, Math.sin);
+  const multiply = (C, S) => {
     for (let i = 0; i < spec.size; i++) {
-      const c = Math.cos(phases[i]), d = Math.sin(phases[i]), a = workRe[i], b = workIm[i];
+      const c = C[i], d = S[i], a = workRe[i], b = workIm[i];
       workRe[i] = a * c - b * d; workIm[i] = a * d + b * c;
     }
   };
@@ -255,8 +269,10 @@ export function schrodingerND({ re0, im0, V, shape, spacing = 1, dt, mass = 1, h
       const nextTime = finite(s.t + dt, 'schrodingerND');
       if (nextTime === s.t) throw new Error('schrodingerND: step underflow');
       workRe.set(re); workIm.set(im);
-      rotate(halfV); damp(); transform(workRe, workIm, spec, false); rotate(kinetic); transform(workRe, workIm, spec, true); rotate(halfV); damp();
-      field(workRe, spec.size, 'schrodingerND'); field(workIm, spec.size, 'schrodingerND');
+      multiply(vC, vS); transform(workRe, workIm, spec, false); multiply(kC, kS); transform(workRe, workIm, spec, true); multiply(vC, vS);
+      let check = 0;
+      for (let i = 0; i < spec.size; i++) check += workRe[i] + workIm[i];
+      if (!Number.isFinite(check)) throw new Error(`schrodingerND: the wavefunction became non-finite at t = ${s.t}`);
       re.set(workRe); im.set(workIm); s.t = nextTime; s.steps++;
     },
     advanceTo(target, maxSteps = 1000000) {
@@ -272,6 +288,31 @@ export function schrodingerND({ re0, im0, V, shape, spacing = 1, dt, mass = 1, h
   };
   const initialNorm = s.norm();
   return s;
+}
+
+/**
+ * Probability current j = (ħ/m) Im(ψ* ∇ψ) on a periodic power-of-two grid, with the derivative taken
+ * spectrally (consistent with schrodingerND's kinetic operator; Nyquist mode dropped). Returns one
+ * Float64Array per axis. The flux through a line or surface, integrated over time, measures what
+ * leaves a region independently of the norm: use it to check absorbing layers and transmission.
+ */
+export function probabilityCurrent(re, im, { shape, spacing = 1, mass = 1, hbar = 1 }) {
+  const spec = grid(shape, spacing); fftGrid(shape);
+  field(re, spec.size, 'probabilityCurrent'); field(im, spec.size, 'probabilityCurrent');
+  const out = [];
+  for (let axis = 0; axis < spec.shape.length; axis++) {
+    const n = spec.shape[axis], stride = spec.strides[axis], k0 = 2 * Math.PI / (n * spec.spacing[axis]);
+    const dRe = Float64Array.from(re), dIm = Float64Array.from(im);
+    transform(dRe, dIm, spec, false);
+    for (let i = 0; i < spec.size; i++) {
+      const m = Math.floor(i / stride) % n, k = m === n / 2 ? 0 : (m < n / 2 ? m : m - n) * k0;
+      const a = dRe[i], b = dIm[i];
+      dRe[i] = -k * b; dIm[i] = k * a;                         // multiply by i k
+    }
+    transform(dRe, dIm, spec, true);
+    out.push(Float64Array.from(re, (r, i) => hbar / mass * (r * dIm[i] - im[i] * dRe[i])));
+  }
+  return out;
 }
 
 /**

@@ -5,7 +5,7 @@
 //   const p = createPlot({ title: 'Spectral radiance', x: { label: 'λ', unit: 'nm', min: 100, max: 3000 },
 //                          y: { label: 'B_λ', unit: 'W sr⁻¹ m⁻³', log: false } });
 //   p.fn('planck', λ => B(λ, T), { color: '--body-0', label: 'T = 5772 K' });
-//   p.vline(λmax, { label: 'λ_max' });  p.draw();
+//   p.vline('peak', λmax, { label: 'λ_max' });  p.draw();
 
 import { el, cssVar, sci } from './instrument.mjs';
 

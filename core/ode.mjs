@@ -7,7 +7,7 @@
 // (cubic Hermite), which makes playback independent of frame rate: the step sequence
 // depends only on the problem and the step parameters, never on when frames are drawn.
 
-import { DORMAND_PRINCE as DP } from './numerics.mjs';
+import { DORMAND_PRINCE as DP, brent } from './numerics.mjs';
 
 /** Cubic Hermite interpolation of values y with derivatives d between (t0, t1). */
 function hermite(t0, y0, d0, t1, y1, d1, t, out) {
@@ -28,9 +28,19 @@ const finiteArray = (a, who) => {
  *   method 'rk4'    fixed step h (classical 4th order)
  *   method 'dopri5' adaptive Dormand–Prince 5(4) with error control (rtol, atol); h is the first trial step
  * f(t, y) returns the derivative (array-like of the same length).
- * Returns { t, y, step(), advanceTo(t, maxSteps), sampleAt(t, out), steps, rejected }.
+ * events: [{ g(t, y) → number, direction: 0 | +1 | −1, terminal }]: after each step a sign change
+ * of g (rising for +1, falling for −1) is located on the dense output with Brent's method and
+ * recorded in `events` as { index, t, y }; a terminal event stops the integration exactly there
+ * (stopped = true): ground contact, collisions, thresholds, "time until …". Event times inherit
+ * the dense-output accuracy (O(h⁴) per step), so check them under step refinement.
+ * Events are found from sign changes at step ends: a g that changes sign and changes back within
+ * one step (entering and leaving a thin region) is missed. Cap the step near such regions with
+ * `s.hmax` (mutable: e.g. small inside a drawn window, Infinity outside).
+ * advanceTo(t, maxSteps, { exact: true }) shortens the last step so the state ends exactly at t
+ * (also for rk4); without it the stepper stops at the first step end ≥ t.
+ * Returns { t, y, hmax, step(hLimit?), advanceTo(t, maxSteps, { exact }), sampleAt(t, out), steps, rejected, events, stopped }.
  */
-export function odeStepper({ f, y0, t0 = 0, method = 'dopri5', h, rtol = 1e-9, atol = 1e-12, hmax = Infinity }) {
+export function odeStepper({ f, y0, t0 = 0, method = 'dopri5', h, rtol = 1e-9, atol = 1e-12, hmax = Infinity, events: watch = [] }) {
   if (typeof f !== 'function') throw new Error('odeStepper: f(t, y) is required');
   finiteArray(y0, 'odeStepper');
   if (!(Number.isFinite(h) && h > 0)) throw new Error('odeStepper: a positive finite step h is required');
@@ -42,23 +52,25 @@ export function odeStepper({ f, y0, t0 = 0, method = 'dopri5', h, rtol = 1e-9, a
   const tmp = new Float64Array(n), yn = new Float64Array(n);
   let hNext = h;
   const s = {
-    t: t0, y, dy, steps: 0, rejected: 0, method,
-    step() {
+    t: t0, y, dy, steps: 0, rejected: 0, method, events: [], stopped: false, hmax,
+    step(hLimit = Infinity) {
+      if (s.stopped) return;
       prev.t = s.t; prev.y.set(y); prev.dy.set(dy);
       if (method === 'rk4') {
+        const hr = Math.min(h, hLimit);
         const k1 = dy, k2 = new Float64Array(n), k3 = new Float64Array(n), k4 = new Float64Array(n);
-        for (let i = 0; i < n; i++) tmp[i] = y[i] + h / 2 * k1[i];
-        k2.set(f(s.t + h / 2, tmp));
-        for (let i = 0; i < n; i++) tmp[i] = y[i] + h / 2 * k2[i];
-        k3.set(f(s.t + h / 2, tmp));
-        for (let i = 0; i < n; i++) tmp[i] = y[i] + h * k3[i];
-        k4.set(f(s.t + h, tmp));
-        for (let i = 0; i < n; i++) y[i] += h / 6 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]);
-        s.t += h;
+        for (let i = 0; i < n; i++) tmp[i] = y[i] + hr / 2 * k1[i];
+        k2.set(f(s.t + hr / 2, tmp));
+        for (let i = 0; i < n; i++) tmp[i] = y[i] + hr / 2 * k2[i];
+        k3.set(f(s.t + hr / 2, tmp));
+        for (let i = 0; i < n; i++) tmp[i] = y[i] + hr * k3[i];
+        k4.set(f(s.t + hr, tmp));
+        for (let i = 0; i < n; i++) y[i] += hr / 6 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]);
+        s.t += hr;
       } else {
         for (let attempt = 0; ; attempt++) {
           if (attempt > 60) throw new Error(`odeStepper: cannot meet tolerance at t = ${s.t}`);
-          const hh = Math.min(hNext, hmax);
+          const hh = Math.min(hNext, s.hmax, hLimit), clipped = hLimit < Math.min(hNext, s.hmax), keep = hNext;
           if (s.t + hh === s.t) throw new Error(`odeStepper: step underflow at t = ${s.t}`);
           k[0].set(dy);
           for (let st = 1; st < 7; st++) {
@@ -79,23 +91,45 @@ export function odeStepper({ f, y0, t0 = 0, method = 'dopri5', h, rtol = 1e-9, a
           if (!Number.isFinite(err)) throw new Error(`odeStepper: non-finite derivative or state at t = ${s.t}`);
           const fac = err === 0 ? 5 : Math.min(5, Math.max(0.2, 0.9 * Math.pow(err, -0.2)));
           hNext = hh * fac;
-          if (err <= 1) { y.set(yn); s.t += hh; break; }
+          if (err <= 1) { y.set(yn); s.t += hh; if (clipped) hNext = Math.max(hNext, keep); break; }
           s.rejected++;
         }
       }
       dy.set(f(s.t, y));
       if (!Array.from(y).every(Number.isFinite)) throw new Error(`odeStepper: state became non-finite at t = ${s.t}`);
       s.steps++;
+      if (watch.length) detectEvents();
     },
-    /** Advance until t ≥ target. Returns false if maxSteps were used first. */
-    advanceTo(target, maxSteps = Infinity) {
+    /** Advance until t ≥ target (or a terminal event). Returns false if maxSteps were used first. */
+    advanceTo(target, maxSteps = Infinity, { exact = false } = {}) {
       let i = 0;
-      while (s.t < target) { if (i++ >= maxSteps) return false; s.step(); }
+      while (s.t < target && !s.stopped) {
+        if (i++ >= maxSteps) return false;
+        s.step(exact ? target - s.t : Infinity);
+        if (exact && Math.abs(s.t - target) <= 4 * Number.EPSILON * Math.max(1, Math.abs(target))) s.t = target;
+      }
       return true;
     },
     /** State at time t within the last step (cubic Hermite with the derivatives at both ends). */
     sampleAt(t, out = new Float64Array(n)) { return hermite(prev.t, prev.y, prev.dy, s.t, y, dy, t, out); },
   };
+  const probe = new Float64Array(n);
+  function detectEvents() {
+    let first = null;
+    watch.forEach((e, index) => {
+      const g0 = e.g(prev.t, prev.y), g1 = e.g(s.t, y), dir = e.direction ?? 0;
+      const crosses = (g0 < 0 && g1 >= 0 && dir >= 0) || (g0 > 0 && g1 <= 0 && dir <= 0);
+      if (!crosses) return;
+      const te = g1 === 0 ? s.t : brent(tt => e.g(tt, s.sampleAt(tt, probe)), prev.t, s.t, 1e-14 * Math.max(1, Math.abs(s.t)));
+      const hit = { index, t: te, y: s.sampleAt(te) };
+      if (e.terminal && (!first || te < first.t)) first = hit;
+      s.events.push(hit);
+    });
+    if (first) {                                               // stop exactly at the earliest terminal event
+      y.set(first.y); s.t = first.t; dy.set(f(s.t, y)); s.stopped = true;
+      s.events = s.events.filter(ev => ev.t <= first.t);
+    }
+  }
   return s;
 }
 

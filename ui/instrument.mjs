@@ -76,7 +76,9 @@ export function initTheme(toggleButton) {
   });
 }
 
+/** A theme token ('--accent') → its value; any other colour ('#ff8800', 'rgb(…)', 'tomato') passes through. */
 export function cssVar(name) {
+  if (typeof name !== 'string' || !name.startsWith('--')) return name;
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
@@ -174,10 +176,10 @@ export function toast(stage, text) {
 
 // ---------- transport ----------
 
-export function transport({ onToggle, onStep, onRestart, onFit, speed, speedLabel, onSpeed }) {
+export function transport({ onToggle, onStep, onRestart, onFit, speed, speedLabel, onSpeed, range: [lo, hi] = [speed / 100, speed * 100] }) {
   const play = el('button', { class: 'primary', title: 'Play / pause (Space)', 'aria-label': 'Play or pause', html: ICONS.play, onclick: onToggle });
   const out = el('output', {}, speedLabel(speed));
-  const range = el('input', { type: 'range', min: -2, max: 2, step: 'any', value: Math.log10(speed), 'aria-label': 'Playback speed' });
+  const range = el('input', { type: 'range', min: Math.log10(lo), max: Math.log10(hi), step: 'any', value: Math.log10(speed), 'aria-label': 'Playback speed' });
   range.addEventListener('input', () => { const s = Math.pow(10, +range.value); out.textContent = speedLabel(s); onSpeed(s); });
   const bar = el('div', { class: 'psim-transport' },
     el('button', { title: 'Restart from initial conditions (R)', 'aria-label': 'Restart', html: ICONS.restart, onclick: onRestart }),

@@ -35,6 +35,7 @@ export function createInstrument(spec) {
   const {
     title, subtitle = '', tier, tierReason, create, draw, params = [], model = {},
     timeUnit = 'T', timeLabel = 'simulated time', speed: speed0 = 1, gl: wantGL = false, drawGL, controls, onPointer, layout = 'stage', bench,
+    presets = [], texts = {}, hudError = true, formatTime, timeDigits = 3, frameBudget = 9, speedRange, viewControls, testSteps = 300,
   } = spec;
   if (!TIERS[tier]) throw new Error(`tier must be one of ${Object.keys(TIERS).join(', ')}`);
   const report = readJsonScript('psim-verification');
@@ -81,15 +82,25 @@ export function createInstrument(spec) {
   const ctx = canvas.getContext('2d');
   // optional GPU layer under the 2D canvas (ui/gl.mjs): drawGL renders the scene, draw adds labels
   const glLayer = wantGL ? createGLLayer(canvas) : null;
+  if (glLayer) $('.psim-app').classList.add('has-gl');      // HUD and legend get a backing over bright GPU scenes
   $('.psim-hud .dim').textContent = timeLabel;
   const hud = { t: $('.psim-hud b'), a: $('.psim-hud .h1'), b: $('.psim-hud .h2'), flag: $('.psim-hud .flag') };
-  if (model.legend) $('.psim-legend').append(...model.legend.map(t => el('span', {}, t)));
+  // the legend beside the view; view.setLegend(items) replaces it when the representation changes
+  const setLegend = items => $('.psim-legend').replaceChildren(...(items ?? []).map(t => el('span', {}, t)));
+  setLegend(model.legend);
 
   // ------------------------------------------------------------ state
   const values = Object.fromEntries(params.map(p => [p.key, p.value]));
   let sim, tDisplay = 0, limited = false;
   const clock = createClock({ speed: speed0 });
-  const view = { W: 0, H: 0, dpr: 1, color: cssVar, opts: {}, pointer: null, gl: glLayer?.gl ?? null, glError: glLayer && !glLayer.ok ? glLayer.reason : '' };
+  const view = {
+    W: 0, H: 0, dpr: 1, color: cssVar, opts: {}, pointer: null, gl: glLayer?.gl ?? null, glError: glLayer && !glLayer.ok ? glLayer.reason : '',
+    /** Current playback speed (simulated time per second) and state, e.g. to disclose time compression. */
+    get speed() { return clock.speed; }, get playing() { return clock.playing; },
+    /** 'dark' or 'light': the theme now shown (e.g. additive vs alpha blending, mesh colours). */
+    get theme() { return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'; },
+    setLegend,
+  };
 
   let benchApi = null;
   function rebuild() {
@@ -106,7 +117,7 @@ export function createInstrument(spec) {
   let tp = null;
   if (timeDependent) {
     tp = transport({
-      speed: speed0, speedLabel: s => `${sci(s, 2)} ${timeUnit}/s`,
+      speed: speed0, speedLabel: s => `${sci(s, 2)} ${timeUnit}/s`, range: speedRange,
       onToggle: () => setPlaying(!clock.playing),
       onStep: () => { setPlaying(false); sim.step(); tDisplay = sim.t; },
       onRestart: () => rebuild(),
@@ -120,14 +131,29 @@ export function createInstrument(spec) {
   function setPlaying(p) { clock.playing = p; tp?.setPlaying(p); }
 
   // ------------------------------------------------------------ side panel
-  const secParams = section('Parameters');
+  const secParams = section(texts.parameters ?? 'Parameters');
   const paramInputs = new Map();
+  // set one or several parameters as if typed: every control shows the new value, one rebuild
+  function setParams(next, { play } = {}) {
+    for (const [k, v] of Object.entries(next)) { values[k] = v; paramInputs.get(k)?.setValue?.(v); }
+    rebuild();
+    if (play != null && timeDependent) setPlaying(play);
+  }
+  const setParam = (k, v) => setParams({ [k]: v });
+  if (presets.length) {
+    secParams.body.append(el('div', { class: 'psim-presets' },
+      el('span', { class: 'psim-hint' }, texts.presets ?? 'Try this'),
+      ...presets.map(pr => button(pr.label, () => setParams(pr.values ?? {}, { play: pr.play ?? true })))));
+  }
   if (params.length) {
-    secParams.body.append(el('p', { class: 'psim-hint' }, 'Changing a parameter recomputes the model from its initial state.'));
+    const note = texts.paramsNote ?? 'Changing a parameter recomputes the model from its initial state.';
+    if (note) secParams.body.append(el('p', { class: 'psim-hint' }, note));
     for (const p of params) {
       if (p.options) {
-        secParams.body.append(el('div', { class: 'psim-field' }, el('div', { class: 'top' }, el('span', {}, p.label)),
-          select(p.options, p.value, v => { values[p.key] = isNaN(+v) ? v : +v; rebuild(); })));
+        const sel = select(p.options, p.value, v => { values[p.key] = isNaN(+v) ? v : +v; rebuild(); });
+        sel.setValue = v => { sel.value = String(v); };
+        paramInputs.set(p.key, sel);
+        secParams.body.append(el('div', { class: 'psim-field' }, el('div', { class: 'top' }, el('span', {}, p.label)), sel));
       } else {
         const sl = slider({
           label: p.label, min: p.min, max: p.max, value: p.value, log: p.log, unit: p.unit ?? '', digits: p.digits ?? 3,
@@ -140,9 +166,13 @@ export function createInstrument(spec) {
       if (p.hint) secParams.body.append(el('p', { class: 'psim-hint', style: 'margin-top:-4px;font-size:11.5px' }, p.hint));
     }
   }
-  if (controls) controls(secParams.body, { values, rebuild });
+  if (controls) controls(secParams.body, { values, rebuild, setParam, setParams, play: () => setPlaying(true), pause: () => setPlaying(false), getSim: () => sim });
 
-  const secDiag = section('Diagnostics', { aside: 'live' });
+  // presentation-only controls (projection, colour map, slice): never rebuild the model
+  const secView = viewControls ? section(texts.view ?? 'View') : null;
+  if (secView) secView.body.append(el('p', { class: 'psim-hint' }, texts.viewNote ?? 'These change only how the results are shown, not the calculation.'));
+
+  const secDiag = section(texts.diagnostics ?? 'Diagnostics', { aside: 'live' });
   const diagPlot = logPlot({ caption: '', yMin: 1e-16, yMax: 1 });
   const diagSeries = diagPlot.addSeries('--accent');
   const diagRows = new Map();
@@ -162,10 +192,11 @@ export function createInstrument(spec) {
     for (const x of d) {
       let r = diagRows.get(x.key);
       if (!r) { r = row(x.label); diagRows.set(x.key, r); secDiag.body.append(r); }
-      const text = x.text ?? (x.kind === 'error' ? sci(x.value) : `${sci(x.value, 4)}${x.unit ? ` ${x.unit}` : ''}`);
-      r.set(text, x.kind === 'error' && x.good != null ? grade(x.value, x.good, x.warn ?? x.good * 1000) : '');
+      // pending: a quantity that is not measured yet (e.g. before enough Monte Carlo samples)
+      const text = x.pending ? (x.text ?? texts.pending ?? 'measuring…') : x.text ?? (x.kind === 'error' ? sci(x.value) : `${sci(x.value, 4)}${x.unit ? ` ${x.unit}` : ''}`);
+      r.set(text, !x.pending && x.kind === 'error' && x.good != null ? grade(x.value, x.good, x.warn ?? x.good * 1000) : '');
     }
-    const firstErr = d.find(x => x.kind === 'error');
+    const firstErr = d.find(x => x.kind === 'error' && !x.pending);
     if (firstErr && timeDependent && sim.t >= nextPlot) {
       diagPlot.push(diagSeries, sim.t, Math.max(firstErr.value, 1e-17));
       nextPlot = sim.t + (spec.duration ?? 10) / 800;
@@ -222,7 +253,8 @@ export function createInstrument(spec) {
     }),
   ));
 
-  side.append(...[secParams, secDiag, secVerify, secModel, secExport].filter(s => s !== secParams || params.length || controls));
+  side.append(...[secParams, secView, secDiag, secVerify, secModel, secExport].filter(s => s && (s !== secParams || params.length || controls)));
+  if (viewControls) viewControls(secView.body, { el, slider, select, toggle, button, view, getSim: () => sim });
   if (spec.extraSections) spec.extraSections(side, { section, el, row, slider, toggle, button, values, rebuild, view });
 
   // ------------------------------------------------------------ canvas & loop
@@ -240,11 +272,12 @@ export function createInstrument(spec) {
     if (timeDependent) {
       const target = clock.tick(now, tDisplay);
       if (target > tDisplay) {
-        const deadline = performance.now() + 9;
-        let k = 0;
+        // frameBudget ms of computing per frame, checked after every step, so a slow step
+        // (a Monte Carlo sweep) runs at most once past the budget; fast steps run in thousands
+        const deadline = performance.now() + frameBudget;
         while (sim.t < target) {
           sim.step();
-          if ((++k & 63) === 0 && performance.now() > deadline) break;
+          if (performance.now() > deadline) break;
         }
         limited = sim.t < target;
         tDisplay = Math.min(target, sim.t);
@@ -258,14 +291,14 @@ export function createInstrument(spec) {
     if (now - lastUi > 100) {
       lastUi = now;
       const d = renderDiag();
-      hud.t.textContent = timeDependent ? `${fix(tDisplay, 3)} ${timeUnit}` : '';
-      const firstErr = d.find(x => x.kind === 'error');
-      hud.a.textContent = firstErr ? `${firstErr.label} ${sci(firstErr.value)}` : '';
+      hud.t.textContent = timeDependent ? (formatTime ? formatTime(tDisplay) : `${fix(tDisplay, timeDigits)} ${timeUnit}`) : '';
+      const firstErr = d.find(x => x.kind === 'error' && !x.pending);
+      hud.a.textContent = firstErr && hudError ? `${firstErr.label} ${sci(firstErr.value)}` : '';
       hud.b.textContent = spec.hudLine?.(sim) ?? '';
       hud.flag.textContent = limited ? 'compute-limited: playback slowed to keep the calculation exact' : '';
       benchApi?.update?.(sim, tDisplay, { rebuilt: false });
       status.set('t', timeDependent ? tDisplay : 1);
-      if (firstErr) status.set('drift', firstErr.value);
+      if (firstErr) { status.set('drift', firstErr.value); status.set('driftLabel', firstErr.label); }
     }
     if (++frames === 1 || frames % 30 === 0) status.set('frames', frames);   // first frame at once: slow pages count as live
     requestAnimationFrame(frame);
@@ -278,13 +311,18 @@ export function createInstrument(spec) {
     params: () => ({ ...values }),
     advanceTo: t => { while (sim.t < t) sim.step(); tDisplay = Math.max(tDisplay, Math.min(t, sim.t)); return window.psim.state(); },
     restart: () => rebuild(),
+    setParams: (next, opts) => setParams(next, opts),
+    setParam: (k, v) => setParam(k, v),
+    getSim: () => sim,
+    testSteps,
+    play: () => setPlaying(true), pause: () => setPlaying(false),
     steps: n => { if (typeof sim.step === "function") for (let i = 0; i < n; i++) sim.step(); tDisplay = sim.t ?? 0; return window.psim.state(); },
   };
 
   if (bench && benchParts) {
     benchApi = bench({
       ...benchParts, createPlot, createEquation, createDerivation, M, values,
-      setParam: (k, v) => { values[k] = v; paramInputs.get(k)?.setValue?.(v); rebuild(); },
+      setParam, setParams, play: () => setPlaying(true), pause: () => setPlaying(false),
       getSim: () => sim,
     }) ?? null;
   }

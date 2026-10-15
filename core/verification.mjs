@@ -1,18 +1,32 @@
 // Shared verification gates for the CLI and browser. Reports are evidence only
 // when every check is explicit and the tested settings still match the simulation.
 
-export function validateModuleReport(report) {
-  if (!report || !Array.isArray(report.checks) || !report.checks.length) throw new Error('verification: need a non-empty checks array');
+/**
+ * Problems with each check of a module report, as [{ index, label, problem }]; empty when every
+ * check is well formed. Lets the CLI print the whole report and mark only the bad rows.
+ */
+export function moduleReportProblems(report) {
+  if (!report || !Array.isArray(report.checks) || !report.checks.length) return [{ index: -1, label: '', problem: 'need a non-empty checks array' }];
+  const out = [];
   for (const [i, check] of report.checks.entries()) {
-    const where = `verification check ${i + 1}`;
-    if (!check || typeof check.label !== 'string' || !check.label.trim()) throw new Error(`${where}: label is required`);
-    if (typeof check.pass !== 'boolean') throw new Error(`${where}: pass must be explicitly true or false`);
-    if (typeof check.value === 'number') {
-      if (!Number.isFinite(check.value)) throw new Error(`${where}: measured value must be finite`);
-    } else if (typeof check.value !== 'string' || !check.value.trim() || /NaN|Infinity|∞|^\s*—\s*$/.test(check.value)) {
-      throw new Error(`${where}: measured value must be finite and present`);
+    const label = typeof check?.label === 'string' ? check.label : '';
+    const bad = problem => out.push({ index: i, label, problem });
+    if (!check || !label.trim()) bad('label is required');
+    if (typeof check?.pass !== 'boolean') bad('pass must be explicitly true or false');
+    if (typeof check?.value === 'number') {
+      if (!Number.isFinite(check.value)) bad(`measured value must be finite (got ${check.value})`);
+    } else if (typeof check?.value !== 'string' || !check.value.trim() || /NaN|Infinity|∞|^\s*—\s*$/.test(check.value)) {
+      bad(`measured value must be finite and present (got ${JSON.stringify(check?.value)})`);
     }
-    if (check.state != null && check.state !== 'warn') throw new Error(`${where}: optional state must be 'warn'`);
+    if (check?.state != null && check.state !== 'warn') bad("optional state must be 'warn'");
+  }
+  return out;
+}
+
+export function validateModuleReport(report) {
+  const problems = moduleReportProblems(report);
+  if (problems.length) {
+    throw new Error(`verification: ${problems.map(p => (p.index < 0 ? p.problem : `check ${p.index + 1}${p.label ? ` "${p.label}"` : ''}: ${p.problem}`)).join('; ')}`);
   }
   return report;
 }

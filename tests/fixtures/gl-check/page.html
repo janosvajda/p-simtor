@@ -6,21 +6,25 @@
 <script type="application/json" id="psim-verification">null</script>
 <script type="module">
 import { createInstrument } from 'psim:ui/instrument-app.mjs';
-import { orbitCamera, createPointRenderer, createFieldRenderer, createVolumeRenderer, colormap } from 'psim:ui/gl.mjs';
+import { orbitCamera, createPointRenderer, createFieldRenderer, createVolumeRenderer, createSphereRenderer, createLineRenderer, createMeshRenderer, geometry, transform, colormap, drawColorBar, alignZ } from 'psim:ui/gl.mjs';
 import { PARAMS, createSim } from './physics.mjs';
 
 const cam = orbitCamera({ distance: 4, yaw: 0.5, pitch: 0.6 });
-let pts, field, vol, uploaded = null;
+let pts, field, vol, uploaded = null, pointSize = 3;
 createInstrument({
   title: 'GPU renderer check', subtitle: 'Test fixture for ui/gl.mjs', tier: 'conceptual', tierReason: 'Test fixture only.',
   params: PARAMS, create: createSim, gl: true, timeUnit: 's',
+  presets: [{ label: 'Few points, viridis', values: { n: 12, map: 'viridis' } }],
   model: { legend: ['ring: points coloured by index (inferno)', 'blob: Gaussian density, emission'] },
   onPointer(canvas) { cam.attach(canvas); },
+  viewControls(body, { slider, view }) {
+    body.append(slider({ label: 'Point size', min: 1, max: 8, value: 3, onInput: v => { pointSize = v; view.setLegend([`ring: points of size ${v} px`]); } }));
+  },
   drawGL(gl, sim, view) {
     if (!pts) { pts = createPointRenderer(gl); field = createFieldRenderer(gl); vol = createVolumeRenderer(gl); }
     if (uploaded !== sim) { pts.update(sim.ring, { values: sim.vals }); vol.update(sim.blob, sim.N, sim.N, sim.N); uploaded = sim; }
     vol.draw(cam, { aspect: view.W / view.H, colormap: 'magma', opacity: 1.5 });
-    pts.draw(cam, { aspect: view.W / view.H, size: 3, colormap: 'inferno', range: [0, 1] });
+    pts.draw(cam, { aspect: view.W / view.H, size: pointSize, colormap: sim.map, range: [0, 1] });
   },
   draw(ctx, sim, view) {
     const p = cam.project([1, 0, 0], view.W, view.H);
@@ -33,7 +37,7 @@ window.psim.selfTest = () => {
   const gl = document.querySelector('canvas.psim-gl').getContext('webgl2');
   const W = gl.drawingBufferWidth, H = gl.drawingBufferHeight, dpr = devicePixelRatio || 1;
   const px = (x, y) => { const b = new Uint8Array(4); gl.readPixels(Math.round(x), Math.round(H - 1 - y), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, b); return [...b]; };
-  const clear = () => { gl.viewport(0, 0, W, H); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); };
+  const clear = () => { gl.viewport(0, 0, W, H); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); };
   const out = [];
   // 1. a point drawn where orbitCamera.project says, nothing elsewhere
   const one = createPointRenderer(gl), c = orbitCamera({ distance: 4, yaw: 0.3, pitch: 0.4 });
@@ -55,6 +59,122 @@ window.psim.selfTest = () => {
   const mid = px(W / 2, H / 2), left = px(W / 2 - 0.08 * H, H / 2), right = px(W / 2 + 0.08 * H, H / 2), corner = px(5, 5);
   out.push({ label: 'GPU volume: centred, symmetric, empty outside the box', mid, left, right, corner,
     pass: mid[3] > left[3] && mid[3] > 40 && Math.abs(left[3] - right[3]) <= 0.05 * left[3] && corner[3] === 0 });
+  // 4. sphere: silhouette radius = exact angular size tan(asin(r/d))/tan(fov/2)·H/2; lit side faces the light
+  const sph = createSphereRenderer(gl), cs = orbitCamera({ distance: 5, yaw: 0, pitch: 0 });
+  const shot = (centre, target) => {
+    cs.target = target; clear();
+    sph.draw(cs, [{ center: centre, radius: 1, color: '#ffffff' }], { light: { direction: [0, 1, 0] }, ambient: 0 });
+  };
+  shot([0, 0, 0], [0, 0, 0]);
+  const R = Math.tan(Math.asin(1 / 5)) / Math.tan(cs.fov / 2) * H / 2;
+  // camera on +x looking at the origin: +y (towards the light) is on the right of the screen
+  const lit = px(W / 2 + 0.6 * R, H / 2), dark = px(W / 2 - 0.6 * R, H / 2), inside = px(W / 2, H / 2 - 0.95 * R), outside = px(W / 2, H / 2 - 1.05 * R);
+  // exact brightness at that pixel: ray from the eye through it, hit point on the sphere, n·l with l = +y (screen right)
+  const tx = (0.6 * R) / (W / 2) * Math.tan(cs.fov / 2) * (W / H), len = Math.hypot(tx, 1), dir = [tx / len, 0, -1 / len];
+  const bb = 5 * -dir[2], tHit = bb - Math.sqrt(bb * bb - 24), expected = Math.round(255 * dir[0] * tHit);
+  out.push({ label: 'GPU sphere: exact silhouette, n·l shading towards the light', radiusPx: +R.toFixed(1), lit, expected, dark, inside, outside,
+    pass: inside[3] === 255 && outside[3] === 0 && Math.abs(lit[0] - expected) <= 3 && dark[0] === 0 });
+  // 5. the same sphere 10⁸ units from the origin, camera targeting it: identical image (float64 relative drawing)
+  const near = [px(W / 2, H / 2), px(W / 2 + 0.6 * R, H / 2)];
+  shot([1e8, 2e8, -3e8], [1e8, 2e8, -3e8]);
+  const far = [px(W / 2, H / 2), px(W / 2 + 0.6 * R, H / 2)];
+  out.push({ label: 'GPU sphere far from the origin renders the same', near, far, pass: far.every((q, k) => q.every((v, i) => Math.abs(v - near[k][i]) <= 1)) });
+  // 6. thick line lands where camera.project says, and has the requested width
+  const ln = createLineRenderer(gl), cl = orbitCamera({ distance: 6, yaw: 0.4, pitch: 0.3 });
+  ln.update([-1, 0.5, 0, 1, 0.5, 0]); clear(); ln.draw(cl, { width: 8, color: '#ffffff', depthTest: false });
+  const m = cl.project([0, 0.5, 0], W / dpr, H / dpr), onLine = px(m.x * dpr, m.y * dpr), offLine = px(m.x * dpr, m.y * dpr - 12 * dpr);
+  out.push({ label: 'GPU line at camera.project(), 8 px wide', onLine, offLine, pass: onLine[3] > 200 && offLine[3] === 0 });
+  // 6b. per-line colours in one draw: each line keeps its own colour and opacity
+  ln.update([{ points: [-1, 0.5, 0, 1, 0.5, 0], color: '#ff0000' }, { points: [-1, -0.5, 0, 1, -0.5, 0], color: '#0000ff', opacity: 0.5 }]);
+  clear(); ln.draw(cl, { width: 8, color: '#ffffff', depthTest: false });
+  const m2 = cl.project([0, -0.5, 0], W / dpr, H / dpr), red = px(m.x * dpr, m.y * dpr), blue = px(m2.x * dpr, m2.y * dpr);
+  out.push({ label: 'GPU lines with their own colour and opacity', red, blue, pass: red[0] > 240 && red[2] < 10 && blue[2] > 110 && blue[2] < 140 && blue[0] < 10 && Math.abs(blue[3] - 128) <= 3 });
+  // 6c. point count: only the first n points are drawn
+  const two = createPointRenderer(gl);
+  two.update(new Float32Array([0.7, -0.4, 0.2, -0.7, 0.4, -0.2]));
+  clear(); two.draw(c, { size: 16, color: '#ffffff', blend: 'alpha', count: 1 });
+  const at2 = c.project([-0.7, 0.4, -0.2], W / dpr, H / dpr), first = px(at.x * dpr, at.y * dpr), second = px(at2.x * dpr, at2.y * dpr);
+  clear(); two.draw(c, { size: 16, color: '#ffffff', blend: 'alpha', soft: true });
+  const softCentre = px(at2.x * dpr, at2.y * dpr), softEdge = px(at2.x * dpr + 6 * dpr, at2.y * dpr);
+  out.push({ label: 'GPU points: count draws the first n; soft points fade like glow', first, second, softCentre, softEdge,
+    pass: first[3] > 200 && second[3] === 0 && softCentre[3] > 240 && softEdge[3] < 0.6 * softCentre[3] && softEdge[3] > 0 });
+  // 6c'. append: points added in two batches land where projected; clear() empties
+  const ap = createPointRenderer(gl);
+  ap.append(new Float32Array([0.7, -0.4, 0.2]), { colors: [1, 0, 0] });
+  ap.append(new Float32Array([-0.7, 0.4, -0.2]), { colors: [0, 0, 1] });
+  clear(); ap.draw(c, { size: 16, blend: 'alpha' });
+  const apA = px(at.x * dpr, at.y * dpr), apB = px(at2.x * dpr, at2.y * dpr);
+  ap.clear(); clear(); ap.draw(c, { size: 16, blend: 'alpha' });
+  const apEmpty = px(at.x * dpr, at.y * dpr);
+  out.push({ label: 'GPU points: append adds without re-upload; clear empties', apA, apB, apEmpty, count: ap.count,
+    pass: apA[0] > 200 && apA[2] < 30 && apB[2] > 200 && apB[0] < 30 && apEmpty[3] === 0 && ap.count === 0 });
+  // 6d. volume with smooth: false shows a 2×1×1 grid as two uniform blocks (no blend at the centre line)
+  const blocks = createVolumeRenderer(gl), cb = orbitCamera({ distance: 6, yaw: -Math.PI / 2, pitch: 0 });
+  blocks.update(new Float32Array([0, 1]), 2, 1, 1, { range: [0, 1] });
+  clear(); blocks.draw(cb, { colormap: 'magma', opacity: 3, smooth: false });
+  const pl = cb.project([-0.05, 0, 0], W / dpr, H / dpr), pr = cb.project([0.05, 0, 0], W / dpr, H / dpr), pq = cb.project([0.9, 0, 0], W / dpr, H / dpr);
+  const leftBlock = px(pl.x * dpr, pl.y * dpr), rightBlock = px(pr.x * dpr, pr.y * dpr), farRight = px(pq.x * dpr, pq.y * dpr);
+  out.push({ label: 'GPU volume smooth: false keeps cells uniform', leftBlock, rightBlock, farRight,
+    pass: leftBlock[3] === 0 && rightBlock[3] > 100 && Math.abs(rightBlock[3] - farRight[3]) <= 2 });
+  // 6d'. signed volume: positive cells take the warm end, negative the cool end, zero is transparent
+  const sv = createVolumeRenderer(gl);
+  sv.update(new Float32Array([-1, 0, 1]), 3, 1, 1, { signed: true });
+  clear(); sv.draw(cb, { colormap: 'coolwarm', opacity: 1, smooth: false, mode: 'absorption' });
+  const pn = cb.project([-2 / 3, 0, 0], W / dpr, H / dpr), pz = cb.project([0, 0, 0], W / dpr, H / dpr), pp = cb.project([2 / 3, 0, 0], W / dpr, H / dpr);
+  const neg = px(pn.x * dpr, pn.y * dpr), zero = px(pz.x * dpr, pz.y * dpr), pos = px(pp.x * dpr, pp.y * dpr);
+  out.push({ label: 'GPU signed volume: sign as hue, |value| as opacity', neg, zero, pos,
+    pass: neg[2] > neg[0] && pos[0] > pos[2] && zero[3] === 0 && Math.abs(neg[3] - pos[3]) <= 3 });
+  // 6e. colour bar on a 2D canvas uses the same colours as the GPU colour map
+  const cbc = document.createElement('canvas'); cbc.width = 40; cbc.height = 120;
+  const cx2 = cbc.getContext('2d'); drawColorBar(cx2, { x: 0, y: 10, width: 12, height: 100, colormap: 'viridis', range: [0, 1] });
+  const bar = t => [...cx2.getImageData(6, Math.round(10 + 100 * (1 - t)), 1, 1).data].slice(0, 3), wantBar = t => colormap('viridis', t).map(v => Math.round(v * 255));
+  const barDev = Math.max(...[0.1, 0.5, 0.9].flatMap(t => [0, 1, 2].map(i => Math.abs(bar(t)[i] - wantBar(t)[i]))));
+  out.push({ label: 'Colour bar matches the colour map (top = high)', barDev, pass: barDev <= 6 });
+  // 6f. alignZ + arrow: an arrow aimed along +x has its tip at x = length
+  const R9 = alignZ([1, 0, 0]), tip = [R9[0] * 0 + R9[1] * 0 + R9[2] * 1, R9[3] * 0 + R9[4] * 0 + R9[5] * 1, R9[6] * 0 + R9[7] * 0 + R9[8] * 1];
+  const mrA = createMeshRenderer(gl), arrowMesh = mrA.add(geometry.arrow(2)), ca = orbitCamera({ distance: 8, yaw: -Math.PI / 2, pitch: 0 });
+  clear(); mrA.draw(ca, [{ mesh: arrowMesh, matrix: transform({ rotate: R9 }), color: '#ffffff' }], { ambient: 1 });
+  const PA = q => { const r = ca.project(q, W / dpr, H / dpr); return px(r.x * dpr, r.y * dpr); };
+  const nearTip = PA([1.9, 0, 0]), pastTip = PA([2.1, 0, 0]), shaftPx = PA([0.5, 0, 0]);
+  out.push({ label: 'alignZ + geometry.arrow: tip at the requested end', tip, nearTip, pastTip, shaftPx,
+    pass: Math.abs(tip[0] - 1) < 1e-12 && nearTip[3] > 200 && pastTip[3] === 0 && shaftPx[3] > 200 });
+  // 8. meshes: Lambert top vs side, exact planar shadow position, no double darkening, depth order
+  const mr = createMeshRenderer(gl), cube = mr.add(geometry.box(1, 1, 1)), cm = orbitCamera({ distance: 9, yaw: -Math.PI / 2, pitch: 0.6 });
+  const P = q => { const r = cm.project(q, W / dpr, H / dpr); return px(r.x * dpr, r.y * dpr); };
+  clear(); mr.draw(cm, [{ mesh: cube, matrix: transform(), color: '#ffffff' }], { light: { direction: [0, 0, 1] }, ambient: 0.25 });
+  const top = P([0, 0, 0.5]), side = P([0, -0.5, 0]);
+  out.push({ label: 'GPU mesh: Lambert shading, top 1.0 vs side 0.25', top, side, pass: Math.abs(top[0] - 255) <= 2 && Math.abs(side[0] - 64) <= 3 });
+  // a cube floating at z = 2, light from 45° in +x: its shadow centre on z = 0 lies at x = −2
+  const ground = mr.add(geometry.plane(12, 12));
+  const scene = extra => [{ mesh: ground, matrix: transform(), color: '#ffffff', noShadow: true }, { mesh: cube, matrix: transform({ translate: [0, 0, 2] }), color: '#ffffff' }, ...extra];
+  clear(); mr.draw(cm, scene([]), { light: { direction: [1, 0, 1] }, ambient: 1, shadows: { z: 0, opacity: 0.5 } });
+  // the cube spans x ∈ [−0.5, 0.5], z ∈ [1.5, 2.5]; light along (1, 0, 1) maps (x, z) → x − z, so the shadow covers x ∈ [−3, −1]
+  const shade = P([-2, 0, 0]), sunny = P([2, 0, 0]), edgeIn = P([-2.9, 0, 0]), edgeOut = P([-3.1, 0, 0]), nearIn = P([-1.1, 0, 0]), nearOut = P([-0.9, 0, 0]);
+  out.push({ label: 'GPU shadow covers exactly x ∈ [−3, −1] as the light rays predict', shade, sunny, edgeIn, edgeOut, nearIn, nearOut,
+    pass: shade[0] < 140 && sunny[0] > 250 && edgeIn[0] < 140 && edgeOut[0] > 250 && nearIn[0] < 140 && nearOut[0] > 250 });
+  // a second cube whose shadow overlaps the first: the overlap is not darker
+  clear(); mr.draw(cm, scene([{ mesh: cube, matrix: transform({ translate: [0.4, 0, 2] }), color: '#ffffff' }]), { light: { direction: [1, 0, 1] }, ambient: 1, shadows: { z: 0, opacity: 0.5 } });
+  const both = P([-1.8, 0, 0]), single = P([-2.4, 0, 0]);
+  out.push({ label: 'Overlapping shadows are not darker', both, single, pass: Math.abs(both[0] - single[0]) <= 2 });
+  // depth: a red cube in front hides a blue one behind it
+  clear(); mr.draw(cm, [{ mesh: cube, matrix: transform({ translate: [0, 2, 0] }), color: '#0000ff' }, { mesh: cube, matrix: transform({ translate: [0, -1, 0] }), color: '#ff0000' }], { light: { direction: [0, -1, 0.3] }, ambient: 1 });
+  const front = P([0, -1.5, 0]);
+  out.push({ label: 'GPU mesh depth order', front, pass: front[0] > 200 && front[2] < 20 });
+
+  // 7. a preset sets a slider and a dropdown together, with one rebuild, and every control shows it
+  const before = createSim.count;
+  [...document.querySelectorAll('.psim-presets button')].find(b => b.textContent === 'Few points, viridis').click();
+  const sliderShows = document.querySelector('.psim-side input[type=number]').value, selectShows = document.querySelector('.psim-side select').value;
+  out.push({ label: 'Preset updates slider and dropdown with one rebuild', sliderShows, selectShows, rebuilds: createSim.count - before,
+    pass: +sliderShows === 12 && selectShows === 'viridis' && createSim.count - before === 1 && window.psim.params().map === 'viridis' });
+  // 9. View controls change only the presentation: no rebuild, the legend follows
+  const viewSection = [...document.querySelectorAll('.psim-side details, .psim-side section')].find(e => /View/.test(e.querySelector('summary, h2, header')?.textContent ?? ''));
+  const vs = viewSection?.querySelector('input[type=number]'), rebuildsBefore = createSim.count;
+  if (vs) { vs.value = '6'; vs.dispatchEvent(new Event('change')); }
+  const legend = document.querySelector('.psim-legend').textContent;
+  out.push({ label: 'View section: presentation only, legend follows', found: !!vs, legend, rebuilds: createSim.count - rebuildsBefore,
+    pass: !!vs && createSim.count === rebuildsBefore && /size 6 px/.test(legend) && pointSize === 6 });
+  window.psim.setParams({ n: 2000, map: 'inferno' });
   return out;
 };
 </script>

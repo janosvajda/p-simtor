@@ -87,3 +87,23 @@ test('lyapunovExponent: exact for a linear system, Lorenz λ₁ ≈ 0.906, regul
   const osc = lyapunovExponent({ f: (t, y) => [y[1], -y[0]], y0: [1, 0], duration: 500, interval: 1 });
   assert.ok(Math.abs(osc.lambda) < 0.01, `regular ${osc.lambda}`);
 });
+
+test('odeStepper events: ground contact exactly at √(2h/g); zero crossings of cos t by direction; terminal stops', async () => {
+  const g = 9.80665, h0 = 20;
+  const fall = odeStepper({ f: (t, y) => [y[1], -g], y0: [h0, 0], h: 0.05, events: [{ g: (t, y) => y[0], direction: -1, terminal: true }] });
+  fall.advanceTo(100);
+  assert.ok(fall.stopped, 'terminal event stops the run');
+  assert.ok(Math.abs(fall.t - Math.sqrt(2 * h0 / g)) < 1e-12, `contact time ${fall.t}`);
+  assert.ok(Math.abs(fall.y[0]) < 1e-12 && Math.abs(fall.y[1] + Math.sqrt(2 * g * h0)) < 1e-10, 'height 0, speed √(2gh)');
+  const errFor = rtol => {
+    const osc = odeStepper({ f: (t, y) => [y[1], -y[0]], y0: [1, 0], h: 0.1, rtol, atol: 1e-14,
+      events: [{ g: (t, y) => y[0], direction: -1 }, { g: (t, y) => y[0], direction: +1 }] });
+    osc.advanceTo(20);
+    const down = osc.events.filter(e => e.index === 0).map(e => e.t), up = osc.events.filter(e => e.index === 1).map(e => e.t);
+    assert.deepEqual([down.length, up.length], [3, 3], 'three crossings each way in 20 s');
+    return Math.max(...down.map((t, k) => Math.abs(t - (Math.PI / 2 + 2 * Math.PI * k))), ...up.map((t, k) => Math.abs(t - (3 * Math.PI / 2 + 2 * Math.PI * k))));
+  };
+  const loose = errFor(1e-6), tight = errFor(1e-10);
+  assert.ok(tight < 1e-8, `event time error ${tight}`);
+  assert.ok(tight < loose / 10, 'event times converge with the tolerance');
+});

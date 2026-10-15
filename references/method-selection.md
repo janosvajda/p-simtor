@@ -89,6 +89,7 @@ Read a note only when it helps the model already selected. If none fits, use the
 - [Electromagnetism](electromagnetism.md)
 - [Radiation and relativity](radiation-relativity.md)
 - [Particle physics](particle-physics.md)
+- [Weak interaction](weak-interaction.md)
 - [Scalar/Higgs examples](higgs.md)
 - [Molecular dynamics](molecular.md)
 - [Entropy examples](entropy.md)

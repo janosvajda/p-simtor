@@ -3,6 +3,8 @@
 // in a separate project from a real /p-simtor prompt. Nothing here builds simulations.
 //
 //   node scripts/gallery.mjs add PAGE.html --prompt "/p-simtor show why galaxies need dark matter" [--about "one line"] [--title T] [--id ID]
+//                                           [--wait MS] [--advance T] [--click TEXT]   thumbnail after MS ms, after
+//                                           advancing to time T, after pressing the button labelled TEXT
 //   node scripts/gallery.mjs remove ID
 //   node scripts/gallery.mjs list
 //   node scripts/gallery.mjs order ID…      put these demos first, in this order
@@ -42,12 +44,23 @@ function inspect(html) {
   return { title, checks, generator: /<meta name="generator" content="p-simtor"/.test(html) };
 }
 
-async function thumbnail(id) {
+async function thumbnail(id, { wait = 3500, advance, click } = {}) {
   try {
     const { launch } = await import('./lib/chrome.mjs');
     const b = await launch();
     await b.goto(`${pathToFileURL(join(DOCS, `${id}.html`)).href}?theme=dark&autoplay=1`, { width: 1280, height: 800, scale: 1 });
-    await new Promise(r => setTimeout(r, 3500));
+    await new Promise(r => setTimeout(r, wait));
+    if (advance != null) {
+      // show the interesting state: fast-forward in the page's own time unit, then let it draw
+      await b.eval(`window.psim?.advanceTo?.(${+advance}); window.psim?.fit?.()`, 120000);
+      await new Promise(r => setTimeout(r, 1200));
+    }
+    if (click) {
+      // press a page button by its text (e.g. "+10 000" to show an accumulated build-up)
+      const found = await b.eval(`(() => { const btn = [...document.querySelectorAll('button')].find(x => x.textContent.trim() === ${JSON.stringify(click)}); if (btn) btn.click(); return !!btn; })()`, 120000);
+      if (!found) console.log(`  no button "${click}" on the page`);
+      await new Promise(r => setTimeout(r, 1500));
+    }
     const shot = await b.send('Page.captureScreenshot', { format: 'jpeg', quality: 82, clip: { x: 0, y: 64, width: 1280 - 372, height: 736, scale: 0.6 } });
     writeFileSync(join(DOCS, 'thumbs', `${id}.jpg`), Buffer.from(shot.data, 'base64'));
     await b.close();
@@ -136,7 +149,7 @@ if (cmd === 'add') {
   const m = load();
   m.demos = m.demos.filter(d => d.id !== id);
   copyFileSync(src, join(DOCS, `${id}.html`));
-  const thumb = !args.includes('--no-thumb') && await thumbnail(id);
+  const thumb = !args.includes('--no-thumb') && await thumbnail(id, { wait: +(opt('wait') ?? 3500), advance: opt('advance'), click: opt('click') });
   // version of the skill that built it, if the page sits in a project with the skill installed
   let skillVersion;
   for (let dir = dirname(resolve(src)); dir !== dirname(dir); dir = dirname(dir)) {

@@ -248,3 +248,12 @@ test('moon counts: every planet listed, Mercury and Venus have none', () => {
   assert.equal(MOONS.count.Mercury, 0); assert.equal(MOONS.count.Venus, 0); assert.equal(MOONS.count.Earth, 1);
   assert.match(MOONS.asOf, /^\d{4}-\d{2}$/);
 });
+
+test('everyday constants are consistent with each other and with published values', async () => {
+  const C = await import('../core/constants.mjs');
+  assert.ok(Math.abs(C.R - C.kB * C.NA) < 1e-8, 'R = kB·NA');
+  assert.ok(Math.abs(C.p0 * C.Mair / (C.R * C.T0isa) - C.rho0isa) < 5e-4, 'ISA density from the ideal gas law');
+  assert.ok(Math.abs(Math.sqrt(C.gammaAir * C.R * C.T0isa / C.Mair) - 340.294) < 0.01, 'ISA speed of sound 340.294 m/s');
+  assert.ok(Math.abs(C.GMmoon / C.Rmoon ** 2 - 1.624) < 0.002, 'Moon surface gravity 1.62 m/s²');
+  assert.ok(Math.abs(C.GMearth / C.RearthMean ** 2 - C.gn) < 0.03, 'Earth surface gravity ≈ g_n (rotation and shape aside)');
+});

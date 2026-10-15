@@ -6,12 +6,9 @@
       "keywords": [
         "three-body",
         "n-body",
-        "gravity",
-        "orbit",
         "chaos",
         "figure-eight",
         "lagrange",
-        "binary",
         "star cluster",
         "three stars",
         "triple star",
@@ -25,7 +22,12 @@
       "summary": "Three bodies pulling on each other: chaos, choreographies, near-collisions.",
       "checked": "Kepler orbit, figure-eight period, Pythagorean outcome; energy error ~10⁻¹¹",
       "page": "examples/three-body/three-body.html",
-      "prompt": "simulate three stars orbiting each other"
+      "prompt": "simulate three stars orbiting each other",
+      "mentions": [
+        "gravity",
+        "orbit",
+        "binary"
+      ]
     },
     {
       "id": "solar-system",
@@ -34,8 +36,17 @@
         "solar system",
         "planet",
         "planets",
+        "kepler"
+      ],
+      "kind": "gravity",
+      "command": "gravity --preset solar-system --out simulations/solar-system.html",
+      "adapt": "Subset: --planets Earth,Mars,Jupiter --years 20. Exoplanets or moons: a scenario JSON in AU, M☉, yr (G = G_AU_MSUN_YR ≈ 4π²). No code needed.",
+      "summary": "The Sun and eight planets from JPL orbital elements, every planet pulling on every other.",
+      "checked": "Earth’s J2000 position (JPL), Mars’ period, Earth’s year",
+      "page": "examples/solar-system/solar-system.html",
+      "prompt": "model the planets orbiting the Sun",
+      "mentions": [
         "orbit",
-        "kepler",
         "mercury",
         "venus",
         "earth",
@@ -45,32 +56,20 @@
         "uranus",
         "neptune",
         "sun"
-      ],
-      "kind": "gravity",
-      "command": "gravity --preset solar-system --out simulations/solar-system.html",
-      "adapt": "Subset: --planets Earth,Mars,Jupiter --years 20. Exoplanets or moons: a scenario JSON in AU, M☉, yr (G = G_AU_MSUN_YR ≈ 4π²). No code needed.",
-      "summary": "The Sun and eight planets from JPL orbital elements, every planet pulling on every other.",
-      "checked": "Earth’s J2000 position (JPL), Mars’ period, Earth’s year",
-      "page": "examples/solar-system/solar-system.html",
-      "prompt": "model the planets orbiting the Sun"
+      ]
     },
     {
       "id": "proton-magnetic-field",
       "title": "Charged particle in electric and magnetic fields (relativistic Boris pusher)",
       "keywords": [
         "proton",
-        "electron",
-        "ion",
-        "charge",
         "magnetic field",
         "electric field",
         "lorentz force",
         "cyclotron",
         "gyration",
-        "helix",
         "e cross b",
-        "plasma",
-        "beam"
+        "plasma"
       ],
       "kind": "compose",
       "dir": "examples/proton-magnetic-field",
@@ -78,7 +77,14 @@
       "summary": "A proton spiralling through a magnetic field, relativistic, with an optional E×B drift.",
       "checked": "Exact gyroradius, 1 GeV gyroperiod, drift speed",
       "page": "examples/proton-magnetic-field/proton-magnetic-field.html",
-      "prompt": "simulate a proton moving through a magnetic field"
+      "prompt": "simulate a proton moving through a magnetic field",
+      "mentions": [
+        "electron",
+        "ion",
+        "charge",
+        "helix",
+        "beam"
+      ]
     },
     {
       "id": "blackbody",
@@ -91,10 +97,6 @@
         "wien",
         "stefan",
         "boltzmann",
-        "temperature",
-        "colour",
-        "color",
-        "spectrum",
         "star colour",
         "cmb",
         "ultraviolet catastrophe"
@@ -105,7 +107,13 @@
       "summary": "Planck’s law and the true colour of hot objects, from a candle to a blue star.",
       "checked": "CODATA constants, solar constant 1361 W/m², CMB peak 160.2 GHz",
       "page": "examples/blackbody/blackbody.html",
-      "prompt": "simulate black body radiation"
+      "prompt": "simulate black body radiation",
+      "mentions": [
+        "temperature",
+        "colour",
+        "color",
+        "spectrum"
+      ]
     },
     {
       "id": "black-hole",
@@ -114,7 +122,6 @@
         "black hole",
         "event horizon",
         "schwarzschild",
-        "shadow",
         "photon sphere",
         "lensing",
         "gravitational lensing",
@@ -130,7 +137,10 @@
       "summary": "Light traced through Einstein’s geometry on your GPU: shadow, photon ring, lensed accretion disk.",
       "checked": "Exact shadow size (GPU within 1 px), light bending at the Sun 1.751″",
       "page": "examples/black-hole/black-hole.html",
-      "prompt": "simulate a black hole event horizon"
+      "prompt": "simulate a black hole event horizon",
+      "mentions": [
+        "shadow"
+      ]
     },
     {
       "id": "galaxy",
@@ -140,9 +150,7 @@
         "dark matter",
         "rotation curve",
         "milky way",
-        "halo",
         "nfw",
-        "spiral",
         "stars orbit",
         "flat rotation",
         "andromeda",
@@ -154,7 +162,11 @@
       "summary": "Thousands of stars in a Milky-Way model. Switch dark matter off and watch the galaxy fly apart.",
       "checked": "Bovy (2015) model, measured rotation curve (Eilers et al. 2019)",
       "page": "examples/galaxy/galaxy.html",
-      "prompt": "show why galaxies need dark matter"
+      "prompt": "show why galaxies need dark matter",
+      "mentions": [
+        "halo",
+        "spiral"
+      ]
     },
     {
       "id": "gps-relativity",
@@ -163,9 +175,6 @@
         "gps",
         "relativity",
         "time dilation",
-        "einstein",
-        "clock",
-        "satellite",
         "special relativity",
         "general relativity",
         "gravitational redshift",
@@ -178,7 +187,12 @@
       "summary": "Why GPS satellite clocks run 38 µs/day fast: gravity and speed, side by side.",
       "checked": "GPS specification: 10.22999999543 MHz, F constant; IAU L_G",
       "page": "examples/gps-relativity/gps-relativity.html",
-      "prompt": "how does relativity affect GPS clocks?"
+      "prompt": "how does relativity affect GPS clocks?",
+      "mentions": [
+        "einstein",
+        "clock",
+        "satellite"
+      ]
     }
   ]
 }

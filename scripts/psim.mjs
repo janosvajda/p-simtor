@@ -3,14 +3,15 @@
 //
 //   node scripts/psim.mjs gravity  [--preset NAME | --scenario FILE] [--out FILE] [--title T] [--subtitle S]
 //   node scripts/psim.mjs verify   --scenario FILE [--out report.json]
-//   node scripts/psim.mjs build    SOURCE.html --out FILE [--verify-module physics.mjs] [--config FILE]
+//   node scripts/psim.mjs build    SOURCE.html --out FILE [--verify-module physics.mjs [--reverify]] [--config FILE]
 //   node scripts/psim.mjs verify-module physics.mjs [--out report.json]
 //   node scripts/psim.mjs check    PAGE.html [--shots DIR] [--wait MS]
 //   node scripts/psim.mjs presets
 //
 // Run with no arguments for help.
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, copyFileSync, readdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { dirname, resolve, join, basename } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -22,7 +23,7 @@ import { THREE_BODY_PRESETS } from '../core/presets.mjs';
 import { solarSystemScenario, solarSystemScenarios, PLANETS } from '../core/solar-system.mjs';
 import { verifyScenario } from '../core/nbody-verify.mjs';
 import { INTEGRATORS } from '../core/nbody.mjs';
-import { validateModuleReport, gravityReportProblems } from '../core/verification.mjs';
+import { validateModuleReport, moduleReportProblems, gravityReportProblems } from '../core/verification.mjs';
 
 const SKILL_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -73,11 +74,17 @@ function loadCatalog() {
   return JSON.parse(readFileSync(join(SKILL_DIR, 'examples', 'catalog.json'), 'utf8')).recipes;
 }
 
-/** Rank recipes against a free-text request by keyword hits. */
+/**
+ * Rank recipes against a free-text request. `keywords` name what a recipe models (a hit makes it a
+ * candidate); `mentions` are objects it merely contains (earth, sun, electron, temperature …): they
+ * break ties but never make a recipe a match on their own, so "a hammer falling on the Moon" does
+ * not point at the Solar System recipe.
+ */
 function matchRecipes(query) {
   const q = ` ${query.toLowerCase().replace(/[^a-z0-9]+/g, ' ')} `;
+  const hits = ks => (ks ?? []).reduce((s, k) => s + (q.includes(` ${k.replace(/[^a-z0-9]+/g, ' ')} `) ? k.split(' ').length : 0), 0);
   return loadCatalog()
-    .map(r => ({ r, score: r.keywords.reduce((s, k) => s + (q.includes(` ${k.replace(/[^a-z0-9]+/g, ' ')} `) ? k.split(' ').length : 0), 0) }))
+    .map(r => { const strong = hits(r.keywords); return { r, score: strong ? strong + 0.25 * hits(r.mentions) : 0 }; })
     .sort((a, b) => b.score - a.score);
 }
 
@@ -261,21 +268,57 @@ function cmdVerify(args) {
   if (sum.problems.length) { console.log(`Warnings:\n  - ${sum.problems.join('\n  - ')}`); process.exitCode = 2; }
 }
 
+/** Hash of a physics module and every file it can import: the local folder's .mjs files and the skill's core/. */
+function physicsHash(file) {
+  const dir = dirname(resolve(file));
+  const files = [resolve(file),
+    ...readdirSync(dir).filter(f => f.endsWith('.mjs')).map(f => join(dir, f)),
+    ...readdirSync(join(SKILL_DIR, 'core')).filter(f => f.endsWith('.mjs')).map(f => join(SKILL_DIR, 'core', f))];
+  const h = createHash('sha256');
+  for (const f of [...new Set(files)].sort()) h.update(f).update(readFileSync(f));
+  return h.digest('hex');
+}
+
 /**
  * Run the verify() export of a physics module (the agent's own model) in Node.
- * Contract: verify() returns (or resolves to) { checks: [{ label, value, pass, state? }], notes?, summary? }.
+ * Contract: verify({ log }) returns (or resolves to) { checks: [{ label, value, pass, state? }], notes?, summary? }.
+ * log(message) prints progress at once, for slow (e.g. Monte Carlo) checks. Every check is
+ * printed even when some are malformed; malformed ones are marked BAD and then reported together.
+ * With cache = true the report is reused while the module, its folder's .mjs files and core/
+ * are unchanged (keyed by their hash, stored next to the module).
  */
-async function runModuleVerification(file) {
+async function runModuleVerification(file, { cache = false } = {}) {
+  const cacheFile = join(dirname(resolve(file)), `.psim-verify-${basename(file, '.mjs')}.json`);
+  const hash = cache ? physicsHash(file) : null;
+  if (cache && existsSync(cacheFile)) {
+    try {
+      const old = JSON.parse(readFileSync(cacheFile, 'utf8'));
+      if (old.hash === hash && moduleReportProblems(old.report).length === 0) {
+        console.log(`  physics unchanged since ${old.report.generated}: reusing that verification report (--reverify to run it again)`);
+        for (const c of old.report.checks) console.log(`  ${c.pass === false ? 'FAIL' : c.state === 'warn' ? 'warn' : ' ok '}  ${c.label}: ${c.value}`);
+        if (old.report.checks.some(c => c.pass === false)) process.exitCode = 2;
+        return old.report;
+      }
+    } catch { /* unreadable cache: verify again */ }
+  }
   const mod = await import(pathToFileURL(resolve(file)).href);
   if (typeof mod.verify !== 'function') fail(`${file} has no exported verify() function`);
   const t0 = Date.now();
-  const rep = await mod.verify();
-  validateModuleReport(rep);
+  const rep = await mod.verify({ log: msg => console.log(`  … ${((Date.now() - t0) / 1000).toFixed(1)} s  ${msg}`) });
+  const problems = moduleReportProblems(rep);
+  if (problems.some(p => p.index < 0)) fail(`${file}: verify() must return { checks: [{ label, value, pass }] }`);
+  const badAt = new Map(problems.map(p => [p.index, p.problem]));
+  for (const [i, c] of rep.checks.entries()) {
+    const mark = badAt.has(i) ? 'BAD ' : c.pass === false ? 'FAIL' : c.state === 'warn' ? 'warn' : ' ok ';
+    console.log(`  ${mark}  ${c?.label ?? '(no label)'}: ${c?.value}${badAt.has(i) ? `   ← ${badAt.get(i)}` : ''}`);
+  }
+  if (problems.length) fail(`${problems.length} check(s) are malformed (marked BAD above): a verification report needs a finite measured value and an explicit pass for every check`);
   rep.generated = new Date().toISOString();
   rep.runtimeMs = Date.now() - t0;
+  console.log(`  verification took ${(rep.runtimeMs / 1000).toFixed(1)} s`);
   const failed = rep.checks.filter(c => c.pass === false);
-  for (const c of rep.checks) console.log(`  ${c.pass === false ? 'FAIL' : c.state === 'warn' ? 'warn' : ' ok '}  ${c.label}: ${c.value}`);
   if (failed.length) { console.log(`${failed.length} verification check(s) FAILED. Fix the model or method before delivering.`); process.exitCode = 2; }
+  else if (cache) writeFileSync(cacheFile, JSON.stringify({ hash, report: rep }));
   return rep;
 }
 
@@ -294,7 +337,7 @@ async function cmdBuild(args) {
   let verification = args.verification ? JSON.parse(readFileSync(args.verification, 'utf8')) : undefined;
   if (args['verify-module']) {
     console.log(`Verifying ${args['verify-module']}…`);
-    verification = await runModuleVerification(args['verify-module']);
+    verification = await runModuleVerification(args['verify-module'], { cache: !args.reverify });
   }
   if (verification != null) {
     validateModuleReport(verification);
@@ -312,7 +355,12 @@ async function cmdCheck(args) {
   const page = args._[1];
   if (!page || !existsSync(page)) fail('check needs an existing PAGE.html');
   const shots = args.shots ?? join(tmpdir(), 'psim-shots', basename(page, '.html'));
-  const res = await checkPage(resolve(page), { shotsDir: shots, waitMs: +(args.wait ?? 3000), advance: args.advance });
+  // --params "mode=thomson,B=2": check a non-default mode (values parsed as numbers when numeric)
+  const params = typeof args.params === 'string'
+    ? Object.fromEntries(args.params.split(',').map(kv => { const [k, ...v] = kv.split('='); const val = v.join('='); return [k.trim(), val !== '' && !isNaN(+val) ? +val : val]; }))
+    : undefined;
+  const shotDir = params && !args.shots ? `${shots}-${args.params.replace(/[^a-z0-9]+/gi, '-')}` : shots;
+  const res = await checkPage(resolve(page), { shotsDir: shotDir, waitMs: +(args.wait ?? 3000), advance: args.advance, params });
   for (const r of res.runs) {
     console.log(`  ${r.label.padEnd(18)} ${r.ok ? 'ok ' : 'FAIL'}  ${r.summary}`);
     if (r.screenshot) console.log(`  ${''.padEnd(18)} screenshot: ${r.screenshot}`);
@@ -332,13 +380,16 @@ Commands:
           [--out FILE] [--title T] [--subtitle S] [--with-presets]
   verify  --scenario FILE [--out FILE]     run the gravity verification suite only
   build   SOURCE.html --out FILE           bundle a composed page (imports psim: and ./local modules)
-          [--verify-module physics.mjs]    run the module's verify() and embed the results
+          [--verify-module physics.mjs]    run the module's verify() and embed the results (reused while
+                                           the physics files are unchanged; --reverify forces a new run)
           [--config FILE] [--verification FILE]
   verify-module physics.mjs [--out FILE]   run a physics module's own verification checks
+  node    SCRIPT.mjs [args]                run a scratch Node script that imports psim: modules
   open    PAGE.html                        open a built page in the default browser
-  check   PAGE.html [--shots DIR] [--advance T]   headless Chrome: errors, liveness, overflow, UI→physics tests,
-                                           extreme inputs, screenshots (default: system temp dir);
-                                           --advance T fast-forwards to time T first
+  check   PAGE.html [--shots DIR] [--advance T] [--params k=v,…]   headless Chrome: errors, liveness, overflow,
+                                           UI→physics tests, extreme inputs, screenshots (default: system temp dir);
+                                           --advance T fast-forwards to time T first; --params sets a
+                                           non-default mode first (screenshots go to their own folder)
 
 Skill directory: ${SKILL_DIR}`;
 
@@ -352,6 +403,13 @@ try {
   else if (cmd === 'verify-module') await cmdVerifyModule(args);
   else if (cmd === 'check') await cmdCheck(args);
   else if (cmd === 'open') cmdOpen(args);
+  else if (cmd === 'node') {
+    // timing or exploration scripts: psim: imports resolve to the skill, as in tests and verify-module
+    const raw = process.argv.slice(process.argv.indexOf('node', 2) + 1);
+    if (!raw[0] || !existsSync(raw[0])) fail('node needs an existing SCRIPT.mjs');
+    process.argv = [process.argv[0], resolve(raw[0]), ...raw.slice(1)];
+    await import(pathToFileURL(resolve(raw[0])).href);
+  }
   else if (cmd === 'recipes') cmdRecipes(args);
   else if (cmd === 'new') cmdNew(args);
   else console.log(HELP);

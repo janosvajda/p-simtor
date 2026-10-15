@@ -2,6 +2,10 @@
 
 Status: **compose**. No template yet. Follow `compose.md`. Quantum results are **probabilities and amplitudes**. Electrons do not move on trajectories. Never draw an electron circling a nucleus and call it quantum mechanics. A Bohr-model picture may appear only as a labelled historical or conceptual comparison.
 
+## Spin, two-level systems and measurement (`core/spin.mjs`)
+
+Spin ½ (and any qubit) is an internal state, a spinor: `ketAlong(n̂, ±1)`, `rotate(ψ, n̂, φ)` (precession, exp(−iφσ·n̂/2)), `bloch(ψ)`, `probability(ψ, n̂, s)` and `measure(ψ, n̂, rand)` (Born rule, collapse). A particle with spin moving through apparatus (Stern–Gerlach, spin rotators, neutron or atom beams) is modelled **semiclassically**: a classical centre-of-mass path per branch plus the spinor, with the branch chosen by the Born rule where the beams separate. Say so in the model panel; it is not a solution of the full spatial Schrödinger equation (no recombination or interference between branches, unless you build that). Checks: P(+) = cos²(θ/2), sequential analysers (z → x → z gives ½), and the classical-moment alternative as a labelled contrast. Constants: `muB`, `ge` in `core/constants.mjs`; thermal beams: `maxwellSpeed`, `effusiveSpeed` in `core/probability.mjs`.
+
 ## Hydrogen-like orbitals (exact; tier `analytical`)
 
 ψ_nlm(r,θ,φ) = R_nl(r) Y_lm(θ,φ), with energy E_n = −Z² Ry / n² (Ry = 13.605693 eV, `core/constants.mjs`).
@@ -23,11 +27,14 @@ Status: **compose**. No template yet. Follow `compose.md`. Quantum results are *
 
 iħ ∂ψ/∂t = [−ħ²/2m ∇² + V]ψ. Use atomic units, or ħ = m = 1 with stated scales.
 
-- **Split-operator FFT** (periodic box): ψ ← e^(−iVΔt/2ħ) F⁻¹[e^(−iħk²Δt/2m) F[e^(−iVΔt/2ħ) ψ]]. Unitary to round-off, second order in Δt. Needs a radix-2 FFT (write it, about 40 lines, and test it against a direct DFT). Use a complex absorbing potential at the edges if waves must leave the box (and say so: norm is then not conserved by design).
-- **Crank–Nicolson** (hard-wall box): (1 + iHΔt/2ħ)ψⁿ⁺¹ = (1 − iHΔt/2ħ)ψⁿ, solved with the Thomas tridiagonal algorithm. Unitary, second order.
-- Grid: at least ~10 points per shortest wavelength (k_max Δx ≲ 0.6). Check convergence by halving Δx and Δt.
+- **Split-operator FFT** (periodic box, any dimension): use `schrodingerND` from `core/fields.mjs` (ψ ← e^(−iVΔt/2ħ) F⁻¹[e^(−iħk²Δt/2m) F[e^(−iVΔt/2ħ) ψ]], unitary to round-off, second order in Δt; ~5 ms per step at 256² in Node). `absorb: { width, strength }` adds absorbing edges when waves must leave the box (say so: norm is then not conserved by design).
+- **Crank–Nicolson** (hard-wall box, 1D): (1 + iHΔt/2ħ)ψⁿ⁺¹ = (1 − iHΔt/2ħ)ψⁿ, solved with the Thomas tridiagonal algorithm (`solveTridiagonal`). Unitary, second order.
+- **Grid:** the spectral split-operator is exact for every mode below Nyquist, so ~4–5 points per shortest wavelength (k_max Δx ≲ 1.3) suffice; finite differences (Crank–Nicolson) need ~10 (k_max Δx ≲ 0.6). Sharp walls and steps carry high-k content, so confirm by refinement either way.
+- **Refinement:** the splitting error grows with the largest kinetic energy on the grid, ∝ (ħk_max²/2m)Δt. Halving Δx at fixed Δt quadruples k_max² and can make results *worse*; refine Δt with Δx (Δt ∝ Δx²), and report the convergence order from the asymptotic pair (e.g. Δt/2 → Δt/4 → Δt/8).
+- **What leaves through absorbers** must be measured independently: integrate the flux of `probabilityCurrent(re, im, grid)` through a line in front of the layer over time. `absorbed()` is just the norm deficit, so "norm + absorbed = 1" is a tautology, not a check.
+- **Detections** (single particles on a screen, Tonomura-style build-up): sample events from the computed flux into the screen (time and position), not from |ψ|² at one instant, and label the dots as draws from the computed distribution, not computed trajectories.
 
-**`verify()` checks:** norm conservation (≤1e-12 without absorbers); free Gaussian width σ(t) = σ₀√(1 + (ħt/2mσ₀²)²) and centre ⟨x⟩ = x₀ + ħk₀t/m vs exact; for a square barrier, the transmitted probability for a narrow-in-k packet vs the exact T(E) (agreement to the packet's k-spread; state it); energy expectation ⟨H⟩ conserved; second-order convergence.
+**`verify()` checks:** norm conservation (≤1e-12 without absorbers; with absorbers a flux budget, above); free Gaussian width σ(t) = σ₀√(1 + (ħt/2mσ₀²)²) and centre ⟨x⟩ = x₀ + ħk₀t/m vs exact; for a square barrier, the transmitted probability for a narrow-in-k packet vs the exact T(E) (agreement to the packet's k-spread; state it); energy expectation ⟨H⟩ conserved; second-order convergence.
 
 **Representation:** plot Re ψ, Im ψ and |ψ|², or |ψ| with phase as hue (a standard domain-colouring convention, which must be disclosed). Draw V(x) on the same axes (scaled, disclosed) with the mean energy as a line. For tunnelling, show the transmitted and reflected probabilities as numbers over time.
 

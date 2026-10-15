@@ -190,6 +190,71 @@ export function eigenSymmetric(A, { rtol = 1e-12, symmetryTolerance = 64 * EPS, 
   };
 }
 
+/**
+ * Cholesky factor of a symmetric positive-definite matrix: A = L Lᵀ, L lower triangular (arrays of
+ * rows). Throws when A is not positive definite (a pivot ≤ rtol·max diagonal), e.g. a noisy
+ * correlation matrix at large time separation: drop that operator or that time.
+ */
+export function cholesky(A, { symmetryTolerance = 64 * EPS, rtol = 64 * EPS } = {}) {
+  const [m, n] = matrixShape(A, 'cholesky');
+  if (m !== n) throw new Error('cholesky: matrix must be square');
+  let scale = 0;
+  for (let i = 0; i < n; i++) {
+    scale = Math.max(scale, Math.abs(A[i][i]));
+    for (let j = 0; j < i; j++) if (Math.abs(A[i][j] - A[j][i]) > symmetryTolerance * Math.max(1, Math.abs(A[i][j]))) throw new Error('cholesky: matrix must be symmetric');
+  }
+  const L = Array.from({ length: n }, () => new Float64Array(n));
+  for (let j = 0; j < n; j++) {
+    let d = A[j][j];
+    for (let k = 0; k < j; k++) d -= L[j][k] * L[j][k];
+    if (!(d > rtol * scale)) throw new Error(`cholesky: matrix is not positive definite (pivot ${j}: ${d})`);
+    L[j][j] = Math.sqrt(d);
+    for (let i = j + 1; i < n; i++) {
+      let v = (A[i][j] + A[j][i]) / 2;
+      for (let k = 0; k < j; k++) v -= L[i][k] * L[j][k];
+      L[i][j] = v / L[j][j];
+    }
+  }
+  return L;
+}
+
+/**
+ * Generalised symmetric-definite eigenproblem A v = λ B v (B positive definite), by Cholesky
+ * B = LLᵀ and the ordinary problem L⁻¹AL⁻ᵀ w = λ w, v = L⁻ᵀw. Values ascending; vectors[i] is
+ * B-normalised (vᵀBv = 1). The variational (GEVP) method for correlation matrices is
+ * A = C(t), B = C(t₀): the largest λ = e^{−E₀(t−t₀)} gives the ground state.
+ */
+export function eigenGeneralized(A, B, options = {}) {
+  const [n] = matrixShape(A, 'eigenGeneralized');
+  if (matrixShape(B, 'eigenGeneralized')[0] !== n || A[0].length !== n) throw new Error('eigenGeneralized: A and B must be square and the same size');
+  const L = cholesky(B, options);
+  // X = L⁻¹ A (forward substitution column by column), then C = X L⁻ᵀ = L⁻¹ (L⁻¹A)ᵀ
+  const lower = M => {
+    const X = Array.from({ length: n }, () => new Float64Array(n));
+    for (let c = 0; c < n; c++) {
+      for (let i = 0; i < n; i++) {
+        let v = M[i][c];
+        for (let k = 0; k < i; k++) v -= L[i][k] * X[k][c];
+        X[i][c] = v / L[i][i];
+      }
+    }
+    return X;
+  };
+  const X = lower(A);
+  const C = lower(Array.from({ length: n }, (_a, i) => Float64Array.from({ length: n }, (_b, j) => X[j][i])));
+  for (let i = 0; i < n; i++) for (let j = 0; j < i; j++) C[i][j] = C[j][i] = (C[i][j] + C[j][i]) / 2;
+  const { values, vectors } = eigenSymmetric(C, { rtol: options.rtol ?? 1e-12 });
+  // v = L⁻ᵀ w (back substitution)
+  return {
+    values,
+    vectors: vectors.map(w => {
+      const v = new Float64Array(n);
+      for (let i = n - 1; i >= 0; i--) { let x = w[i]; for (let k = i + 1; k < n; k++) x -= L[k][i] * v[k]; v[i] = x / L[i][i]; }
+      return v;
+    }),
+  };
+}
+
 /** Dense matrix or a linear callback (x, out) -> out/array/undefined. Callback must not mutate x. */
 function linearOperator(A, n, who) {
   if (typeof A !== 'function') {
