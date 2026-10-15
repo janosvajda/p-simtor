@@ -9,7 +9,7 @@
 //   node scripts/gallery.mjs list
 //   node scripts/gallery.mjs order ID…      put these demos first, in this order
 //   node scripts/gallery.mjs build           regenerate docs/index.html and the README demo list (add/remove/order do this too)
-//   add … --group experiments|space|particles|quantum|matter   the README section
+//   add … --group experiments|space|particles|quantum|biology|matter   the README section
 //
 // `add` copies the page into docs/, takes a thumbnail (if Chrome is available) and records the
 // prompt, the source path and the date in docs/demos.json.
@@ -79,6 +79,7 @@ export const GROUPS = [
   { key: 'space', title: 'Space and gravity' },
   { key: 'particles', title: 'Particle physics and 4D gauge theory' },
   { key: 'quantum', title: 'Quantum mechanics' },
+  { key: 'biology', title: 'Quantum biology' },
   { key: 'matter', title: 'Heat, matter and chaos' },
 ];
 const SITE = 'https://janosvajda.github.io/p-simtor/';

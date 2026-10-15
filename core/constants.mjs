@@ -101,3 +101,11 @@ export const ATOMIC_WEIGHT = Object.freeze({
   Cl: 35.45, Ar: 39.95, K: 39.0983, Fe: 55.845, Cu: 63.546, Rb: 85.4678, Ag: 107.8682, Cs: 132.90545196,
   W: 183.84, Au: 196.966570, Hg: 200.592, Pb: 207.2, U: 238.02891,
 });
+
+// Chemistry energy units (J per unit): kcal/mol, kJ/mol, wavenumber cm⁻¹ (= h c × 100 m⁻¹), all exact.
+export const kcalPerMol = 4184 / 6.02214076e23;
+export const kJPerMol = 1000 / 6.02214076e23;
+export const invCm = 6.62607015e-34 * 299792458 * 100;
+// Nuclide masses in u (AME2020): isotope effects need these, not the standard atomic weights.
+export const NUCLIDE_MASS = Object.freeze({ H1: 1.00782503207, H2: 2.01410177812, H3: 3.01604928, C12: 12, N14: 14.00307400443, O16: 15.99491461957 });
+

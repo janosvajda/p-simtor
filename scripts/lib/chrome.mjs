@@ -128,7 +128,8 @@ const READ_ATTRS = `(() => {
  * errors, verify the simulation is live, check for horizontal overflow, save
  * screenshots. Then run model-specific interaction tests (see interactionTests).
  */
-export async function checkPage(file, { shotsDir, waitMs = 3000, advance, params } = {}) {
+export async function checkPage(file, { shotsDir, waitMs = 3000, advance, params: given, preset } = {}) {
+  let params = given;
   if (!findChrome()) {
     return { runs: [], problems: ['Chrome/Chromium not found. Set CHROME_PATH, or open the page manually and check the browser console.'] };
   }
@@ -145,6 +146,16 @@ export async function checkPage(file, { shotsDir, waitMs = 3000, advance, params
     for (const v of variants) {
       b.consoleErrors.length = 0;
       await b.goto(`${pathToFileURL(file).href}?${v.q}&autoplay=1`, v);
+      if (preset && !params) {
+        // a "Try this" preset by its button label: read the parameters it sets, then test that mode
+        const r = await evalWithin(b, `(() => { const btn = [...document.querySelectorAll('.psim-presets button')].find(x => x.textContent.trim() === ${JSON.stringify(preset)}); if (!btn) return 'none'; btn.click(); return JSON.stringify(window.psim.params()); })()`, 60000);
+        if (r.value === 'none' || r.error || r.frozen) {
+          const summary = r.error ?? (r.frozen ? 'the preset froze the page' : `no preset button labelled "${preset}"`);
+          problems.push(`${v.label}: ${summary}`); runs.push({ label: v.label, ok: false, summary });
+          return { runs, problems };
+        }
+        params = JSON.parse(r.value);
+      }
       if (params) {
         // a non-default mode or setting: set through the page, exactly as a preset would
         const r = await evalWithin(b, `window.psim?.setParams ? (window.psim.setParams(${JSON.stringify(params)}, { play: true }), JSON.stringify(window.psim.params())) : 'no setParams'`, 60000);
@@ -171,6 +182,8 @@ export async function checkPage(file, { shotsDir, waitMs = 3000, advance, params
       let a = await b.eval(READ_ATTRS);
       for (let k = 0; k < 60 && a.ready === true && !((a.frames ?? 0) > 0 && (a.t ?? 0) > 0); k++) { await sleep(250); a = await b.eval(READ_ATTRS); }
       const overflow = await b.eval('document.documentElement.scrollWidth - document.documentElement.clientWidth');
+      // name the widest culprits, so a phone overflow can be fixed without guessing
+      const wide = overflow > 1 ? await b.eval(`(() => { const W = document.documentElement.clientWidth; return [...document.querySelectorAll('body *')].filter(e => e.getBoundingClientRect().right > W + 1 && ![...e.children].some(c => c.getBoundingClientRect().right > W + 1)).slice(0, 3).map(e => e.tagName.toLowerCase() + (e.className && typeof e.className === 'string' ? '.' + e.className.trim().split(/\\s+/).join('.') : '') + ' "' + (e.textContent || '').trim().slice(0, 40) + '"'); })()`) : [];
       // Every diagnostic must show a value: "—" or NaN means a quantity failed to compute in the page.
       const blank = await b.eval(`[...document.querySelectorAll('.psim-row')].filter(r => /^(—|NaN|[−-]?∞|[+-]?Infinity)(?:$|\\s)|NaN/.test(r.querySelector('.v')?.textContent.trim() ?? '')).map(r => r.querySelector('.k')?.textContent)`);
       const base = join(shotsDir, `${name}-${v.label.replace(/[^a-z]+/g, '-')}`);
@@ -181,9 +194,9 @@ export async function checkPage(file, { shotsDir, waitMs = 3000, advance, params
       const ok = a.ready === true && errors.length === 0 && live && overflow <= 1 && blank.length === 0;
       const summary = a.ready === undefined
         ? 'page did not report ready (script failed to start?)'
-        : `frames ${a.frames ?? 0}, t = ${typeof a.t === 'number' ? a.t.toFixed(3) : '—'}, steps ${a.steps ?? '—'}`
+        : `frames ${a.frames ?? 0}, t = ${typeof a.t === 'number' ? a.t.toFixed(3) : '—'}${a.steps != null ? `, steps ${a.steps}` : ''}`
           + `${typeof a.drift === 'number' ? `, ${a.driftLabel ?? 'error'} ${a.drift.toExponential(2)}` : ''}`
-          + `${overflow > 1 ? `, horizontal overflow ${overflow}px` : ''}`
+          + `${overflow > 1 ? `, horizontal overflow ${overflow}px (widest: ${wide.join('; ')})` : ''}`
           + `${blank.length ? `, diagnostics without a value: ${blank.join(', ')}` : ''}`
           + `${errors.length ? `, errors: ${errors.join(' | ')}` : ''}`;
       if (!ok) problems.push(`${v.label}: ${summary}`);
@@ -195,10 +208,13 @@ export async function checkPage(file, { shotsDir, waitMs = 3000, advance, params
     }
     // A failed stress test may have left the renderer frozen. Close it in finally,
     // without issuing further page commands that would wait on that renderer.
-    if (problems.length) return { runs, problems };
+    if (problems.length) {
+      runs.push({ label: 'later tests', ok: false, summary: 'skipped: the self-test and the UI→physics test run only when every view above passes' });
+      return { runs, problems };
+    }
     const model = await b.eval('window.psim?.model ?? null').catch(() => null);
     if (interactionTests[model]) {
-      for (const t of await interactionTests[model](b, file)) {
+      for (const t of await interactionTests[model](b, file, { params })) {
         runs.push({ label: t.label, ok: t.ok, summary: t.summary });
         if (!t.ok) problems.push(`${t.label}: ${t.summary}`);
       }
@@ -286,8 +302,10 @@ export async function stressInputs(b, file, { timeoutMs = 3000, settleMs = 400, 
  * computed state with an independent Node integration of the same setup.
  */
 export const interactionTests = {
-  async generic(b, file) {
+  async generic(b, file, { params } = {}) {
     await b.goto(`${pathToFileURL(file).href}?autoplay=0`, { width: 1440, height: 900 });
+    // the mode under test (--params) applies to the self-test and the parameter-edit test too
+    if (params) await b.eval(`window.psim?.setParams?.(${JSON.stringify(params)}, { play: false })`, 60000);
     await sleep(600);
     const out = [];
     // Optional page self-test (e.g. GPU output vs an exact formula): window.psim.selfTest()
@@ -323,10 +341,13 @@ export const interactionTests = {
     const differs = JSON.stringify(s1) !== JSON.stringify(s2);
     // Blackbody's scale selector is a display control: changing only the scale
     // must redraw its spectrum even though the temperature stays the same.
-    const hasScale = await b.eval(`[...document.querySelectorAll('select')].some(s => [...s.options].some(o => o.value === 'lin') && [...s.options].some(o => o.value === 'log'))`);
+    // Only a lin/log *parameter* (Parameters section) is expected to redraw the first figure;
+    // View-section controls may act on the 3D scene instead.
+    const PARAM_SELECTS = `[...(document.querySelector('.psim-side details')?.querySelectorAll('select') ?? [])]`;
+    const hasScale = await b.eval(`${PARAM_SELECTS}.some(s => [...s.options].some(o => o.value === 'lin') && [...s.options].some(o => o.value === 'log'))`);
     if (hasScale) {
       const before = await b.eval(`document.querySelector('.psim-figure canvas').toDataURL()`);
-      await b.eval(`(() => { const s = [...document.querySelectorAll('select')].find(q => [...q.options].some(o => o.value === 'lin')); s.value = s.value === 'lin' ? 'log' : 'lin'; s.dispatchEvent(new Event('change')); })()`);
+      await b.eval(`(() => { const s = ${PARAM_SELECTS}.find(q => [...q.options].some(o => o.value === 'lin')); s.value = s.value === 'lin' ? 'log' : 'lin'; s.dispatchEvent(new Event('change')); })()`);
       await sleep(200);
       const after = await b.eval(`document.querySelector('.psim-figure canvas').toDataURL()`);
       out.push({ label: 'spectrum axis control', ok: before !== after, summary: before !== after ? 'changing only the axis scale redrew the spectrum' : 'axis selector left the plot unchanged' });

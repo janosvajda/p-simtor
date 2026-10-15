@@ -431,6 +431,86 @@
       "skillVersion": "0.3.0",
       "group": "particles",
       "gl": true
+    },
+    {
+      "id": "radical-pair-compass",
+      "title": "Radical-pair compass",
+      "prompt": "/p-simtor show how birds might sense the Earth's magnetic field with the radical-pair mechanism in cryptochrome",
+      "about": "Exact spin dynamics of a flavin radical pair: the singlet yield depends on the direction of a 50 µT field (29 % compass contrast); a hypothesis with strong behavioural support, shown with its open questions.",
+      "group": "biology",
+      "gl": true,
+      "date": "2026-10-15",
+      "source": "/Users/janvajda/projects/psim-test/simulations/radical-pair-compass.html",
+      "checks": {
+        "total": 14,
+        "passed": 14
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "fmo-energy-transfer",
+      "title": "Energy transfer in the FMO complex",
+      "prompt": "/p-simtor show how energy moves through the photosynthetic FMO complex, and whether quantum coherence helps",
+      "about": "Lindblad dynamics of the 7-site FMO complex at its crystal positions: noise-assisted transport peaks at 99 % efficiency, where coherence adds almost nothing over classical hopping.",
+      "group": "biology",
+      "gl": true,
+      "date": "2026-10-15",
+      "source": "/Users/janvajda/projects/psim-test/simulations/fmo-energy-transfer.html",
+      "checks": {
+        "total": 19,
+        "passed": 19
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "enzyme-tunnelling",
+      "title": "Hydrogen tunnelling in enzymes",
+      "prompt": "/p-simtor show how enzymes use quantum tunnelling to move hydrogen, and why deuterium is so much slower",
+      "about": "H, D and T wave packets meet the same transfer barrier; exact Eckart tunnelling gives the kinetic isotope effect, and a gated-tunnelling model gives the nearly temperature-independent KIE seen in lipoxygenase.",
+      "group": "biology",
+      "gl": true,
+      "date": "2026-10-15",
+      "source": "/Users/janvajda/projects/psim-test/simulations/enzyme-tunnelling.html",
+      "checks": {
+        "total": 15,
+        "passed": 15
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "dna-proton-tunnelling",
+      "title": "Proton tunnelling in a G–C base pair",
+      "prompt": "/p-simtor show how protons can tunnel between DNA base pairs and whether that could cause mutations",
+      "about": "Löwdin's double proton transfer in a G–C pair: exact double-well levels plus a Lindblad environment. Tunnelling raises the tautomer population 3× over classical, but tautomers live ~20 ps — an estimate, not proof, of a tiny role in mutations.",
+      "group": "biology",
+      "gl": true,
+      "date": "2026-10-15",
+      "source": "/Users/janvajda/projects/psim-test/simulations/dna-proton-tunnelling.html",
+      "checks": {
+        "total": 22,
+        "passed": 22
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "retinal-vision",
+      "title": "The first step of vision: retinal photoisomerisation",
+      "prompt": "/p-simtor show the first step of vision: how light twists retinal in rhodopsin in 200 femtoseconds through a conical intersection",
+      "about": "The first step of vision: a wave packet on two coupled potential surfaces pours through a conical intersection as retinal twists, giving a 0.64 trans yield (0.65 measured) — in a reduced two-mode model whose yield depends on the published parameter set.",
+      "group": "biology",
+      "gl": true,
+      "date": "2026-10-15",
+      "source": "/Users/janvajda/projects/psim-test/simulations/retinal-vision.html",
+      "checks": {
+        "total": 17,
+        "passed": 17
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
     }
   ]
 }

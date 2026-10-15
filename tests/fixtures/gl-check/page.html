@@ -135,6 +135,14 @@ window.psim.selfTest = async () => {
   const neg = px(pn.x * dpr, pn.y * dpr), zero = px(pz.x * dpr, pz.y * dpr), pos = px(pp.x * dpr, pp.y * dpr);
   out.push({ label: 'GPU signed volume: sign as hue, |value| as opacity', neg, zero, pos,
     pass: neg[2] > neg[0] && pos[0] > pos[2] && zero[3] === 0 && Math.abs(neg[3] - pos[3]) <= 3 });
+  // 6d''. colour-mapped mesh: a flat surface with value = x shows the colour map's ends (ambient 1)
+  const mrS = createMeshRenderer(gl), patch = mrS.add(geometry.surface((u, v) => [u, v, 0], { u: [-1, 1], v: [-1, 1], nu: 8, nv: 8, value: u => (u + 1) / 2 }));
+  const cSurf = orbitCamera({ distance: 4, yaw: -Math.PI / 2, pitch: 1.5 });
+  clear(); mrS.draw(cSurf, [{ mesh: patch, matrix: transform(), colormap: 'viridis', range: [0, 1] }], { ambient: 1 });
+  const PS = q => { const r = cSurf.project(q, W / dpr, H / dpr); return px(r.x * dpr, r.y * dpr); };
+  const lowEnd = PS([-0.97, 0, 0]), highEnd = PS([0.97, 0, 0]), wantLo = colormap('viridis', 0.015).map(v => Math.round(v * 255)), wantHi = colormap('viridis', 0.985).map(v => Math.round(v * 255));
+  const meshDev = Math.max(...[0, 1, 2].map(i => Math.max(Math.abs(lowEnd[i] - wantLo[i]), Math.abs(highEnd[i] - wantHi[i]))));
+  out.push({ label: 'Colour-mapped mesh (geometry.surface values) takes the colour-map colours', lowEnd, highEnd, meshDev, pass: meshDev <= 8 });
   // 6e. colour bar on a 2D canvas uses the same colours as the GPU colour map
   const cbc = document.createElement('canvas'); cbc.width = 40; cbc.height = 120;
   const cx2 = cbc.getContext('2d'); drawColorBar(cx2, { x: 0, y: 10, width: 12, height: 100, colormap: 'viridis', range: [0, 1] });

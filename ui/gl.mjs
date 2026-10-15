@@ -91,6 +91,16 @@ export function orbitCamera({ target = [0, 0, 0], distance = 5, yaw = 0.6, pitch
       cam.target = c; cam.distance = clampD(r / Math.sin(half));
       return cam;
     },
+    /** Frame a set of points [x,y,z, …] tightly: centre of their bounding box, radius = farthest point. */
+    fitPoints(points, aspect = 1, margin = 1.1) {
+      const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+      for (let i = 0; i + 2 < points.length; i += 3) for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], points[i + k]); hi[k] = Math.max(hi[k], points[i + k]); }
+      const c = [0, 1, 2].map(k => (lo[k] + hi[k]) / 2);
+      let r = 0; for (let i = 0; i + 2 < points.length; i += 3) r = Math.max(r, Math.hypot(points[i] - c[0], points[i + 1] - c[1], points[i + 2] - c[2]));
+      const half = Math.min(cam.fov / 2, Math.atan(Math.tan(cam.fov / 2) * aspect));
+      cam.target = c; cam.distance = clampD(Math.max(r * margin, 1e-9) / Math.sin(half));
+      return cam;
+    },
     eye() {
       const cp = Math.cos(cam.pitch);
       return [cam.target[0] + cam.distance * cp * Math.cos(cam.yaw), cam.target[1] + cam.distance * cp * Math.sin(cam.yaw), cam.target[2] + cam.distance * Math.sin(cam.pitch)];
@@ -101,6 +111,13 @@ export function orbitCamera({ target = [0, 0, 0], distance = 5, yaw = 0.6, pitch
       const view = lookAt([eye[0] - off[0], eye[1] - off[1], eye[2] - off[2]], [cam.target[0] - off[0], cam.target[1] - off[1], cam.target[2] - off[2]], [0, 0, 1]);
       const proj = perspective(cam.fov, aspect, near ?? cam.distance * 1e-3, far ?? cam.distance * 1e3);
       return { view, proj, viewProj: multiply(proj, view), eye };
+    },
+    /** The ray through CSS pixel (x, y) of a W × H view: { origin, dir } (for picking objects). */
+    ray(x, y, W, H) {
+      const m = invert(cam.matrices(W / H).viewProj), nx = 2 * x / W - 1, ny = 1 - 2 * y / H;
+      const at = z => { const v = [m[0] * nx + m[4] * ny + m[8] * z + m[12], m[1] * nx + m[5] * ny + m[9] * z + m[13], m[2] * nx + m[6] * ny + m[10] * z + m[14], m[3] * nx + m[7] * ny + m[11] * z + m[15]]; return [v[0] / v[3], v[1] / v[3], v[2] / v[3]]; };
+      const a = at(-1), b = at(1), d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], l = Math.hypot(...d);
+      return { origin: a, dir: d.map(v => v / l) };
     },
     project(p, W, H) {
       const m = cam.matrices(W / H).viewProj;
@@ -198,7 +215,8 @@ export function compile(gl, vs, fs) {
 }
 
 const cmapTextures = new WeakMap();
-function cmapTexture(gl, name) {
+/** The 256×1 RGBA texture of a colour map (cached per context), for custom shaders. */
+export function cmapTexture(gl, name) {
   let cache = cmapTextures.get(gl);
   if (!cache) cmapTextures.set(gl, cache = {});
   if (cache[name]) return cache[name];
@@ -284,16 +302,17 @@ export function createGLLayer(canvas2d) {
  * the same size in the light and dark themes. count draws only the first count points (a cloud
  * that grows from precomputed events: upload once with update(), then raise count each frame);
  * append(positions, { values, colors }) adds new points as they happen. colors are Float32 RGB
- * in 0–1, three per point.
+ * in 0–1, three per point; sizes (update only) multiply `size` per point (e.g. area ∝ population).
  */
 export function createPointRenderer(gl) {
   const { p, u } = compile(gl, `#version 300 es
-in vec3 aPos; in float aVal; in vec3 aCol;
-uniform mat4 uVP; uniform float uSize, uWorld, uScale, uLog; uniform vec2 uRange;
+in vec3 aPos; in float aVal; in vec3 aCol; in float aSize;
+uniform mat4 uVP; uniform float uSize, uWorld, uScale, uLog, uSized; uniform vec2 uRange;
 out float vVal; out vec3 vCol;
 void main() {
   gl_Position = uVP * vec4(aPos, 1.0);
-  float px = uWorld > 0.5 ? uSize * uScale / max(gl_Position.w, 1e-6) : uSize;
+  float sz = uSized > 0.5 ? uSize * aSize : uSize;
+  float px = uWorld > 0.5 ? sz * uScale / max(gl_Position.w, 1e-6) : sz;
   gl_PointSize = clamp(px, 1.0, 256.0);
   float v = uLog > 0.5 ? (log(max(aVal, 1e-30)) / log(10.0) - uRange.x) / (uRange.y - uRange.x) : (aVal - uRange.x) / (uRange.y - uRange.x);
   vVal = clamp(v, 0.0, 1.0); vCol = aCol;
@@ -313,7 +332,7 @@ void main() {
 }`);
   const vao = gl.createVertexArray(), bufs = {};
   gl.bindVertexArray(vao);
-  for (const [name, size] of [['aPos', 3], ['aVal', 1], ['aCol', 3]]) {
+  for (const [name, size] of [['aPos', 3], ['aVal', 1], ['aCol', 3], ['aSize', 1]]) {
     const loc = gl.getAttribLocation(p, name);
     bufs[name] = { buf: gl.createBuffer(), loc, size };
     if (loc < 0) continue;
@@ -321,20 +340,21 @@ void main() {
     gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0);
   }
   gl.bindVertexArray(null);
-  let count = 0, has = { values: false, colors: false }, cap = 0;
-  const cpu = { aPos: new Float32Array(0), aVal: new Float32Array(0), aCol: new Float32Array(0) };
+  let count = 0, has = { values: false, colors: false, sizes: false }, cap = 0;
+  const cpu = { aPos: new Float32Array(0), aVal: new Float32Array(0), aCol: new Float32Array(0), aSize: new Float32Array(0) };
   const upload = (name, data) => {
     gl.bindBuffer(gl.ARRAY_BUFFER, bufs[name].buf);
     gl.bufferData(gl.ARRAY_BUFFER, data instanceof Float32Array ? data : Float32Array.from(data), gl.DYNAMIC_DRAW);
   };
   return {
     get count() { return count; },
-    update(positions, { values, colors } = {}) {
+    update(positions, { values, colors, sizes } = {}) {
       count = Math.floor(positions.length / 3); cap = 0;
       upload('aPos', positions);
-      has = { values: !!values, colors: !!colors };
+      has = { values: !!values, colors: !!colors, sizes: !!sizes };
       upload('aVal', values ?? new Float32Array(count));
       upload('aCol', colors ?? new Float32Array(3 * count));
+      upload('aSize', sizes ?? new Float32Array(count).fill(1));
     },
     /**
      * Add points to the end (events arriving one by one: detector hits, decays, samples) without
@@ -343,11 +363,11 @@ void main() {
     append(positions, { values, colors } = {}) {
       const k = Math.floor(positions.length / 3);
       if (!k) return;
-      if (count === 0) has = { values: !!values, colors: !!colors };
+      if (count === 0) has = { values: !!values, colors: !!colors, sizes: false };
       if (count + k > cap) {
         if (cap === 0 && count > 0) throw new Error('pointRenderer: append() after update() needs the points again: call append() only, or update() with all points');
         cap = Math.max(1024, 2 * (count + k));
-        for (const [name, size] of [['aPos', 3], ['aVal', 1], ['aCol', 3]]) {
+        for (const [name, size] of [['aPos', 3], ['aVal', 1], ['aCol', 3], ['aSize', 1]]) {
           const grown = new Float32Array(cap * size); grown.set(cpu[name].subarray(0, count * size)); cpu[name] = grown;
           upload(name, grown);
         }
@@ -357,7 +377,7 @@ void main() {
         cpu[name].set(arr, count * size);
         gl.bindBuffer(gl.ARRAY_BUFFER, bufs[name].buf); gl.bufferSubData(gl.ARRAY_BUFFER, count * size * 4, arr);
       };
-      put('aPos', 3, positions); put('aVal', 1, values); put('aCol', 3, colors);
+      put('aPos', 3, positions); put('aVal', 1, values); put('aCol', 3, colors); put('aSize', 1, new Float32Array(k).fill(1));
       count += k;
     },
     /** Remove all points (keeps the allocated capacity for append). */
@@ -377,6 +397,7 @@ void main() {
       gl.uniform3f(u.uColor, ...rgb(color));
       gl.uniform1f(u.uGlow, blend === 'additive' ? 1 : 0);
       gl.uniform1f(u.uSoft, soft ? 1 : 0);
+      gl.uniform1f(u.uSized, has.sizes ? 1 : 0);
       gl.uniform1f(u.uOpacity, opacity);
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, cmapTexture(gl, map)); gl.uniform1i(u.uMap, 0);
       gl.enable(gl.BLEND); gl.disable(gl.DEPTH_TEST);
@@ -809,6 +830,30 @@ export const geometry = (() => {
       return make(P, N, I);
     },
     plane(sx = 1, sy = 1) { const P = [], N = [], I = []; quad(P, N, I, [-sx / 2, -sy / 2, 0], [sx / 2, -sy / 2, 0], [sx / 2, sy / 2, 0], [-sx / 2, sy / 2, 0], [0, 0, 1]); return make(P, N, I); },
+    /**
+     * Parametric surface: point(u, v) → [x, y, z] over u ∈ [u0, u1], v ∈ [v0, v1] on an nu × nv grid;
+     * optional value(u, v) per vertex (for colormapped meshes). Normals from central differences.
+     * A polar plot r(θ, φ): point = (θ, φ) => [r·sinθ·cosφ, r·sinθ·sinφ, r·cosθ] over [0, π] × [0, 2π].
+     */
+    surface(point, { u: [u0, u1] = [0, 1], v: [v0, v1] = [0, 1], nu = 64, nv = 64, value } = {}) {
+      const P = [], N = [], I = [], V = [];
+      const du = (u1 - u0) / nu, dv = (v1 - v0) / nv, eps = 1e-4;
+      for (let j = 0; j <= nv; j++) {for (let i = 0; i <= nu; i++) {
+        const uu = u0 + i * du, vv = v0 + j * dv, p0 = point(uu, vv);
+        const a = point(Math.min(u1, uu + eps * du), vv), b = point(Math.max(u0, uu - eps * du), vv);
+        const c = point(uu, Math.min(v1, vv + eps * dv)), d = point(uu, Math.max(v0, vv - eps * dv));
+        const tu = [a[0] - b[0], a[1] - b[1], a[2] - b[2]], tv = [c[0] - d[0], c[1] - d[1], c[2] - d[2]];
+        let n = [tu[1] * tv[2] - tu[2] * tv[1], tu[2] * tv[0] - tu[0] * tv[2], tu[0] * tv[1] - tu[1] * tv[0]];
+        let l = Math.hypot(...n);
+        if (!(l > 1e-300)) { n = [p0[0], p0[1], p0[2]]; l = Math.hypot(...n) || 1; }   // poles of a sphere: radial
+        P.push(...p0); N.push(n[0] / l, n[1] / l, n[2] / l);
+        if (value) V.push(value(uu, vv));
+      }}
+      for (let j = 0; j < nv; j++) for (let i = 0; i < nu; i++) { const a = j * (nu + 1) + i; I.push(a, a + 1, a + nu + 2, a, a + nu + 2, a + nu + 1); }
+      const g = make(P, N, I);
+      if (value) g.values = Float32Array.from(V);
+      return g;
+    },
     arrow(length = 1, { shaft = 0.03 * length, head = 0.08 * length, headLength = 0.22 * length, n = 24 } = {}) {
       const hl = Math.min(headLength, length), a = this.cylinder(shaft, length - hl, n), b = this.cone(head, hl, n);
       const off = a.positions.length / 3;
@@ -941,7 +986,10 @@ export function compose(a, b) {
 
 /**
  * Lit solid objects. add(geometry) → mesh; draw(camera, items, options) with items
- * [{ mesh, matrix (from transform/compose), color, opacity }] and options:
+ * [{ mesh, matrix (from transform/compose), color, opacity, colormap, range }] and options:
+ * A geometry with `values` (one per vertex) is coloured by them when the item names a colormap
+ * and range (a polar plot of a yield, a potential-energy surface coloured by energy, an
+ * isosurface coloured by a second quantity); mesh.update({ positions, normals, values }) changes it.
  *   light: { direction: [x,y,z] } (towards the light, e.g. sunDirection() from core/sun.mjs) or a point
  *   ambient (default 0.25) · shadows: { z, color, opacity }: exact hard shadows of every item on the
  *   horizontal plane z = shadows.z for the light (no double-darkening where shadows overlap).
@@ -950,20 +998,21 @@ export function compose(a, b) {
  */
 export function createMeshRenderer(gl) {
   const { p, u } = compile(gl, `#version 300 es
-in vec3 aPos; in vec3 aNrm;
+in vec3 aPos; in vec3 aNrm; in float aVal;
 uniform mat4 uVP, uModel; uniform mat3 uNrm; uniform float uFlat;
-out vec3 vN; out vec3 vW;
-void main() { vec4 w = uModel * vec4(aPos, 1.0); vW = w.xyz; vN = uNrm * aNrm; gl_Position = uVP * w; }`, `#version 300 es
+out vec3 vN; out vec3 vW; out float vVal;
+void main() { vec4 w = uModel * vec4(aPos, 1.0); vW = w.xyz; vN = uNrm * aNrm; vVal = aVal; gl_Position = uVP * w; }`, `#version 300 es
 precision highp float;
-in vec3 vN; in vec3 vW;
-uniform vec3 uColor, uLight; uniform float uPoint, uAmbient, uOpacity, uFlat;
+in vec3 vN; in vec3 vW; in float vVal;
+uniform vec3 uColor, uLight; uniform float uPoint, uAmbient, uOpacity, uFlat, uMapped; uniform vec2 uRange; uniform sampler2D uMap;
 out vec4 frag;
 void main() {
+  vec3 base = uMapped > 0.5 ? texture(uMap, vec2(clamp((vVal - uRange.x) / (uRange.y - uRange.x), 0.0, 1.0), 0.5)).rgb : uColor;
   if (uFlat > 0.5) { frag = vec4(uColor * uOpacity, uOpacity); return; }
   vec3 n = normalize(vN), l = uPoint > 0.5 ? normalize(uLight - vW) : normalize(uLight);
   if (!gl_FrontFacing) n = -n;
   float k = uAmbient + (1.0 - uAmbient) * max(dot(n, l), 0.0);
-  frag = vec4(uColor * k * uOpacity, uOpacity);
+  frag = vec4(base * k * uOpacity, uOpacity);
 }`);
   const meshes = [];
   const inv3T = m => {                         // inverse-transpose of the upper 3×3 (normal matrix)
@@ -975,17 +1024,32 @@ void main() {
   };
   const relative = (m, t) => { const r = m.slice(); r[12] -= t[0]; r[13] -= t[1]; r[14] -= t[2]; return new Float32Array(r); };
   return {
-    add({ positions, normals, indices }) {
+    add({ positions, normals, indices, values }) {
       const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
-      for (const [name, data] of [['aPos', positions], ['aNrm', normals]]) {
-        const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
-        const loc = gl.getAttribLocation(p, name); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 3, gl.FLOAT, false, 0, 0);
+      const vb = {};
+      for (const [name, data, size] of [['aPos', positions, 3], ['aNrm', normals, 3], ['aVal', values ?? new Float32Array(positions.length / 3), 1]]) {
+        const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, data instanceof Float32Array ? data : Float32Array.from(data), gl.DYNAMIC_DRAW);
+        const loc = gl.getAttribLocation(p, name); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0);
+        vb[name] = b;
       }
       const ib = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
       gl.bindVertexArray(null);
-      const mesh = { vao, count: indices.length };
+      const mesh = {
+        vao, count: indices.length, mapped: !!values,
+        /** Replace vertex positions/normals/values in place (same vertex count): a surface that changes. */
+        update({ positions: P, normals: N, values: V }) {
+          for (const [name, data] of [['aPos', P], ['aNrm', N], ['aVal', V]]) if (data) { gl.bindBuffer(gl.ARRAY_BUFFER, vb[name]); gl.bufferSubData(gl.ARRAY_BUFFER, 0, data instanceof Float32Array ? data : Float32Array.from(data)); }
+          if (V) mesh.mapped = true;
+        },
+      };
+      mesh.buffers = [...Object.values(vb), ib];
       meshes.push(mesh);
       return mesh;
+    },
+    /** Free a mesh's GPU buffers (call when a rebuild replaces it, so parameter changes do not leak). */
+    remove(mesh) {
+      gl.deleteVertexArray(mesh.vao); for (const b of mesh.buffers ?? []) gl.deleteBuffer(b);
+      const i = meshes.indexOf(mesh); if (i >= 0) meshes.splice(i, 1);
     },
     draw(camera, items, { aspect, light = { direction: [0.4, -0.3, 1] }, ambient = 0.25, shadows = null } = {}) {
       const t = camera.target, { viewProj } = camera.matrices(aspect ?? gl.drawingBufferWidth / gl.drawingBufferHeight, { relative: true });
@@ -997,6 +1061,13 @@ void main() {
       const one = (it, model, color, opacity, flat) => {
         gl.uniformMatrix4fv(u.uModel, false, model); gl.uniformMatrix3fv(u.uNrm, false, inv3T(it.matrix));
         gl.uniform3f(u.uColor, ...rgb(color)); gl.uniform1f(u.uOpacity, opacity); gl.uniform1f(u.uFlat, flat ? 1 : 0);
+        const mapped = !flat && it.mesh.mapped && it.colormap;
+        gl.uniform1f(u.uMapped, mapped ? 1 : 0);
+        if (mapped) {
+          const [lo, hi] = it.range ?? [0, 1];
+          gl.uniform2f(u.uRange, lo, hi === lo ? lo + 1 : hi);
+          gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, cmapTexture(gl, it.colormap)); gl.uniform1i(u.uMap, 0);
+        }
         gl.bindVertexArray(it.mesh.vao); gl.drawElements(gl.TRIANGLES, it.mesh.count, gl.UNSIGNED_INT, 0);
       };
       gl.disable(gl.BLEND); gl.depthMask(true);

@@ -529,14 +529,16 @@ export function solveTridiagonal(a, b, c, d) {
  * Wilkinson shifts; Numerical Recipes "tqli"). diag: n diagonal entries; off: n−1 entries
  * coupling i and i+1. Returns { values, vectors } with vectors[i] the unit eigenvector of
  * values[i] (unsorted). Cost O(n³) with eigenvectors: fine to n ≈ 500 in a browser.
+ * { vectors: false } returns eigenvalues only, in O(n²) (n = 10⁴ in ~3 s); for the lowest few use
+ * lowestTridiagonal (bisection, O(n) per level).
  */
-export function eigenTridiagonal(diag, off) {
+export function eigenTridiagonal(diag, off, { vectors: wantVectors = true } = {}) {
   const n = diag.length;
   if (off.length !== n - 1) throw new Error('eigenTridiagonal: off must have n − 1 entries');
   const d = Float64Array.from(diag), e = new Float64Array(n);
   e.set(off);
-  const z = new Float64Array(n * n);
-  for (let i = 0; i < n; i++) z[i * n + i] = 1;
+  const z = wantVectors ? new Float64Array(n * n) : null;
+  if (z) for (let i = 0; i < n; i++) z[i * n + i] = 1;
   for (let l = 0; l < n; l++) {
     let iter = 0, m;
     do {
@@ -562,19 +564,56 @@ export function eigenTridiagonal(diag, off) {
           p = s * r;
           d[i + 1] = g + p;
           g = c * r - b;
-          for (let k = 0; k < n; k++) {
+          if (z) {for (let k = 0; k < n; k++) {
             f = z[k * n + i + 1];
             z[k * n + i + 1] = s * z[k * n + i] + c * f;
             z[k * n + i] = c * z[k * n + i] - s * f;
-          }
+          }}
         }
         if (r === 0 && i >= l) continue;
         d[l] -= p; e[l] = g; e[m] = 0;
       }
     } while (m !== l);
   }
+  if (!z) return { values: Array.from(d) };
   const vectors = Array.from({ length: n }, (_v, i) => Float64Array.from({ length: n }, (_w, k) => z[k * n + i]));
   return { values: Array.from(d), vectors };
+}
+
+/**
+ * The k lowest eigenvalues of a symmetric tridiagonal matrix by Sturm-sequence bisection:
+ * O(n · 64) per eigenvalue, accurate to round-off, exact ordering (no missed or merged levels,
+ * also for near-degenerate tunnelling doublets). Returns ascending values.
+ */
+export function lowestTridiagonal(diag, off, k) {
+  const n = diag.length;
+  if (off.length !== n - 1) throw new Error('lowestTridiagonal: off must have n − 1 entries');
+  let lo = Infinity, hi = -Infinity;
+  for (let i = 0; i < n; i++) {                                 // Gershgorin bounds
+    const r = (i > 0 ? Math.abs(off[i - 1]) : 0) + (i < n - 1 ? Math.abs(off[i]) : 0);
+    lo = Math.min(lo, diag[i] - r); hi = Math.max(hi, diag[i] + r);
+  }
+  const e2 = Float64Array.from(off, v => v * v), tiny = Number.MIN_VALUE * 1e10 + 1e-300;
+  const below = x => {                                           // number of eigenvalues < x
+    let c = 0, q = diag[0] - x;
+    if (q < 0) c++;
+    for (let i = 1; i < n; i++) {
+      q = diag[i] - x - e2[i - 1] / (q !== 0 ? q : tiny);
+      if (q < 0) c++;
+    }
+    return c;
+  };
+  const out = [];
+  for (let j = 0; j < Math.min(k, n); j++) {
+    let a = j ? out[j - 1] : lo, b = hi;
+    for (let it = 0; it < 200 && b - a > 2 * Number.EPSILON * Math.max(Math.abs(a), Math.abs(b), 1e-300); it++) {
+      const m = 0.5 * (a + b);
+      if (m === a || m === b) break;
+      if (below(m) > j) b = m; else a = m;
+    }
+    out.push(0.5 * (a + b));
+  }
+  return out;
 }
 
 /** Least-squares fit y ≈ a + b x. Returns { a, b, r2 }. */

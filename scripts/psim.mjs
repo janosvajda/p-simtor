@@ -5,7 +5,7 @@
 //   node scripts/psim.mjs verify   --scenario FILE [--out report.json]
 //   node scripts/psim.mjs build    SOURCE.html --out FILE [--verify-module physics.mjs [--reverify]] [--config FILE]
 //   node scripts/psim.mjs verify-module physics.mjs [--out report.json]
-//   node scripts/psim.mjs check    PAGE.html [--shots DIR] [--wait MS]
+//   node scripts/psim.mjs check    PAGE.html [--shots DIR] [--wait MS] [--advance T] [--params k=v,…] [--preset LABEL]
 //   node scripts/psim.mjs presets
 //
 // Run with no arguments for help.
@@ -33,6 +33,8 @@ function parseArgs(argv) {
     const a = argv[i];
     if (a.startsWith('--')) {
       const key = a.slice(2);
+      // "--params model=iso" arriving as ONE argument (an unsplit shell variable) must not be ignored
+      if (/\s|=/.test(key)) { console.error(`psim: unrecognised option "${a}": pass the option and its value as separate arguments`); process.exit(1); }
       const next = argv[i + 1];
       if (next == null || next.startsWith('--')) out[key] = true;
       else { out[key] = next; i++; }
@@ -318,7 +320,12 @@ async function runModuleVerification(file, { cache = false } = {}) {
   console.log(`  verification took ${(rep.runtimeMs / 1000).toFixed(1)} s`);
   const failed = rep.checks.filter(c => c.pass === false);
   if (failed.length) { console.log(`${failed.length} verification check(s) FAILED. Fix the model or method before delivering.`); process.exitCode = 2; }
-  else if (cache) writeFileSync(cacheFile, JSON.stringify({ hash, report: rep }));
+  else if (cache) {
+    // store only if nothing the report depends on changed while verify() ran (a long run can
+    // overlap an update of the skill's core/), so the cache never holds a stale key
+    if (physicsHash(file) === hash) writeFileSync(cacheFile, JSON.stringify({ hash, report: rep }));
+    else console.log('  physics files changed during verification: report not cached (rebuild to verify the new version)');
+  }
   return rep;
 }
 
@@ -356,11 +363,13 @@ async function cmdCheck(args) {
   if (!page || !existsSync(page)) fail('check needs an existing PAGE.html');
   const shots = args.shots ?? join(tmpdir(), 'psim-shots', basename(page, '.html'));
   // --params "mode=thomson,B=2": check a non-default mode (values parsed as numbers when numeric)
+  if (typeof args.preset === 'string' && args.params) fail('check: use --preset or --params, not both');
   const params = typeof args.params === 'string'
     ? Object.fromEntries(args.params.split(',').map(kv => { const [k, ...v] = kv.split('='); const val = v.join('='); return [k.trim(), val !== '' && !isNaN(+val) ? +val : val]; }))
     : undefined;
-  const shotDir = params && !args.shots ? `${shots}-${args.params.replace(/[^a-z0-9]+/gi, '-')}` : shots;
-  const res = await checkPage(resolve(page), { shotsDir: shotDir, waitMs: +(args.wait ?? 3000), advance: args.advance, params });
+  const suffix = [params ? args.params : '', typeof args.preset === 'string' ? `preset-${args.preset}` : '', args.advance != null ? `t${args.advance}` : ''].filter(Boolean).join('-').replace(/[^a-z0-9.]+/gi, '-');
+  const shotDir = suffix ? (args.shots ? join(shots, suffix) : `${shots}-${suffix}`) : shots;   // never overwrite the default run's shots
+  const res = await checkPage(resolve(page), { shotsDir: shotDir, waitMs: +(args.wait ?? 3000), advance: args.advance, params, preset: typeof args.preset === 'string' ? args.preset : undefined });
   for (const r of res.runs) {
     console.log(`  ${r.label.padEnd(18)} ${r.ok ? 'ok ' : 'FAIL'}  ${r.summary}`);
     if (r.screenshot) console.log(`  ${''.padEnd(18)} screenshot: ${r.screenshot}`);

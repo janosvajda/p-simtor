@@ -93,11 +93,11 @@ You can also just describe what you want ("simulate the planets orbiting the Sun
 
 ## Demos
 
-The demos were generated in a separate project with the skill installed. They are computed live in your browser; nothing is pre-recorded video. Apart from being rebuilt with the latest runtime, they are published as generated, except for one correction: a slider hint in the 4D lattice demo wrongly said that single gauge links approach the identity.
+The demos were generated in a separate project with the skill installed. They are computed live in your browser; nothing is pre-recorded video. Apart from being rebuilt with the latest runtime, they are published as generated, with two kinds of edits: a slider hint in the 4D lattice demo wrongly said that single gauge links approach the identity and was corrected, and five demos with a natural end (wave-packet tunnelling, black-hole inspiral, Stern–Gerlach, bubble chamber, decay chain) were given a one-line end-of-run marker so their clock stops there.
 
 <!-- demos:start -->
 
-**27 demos**, each made by an agent from the single prompt under it (17 of them are WebGL scenes). Click a picture to run it in your browser.
+**32 demos**, each made by an agent from the single prompt under it (22 of them are WebGL scenes). Click a picture to run it in your browser.
 
 ### Famous experiments, recreated (6)
 
@@ -125,6 +125,13 @@ The demos were generated in a separate project with the skill installed. They ar
 
 <table>
 <tr><td width="33%" valign="top"><a href="https://janosvajda.github.io/p-simtor/hydrogen-orbitals-3d.html"><img src="docs/thumbs/hydrogen-orbitals-3d.jpg" alt="Hydrogen orbitals in 3D"></a><br><b><a href="https://janosvajda.github.io/p-simtor/hydrogen-orbitals-3d.html">Hydrogen orbitals in 3D</a></b> <sup>WebGL</sup><br><code>/p-simtor visualize the 3D probability clouds of hydrogen orbitals</code></td><td width="33%" valign="top"><a href="https://janosvajda.github.io/p-simtor/wave-packet-tunnelling.html"><img src="docs/thumbs/wave-packet-tunnelling.jpg" alt="Electron wave packet tunnelling in 2D"></a><br><b><a href="https://janosvajda.github.io/p-simtor/wave-packet-tunnelling.html">Electron wave packet tunnelling in 2D</a></b> <sup>WebGL</sup><br><code>/p-simtor show an electron wave packet tunnelling through a barrier in 2D</code></td><td width="33%" valign="top"><a href="https://janosvajda.github.io/p-simtor/three-level-thermal.html"><img src="docs/thumbs/three-level-thermal.jpg" alt="Three-level system heating up"></a><br><b><a href="https://janosvajda.github.io/p-simtor/three-level-thermal.html">Three-level system heating up</a></b><br><code>/p-simtor show how the populations of a three-level quantum system change as it heats up</code></td></tr>
+</table>
+
+### Quantum biology (5)
+
+<table>
+<tr><td width="33%" valign="top"><a href="https://janosvajda.github.io/p-simtor/radical-pair-compass.html"><img src="docs/thumbs/radical-pair-compass.jpg" alt="Radical-pair compass"></a><br><b><a href="https://janosvajda.github.io/p-simtor/radical-pair-compass.html">Radical-pair compass</a></b> <sup>WebGL</sup><br><code>/p-simtor show how birds might sense the Earth's magnetic field with the radical-pair mechanism in cryptochrome</code></td><td width="33%" valign="top"><a href="https://janosvajda.github.io/p-simtor/fmo-energy-transfer.html"><img src="docs/thumbs/fmo-energy-transfer.jpg" alt="Energy transfer in the FMO complex"></a><br><b><a href="https://janosvajda.github.io/p-simtor/fmo-energy-transfer.html">Energy transfer in the FMO complex</a></b> <sup>WebGL</sup><br><code>/p-simtor show how energy moves through the photosynthetic FMO complex, and whether quantum coherence helps</code></td><td width="33%" valign="top"><a href="https://janosvajda.github.io/p-simtor/enzyme-tunnelling.html"><img src="docs/thumbs/enzyme-tunnelling.jpg" alt="Hydrogen tunnelling in enzymes"></a><br><b><a href="https://janosvajda.github.io/p-simtor/enzyme-tunnelling.html">Hydrogen tunnelling in enzymes</a></b> <sup>WebGL</sup><br><code>/p-simtor show how enzymes use quantum tunnelling to move hydrogen, and why deuterium is so much slower</code></td></tr>
+<tr><td width="33%" valign="top"><a href="https://janosvajda.github.io/p-simtor/dna-proton-tunnelling.html"><img src="docs/thumbs/dna-proton-tunnelling.jpg" alt="Proton tunnelling in a G–C base pair"></a><br><b><a href="https://janosvajda.github.io/p-simtor/dna-proton-tunnelling.html">Proton tunnelling in a G–C base pair</a></b> <sup>WebGL</sup><br><code>/p-simtor show how protons can tunnel between DNA base pairs and whether that could cause mutations</code></td><td width="33%" valign="top"><a href="https://janosvajda.github.io/p-simtor/retinal-vision.html"><img src="docs/thumbs/retinal-vision.jpg" alt="The first step of vision: retinal photoisomerisation"></a><br><b><a href="https://janosvajda.github.io/p-simtor/retinal-vision.html">The first step of vision: retinal photoisomerisation</a></b> <sup>WebGL</sup><br><code>/p-simtor show the first step of vision: how light twists retinal in rhodopsin in 200 femtoseconds through a conical intersection</code></td></tr>
 </table>
 
 ### Heat, matter and chaos (7)
@@ -187,7 +194,7 @@ Any subject goes through the same workflow: scientific question → sourced mode
      --prompt "/p-simtor show why galaxies need dark matter" \
      --about "one line on what it shows" --group space
    ```
-   This copies the page into `docs/`, takes a thumbnail, records the prompt and date, and updates the demo list in this README. Groups: `experiments`, `space`, `particles`, `quantum`, `matter`. For a better thumbnail, `--advance T` fast-forwards to time T and `--click "+10 000"` presses a page button first. `list`, `remove <id>` and `order <id> …` manage the gallery.
+   This copies the page into `docs/`, takes a thumbnail, records the prompt and date, and updates the demo list in this README. Groups: `experiments`, `space`, `particles`, `quantum`, `biology`, `matter`. For a better thumbnail, `--advance T` fast-forwards to time T and `--click "+10 000"` presses a page button first. `list`, `remove <id>` and `order <id> …` manage the gallery.
 3. To publish: push, then in GitHub open **Settings → Pages** and deploy from branch `main`, folder `/docs`.
 
 ## Verification status
