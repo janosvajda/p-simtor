@@ -424,6 +424,34 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
   border-radius: 9px; border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); cursor: pointer; }
 .psim-fsbtn:hover { background: var(--raise); color: var(--ink); }
 .psim-fsbtn svg { width: 15px; height: 15px; }
+
+/* ---------- timeline: the run's span and its key times (spec.timeline) ---------- */
+.psim-timeline { position: absolute; left: 50%; transform: translateX(-50%); bottom: 78px; width: min(560px, 62%); z-index: 3;
+  font: 10.5px var(--mono); color: var(--muted); pointer-events: auto; }
+.psim-canvaswrap > .psim-timeline { bottom: 14px; }
+.psim-app .psim-fs > .psim-timeline { bottom: 86px; }
+.psim-timeline .bar { position: relative; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--ink) 16%, transparent); cursor: pointer; }
+.psim-timeline .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 3px; background: var(--accent); }
+.psim-timeline .m { position: absolute; top: -4px; width: 2px; height: 14px; margin-left: -1px; background: var(--ink); }
+.psim-timeline .ticks { position: relative; height: 30px; }
+.psim-timeline .lab { position: absolute; bottom: 2px; transform: translateX(-50%); white-space: nowrap; color: var(--ink-2); }
+.psim-timeline .lab.r1 { bottom: 16px; }
+.psim-timeline .ends { display: flex; justify-content: space-between; margin-top: 3px; }
+.psim-timeline .m.measured, .psim-tlrow i.measured { background: var(--good, #4cc38a); }
+.psim-timeline .lab.measured { color: var(--good, #4cc38a); }
+.psim-timeline .m.requested, .psim-tlrow i.requested { background: var(--warn, #e0a030); }
+.psim-timeline .lab.requested { color: var(--warn, #e0a030); }
+.psim-timeline { background: color-mix(in srgb, var(--stage) 78%, transparent); padding: 4px 12px 6px; border-radius: 10px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.psim-tlrow { display: grid; grid-template-columns: 10px 1fr auto; gap: 2px 8px; align-items: baseline; margin: 6px 0; font-size: 12px; }
+.psim-tlrow i { width: 8px; height: 8px; border-radius: 2px; background: var(--ink); }
+.psim-tlrow code { font: 12px var(--mono); color: var(--ink); }
+.psim-tlrow small { grid-column: 2 / 4; color: var(--muted); font-size: 11px; }
+@media (max-width: 860px) {
+  .psim-timeline { left: 10px; transform: none; width: calc(50% - 16px); bottom: 70px; }
+  .psim-app .psim-legend { max-width: calc(50% - 16px); }
+  .psim-canvaswrap > .psim-timeline { bottom: 12px; }
+  .psim-timeline .lab { font-size: 9.5px; }
+}
 </style>
 </head>
 <body>
@@ -487,7 +515,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
   },
   {
    "label": "λ = 0 ground surface vs core schrodingerND (independent code, same Strang scheme), 100 fs",
-   "value": "‖Δψ‖ = 2.1e-14",
+   "value": "‖Δψ‖ = 2.3e-14",
    "pass": true
   },
   {
@@ -7685,8 +7713,8 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
    ]
   }
  ],
- "generated": "2026-10-15T04:55:52.997Z",
- "runtimeMs": 530852
+ "generated": "2026-10-15T08:02:39.619Z",
+ "runtimeMs": 536473
 }</script>
 <script type="module">
 const __psim = {};
@@ -8498,6 +8526,7 @@ function compile(gl, vs, fs) {
 }
 
 const cmapTextures = new WeakMap();
+/** The 256×1 RGBA texture of a colour map (cached per context), for custom shaders. */
 function cmapTexture(gl, name) {
   let cache = cmapTextures.get(gl);
   if (!cache) cmapTextures.set(gl, cache = {});
@@ -9374,7 +9403,7 @@ void main() {
   };
 }
 
-return { perspective, lookAt, multiply, invert, orbitCamera, COLORMAPS, colormap, normalize, compile, cssColor, pixelRatio, createGLLayer, createPointRenderer, createFieldRenderer, createVolumeRenderer, createSphereRenderer, createLineRenderer, geometry, alignZ, polylines, drawColorBar, transform, compose, createMeshRenderer };
+return { perspective, lookAt, multiply, invert, orbitCamera, COLORMAPS, colormap, normalize, compile, cmapTexture, cssColor, pixelRatio, createGLLayer, createPointRenderer, createFieldRenderer, createVolumeRenderer, createSphereRenderer, createLineRenderer, geometry, alignZ, polylines, drawColorBar, transform, compose, createMeshRenderer };
 })();
 
 // ---- psim:ui/equation.mjs
@@ -9603,9 +9632,11 @@ function createInstrument(spec) {
   const {
     title, subtitle = '', tier, tierReason, create, draw, params = [], model = {},
     timeUnit = 'T', timeLabel = 'simulated time', speed: speed0 = 1, gl: wantGL = false, drawGL, controls, onPointer, layout = 'stage', bench,
-    presets = [], texts = {}, hudError = true, formatTime, timeDigits = 3, frameBudget = 9, speedRange, viewControls, testSteps = 300,
-    glResolution = 'auto',
+    presets = [], texts = {}, hudError = true, formatTime, timeDigits: digitsGiven, frameBudget = 9, speedRange, viewControls, testSteps = 300,
+    glResolution = 'auto', timeline: timelineSpec,
   } = spec;
+  // counted progress (sweeps, steps, generations, events) shows whole numbers unless told otherwise
+  const timeDigits = digitsGiven ?? (/sweep|step|generation|event|iteration|cycle|round/i.test(timeUnit) ? 0 : 3);
   if (!TIERS[tier]) throw new Error(`tier must be one of ${Object.keys(TIERS).join(', ')}`);
   const report = readJsonScript('psim-verification');
   if (report) validateModuleReport(report);
@@ -9626,6 +9657,7 @@ function createInstrument(spec) {
     </header>
     <main class="psim-stage"><canvas></canvas>
       <div class="psim-hud"><span class="dim"></span><b>0</b><span class="h1"></span><span class="dim h2"></span><span class="flag"></span></div>
+      <div class="psim-timeline" hidden><div class="ticks"></div><div class="bar"><i class="fill"></i></div><div class="ends"><span></span><span></span></div></div>
       <div class="psim-legend"></div>
     </main>
     <aside class="psim-side"></aside>
@@ -9676,9 +9708,64 @@ function createInstrument(spec) {
   };
 
   let benchApi = null;
+  // ------------------------------------------------------------ timeline: the run's span and its key times
+  // spec.timeline = { duration, markers: [{ t, label, kind: 'computed' | 'measured' | 'requested' }], note }
+  // (each may also be a function of the sim). The run stops exactly at `duration`; markers are drawn
+  // on a bar under the time readout; clicking the bar jumps to that time (recomputing if earlier).
+  let tl = null;
+  const tlEl = $('.psim-timeline');
+  if (benchParts) benchParts.wrap.append(tlEl);              // inside the scene card in the workbench layout
+  const secTimeline = timelineSpec ? section(texts.timeline ?? 'Timeline', { aside: 'key times' }) : null;
+  const shortLabel = m => m.short ?? m.label.replace(/\s*\(.*$/, '').slice(0, 28);
+  function resolveTimeline() {
+    if (!timelineSpec) { tl = null; tlEl.hidden = true; return; }
+    const val = v => (typeof v === 'function' ? v(sim, values) : v);
+    // the run spans [start, duration] on the page's own clock: start = the sim's initial time (0 usually;
+    // e.g. −1 for a log₁₀ clock); duration is the END time on that clock
+    const start = Number.isFinite(+val(timelineSpec.start)) ? +val(timelineSpec.start) : (sim.t ?? 0);
+    const duration = +val(timelineSpec.duration);
+    if (!(duration > start)) throw new Error(`timeline.duration (the end time) must be later than the start ${start}`);
+    const span = duration - start, tol = 1e-9 * Math.max(Math.abs(duration), span);
+    const markers = (val(timelineSpec.markers) ?? []).filter(m => Number.isFinite(m.t));
+    for (const m of markers) if (m.t < start - tol || m.t > duration + tol) throw new Error(`timeline marker "${m.label}" at ${m.t} lies outside the run ${start}…${duration}`);
+    tl = { start, duration, markers, note: val(timelineSpec.note) ?? '' };
+    tlEl.hidden = false;
+    const fmt = t => (formatTime ? formatTime(t) : `${+t.toPrecision(4)} ${timeUnit}`);
+    // the bar: one tick per key time, short labels above (staggered when close), full text as a tooltip
+    const bar = tlEl.querySelector('.bar'), ticks = tlEl.querySelector('.ticks');
+    bar.querySelectorAll('.m').forEach(e => e.remove());
+    let lastX = -1, level = 0;
+    ticks.replaceChildren(...markers.slice().sort((a, b) => a.t - b.t).map(m => {
+      const x = 100 * (m.t - start) / span;
+      level = x - lastX < 22 ? 1 - level : 0; lastX = x;
+      bar.append(el('span', { class: `m ${m.kind ?? 'computed'}`, style: `left:${x.toFixed(3)}%`, title: `${m.label}: ${fmt(m.t)}` }));
+      const sl = shortLabel(m), withTime = /\d/.test(sl) ? sl : `${sl} · ${fmt(m.t)}`;   // no repeated time
+      // near the ends, anchor the label at its tick instead of centring it (never clipped by the bar's edges)
+      const anchor = x < 15 ? 'translateX(0)' : x > 85 ? 'translateX(-100%)' : 'translateX(-50%)';
+      return el('span', { class: `lab ${m.kind ?? 'computed'} r${level}`, style: `left:${x.toFixed(3)}%;transform:${anchor}`, title: `${m.label}: ${fmt(m.t)}` }, withTime);
+    }));
+    const [a, b] = tlEl.querySelectorAll('.ends span');
+    a.textContent = fmt(start); b.textContent = `${fmt(duration)} (end)`;
+    // the side panel lists every key time in full, with its kind, and the note
+    if (secTimeline) {
+      const kinds = { computed: 'computed in this model', measured: 'measured (literature)', requested: 'named in the request' };
+      secTimeline.body.replaceChildren(
+        row('run', `${fmt(start)} – ${fmt(duration)}`),
+        ...markers.map(m => el('div', { class: 'psim-tlrow' }, el('i', { class: m.kind ?? 'computed' }), el('span', {}, m.label), el('code', {}, fmt(m.t)), el('small', {}, kinds[m.kind ?? 'computed']))),
+        tl.note ? el('p', { class: 'psim-hint' }, tl.note) : null);
+    }
+  }
+  tlEl.querySelector('.bar').addEventListener('click', e => {
+    if (!tl) return;
+    const r = e.currentTarget.getBoundingClientRect(), T = tl.start + Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * (tl.duration - tl.start);
+    if (T < tDisplay) rebuild();
+    window.psim.advanceTo(T);
+  });
+
   function rebuild() {
     sim = create({ ...values });
     tDisplay = sim.t ?? 0;
+    resolveTimeline();
     diagPlot.clear();
     renderDiag(true);
     benchApi?.update?.(sim, tDisplay, { rebuilt: true });
@@ -9736,7 +9823,9 @@ function createInstrument(spec) {
   // A model that ends (a merger, everything decayed, the last particle left) sets sim.done (or
   // sim.ended): the clock stops there instead of counting time in which nothing is computed,
   // and play starts the run again from the beginning.
-  const isDone = () => sim?.done === true || sim?.ended === true;
+  // the end shown on the clock: exactly the declared duration when the steps' float sum lands within round-off of it
+  const endTime = () => (tl && Math.abs(sim.t - tl.duration) <= 1e-9 * Math.max(Math.abs(tl.duration), tl.duration - tl.start) ? tl.duration : tl ? Math.min(sim.t, tl.duration) : sim.t);
+  const isDone = () => sim?.done === true || sim?.ended === true || (tl != null && (sim?.t ?? 0) >= tl.duration - 1e-12 * Math.max(Math.abs(tl.duration), tl.duration - tl.start));
   function togglePlay() {
     if (!clock.playing && isDone()) { rebuild(); setPlaying(true); return; }
     setPlaying(!clock.playing);
@@ -9866,7 +9955,7 @@ function createInstrument(spec) {
     }),
   ));
 
-  side.append(...[secParams, secView, secDiag, secVerify, secModel, secExport].filter(s => s && (s !== secParams || params.length || controls)));
+  side.append(...[secParams, secView, secTimeline, secDiag, secVerify, secModel, secExport].filter(s => s && (s !== secParams || params.length || controls)));
   if (viewControls) viewControls(secView.body, { el, slider, select, toggle, button, view, getSim: () => sim });
   if (spec.extraSections) spec.extraSections(side, { section, el, row, slider, toggle, button, values, rebuild, view });
 
@@ -9905,10 +9994,11 @@ function createInstrument(spec) {
   }
 
   let frames = 0, lastUi = 0;
+  const frameWaiters = [];   // resolved right after a frame has been drawn (GPU self-tests read pixels then)
   function frame(now) {
     const frameStart = performance.now();
     if (timeDependent) {
-      const target = clock.tick(now, tDisplay);
+      const target = tl ? Math.min(tl.duration, clock.tick(now, tDisplay)) : clock.tick(now, tDisplay);
       if (target > tDisplay) {
         // frameBudget ms of computing per frame, checked after every step, so a slow step
         // (a Monte Carlo sweep) runs at most once past the budget; fast steps run in thousands
@@ -9919,7 +10009,7 @@ function createInstrument(spec) {
         }
         limited = sim.t < target && !isDone();
         tDisplay = Math.min(target, sim.t);
-        if (isDone()) { tDisplay = sim.t; setPlaying(false); }
+        if (isDone()) { tDisplay = endTime(); setPlaying(false); }
       }
     }
     if (glLayer?.ok) { glLayer.sync(view.dpr); drawGL?.(glLayer.gl, sim, view, tDisplay); }
@@ -9931,10 +10021,11 @@ function createInstrument(spec) {
       lastUi = now;
       const d = renderDiag();
       hud.t.textContent = timeDependent ? (formatTime ? formatTime(tDisplay) : `${fix(tDisplay, timeDigits)} ${timeUnit}`) : '';
+      if (tl) tlEl.querySelector('.fill').style.width = `${(100 * Math.max(0, Math.min(1, (tDisplay - tl.start) / (tl.duration - tl.start)))).toFixed(2)}%`;
       const firstErr = d.find(x => x.kind === 'error' && !x.pending);
       hud.a.textContent = firstErr && hudError ? `${firstErr.label} ${sci(firstErr.value)}` : '';
       hud.b.textContent = spec.hudLine?.(sim) ?? '';
-      hud.flag.textContent = isDone() ? (texts.finished ?? 'finished: the computed run ends here (play starts again)')
+      hud.flag.textContent = isDone() ? (texts.finished ?? 'finished · play restarts')
         : limited ? 'compute-limited: playback slowed to keep the calculation exact' : '';
       benchApi?.update?.(sim, tDisplay, { rebuilt: false });
       status.set('t', timeDependent ? tDisplay : 1);
@@ -9942,6 +10033,7 @@ function createInstrument(spec) {
     }
     if (++frames === 1 || frames % 30 === 0) status.set('frames', frames);   // first frame at once: slow pages count as live
     adaptResolution(now, performance.now() - frameStart);
+    if (frameWaiters.length) { const w = frameWaiters.splice(0); w.forEach(f => f()); }
     requestAnimationFrame(frame);
   }
 
@@ -9950,13 +10042,22 @@ function createInstrument(spec) {
     get t() { return tDisplay; },
     state: () => ({ t: sim.t, ...sim.state() }),
     params: () => ({ ...values }),
-    advanceTo: t => { while (sim.t < t && !isDone()) sim.step(); tDisplay = Math.max(tDisplay, Math.min(t, sim.t)); return window.psim.state(); },
+    advanceTo: t => {
+      const T = tl ? Math.min(t, tl.duration) : t;
+      while (sim.t < T && !isDone()) sim.step();
+      tDisplay = isDone() ? endTime() : Math.max(tDisplay, Math.min(T, sim.t));
+      return window.psim.state();
+    },
+    /** The run's declared span and key times ({ duration, markers, note }), or null. */
+    get timeline() { return tl ? { start: tl.start, duration: tl.duration, markers: tl.markers.map(m => ({ ...m })), note: tl.note } : null; },
     get done() { return isDone(); },
     restart: () => rebuild(),
     setParams: (next, opts) => setParams(next, opts),
     setParam: (k, v) => setParam(k, v),
     getSim: () => sim,
     toggleFullscreen: () => toggleFullscreen(),
+    /** Resolves after the next frame has been drawn: await it in a self-test before reading GPU pixels. */
+    nextFrame: () => new Promise(res => frameWaiters.push(res)),
     report,
     get fullscreen() { return isFullscreen(); },
     testSteps,
@@ -10560,11 +10661,11 @@ function eigenTridiagonal(diag, off, { vectors: wantVectors = true } = {}) {
           p = s * r;
           d[i + 1] = g + p;
           g = c * r - b;
-          if (z) for (let k = 0; k < n; k++) {
+          if (z) {for (let k = 0; k < n; k++) {
             f = z[k * n + i + 1];
             z[k * n + i + 1] = s * z[k * n + i] + c * f;
             z[k * n + i] = c * z[k * n + i] - s * f;
-          }
+          }}
         }
         if (r === 0 && i >= l) continue;
         d[l] -= p; e[l] = g; e[m] = 0;
@@ -10796,6 +10897,20 @@ function eigenvalues(spec, discretization) {
     return finite(value, 'fields Fourier operator');
   });
 }
+/** Kinetic energy ħ²Σ k_a²/(2 m_a) of every Fourier mode; mass is a number or one value per axis. */
+function kineticEnergies(spec, mass, hbar) {
+  const m = typeof mass === 'number' ? spec.shape.map(() => mass) : Array.from(mass);
+  if (m.length !== spec.shape.length || !m.every(v => v > 0)) throw new Error('fields: mass must be positive (a number or one per axis)');
+  return Float64Array.from({ length: spec.size }, (_, index) => {
+    let e = 0;
+    for (let axis = 0; axis < spec.shape.length; axis++) {
+      const n = spec.shape[axis], i = Math.floor(index / spec.strides[axis]) % n, mode = i < n / 2 ? i : i - n;
+      const k = 2 * Math.PI * mode / n / spec.spacing[axis];
+      e += hbar * hbar * k * k / (2 * m[axis]);
+    }
+    return e;
+  });
+}
 function mean(values) {
   let result = 0, correction = 0;
   for (const value of values) {
@@ -10885,10 +11000,10 @@ function schrodingerND({ re0, im0, V, shape, spacing = 1, dt, mass = 1, hbar = 1
   const spec = grid(shape, spacing); fftGrid(shape); field(re0, spec.size, 'schrodingerND');
   if (im0) field(im0, spec.size, 'schrodingerND');
   if (V) field(V, spec.size, 'schrodingerND potential');
-  positive(dt, 'schrodingerND dt'); positive(mass, 'schrodingerND mass'); positive(hbar, 'schrodingerND hbar'); finite(t0, 'schrodingerND t0');
-  const lambda = eigenvalues(spec, 'spectral');
+  positive(dt, 'schrodingerND dt'); positive(hbar, 'schrodingerND hbar'); finite(t0, 'schrodingerND t0');
+  const Tk = kineticEnergies(spec, mass, hbar);                // per-axis masses allowed (anisotropic kinetic energy)
   const halfV = Float64Array.from({ length: spec.size }, (_, i) => finite(-(V?.[i] ?? 0) / hbar * (dt / 2), 'schrodingerND potential phase'));
-  const kinetic = Float64Array.from(lambda, value => finite(-hbar / mass * (value / 2) * dt, 'schrodingerND kinetic phase'));
+  const kinetic = Float64Array.from(Tk, value => finite(-value / hbar * dt, 'schrodingerND kinetic phase'));
   const re = Float64Array.from(re0), im = im0 ? Float64Array.from(im0) : new Float64Array(spec.size);
   const workRe = new Float64Array(spec.size), workIm = new Float64Array(spec.size), cellVolume = volume(spec);
   let halfDamp = null;                                    // e^{−W dt/2ħ} per cell, applied with each potential half-step
@@ -10939,6 +11054,17 @@ function schrodingerND({ re0, im0, V, shape, spacing = 1, dt, mass = 1, hbar = 1
     norm() { return finite(mean(s.probability()) * spec.size * cellVolume, 'schrodingerND norm'); },
     /** Probability removed by the absorbing layers so far (0 without absorb). */
     absorbed() { return halfDamp ? Math.max(0, initialNorm - s.norm()) : 0; },
+    /**
+     * ⟨H⟩ = ⟨T⟩ + ⟨V⟩ per unit norm (kinetic part spectral, exact for the grid). The split-operator
+     * scheme keeps it bounded with an O(Δt²) oscillation, not exactly constant: judge it by order.
+     */
+    energy() {
+      workRe.set(re); workIm.set(im); transform(workRe, workIm, spec, false);
+      let t = 0, w = 0, v = 0, nrm = 0;
+      for (let i = 0; i < spec.size; i++) { const a = workRe[i] * workRe[i] + workIm[i] * workIm[i]; t += a * Tk[i]; w += a; }
+      for (let i = 0; i < spec.size; i++) { const a = re[i] * re[i] + im[i] * im[i]; v += a * (V?.[i] ?? 0); nrm += a; }
+      return t / w + v / nrm;
+    },
   };
   const initialNorm = s.norm();
   return s;
@@ -11071,7 +11197,79 @@ function densityLevel(values, fraction) {
   return 0;
 }
 
-return { laplacianND, gradientND, divergenceND, fftND, solvePoissonPeriodic, diffusionPeriodic, schrodingerND, fftAxis, phaseWinding, probabilityCurrent, contourLines, densityLevel };
+/**
+ * Two coupled surfaces (nonadiabatic dynamics: conical intersections, avoided crossings, curve
+ * crossing): i ħ ∂ψ_k/∂t = T ψ_k + Σ_l V_kl ψ_l with a real symmetric 2×2 diabatic potential matrix
+ * (V11, V22, V12 arrays on the grid). Strang splitting: exact exp(−iVΔt/2ħ) of the 2×2 matrix at
+ * every point, shared spectral kinetic step (mass a number or per axis). Second order in Δt,
+ * unitary to round-off. Returns { t, psi: [{ re, im }, { re, im }], step(), advanceTo(t),
+ * populations() → [P1, P2] (diabatic), norm(), energy() }.
+ */
+function coupledSchrodinger2({ psi0, V11, V22, V12, shape, spacing = 1, dt, mass = 1, hbar = 1, t0 = 0 }) {
+  const spec = grid(shape, spacing); fftGrid(shape);
+  if (!Array.isArray(psi0) || psi0.length !== 2) throw new Error('coupledSchrodinger2: psi0 must be [{ re, im }, { re, im }]');
+  for (const a of [V11, V22, V12]) field(a, spec.size, 'coupledSchrodinger2 potential');
+  positive(dt, 'coupledSchrodinger2 dt');
+  const n = spec.size, vol = volume(spec), tau = dt / (2 * hbar);
+  const psi = psi0.map(p => ({ re: Float64Array.from(p.re), im: p.im ? Float64Array.from(p.im) : new Float64Array(n) }));
+  const Tk = kineticEnergies(spec, mass, hbar), kC = Float64Array.from(Tk, e => Math.cos(-e * dt / hbar)), kS = Float64Array.from(Tk, e => Math.sin(-e * dt / hbar));
+  // exp(−iHτ) = e^{−i m τ} [cos(rτ) − i sin(rτ)(d σ_z + c σ_x)/r], H = [[m + d, c], [c, m − d]]
+  const P = { pr: new Float64Array(n), pi: new Float64Array(n), a: new Float64Array(n), b: new Float64Array(n), c: new Float64Array(n) };
+  for (let i = 0; i < n; i++) {
+    const m = (V11[i] + V22[i]) / 2, d = (V11[i] - V22[i]) / 2, c = V12[i], r = Math.hypot(d, c);
+    P.pr[i] = Math.cos(-m * tau); P.pi[i] = Math.sin(-m * tau);
+    P.a[i] = Math.cos(r * tau); const sr = r > 0 ? Math.sin(r * tau) / r : tau;
+    P.b[i] = sr * d; P.c[i] = sr * c;                            // −i·(b σ_z + c σ_x)
+  }
+  const potential = () => {
+    const [u, w] = psi;
+    for (let i = 0; i < n; i++) {
+      // [x1; x2] = (a − i b σz − i c σx)[u; w]
+      const ur = u.re[i], ui = u.im[i], wr = w.re[i], wi = w.im[i], a = P.a[i], b = P.b[i], c = P.c[i];
+      const x1r = a * ur + b * ui + c * wi, x1i = a * ui - b * ur - c * wr;
+      const x2r = a * wr - b * wi + c * ui, x2i = a * wi + b * wr - c * ur;
+      const pr = P.pr[i], pi = P.pi[i];
+      u.re[i] = pr * x1r - pi * x1i; u.im[i] = pr * x1i + pi * x1r;
+      w.re[i] = pr * x2r - pi * x2i; w.im[i] = pr * x2i + pi * x2r;
+    }
+  };
+  const kinetic = () => {
+    for (const p of psi) {
+      transform(p.re, p.im, spec, false);
+      for (let i = 0; i < n; i++) { const a = p.re[i], b = p.im[i]; p.re[i] = a * kC[i] - b * kS[i]; p.im[i] = a * kS[i] + b * kC[i]; }
+      transform(p.re, p.im, spec, true);
+    }
+  };
+  const pop = p => { let s = 0; for (let i = 0; i < n; i++) s += p.re[i] * p.re[i] + p.im[i] * p.im[i]; return s * vol; };
+  const s = {
+    t: t0, psi, steps: 0,
+    step() {
+      potential(); kinetic(); potential();
+      if (!Number.isFinite(psi[0].re[0] + psi[1].re[0])) throw new Error(`coupledSchrodinger2: non-finite state at t = ${s.t}`);
+      s.t += dt; s.steps++;
+    },
+    advanceTo(target) { while (s.t < target - 1e-12 * dt) s.step(); return s; },
+    populations: () => psi.map(pop),
+    norm: () => pop(psi[0]) + pop(psi[1]),
+    energy() {
+      let e = 0;
+      for (const p of psi) {
+        const r = Float64Array.from(p.re), im = Float64Array.from(p.im); transform(r, im, spec, false);
+        let t = 0; for (let i = 0; i < n; i++) t += (r[i] * r[i] + im[i] * im[i]) * Tk[i];
+        e += t / n * vol;                                          // Parseval: Σ|ψ̃|² = n Σ|ψ|²
+      }
+      const [u, w] = psi;
+      for (let i = 0; i < n; i++) {
+        e += vol * (V11[i] * (u.re[i] ** 2 + u.im[i] ** 2) + V22[i] * (w.re[i] ** 2 + w.im[i] ** 2) + 2 * V12[i] * (u.re[i] * w.re[i] + u.im[i] * w.im[i]));
+      }
+      return e / s.norm();
+    },
+  };
+  return s;
+}
+
+
+return { laplacianND, gradientND, divergenceND, fftND, solvePoissonPeriodic, diffusionPeriodic, schrodingerND, fftAxis, phaseWinding, probabilityCurrent, contourLines, densityLevel, coupledSchrodinger2 };
 })();
 
 // ---- psim:core/pde.mjs
@@ -11879,6 +12077,13 @@ return { FS, SETS, PARAMS, T_END_FS, DT, GRID, potential, adiabatic, intersectio
 const { createInstrument } = __psim["ui/instrument-app.mjs"];
 const { orbitCamera, compile, colormap, drawColorBar, createLineRenderer, polylines } = __psim["ui/gl.mjs"];
 const { PARAMS, SETS, createSim, adiabatic, intersection, FS, T_END_FS } = __psim["local:physics.mjs"];
+// ------------------------------------------------------------------ timeline (the question is about the first ~200 fs)
+// Read the build-time report now: the shell replaces the page body when it starts.
+const BUILD = JSON.parse(document.getElementById('psim-verification')?.textContent || 'null');
+const T_EVENT = 300;                       // fs: covers the ~200 fs isomerisation with a 1.5× margin
+let longRun = false;                       // View option: continue to 1000 fs for the long-time yield average
+const isDefault = v => PARAMS.every(p => v[p.key] === p.value);
+
 // ------------------------------------------------------------------ world mapping (disclosed in the legend)
 // X = torsion φ (rad, 1 world unit per rad), Y = coupling mode x × 0.4, Z = energy (eV) × 0.75
 const XS = 1, YS = 0.4, ZS = 0.75, XMAX = 5;                 // show |x| ≤ 5 of the ±9 grid
@@ -12181,6 +12386,15 @@ createInstrument({
   tier: 'approximate',
   tierReason: 'The quantum dynamics of the stated two-mode model is solved to verified accuracy (norm, energy, exact limits, Δt and grid convergence), but the model itself is a reduced fit with two coordinates and no protein bath; its parameters were checked against secondary tabulations only.',
   params: PARAMS, create: createSim, gl: true, drawGL, draw, layout: 'workbench', bench,
+  timeline: {
+    duration: () => (longRun ? T_END_FS : T_EVENT),
+    markers: (sim, v) => [
+      ...(isDefault(v) && BUILD?.production?.tHalf ? [{ t: BUILD.production.tHalf, label: 'S₁ population halves (computed)', short: 'S₁ half-life', kind: 'computed' }] : []),
+      { t: 200, label: 'photorhodopsin ≈ 200 fs (measured, Schoenlein 1991; the requested timescale)', short: 'photorhodopsin (measured)', kind: 'measured' },
+      ...(longRun ? [{ t: 500, label: 'yield average from here (computed)', kind: 'computed' }] : []),
+    ],
+    note: () => (longRun ? '300–1000 fs: the hot ground-state packet keeps recrossing (no bath); the yield is averaged over 500–1000 fs.' : 'Run covers the isomerisation (≈ 200 fs). View → “Long run” continues to 1000 fs for the long-time yield.'),
+  },
   timeUnit: 'fs', timeLabel: 'time after the photon', timeDigits: 1, speed: 12, speedRange: [1, 200], duration: T_END_FS, frameBudget: 12,
   hudLine: sim => `P(S₁) ${sim.obs.S1.toFixed(2)} · trans ${sim.obs.transS0.toFixed(2)} · cis ${sim.obs.cisS0.toFixed(2)}`,
   presets: [
@@ -12191,6 +12405,7 @@ createInstrument({
   onPointer(canvas) { cam.attach(canvas); },
   onFit(view) { cam.fit(BOX, view.W / view.H, 0.95); },
   viewControls(body, { toggle, select, slider }) {
+    body.append(toggle('Long run to 1000 fs (long-time yield average)', longRun, v => { longRun = v; window.psim.restart(); }));
     body.append(toggle('Density as height bump', view3.lift, v => { view3.lift = v; }));
     body.append(slider({ label: 'Bump height', min: 0.1, max: 1.2, value: view3.liftScale, digits: 2, onInput: v => { view3.liftScale = v; } }));
     body.append(select([{ value: 'inferno', label: 'inferno' }, { value: 'viridis', label: 'viridis' }, { value: 'magma', label: 'magma' }], view3.map, v => { view3.map = v; }));

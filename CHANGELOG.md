@@ -1,5 +1,28 @@
 # Changelog
 
+## Unreleased — precise timers
+
+- **`timeline` in the shell.** Every evolving page declares its run span and key times (computed, measured, requested). A bar under the time readout shows progress and labelled markers, and clicking it jumps to a time. The run stops exactly at its declared end.
+- **`psim check`.**
+  - It advances to 3× the declared duration and requires the clock to stop exactly at the end, with every marker inside the run.
+  - Time-dependent pages without a timeline get a visible warning.
+- **SKILL.md workflow step 4: define the time axis.** The span follows the question, any longer window is labelled with its reason, and characteristic times are measured in `verify()` and compared with the stated value.
+- **Checklists.** `verification.md` adds timescale claims and `visual-language.md` adds a timeline question.
+- **Shell robustness.**
+  - Timelines may start at a non-zero time, such as a logarithmic clock starting at −1.
+  - The end time snaps to exactly the declared value.
+  - Labels near the edges of the bar are anchored, so they are not clipped.
+  - The bar has a backing on every page, and on phones it shares the bottom row with the legend without overlapping.
+  - Counted progress (sweeps, steps, generations) shows whole numbers.
+  - The "finished" text is shorter.
+- **GPU self-tests.**
+  - `window.psim.nextFrame()` resolves in the task that drew a frame, so `gl.readPixels` sees the drawn buffer.
+  - `psim check` calls the self-test after a drawn frame and repeats a failed one once. A pass on the second attempt is reported as such, with the first reading.
+  - The Rutherford, Stern–Gerlach and weak-force gallery pages now use `nextFrame`. Rutherford had read the buffer after compositing, which gave blank reads.
+- **Self-tests.** The enzyme page's rectangular-barrier mode and the dark-matter page's halo-off mode now have correct self-tests. Both were found by `--params` checks.
+- **Recipes.** The galaxy, GPS-relativity and proton-in-a-field recipes declare their timelines, with computed key times: an orbit at R₀ is 223 Myr, a GPS orbit 11.967 h, a gyroperiod 65.66 ns.
+- **Gallery.** Every time-dependent gallery demo declares its timeline. The retinal (vision) demo now runs to 300 fs by default, with S₁'s half-life of 138 fs (computed) and photorhodopsin at about 200 fs (measured) marked; a View option extends the run to 1000 fs for the long-time yield.
+
 ## Unreleased — quantum biology builds
 
 - **New `core/quantum.mjs`** for few-level and open quantum systems:

@@ -361,7 +361,8 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 .psim-term .mx math { font-size: 19px; }
 .psim-term .bar { width: 100%; height: 3px; border-radius: 2px; background: var(--line); }
 .psim-term .lb { font: 11px/1.25 var(--sans); color: var(--muted); text-align: center; max-width: 150px; }
-.psim-term .v { font: 12px var(--mono); color: var(--ink-2); white-space: nowrap; }
+.psim-term .v { font: 12px var(--mono); color: var(--ink-2); overflow-wrap: anywhere; }
+.psim-term { min-width: 0; max-width: 100%; }
 .psim-where { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: baseline; padding: 8px 12px; border-left: 2px solid var(--line-strong); }
 .psim-where .kw { grid-column: 1 / -1; font: italic 12px var(--serif); color: var(--muted); }
 .psim-where .w { display: contents; }
@@ -369,9 +370,9 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 .psim-where .mean { color: var(--ink-2); font-size: 12.5px; }
 .psim-where .v { font: 12px var(--mono); color: var(--ink); text-align: right; }
 .psim-derivation ol { margin: 8px 0 0; padding: 0; list-style: none; counter-reset: step; display: grid; gap: 8px; }
-.psim-derivation li { counter-increment: step; display: grid; grid-template-columns: 22px 1fr; column-gap: 8px; align-items: center; }
+.psim-derivation li { counter-increment: step; display: grid; grid-template-columns: 22px minmax(0, 1fr); column-gap: 8px; align-items: center; }
 .psim-derivation li::before { content: counter(step); grid-row: span 2; align-self: start; margin-top: 8px; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--line-strong); font: 10.5px/18px var(--mono); text-align: center; color: var(--muted); }
-.psim-derivation .mx { overflow-x: auto; padding: 4px 0; }
+.psim-derivation .mx { overflow-x: auto; padding: 4px 0; min-width: 0; }
 .psim-derivation .mx math { font-size: 17px; color: var(--ink); }
 .psim-derivation .why { font-size: 12px; color: var(--muted); }
 
@@ -382,7 +383,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
   background: radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 90%, var(--accent) 10%) 0%, var(--stage) 65%); }
 .psim-bench .psim-canvaswrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
 .psim-bench .psim-figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
-.psim-bench .psim-eqs { display: grid; gap: 18px; }
+.psim-bench .psim-eqs { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
 .psim-app.workbench .psim-transport { position: fixed; left: calc((100vw - 372px) / 2); }
 .psim-app.workbench .psim-hud { left: 30px; top: 30px; }
 .psim-app.workbench .psim-legend { right: 30px; top: 30px; }
@@ -423,6 +424,34 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
   border-radius: 9px; border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); cursor: pointer; }
 .psim-fsbtn:hover { background: var(--raise); color: var(--ink); }
 .psim-fsbtn svg { width: 15px; height: 15px; }
+
+/* ---------- timeline: the run's span and its key times (spec.timeline) ---------- */
+.psim-timeline { position: absolute; left: 50%; transform: translateX(-50%); bottom: 78px; width: min(560px, 62%); z-index: 3;
+  font: 10.5px var(--mono); color: var(--muted); pointer-events: auto; }
+.psim-canvaswrap > .psim-timeline { bottom: 14px; }
+.psim-app .psim-fs > .psim-timeline { bottom: 86px; }
+.psim-timeline .bar { position: relative; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--ink) 16%, transparent); cursor: pointer; }
+.psim-timeline .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 3px; background: var(--accent); }
+.psim-timeline .m { position: absolute; top: -4px; width: 2px; height: 14px; margin-left: -1px; background: var(--ink); }
+.psim-timeline .ticks { position: relative; height: 30px; }
+.psim-timeline .lab { position: absolute; bottom: 2px; transform: translateX(-50%); white-space: nowrap; color: var(--ink-2); }
+.psim-timeline .lab.r1 { bottom: 16px; }
+.psim-timeline .ends { display: flex; justify-content: space-between; margin-top: 3px; }
+.psim-timeline .m.measured, .psim-tlrow i.measured { background: var(--good, #4cc38a); }
+.psim-timeline .lab.measured { color: var(--good, #4cc38a); }
+.psim-timeline .m.requested, .psim-tlrow i.requested { background: var(--warn, #e0a030); }
+.psim-timeline .lab.requested { color: var(--warn, #e0a030); }
+.psim-timeline { background: color-mix(in srgb, var(--stage) 78%, transparent); padding: 4px 12px 6px; border-radius: 10px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.psim-tlrow { display: grid; grid-template-columns: 10px 1fr auto; gap: 2px 8px; align-items: baseline; margin: 6px 0; font-size: 12px; }
+.psim-tlrow i { width: 8px; height: 8px; border-radius: 2px; background: var(--ink); }
+.psim-tlrow code { font: 12px var(--mono); color: var(--ink); }
+.psim-tlrow small { grid-column: 2 / 4; color: var(--muted); font-size: 11px; }
+@media (max-width: 860px) {
+  .psim-timeline { left: 10px; transform: none; width: calc(50% - 16px); bottom: 70px; }
+  .psim-app .psim-legend { max-width: calc(50% - 16px); }
+  .psim-canvaswrap > .psim-timeline { bottom: 12px; }
+  .psim-timeline .lab { font-size: 9.5px; }
+}
 </style>
 </head>
 <body>
@@ -436,17 +465,17 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
   },
   {
    "label": "Unitarity, no absorbers, 2D grid, 300 steps: |ΔN/N|",
-   "value": "9.4e-15",
+   "value": "8.9e-15",
    "pass": true
   },
   {
    "label": "Free packet centre ⟨x⟩ = x₀ + ħk₀t/mₑ at t = 10 fs",
-   "value": "|Δx| = 9.3e-15 nm",
+   "value": "|Δx| = 1.1e-14 nm",
    "pass": true
   },
   {
    "label": "Free packet spreading σ(t) = σ₀√(1 + (ħt/2mₑσ₀²)²)",
-   "value": "5.6e-15 rel.",
+   "value": "6.8e-15 rel.",
    "pass": true
   },
   {
@@ -520,8 +549,8 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
   "At the production grid (dx = 0.125 nm) the sampled barrier gives T low by 1.4 % (default case); this dominates the error budget.",
   "Model limits: free-electron mass, no spin, non-relativistic (E ≪ mₑc²), static ideal rectangular barrier, single electron (no image charge, no phonons)."
  ],
- "generated": "2026-10-15T01:39:02.891Z",
- "runtimeMs": 23382
+ "generated": "2026-10-15T08:21:13.695Z",
+ "runtimeMs": 53975
 }</script>
 <script type="module">
 const __psim = {};
@@ -1209,6 +1238,16 @@ function orbitCamera({ target = [0, 0, 0], distance = 5, yaw = 0.6, pitch = 0.45
       cam.target = c; cam.distance = clampD(r / Math.sin(half));
       return cam;
     },
+    /** Frame a set of points [x,y,z, …] tightly: centre of their bounding box, radius = farthest point. */
+    fitPoints(points, aspect = 1, margin = 1.1) {
+      const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+      for (let i = 0; i + 2 < points.length; i += 3) for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], points[i + k]); hi[k] = Math.max(hi[k], points[i + k]); }
+      const c = [0, 1, 2].map(k => (lo[k] + hi[k]) / 2);
+      let r = 0; for (let i = 0; i + 2 < points.length; i += 3) r = Math.max(r, Math.hypot(points[i] - c[0], points[i + 1] - c[1], points[i + 2] - c[2]));
+      const half = Math.min(cam.fov / 2, Math.atan(Math.tan(cam.fov / 2) * aspect));
+      cam.target = c; cam.distance = clampD(Math.max(r * margin, 1e-9) / Math.sin(half));
+      return cam;
+    },
     eye() {
       const cp = Math.cos(cam.pitch);
       return [cam.target[0] + cam.distance * cp * Math.cos(cam.yaw), cam.target[1] + cam.distance * cp * Math.sin(cam.yaw), cam.target[2] + cam.distance * Math.sin(cam.pitch)];
@@ -1219,6 +1258,13 @@ function orbitCamera({ target = [0, 0, 0], distance = 5, yaw = 0.6, pitch = 0.45
       const view = lookAt([eye[0] - off[0], eye[1] - off[1], eye[2] - off[2]], [cam.target[0] - off[0], cam.target[1] - off[1], cam.target[2] - off[2]], [0, 0, 1]);
       const proj = perspective(cam.fov, aspect, near ?? cam.distance * 1e-3, far ?? cam.distance * 1e3);
       return { view, proj, viewProj: multiply(proj, view), eye };
+    },
+    /** The ray through CSS pixel (x, y) of a W × H view: { origin, dir } (for picking objects). */
+    ray(x, y, W, H) {
+      const m = invert(cam.matrices(W / H).viewProj), nx = 2 * x / W - 1, ny = 1 - 2 * y / H;
+      const at = z => { const v = [m[0] * nx + m[4] * ny + m[8] * z + m[12], m[1] * nx + m[5] * ny + m[9] * z + m[13], m[2] * nx + m[6] * ny + m[10] * z + m[14], m[3] * nx + m[7] * ny + m[11] * z + m[15]]; return [v[0] / v[3], v[1] / v[3], v[2] / v[3]]; };
+      const a = at(-1), b = at(1), d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], l = Math.hypot(...d);
+      return { origin: a, dir: d.map(v => v / l) };
     },
     project(p, W, H) {
       const m = cam.matrices(W / H).viewProj;
@@ -1316,6 +1362,7 @@ function compile(gl, vs, fs) {
 }
 
 const cmapTextures = new WeakMap();
+/** The 256×1 RGBA texture of a colour map (cached per context), for custom shaders. */
 function cmapTexture(gl, name) {
   let cache = cmapTextures.get(gl);
   if (!cache) cmapTextures.set(gl, cache = {});
@@ -1402,16 +1449,17 @@ function createGLLayer(canvas2d) {
  * the same size in the light and dark themes. count draws only the first count points (a cloud
  * that grows from precomputed events: upload once with update(), then raise count each frame);
  * append(positions, { values, colors }) adds new points as they happen. colors are Float32 RGB
- * in 0–1, three per point.
+ * in 0–1, three per point; sizes (update only) multiply `size` per point (e.g. area ∝ population).
  */
 function createPointRenderer(gl) {
   const { p, u } = compile(gl, `#version 300 es
-in vec3 aPos; in float aVal; in vec3 aCol;
-uniform mat4 uVP; uniform float uSize, uWorld, uScale, uLog; uniform vec2 uRange;
+in vec3 aPos; in float aVal; in vec3 aCol; in float aSize;
+uniform mat4 uVP; uniform float uSize, uWorld, uScale, uLog, uSized; uniform vec2 uRange;
 out float vVal; out vec3 vCol;
 void main() {
   gl_Position = uVP * vec4(aPos, 1.0);
-  float px = uWorld > 0.5 ? uSize * uScale / max(gl_Position.w, 1e-6) : uSize;
+  float sz = uSized > 0.5 ? uSize * aSize : uSize;
+  float px = uWorld > 0.5 ? sz * uScale / max(gl_Position.w, 1e-6) : sz;
   gl_PointSize = clamp(px, 1.0, 256.0);
   float v = uLog > 0.5 ? (log(max(aVal, 1e-30)) / log(10.0) - uRange.x) / (uRange.y - uRange.x) : (aVal - uRange.x) / (uRange.y - uRange.x);
   vVal = clamp(v, 0.0, 1.0); vCol = aCol;
@@ -1431,7 +1479,7 @@ void main() {
 }`);
   const vao = gl.createVertexArray(), bufs = {};
   gl.bindVertexArray(vao);
-  for (const [name, size] of [['aPos', 3], ['aVal', 1], ['aCol', 3]]) {
+  for (const [name, size] of [['aPos', 3], ['aVal', 1], ['aCol', 3], ['aSize', 1]]) {
     const loc = gl.getAttribLocation(p, name);
     bufs[name] = { buf: gl.createBuffer(), loc, size };
     if (loc < 0) continue;
@@ -1439,20 +1487,21 @@ void main() {
     gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0);
   }
   gl.bindVertexArray(null);
-  let count = 0, has = { values: false, colors: false }, cap = 0;
-  const cpu = { aPos: new Float32Array(0), aVal: new Float32Array(0), aCol: new Float32Array(0) };
+  let count = 0, has = { values: false, colors: false, sizes: false }, cap = 0;
+  const cpu = { aPos: new Float32Array(0), aVal: new Float32Array(0), aCol: new Float32Array(0), aSize: new Float32Array(0) };
   const upload = (name, data) => {
     gl.bindBuffer(gl.ARRAY_BUFFER, bufs[name].buf);
     gl.bufferData(gl.ARRAY_BUFFER, data instanceof Float32Array ? data : Float32Array.from(data), gl.DYNAMIC_DRAW);
   };
   return {
     get count() { return count; },
-    update(positions, { values, colors } = {}) {
+    update(positions, { values, colors, sizes } = {}) {
       count = Math.floor(positions.length / 3); cap = 0;
       upload('aPos', positions);
-      has = { values: !!values, colors: !!colors };
+      has = { values: !!values, colors: !!colors, sizes: !!sizes };
       upload('aVal', values ?? new Float32Array(count));
       upload('aCol', colors ?? new Float32Array(3 * count));
+      upload('aSize', sizes ?? new Float32Array(count).fill(1));
     },
     /**
      * Add points to the end (events arriving one by one: detector hits, decays, samples) without
@@ -1461,11 +1510,11 @@ void main() {
     append(positions, { values, colors } = {}) {
       const k = Math.floor(positions.length / 3);
       if (!k) return;
-      if (count === 0) has = { values: !!values, colors: !!colors };
+      if (count === 0) has = { values: !!values, colors: !!colors, sizes: false };
       if (count + k > cap) {
         if (cap === 0 && count > 0) throw new Error('pointRenderer: append() after update() needs the points again: call append() only, or update() with all points');
         cap = Math.max(1024, 2 * (count + k));
-        for (const [name, size] of [['aPos', 3], ['aVal', 1], ['aCol', 3]]) {
+        for (const [name, size] of [['aPos', 3], ['aVal', 1], ['aCol', 3], ['aSize', 1]]) {
           const grown = new Float32Array(cap * size); grown.set(cpu[name].subarray(0, count * size)); cpu[name] = grown;
           upload(name, grown);
         }
@@ -1475,7 +1524,7 @@ void main() {
         cpu[name].set(arr, count * size);
         gl.bindBuffer(gl.ARRAY_BUFFER, bufs[name].buf); gl.bufferSubData(gl.ARRAY_BUFFER, count * size * 4, arr);
       };
-      put('aPos', 3, positions); put('aVal', 1, values); put('aCol', 3, colors);
+      put('aPos', 3, positions); put('aVal', 1, values); put('aCol', 3, colors); put('aSize', 1, new Float32Array(k).fill(1));
       count += k;
     },
     /** Remove all points (keeps the allocated capacity for append). */
@@ -1495,6 +1544,7 @@ void main() {
       gl.uniform3f(u.uColor, ...rgb(color));
       gl.uniform1f(u.uGlow, blend === 'additive' ? 1 : 0);
       gl.uniform1f(u.uSoft, soft ? 1 : 0);
+      gl.uniform1f(u.uSized, has.sizes ? 1 : 0);
       gl.uniform1f(u.uOpacity, opacity);
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, cmapTexture(gl, map)); gl.uniform1i(u.uMap, 0);
       gl.enable(gl.BLEND); gl.disable(gl.DEPTH_TEST);
@@ -1927,6 +1977,30 @@ const geometry = (() => {
       return make(P, N, I);
     },
     plane(sx = 1, sy = 1) { const P = [], N = [], I = []; quad(P, N, I, [-sx / 2, -sy / 2, 0], [sx / 2, -sy / 2, 0], [sx / 2, sy / 2, 0], [-sx / 2, sy / 2, 0], [0, 0, 1]); return make(P, N, I); },
+    /**
+     * Parametric surface: point(u, v) → [x, y, z] over u ∈ [u0, u1], v ∈ [v0, v1] on an nu × nv grid;
+     * optional value(u, v) per vertex (for colormapped meshes). Normals from central differences.
+     * A polar plot r(θ, φ): point = (θ, φ) => [r·sinθ·cosφ, r·sinθ·sinφ, r·cosθ] over [0, π] × [0, 2π].
+     */
+    surface(point, { u: [u0, u1] = [0, 1], v: [v0, v1] = [0, 1], nu = 64, nv = 64, value } = {}) {
+      const P = [], N = [], I = [], V = [];
+      const du = (u1 - u0) / nu, dv = (v1 - v0) / nv, eps = 1e-4;
+      for (let j = 0; j <= nv; j++) {for (let i = 0; i <= nu; i++) {
+        const uu = u0 + i * du, vv = v0 + j * dv, p0 = point(uu, vv);
+        const a = point(Math.min(u1, uu + eps * du), vv), b = point(Math.max(u0, uu - eps * du), vv);
+        const c = point(uu, Math.min(v1, vv + eps * dv)), d = point(uu, Math.max(v0, vv - eps * dv));
+        const tu = [a[0] - b[0], a[1] - b[1], a[2] - b[2]], tv = [c[0] - d[0], c[1] - d[1], c[2] - d[2]];
+        let n = [tu[1] * tv[2] - tu[2] * tv[1], tu[2] * tv[0] - tu[0] * tv[2], tu[0] * tv[1] - tu[1] * tv[0]];
+        let l = Math.hypot(...n);
+        if (!(l > 1e-300)) { n = [p0[0], p0[1], p0[2]]; l = Math.hypot(...n) || 1; }   // poles of a sphere: radial
+        P.push(...p0); N.push(n[0] / l, n[1] / l, n[2] / l);
+        if (value) V.push(value(uu, vv));
+      }}
+      for (let j = 0; j < nv; j++) for (let i = 0; i < nu; i++) { const a = j * (nu + 1) + i; I.push(a, a + 1, a + nu + 2, a, a + nu + 2, a + nu + 1); }
+      const g = make(P, N, I);
+      if (value) g.values = Float32Array.from(V);
+      return g;
+    },
     arrow(length = 1, { shaft = 0.03 * length, head = 0.08 * length, headLength = 0.22 * length, n = 24 } = {}) {
       const hl = Math.min(headLength, length), a = this.cylinder(shaft, length - hl, n), b = this.cone(head, hl, n);
       const off = a.positions.length / 3;
@@ -2059,7 +2133,10 @@ function compose(a, b) {
 
 /**
  * Lit solid objects. add(geometry) → mesh; draw(camera, items, options) with items
- * [{ mesh, matrix (from transform/compose), color, opacity }] and options:
+ * [{ mesh, matrix (from transform/compose), color, opacity, colormap, range }] and options:
+ * A geometry with `values` (one per vertex) is coloured by them when the item names a colormap
+ * and range (a polar plot of a yield, a potential-energy surface coloured by energy, an
+ * isosurface coloured by a second quantity); mesh.update({ positions, normals, values }) changes it.
  *   light: { direction: [x,y,z] } (towards the light, e.g. sunDirection() from core/sun.mjs) or a point
  *   ambient (default 0.25) · shadows: { z, color, opacity }: exact hard shadows of every item on the
  *   horizontal plane z = shadows.z for the light (no double-darkening where shadows overlap).
@@ -2068,20 +2145,21 @@ function compose(a, b) {
  */
 function createMeshRenderer(gl) {
   const { p, u } = compile(gl, `#version 300 es
-in vec3 aPos; in vec3 aNrm;
+in vec3 aPos; in vec3 aNrm; in float aVal;
 uniform mat4 uVP, uModel; uniform mat3 uNrm; uniform float uFlat;
-out vec3 vN; out vec3 vW;
-void main() { vec4 w = uModel * vec4(aPos, 1.0); vW = w.xyz; vN = uNrm * aNrm; gl_Position = uVP * w; }`, `#version 300 es
+out vec3 vN; out vec3 vW; out float vVal;
+void main() { vec4 w = uModel * vec4(aPos, 1.0); vW = w.xyz; vN = uNrm * aNrm; vVal = aVal; gl_Position = uVP * w; }`, `#version 300 es
 precision highp float;
-in vec3 vN; in vec3 vW;
-uniform vec3 uColor, uLight; uniform float uPoint, uAmbient, uOpacity, uFlat;
+in vec3 vN; in vec3 vW; in float vVal;
+uniform vec3 uColor, uLight; uniform float uPoint, uAmbient, uOpacity, uFlat, uMapped; uniform vec2 uRange; uniform sampler2D uMap;
 out vec4 frag;
 void main() {
+  vec3 base = uMapped > 0.5 ? texture(uMap, vec2(clamp((vVal - uRange.x) / (uRange.y - uRange.x), 0.0, 1.0), 0.5)).rgb : uColor;
   if (uFlat > 0.5) { frag = vec4(uColor * uOpacity, uOpacity); return; }
   vec3 n = normalize(vN), l = uPoint > 0.5 ? normalize(uLight - vW) : normalize(uLight);
   if (!gl_FrontFacing) n = -n;
   float k = uAmbient + (1.0 - uAmbient) * max(dot(n, l), 0.0);
-  frag = vec4(uColor * k * uOpacity, uOpacity);
+  frag = vec4(base * k * uOpacity, uOpacity);
 }`);
   const meshes = [];
   const inv3T = m => {                         // inverse-transpose of the upper 3×3 (normal matrix)
@@ -2093,17 +2171,32 @@ void main() {
   };
   const relative = (m, t) => { const r = m.slice(); r[12] -= t[0]; r[13] -= t[1]; r[14] -= t[2]; return new Float32Array(r); };
   return {
-    add({ positions, normals, indices }) {
+    add({ positions, normals, indices, values }) {
       const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
-      for (const [name, data] of [['aPos', positions], ['aNrm', normals]]) {
-        const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
-        const loc = gl.getAttribLocation(p, name); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 3, gl.FLOAT, false, 0, 0);
+      const vb = {};
+      for (const [name, data, size] of [['aPos', positions, 3], ['aNrm', normals, 3], ['aVal', values ?? new Float32Array(positions.length / 3), 1]]) {
+        const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, data instanceof Float32Array ? data : Float32Array.from(data), gl.DYNAMIC_DRAW);
+        const loc = gl.getAttribLocation(p, name); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0);
+        vb[name] = b;
       }
       const ib = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
       gl.bindVertexArray(null);
-      const mesh = { vao, count: indices.length };
+      const mesh = {
+        vao, count: indices.length, mapped: !!values,
+        /** Replace vertex positions/normals/values in place (same vertex count): a surface that changes. */
+        update({ positions: P, normals: N, values: V }) {
+          for (const [name, data] of [['aPos', P], ['aNrm', N], ['aVal', V]]) if (data) { gl.bindBuffer(gl.ARRAY_BUFFER, vb[name]); gl.bufferSubData(gl.ARRAY_BUFFER, 0, data instanceof Float32Array ? data : Float32Array.from(data)); }
+          if (V) mesh.mapped = true;
+        },
+      };
+      mesh.buffers = [...Object.values(vb), ib];
       meshes.push(mesh);
       return mesh;
+    },
+    /** Free a mesh's GPU buffers (call when a rebuild replaces it, so parameter changes do not leak). */
+    remove(mesh) {
+      gl.deleteVertexArray(mesh.vao); for (const b of mesh.buffers ?? []) gl.deleteBuffer(b);
+      const i = meshes.indexOf(mesh); if (i >= 0) meshes.splice(i, 1);
     },
     draw(camera, items, { aspect, light = { direction: [0.4, -0.3, 1] }, ambient = 0.25, shadows = null } = {}) {
       const t = camera.target, { viewProj } = camera.matrices(aspect ?? gl.drawingBufferWidth / gl.drawingBufferHeight, { relative: true });
@@ -2115,6 +2208,13 @@ void main() {
       const one = (it, model, color, opacity, flat) => {
         gl.uniformMatrix4fv(u.uModel, false, model); gl.uniformMatrix3fv(u.uNrm, false, inv3T(it.matrix));
         gl.uniform3f(u.uColor, ...rgb(color)); gl.uniform1f(u.uOpacity, opacity); gl.uniform1f(u.uFlat, flat ? 1 : 0);
+        const mapped = !flat && it.mesh.mapped && it.colormap;
+        gl.uniform1f(u.uMapped, mapped ? 1 : 0);
+        if (mapped) {
+          const [lo, hi] = it.range ?? [0, 1];
+          gl.uniform2f(u.uRange, lo, hi === lo ? lo + 1 : hi);
+          gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, cmapTexture(gl, it.colormap)); gl.uniform1i(u.uMap, 0);
+        }
         gl.bindVertexArray(it.mesh.vao); gl.drawElements(gl.TRIANGLES, it.mesh.count, gl.UNSIGNED_INT, 0);
       };
       gl.disable(gl.BLEND); gl.depthMask(true);
@@ -2139,7 +2239,7 @@ void main() {
   };
 }
 
-return { perspective, lookAt, multiply, invert, orbitCamera, COLORMAPS, colormap, normalize, compile, cssColor, pixelRatio, createGLLayer, createPointRenderer, createFieldRenderer, createVolumeRenderer, createSphereRenderer, createLineRenderer, geometry, alignZ, polylines, drawColorBar, transform, compose, createMeshRenderer };
+return { perspective, lookAt, multiply, invert, orbitCamera, COLORMAPS, colormap, normalize, compile, cmapTexture, cssColor, pixelRatio, createGLLayer, createPointRenderer, createFieldRenderer, createVolumeRenderer, createSphereRenderer, createLineRenderer, geometry, alignZ, polylines, drawColorBar, transform, compose, createMeshRenderer };
 })();
 
 // ---- psim:ui/equation.mjs
@@ -2368,9 +2468,11 @@ function createInstrument(spec) {
   const {
     title, subtitle = '', tier, tierReason, create, draw, params = [], model = {},
     timeUnit = 'T', timeLabel = 'simulated time', speed: speed0 = 1, gl: wantGL = false, drawGL, controls, onPointer, layout = 'stage', bench,
-    presets = [], texts = {}, hudError = true, formatTime, timeDigits = 3, frameBudget = 9, speedRange, viewControls, testSteps = 300,
-    glResolution = 'auto',
+    presets = [], texts = {}, hudError = true, formatTime, timeDigits: digitsGiven, frameBudget = 9, speedRange, viewControls, testSteps = 300,
+    glResolution = 'auto', timeline: timelineSpec,
   } = spec;
+  // counted progress (sweeps, steps, generations, events) shows whole numbers unless told otherwise
+  const timeDigits = digitsGiven ?? (/sweep|step|generation|event|iteration|cycle|round/i.test(timeUnit) ? 0 : 3);
   if (!TIERS[tier]) throw new Error(`tier must be one of ${Object.keys(TIERS).join(', ')}`);
   const report = readJsonScript('psim-verification');
   if (report) validateModuleReport(report);
@@ -2391,6 +2493,7 @@ function createInstrument(spec) {
     </header>
     <main class="psim-stage"><canvas></canvas>
       <div class="psim-hud"><span class="dim"></span><b>0</b><span class="h1"></span><span class="dim h2"></span><span class="flag"></span></div>
+      <div class="psim-timeline" hidden><div class="ticks"></div><div class="bar"><i class="fill"></i></div><div class="ends"><span></span><span></span></div></div>
       <div class="psim-legend"></div>
     </main>
     <aside class="psim-side"></aside>
@@ -2441,9 +2544,64 @@ function createInstrument(spec) {
   };
 
   let benchApi = null;
+  // ------------------------------------------------------------ timeline: the run's span and its key times
+  // spec.timeline = { duration, markers: [{ t, label, kind: 'computed' | 'measured' | 'requested' }], note }
+  // (each may also be a function of the sim). The run stops exactly at `duration`; markers are drawn
+  // on a bar under the time readout; clicking the bar jumps to that time (recomputing if earlier).
+  let tl = null;
+  const tlEl = $('.psim-timeline');
+  if (benchParts) benchParts.wrap.append(tlEl);              // inside the scene card in the workbench layout
+  const secTimeline = timelineSpec ? section(texts.timeline ?? 'Timeline', { aside: 'key times' }) : null;
+  const shortLabel = m => m.short ?? m.label.replace(/\s*\(.*$/, '').slice(0, 28);
+  function resolveTimeline() {
+    if (!timelineSpec) { tl = null; tlEl.hidden = true; return; }
+    const val = v => (typeof v === 'function' ? v(sim, values) : v);
+    // the run spans [start, duration] on the page's own clock: start = the sim's initial time (0 usually;
+    // e.g. −1 for a log₁₀ clock); duration is the END time on that clock
+    const start = Number.isFinite(+val(timelineSpec.start)) ? +val(timelineSpec.start) : (sim.t ?? 0);
+    const duration = +val(timelineSpec.duration);
+    if (!(duration > start)) throw new Error(`timeline.duration (the end time) must be later than the start ${start}`);
+    const span = duration - start, tol = 1e-9 * Math.max(Math.abs(duration), span);
+    const markers = (val(timelineSpec.markers) ?? []).filter(m => Number.isFinite(m.t));
+    for (const m of markers) if (m.t < start - tol || m.t > duration + tol) throw new Error(`timeline marker "${m.label}" at ${m.t} lies outside the run ${start}…${duration}`);
+    tl = { start, duration, markers, note: val(timelineSpec.note) ?? '' };
+    tlEl.hidden = false;
+    const fmt = t => (formatTime ? formatTime(t) : `${+t.toPrecision(4)} ${timeUnit}`);
+    // the bar: one tick per key time, short labels above (staggered when close), full text as a tooltip
+    const bar = tlEl.querySelector('.bar'), ticks = tlEl.querySelector('.ticks');
+    bar.querySelectorAll('.m').forEach(e => e.remove());
+    let lastX = -1, level = 0;
+    ticks.replaceChildren(...markers.slice().sort((a, b) => a.t - b.t).map(m => {
+      const x = 100 * (m.t - start) / span;
+      level = x - lastX < 22 ? 1 - level : 0; lastX = x;
+      bar.append(el('span', { class: `m ${m.kind ?? 'computed'}`, style: `left:${x.toFixed(3)}%`, title: `${m.label}: ${fmt(m.t)}` }));
+      const sl = shortLabel(m), withTime = /\d/.test(sl) ? sl : `${sl} · ${fmt(m.t)}`;   // no repeated time
+      // near the ends, anchor the label at its tick instead of centring it (never clipped by the bar's edges)
+      const anchor = x < 15 ? 'translateX(0)' : x > 85 ? 'translateX(-100%)' : 'translateX(-50%)';
+      return el('span', { class: `lab ${m.kind ?? 'computed'} r${level}`, style: `left:${x.toFixed(3)}%;transform:${anchor}`, title: `${m.label}: ${fmt(m.t)}` }, withTime);
+    }));
+    const [a, b] = tlEl.querySelectorAll('.ends span');
+    a.textContent = fmt(start); b.textContent = `${fmt(duration)} (end)`;
+    // the side panel lists every key time in full, with its kind, and the note
+    if (secTimeline) {
+      const kinds = { computed: 'computed in this model', measured: 'measured (literature)', requested: 'named in the request' };
+      secTimeline.body.replaceChildren(
+        row('run', `${fmt(start)} – ${fmt(duration)}`),
+        ...markers.map(m => el('div', { class: 'psim-tlrow' }, el('i', { class: m.kind ?? 'computed' }), el('span', {}, m.label), el('code', {}, fmt(m.t)), el('small', {}, kinds[m.kind ?? 'computed']))),
+        tl.note ? el('p', { class: 'psim-hint' }, tl.note) : null);
+    }
+  }
+  tlEl.querySelector('.bar').addEventListener('click', e => {
+    if (!tl) return;
+    const r = e.currentTarget.getBoundingClientRect(), T = tl.start + Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * (tl.duration - tl.start);
+    if (T < tDisplay) rebuild();
+    window.psim.advanceTo(T);
+  });
+
   function rebuild() {
     sim = create({ ...values });
     tDisplay = sim.t ?? 0;
+    resolveTimeline();
     diagPlot.clear();
     renderDiag(true);
     benchApi?.update?.(sim, tDisplay, { rebuilt: true });
@@ -2501,7 +2659,9 @@ function createInstrument(spec) {
   // A model that ends (a merger, everything decayed, the last particle left) sets sim.done (or
   // sim.ended): the clock stops there instead of counting time in which nothing is computed,
   // and play starts the run again from the beginning.
-  const isDone = () => sim?.done === true || sim?.ended === true;
+  // the end shown on the clock: exactly the declared duration when the steps' float sum lands within round-off of it
+  const endTime = () => (tl && Math.abs(sim.t - tl.duration) <= 1e-9 * Math.max(Math.abs(tl.duration), tl.duration - tl.start) ? tl.duration : tl ? Math.min(sim.t, tl.duration) : sim.t);
+  const isDone = () => sim?.done === true || sim?.ended === true || (tl != null && (sim?.t ?? 0) >= tl.duration - 1e-12 * Math.max(Math.abs(tl.duration), tl.duration - tl.start));
   function togglePlay() {
     if (!clock.playing && isDone()) { rebuild(); setPlaying(true); return; }
     setPlaying(!clock.playing);
@@ -2631,7 +2791,7 @@ function createInstrument(spec) {
     }),
   ));
 
-  side.append(...[secParams, secView, secDiag, secVerify, secModel, secExport].filter(s => s && (s !== secParams || params.length || controls)));
+  side.append(...[secParams, secView, secTimeline, secDiag, secVerify, secModel, secExport].filter(s => s && (s !== secParams || params.length || controls)));
   if (viewControls) viewControls(secView.body, { el, slider, select, toggle, button, view, getSim: () => sim });
   if (spec.extraSections) spec.extraSections(side, { section, el, row, slider, toggle, button, values, rebuild, view });
 
@@ -2670,10 +2830,11 @@ function createInstrument(spec) {
   }
 
   let frames = 0, lastUi = 0;
+  const frameWaiters = [];   // resolved right after a frame has been drawn (GPU self-tests read pixels then)
   function frame(now) {
     const frameStart = performance.now();
     if (timeDependent) {
-      const target = clock.tick(now, tDisplay);
+      const target = tl ? Math.min(tl.duration, clock.tick(now, tDisplay)) : clock.tick(now, tDisplay);
       if (target > tDisplay) {
         // frameBudget ms of computing per frame, checked after every step, so a slow step
         // (a Monte Carlo sweep) runs at most once past the budget; fast steps run in thousands
@@ -2684,7 +2845,7 @@ function createInstrument(spec) {
         }
         limited = sim.t < target && !isDone();
         tDisplay = Math.min(target, sim.t);
-        if (isDone()) { tDisplay = sim.t; setPlaying(false); }
+        if (isDone()) { tDisplay = endTime(); setPlaying(false); }
       }
     }
     if (glLayer?.ok) { glLayer.sync(view.dpr); drawGL?.(glLayer.gl, sim, view, tDisplay); }
@@ -2696,10 +2857,11 @@ function createInstrument(spec) {
       lastUi = now;
       const d = renderDiag();
       hud.t.textContent = timeDependent ? (formatTime ? formatTime(tDisplay) : `${fix(tDisplay, timeDigits)} ${timeUnit}`) : '';
+      if (tl) tlEl.querySelector('.fill').style.width = `${(100 * Math.max(0, Math.min(1, (tDisplay - tl.start) / (tl.duration - tl.start)))).toFixed(2)}%`;
       const firstErr = d.find(x => x.kind === 'error' && !x.pending);
       hud.a.textContent = firstErr && hudError ? `${firstErr.label} ${sci(firstErr.value)}` : '';
       hud.b.textContent = spec.hudLine?.(sim) ?? '';
-      hud.flag.textContent = isDone() ? (texts.finished ?? 'finished: the computed run ends here (play starts again)')
+      hud.flag.textContent = isDone() ? (texts.finished ?? 'finished · play restarts')
         : limited ? 'compute-limited: playback slowed to keep the calculation exact' : '';
       benchApi?.update?.(sim, tDisplay, { rebuilt: false });
       status.set('t', timeDependent ? tDisplay : 1);
@@ -2707,6 +2869,7 @@ function createInstrument(spec) {
     }
     if (++frames === 1 || frames % 30 === 0) status.set('frames', frames);   // first frame at once: slow pages count as live
     adaptResolution(now, performance.now() - frameStart);
+    if (frameWaiters.length) { const w = frameWaiters.splice(0); w.forEach(f => f()); }
     requestAnimationFrame(frame);
   }
 
@@ -2715,13 +2878,22 @@ function createInstrument(spec) {
     get t() { return tDisplay; },
     state: () => ({ t: sim.t, ...sim.state() }),
     params: () => ({ ...values }),
-    advanceTo: t => { while (sim.t < t && !isDone()) sim.step(); tDisplay = Math.max(tDisplay, Math.min(t, sim.t)); return window.psim.state(); },
+    advanceTo: t => {
+      const T = tl ? Math.min(t, tl.duration) : t;
+      while (sim.t < T && !isDone()) sim.step();
+      tDisplay = isDone() ? endTime() : Math.max(tDisplay, Math.min(T, sim.t));
+      return window.psim.state();
+    },
+    /** The run's declared span and key times ({ duration, markers, note }), or null. */
+    get timeline() { return tl ? { start: tl.start, duration: tl.duration, markers: tl.markers.map(m => ({ ...m })), note: tl.note } : null; },
     get done() { return isDone(); },
     restart: () => rebuild(),
     setParams: (next, opts) => setParams(next, opts),
     setParam: (k, v) => setParam(k, v),
     getSim: () => sim,
     toggleFullscreen: () => toggleFullscreen(),
+    /** Resolves after the next frame has been drawn: await it in a self-test before reading GPU pixels. */
+    nextFrame: () => new Promise(res => frameWaiters.push(res)),
     report,
     get fullscreen() { return isFullscreen(); },
     testSteps,
@@ -3290,14 +3462,16 @@ function solveTridiagonal(a, b, c, d) {
  * Wilkinson shifts; Numerical Recipes "tqli"). diag: n diagonal entries; off: n−1 entries
  * coupling i and i+1. Returns { values, vectors } with vectors[i] the unit eigenvector of
  * values[i] (unsorted). Cost O(n³) with eigenvectors: fine to n ≈ 500 in a browser.
+ * { vectors: false } returns eigenvalues only, in O(n²) (n = 10⁴ in ~3 s); for the lowest few use
+ * lowestTridiagonal (bisection, O(n) per level).
  */
-function eigenTridiagonal(diag, off) {
+function eigenTridiagonal(diag, off, { vectors: wantVectors = true } = {}) {
   const n = diag.length;
   if (off.length !== n - 1) throw new Error('eigenTridiagonal: off must have n − 1 entries');
   const d = Float64Array.from(diag), e = new Float64Array(n);
   e.set(off);
-  const z = new Float64Array(n * n);
-  for (let i = 0; i < n; i++) z[i * n + i] = 1;
+  const z = wantVectors ? new Float64Array(n * n) : null;
+  if (z) for (let i = 0; i < n; i++) z[i * n + i] = 1;
   for (let l = 0; l < n; l++) {
     let iter = 0, m;
     do {
@@ -3323,19 +3497,56 @@ function eigenTridiagonal(diag, off) {
           p = s * r;
           d[i + 1] = g + p;
           g = c * r - b;
-          for (let k = 0; k < n; k++) {
+          if (z) {for (let k = 0; k < n; k++) {
             f = z[k * n + i + 1];
             z[k * n + i + 1] = s * z[k * n + i] + c * f;
             z[k * n + i] = c * z[k * n + i] - s * f;
-          }
+          }}
         }
         if (r === 0 && i >= l) continue;
         d[l] -= p; e[l] = g; e[m] = 0;
       }
     } while (m !== l);
   }
+  if (!z) return { values: Array.from(d) };
   const vectors = Array.from({ length: n }, (_v, i) => Float64Array.from({ length: n }, (_w, k) => z[k * n + i]));
   return { values: Array.from(d), vectors };
+}
+
+/**
+ * The k lowest eigenvalues of a symmetric tridiagonal matrix by Sturm-sequence bisection:
+ * O(n · 64) per eigenvalue, accurate to round-off, exact ordering (no missed or merged levels,
+ * also for near-degenerate tunnelling doublets). Returns ascending values.
+ */
+function lowestTridiagonal(diag, off, k) {
+  const n = diag.length;
+  if (off.length !== n - 1) throw new Error('lowestTridiagonal: off must have n − 1 entries');
+  let lo = Infinity, hi = -Infinity;
+  for (let i = 0; i < n; i++) {                                 // Gershgorin bounds
+    const r = (i > 0 ? Math.abs(off[i - 1]) : 0) + (i < n - 1 ? Math.abs(off[i]) : 0);
+    lo = Math.min(lo, diag[i] - r); hi = Math.max(hi, diag[i] + r);
+  }
+  const e2 = Float64Array.from(off, v => v * v), tiny = Number.MIN_VALUE * 1e10 + 1e-300;
+  const below = x => {                                           // number of eigenvalues < x
+    let c = 0, q = diag[0] - x;
+    if (q < 0) c++;
+    for (let i = 1; i < n; i++) {
+      q = diag[i] - x - e2[i - 1] / (q !== 0 ? q : tiny);
+      if (q < 0) c++;
+    }
+    return c;
+  };
+  const out = [];
+  for (let j = 0; j < Math.min(k, n); j++) {
+    let a = j ? out[j - 1] : lo, b = hi;
+    for (let it = 0; it < 200 && b - a > 2 * Number.EPSILON * Math.max(Math.abs(a), Math.abs(b), 1e-300); it++) {
+      const m = 0.5 * (a + b);
+      if (m === a || m === b) break;
+      if (below(m) > j) b = m; else a = m;
+    }
+    out.push(0.5 * (a + b));
+  }
+  return out;
 }
 
 /** Least-squares fit y ≈ a + b x. Returns { a, b, r2 }. */
@@ -3375,7 +3586,7 @@ function meanWithError(xs, minBins = 16) {
   return { mean, error: best };
 }
 
-return { rng, rngFor, fft, fftFreq, rk4Step, DORMAND_PRINCE, dopri5, gaussLegendreNodes, gaussLegendre, adaptiveSimpson, integrateToInfinity, brent, lgamma, gamma, factorial, erf, gammaP, gammaQ, besselI, besselJ, besselJZeros, ellipticK, laguerre, legendreP, normalizedLegendre, realYlm, complexYlm, hydrogenRadial, solveTridiagonal, eigenTridiagonal, linearFit, meanWithError };
+return { rng, rngFor, fft, fftFreq, rk4Step, DORMAND_PRINCE, dopri5, gaussLegendreNodes, gaussLegendre, adaptiveSimpson, integrateToInfinity, brent, lgamma, gamma, factorial, erf, gammaP, gammaQ, besselI, besselJ, besselJZeros, ellipticK, laguerre, legendreP, normalizedLegendre, realYlm, complexYlm, hydrogenRadial, solveTridiagonal, eigenTridiagonal, lowestTridiagonal, linearFit, meanWithError };
 })();
 
 // ---- psim:core/fields.mjs
@@ -3522,6 +3733,20 @@ function eigenvalues(spec, discretization) {
     return finite(value, 'fields Fourier operator');
   });
 }
+/** Kinetic energy ħ²Σ k_a²/(2 m_a) of every Fourier mode; mass is a number or one value per axis. */
+function kineticEnergies(spec, mass, hbar) {
+  const m = typeof mass === 'number' ? spec.shape.map(() => mass) : Array.from(mass);
+  if (m.length !== spec.shape.length || !m.every(v => v > 0)) throw new Error('fields: mass must be positive (a number or one per axis)');
+  return Float64Array.from({ length: spec.size }, (_, index) => {
+    let e = 0;
+    for (let axis = 0; axis < spec.shape.length; axis++) {
+      const n = spec.shape[axis], i = Math.floor(index / spec.strides[axis]) % n, mode = i < n / 2 ? i : i - n;
+      const k = 2 * Math.PI * mode / n / spec.spacing[axis];
+      e += hbar * hbar * k * k / (2 * m[axis]);
+    }
+    return e;
+  });
+}
 function mean(values) {
   let result = 0, correction = 0;
   for (const value of values) {
@@ -3611,10 +3836,10 @@ function schrodingerND({ re0, im0, V, shape, spacing = 1, dt, mass = 1, hbar = 1
   const spec = grid(shape, spacing); fftGrid(shape); field(re0, spec.size, 'schrodingerND');
   if (im0) field(im0, spec.size, 'schrodingerND');
   if (V) field(V, spec.size, 'schrodingerND potential');
-  positive(dt, 'schrodingerND dt'); positive(mass, 'schrodingerND mass'); positive(hbar, 'schrodingerND hbar'); finite(t0, 'schrodingerND t0');
-  const lambda = eigenvalues(spec, 'spectral');
+  positive(dt, 'schrodingerND dt'); positive(hbar, 'schrodingerND hbar'); finite(t0, 'schrodingerND t0');
+  const Tk = kineticEnergies(spec, mass, hbar);                // per-axis masses allowed (anisotropic kinetic energy)
   const halfV = Float64Array.from({ length: spec.size }, (_, i) => finite(-(V?.[i] ?? 0) / hbar * (dt / 2), 'schrodingerND potential phase'));
-  const kinetic = Float64Array.from(lambda, value => finite(-hbar / mass * (value / 2) * dt, 'schrodingerND kinetic phase'));
+  const kinetic = Float64Array.from(Tk, value => finite(-value / hbar * dt, 'schrodingerND kinetic phase'));
   const re = Float64Array.from(re0), im = im0 ? Float64Array.from(im0) : new Float64Array(spec.size);
   const workRe = new Float64Array(spec.size), workIm = new Float64Array(spec.size), cellVolume = volume(spec);
   let halfDamp = null;                                    // e^{−W dt/2ħ} per cell, applied with each potential half-step
@@ -3665,6 +3890,17 @@ function schrodingerND({ re0, im0, V, shape, spacing = 1, dt, mass = 1, hbar = 1
     norm() { return finite(mean(s.probability()) * spec.size * cellVolume, 'schrodingerND norm'); },
     /** Probability removed by the absorbing layers so far (0 without absorb). */
     absorbed() { return halfDamp ? Math.max(0, initialNorm - s.norm()) : 0; },
+    /**
+     * ⟨H⟩ = ⟨T⟩ + ⟨V⟩ per unit norm (kinetic part spectral, exact for the grid). The split-operator
+     * scheme keeps it bounded with an O(Δt²) oscillation, not exactly constant: judge it by order.
+     */
+    energy() {
+      workRe.set(re); workIm.set(im); transform(workRe, workIm, spec, false);
+      let t = 0, w = 0, v = 0, nrm = 0;
+      for (let i = 0; i < spec.size; i++) { const a = workRe[i] * workRe[i] + workIm[i] * workIm[i]; t += a * Tk[i]; w += a; }
+      for (let i = 0; i < spec.size; i++) { const a = re[i] * re[i] + im[i] * im[i]; v += a * (V?.[i] ?? 0); nrm += a; }
+      return t / w + v / nrm;
+    },
   };
   const initialNorm = s.norm();
   return s;
@@ -3797,7 +4033,79 @@ function densityLevel(values, fraction) {
   return 0;
 }
 
-return { laplacianND, gradientND, divergenceND, fftND, solvePoissonPeriodic, diffusionPeriodic, schrodingerND, fftAxis, phaseWinding, probabilityCurrent, contourLines, densityLevel };
+/**
+ * Two coupled surfaces (nonadiabatic dynamics: conical intersections, avoided crossings, curve
+ * crossing): i ħ ∂ψ_k/∂t = T ψ_k + Σ_l V_kl ψ_l with a real symmetric 2×2 diabatic potential matrix
+ * (V11, V22, V12 arrays on the grid). Strang splitting: exact exp(−iVΔt/2ħ) of the 2×2 matrix at
+ * every point, shared spectral kinetic step (mass a number or per axis). Second order in Δt,
+ * unitary to round-off. Returns { t, psi: [{ re, im }, { re, im }], step(), advanceTo(t),
+ * populations() → [P1, P2] (diabatic), norm(), energy() }.
+ */
+function coupledSchrodinger2({ psi0, V11, V22, V12, shape, spacing = 1, dt, mass = 1, hbar = 1, t0 = 0 }) {
+  const spec = grid(shape, spacing); fftGrid(shape);
+  if (!Array.isArray(psi0) || psi0.length !== 2) throw new Error('coupledSchrodinger2: psi0 must be [{ re, im }, { re, im }]');
+  for (const a of [V11, V22, V12]) field(a, spec.size, 'coupledSchrodinger2 potential');
+  positive(dt, 'coupledSchrodinger2 dt');
+  const n = spec.size, vol = volume(spec), tau = dt / (2 * hbar);
+  const psi = psi0.map(p => ({ re: Float64Array.from(p.re), im: p.im ? Float64Array.from(p.im) : new Float64Array(n) }));
+  const Tk = kineticEnergies(spec, mass, hbar), kC = Float64Array.from(Tk, e => Math.cos(-e * dt / hbar)), kS = Float64Array.from(Tk, e => Math.sin(-e * dt / hbar));
+  // exp(−iHτ) = e^{−i m τ} [cos(rτ) − i sin(rτ)(d σ_z + c σ_x)/r], H = [[m + d, c], [c, m − d]]
+  const P = { pr: new Float64Array(n), pi: new Float64Array(n), a: new Float64Array(n), b: new Float64Array(n), c: new Float64Array(n) };
+  for (let i = 0; i < n; i++) {
+    const m = (V11[i] + V22[i]) / 2, d = (V11[i] - V22[i]) / 2, c = V12[i], r = Math.hypot(d, c);
+    P.pr[i] = Math.cos(-m * tau); P.pi[i] = Math.sin(-m * tau);
+    P.a[i] = Math.cos(r * tau); const sr = r > 0 ? Math.sin(r * tau) / r : tau;
+    P.b[i] = sr * d; P.c[i] = sr * c;                            // −i·(b σ_z + c σ_x)
+  }
+  const potential = () => {
+    const [u, w] = psi;
+    for (let i = 0; i < n; i++) {
+      // [x1; x2] = (a − i b σz − i c σx)[u; w]
+      const ur = u.re[i], ui = u.im[i], wr = w.re[i], wi = w.im[i], a = P.a[i], b = P.b[i], c = P.c[i];
+      const x1r = a * ur + b * ui + c * wi, x1i = a * ui - b * ur - c * wr;
+      const x2r = a * wr - b * wi + c * ui, x2i = a * wi + b * wr - c * ur;
+      const pr = P.pr[i], pi = P.pi[i];
+      u.re[i] = pr * x1r - pi * x1i; u.im[i] = pr * x1i + pi * x1r;
+      w.re[i] = pr * x2r - pi * x2i; w.im[i] = pr * x2i + pi * x2r;
+    }
+  };
+  const kinetic = () => {
+    for (const p of psi) {
+      transform(p.re, p.im, spec, false);
+      for (let i = 0; i < n; i++) { const a = p.re[i], b = p.im[i]; p.re[i] = a * kC[i] - b * kS[i]; p.im[i] = a * kS[i] + b * kC[i]; }
+      transform(p.re, p.im, spec, true);
+    }
+  };
+  const pop = p => { let s = 0; for (let i = 0; i < n; i++) s += p.re[i] * p.re[i] + p.im[i] * p.im[i]; return s * vol; };
+  const s = {
+    t: t0, psi, steps: 0,
+    step() {
+      potential(); kinetic(); potential();
+      if (!Number.isFinite(psi[0].re[0] + psi[1].re[0])) throw new Error(`coupledSchrodinger2: non-finite state at t = ${s.t}`);
+      s.t += dt; s.steps++;
+    },
+    advanceTo(target) { while (s.t < target - 1e-12 * dt) s.step(); return s; },
+    populations: () => psi.map(pop),
+    norm: () => pop(psi[0]) + pop(psi[1]),
+    energy() {
+      let e = 0;
+      for (const p of psi) {
+        const r = Float64Array.from(p.re), im = Float64Array.from(p.im); transform(r, im, spec, false);
+        let t = 0; for (let i = 0; i < n; i++) t += (r[i] * r[i] + im[i] * im[i]) * Tk[i];
+        e += t / n * vol;                                          // Parseval: Σ|ψ̃|² = n Σ|ψ|²
+      }
+      const [u, w] = psi;
+      for (let i = 0; i < n; i++) {
+        e += vol * (V11[i] * (u.re[i] ** 2 + u.im[i] ** 2) + V22[i] * (w.re[i] ** 2 + w.im[i] ** 2) + 2 * V12[i] * (u.re[i] * w.re[i] + u.im[i] * w.im[i]));
+      }
+      return e / s.norm();
+    },
+  };
+  return s;
+}
+
+
+return { laplacianND, gradientND, divergenceND, fftND, solvePoissonPeriodic, diffusionPeriodic, schrodingerND, fftAxis, phaseWinding, probabilityCurrent, contourLines, densityLevel, coupledSchrodinger2 };
 })();
 
 // ---- psim:core/constants.mjs
@@ -3906,7 +4214,15 @@ const ATOMIC_WEIGHT = Object.freeze({
   W: 183.84, Au: 196.966570, Hg: 200.592, Pb: 207.2, U: 238.02891,
 });
 
-return { CODATA, c, h, hbar, e, kB, NA, eps0, mu0, G, me, mp, mn, u, a0, alpha, Eh, Ry, eV, MeV, mpc2MeV, mec2MeV, hbarcMeVfm, mAlphaMeV, muB, ge, AU, GMsun, Msun, yearJulian, G_AU_MSUN_YR, gn, GMearth, Rearth, RearthMean, GMmoon, Rmoon, earthMoonDistance, R, Mair, gammaAir, p0, T0isa, rho0isa, PDG, ATOMIC_WEIGHT };
+// Chemistry energy units (J per unit): kcal/mol, kJ/mol, wavenumber cm⁻¹ (= h c × 100 m⁻¹), all exact.
+const kcalPerMol = 4184 / 6.02214076e23;
+const kJPerMol = 1000 / 6.02214076e23;
+const invCm = 6.62607015e-34 * 299792458 * 100;
+// Nuclide masses in u (AME2020): isotope effects need these, not the standard atomic weights.
+const NUCLIDE_MASS = Object.freeze({ H1: 1.00782503207, H2: 2.01410177812, H3: 3.01604928, C12: 12, N14: 14.00307400443, O16: 15.99491461957 });
+
+
+return { CODATA, c, h, hbar, e, kB, NA, eps0, mu0, G, me, mp, mn, u, a0, alpha, Eh, Ry, eV, MeV, mpc2MeV, mec2MeV, hbarcMeVfm, mAlphaMeV, muB, ge, AU, GMsun, Msun, yearJulian, G_AU_MSUN_YR, gn, GMearth, Rearth, RearthMean, GMmoon, Rmoon, earthMoonDistance, R, Mair, gammaAir, p0, T0isa, rho0isa, PDG, ATOMIC_WEIGHT, kcalPerMol, kJPerMol, invCm, NUCLIDE_MASS };
 })();
 
 // ---- local:physics.mjs
@@ -4229,7 +4545,10 @@ return { HBAR, ME, C2, N, ABSORB, START, PARAMS, slabT, packetT, setup, createRu
 const { createInstrument } = __psim["ui/instrument-app.mjs"];
 const { select, toggle } = __psim["ui/instrument.mjs"];
 const { createFieldRenderer, colormap } = __psim["ui/gl.mjs"];
-const { PARAMS, createSim, settleTime, slabT, N, DX, ABSORB, C2 } = __psim["local:physics.mjs"];
+const { PARAMS, createSim, settleTime, slabT, N, DX, ABSORB, C2, START } = __psim["local:physics.mjs"];
+// time for the packet centre to reach the barrier's front face: (START·cosθ − a/2) / (v cosθ), v = ħk₀/mₑ
+const arrivalTime = g => (START * Math.cos(g.th) - g.a / 2) / (g.v * Math.cos(g.th));
+
 // ------------------------------------------------------------ representation settings (display only)
 const VIEW = 13;                                   // nm: half-width of the shown interior (absorbers lie outside)
 const MODES = {
@@ -4242,13 +4561,14 @@ const disp = { mode: 'log2', smooth: true };
 const MAP = 'inferno';
 
 // Layout of the stage: square field view plus (when wide) a read-out panel on the left.
+const TL = 62;                                     // px kept free at the bottom for the timeline bar
 function layout(W, H) {
   const wide = W >= 760;
   if (wide) {
-    const S = Math.max(200, Math.min(H - 24 - 112, W - 330 - 24));
-    return { wide, S, x: W - S - 24, y: 24, panel: { x: 18, y: 116, w: W - S - 24 - 18 - 58, h: H - 116 - 84 } };
+    const S = Math.max(200, Math.min(H - 24 - 112 - TL, W - 330 - 24));
+    return { wide, S, x: W - S - 24, y: 24, panel: { x: 18, y: 116, w: W - S - 24 - 18 - 58, h: H - 116 - 84 - TL } };
   }
-  const S = Math.max(160, Math.min(W - 54, H - 110 - 96));
+  const S = Math.max(160, Math.min(W - 54, H - 110 - 96 - TL - 20));
   return { wide, S, x: 42 + (W - 54 - S) / 2, y: 110, panel: null };
 }
 const rho0 = sim => 1 / (2 * Math.PI * sim.g.sigma ** 2);         // initial peak density, nm⁻²
@@ -4372,7 +4692,7 @@ function draw(ctx, sim, view) {
     ctx.fillText(`|ψ|² ${MODES[disp.mode].log ? '(log)' : '(linear)'}, ρ₀ = initial peak`, W - 14, 22);
     colourBar(ctx, cx, 30, cw, sim, C);
     ctx.fillStyle = C('--ink-2'); ctx.font = mono(11); ctx.textAlign = 'center';
-    ctx.fillText(`T(t) ${pct(b.T)} · exact ⟨T⟩ ${pct(g.Texact)}`, W / 2, L.y + S + 32);
+    ctx.fillText(`T(t) ${pct(b.T)} · exact ⟨T⟩ ${pct(g.Texact)}`, W / 2, L.y + S + 46);   // below the x tick labels
     ctx.textAlign = 'left';
   }
 }
@@ -4411,7 +4731,7 @@ function drawPanel(ctx, sim, view, L, C) {
   if (chartH < 70) return;
   // T(t) chart
   head('Probability vs time');
-  const ch = { x: x + 30, y: yy, w: w - 30, h: chartH - 20 }, tMax = settleTime(g) * 1.15;
+  const ch = { x: x + 30, y: yy, w: w - 30, h: chartH - 20 }, tMax = settleTime(g);   // the run's end (timeline)
   const cx = t => ch.x + ch.w * Math.min(1, t / tMax), cy = v => ch.y + ch.h * (1 - v);
   ctx.strokeStyle = C('--grid'); ctx.fillStyle = C('--muted'); ctx.font = mono(10); ctx.textAlign = 'right';
   for (const v of [0, 0.5, 1]) { ctx.beginPath(); ctx.moveTo(ch.x, cy(v)); ctx.lineTo(ch.x + ch.w, cy(v)); ctx.stroke(); ctx.fillText(v.toFixed(1), ch.x - 5, cy(v) + 3.5); }
@@ -4462,7 +4782,15 @@ const app = createInstrument({
   tier: 'validated',
   tierReason: 'The 2D Schrödinger equation is solved by the Strang split-operator FFT method (second order, unitary). The final transmitted probability matches the exact square-barrier transmission averaged over the packet within 2 % (1.5 % default, 1.9 % worst tested; grid-limited, converging at second order); unitarity, the free-packet solution and the probability balance with the absorbing edges hold to round-off (Verification).',
   params: PARAMS, create: createSim, draw, gl: true, drawGL,
-  timeUnit: 'fs', timeLabel: 'time since release', speed: 3, duration: 80,
+  timeUnit: 'fs', timeLabel: 'time since release', speed: 3, duration: 65,
+  timeline: {
+    duration: sim => settleTime(sim.g),
+    markers: sim => [
+      { t: arrivalTime(sim.g), label: 'packet centre reaches the barrier (computed from the group velocity ħk₀/mₑ)', short: `arrival ${arrivalTime(sim.g).toFixed(0)} fs`, kind: 'computed' },
+      { t: settleTime(sim.g), label: 'transmission settled: slowest component (k_x − 2.5σ_k) past the barrier', short: `settled ${settleTime(sim.g).toFixed(0)} fs`, kind: 'computed' },
+    ],
+    note: 'The run ends when the slowest relevant part of the packet (k_x − 2.5σ_k, 6σ behind the centre) has passed the barrier, so the transmitted probability T(t) has reached its final value. That takes about 3–4× the centre’s arrival time, because the slow tail of the packet arrives late; what remains in the box then leaves through the absorbing edges.',
+  },
   hudLine: sim => `E₀cos²θ ${sim.g.Ex.toFixed(3)} eV · ${sim.g.kappa > 0 ? `1/κ ${(1 / sim.g.kappa).toFixed(2)} nm` : 'above barrier'}`,
   model: {
     equations: [

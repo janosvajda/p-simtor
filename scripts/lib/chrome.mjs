@@ -311,11 +311,36 @@ export const interactionTests = {
     // Optional page self-test (e.g. GPU output vs an exact formula): window.psim.selfTest()
     // returns { label, pass, ...measurements } or an array of them.
     if (await b.eval('typeof window.psim?.selfTest === "function"')) {
-      const r = await b.eval('Promise.resolve(window.psim.selfTest())', 120000).catch(e => ({ label: 'page self-test', pass: false, error: e.message }));
-      for (const t of [].concat(r)) {
-        const { label, pass, ...rest } = t;
-        out.push({ label: label ?? 'page self-test', ok: pass === true, summary: JSON.stringify(rest) });
+      // after a drawn frame; a failed GPU read is repeated once after two more frames (headless GPUs
+      // occasionally return a blank buffer) and the first reading is kept in the summary
+      const run = () => b.eval('(window.psim.nextFrame?.() ?? Promise.resolve()).then(() => window.psim.selfTest())', 120000)
+        .then(r => [].concat(r)).catch(e => [{ label: 'page self-test', pass: false, error: e.message }]);
+      const first = await run();
+      let r = first, retried = false;
+      if (first.some(t => t.pass !== true)) {
+        await b.eval('window.psim.nextFrame?.().then(() => window.psim.nextFrame())', 10000).catch(() => {});
+        r = await run(); retried = true;
       }
+      r.forEach((t, i) => {
+        const { label, pass, ...rest } = t;
+        const note = retried && first[i]?.pass !== true && pass === true ? ` (passed on the 2nd attempt; 1st read ${JSON.stringify((({ label: _l, pass: _p, ...x }) => x)(first[i]))})` : '';
+        out.push({ label: label ?? 'page self-test', ok: pass === true, summary: JSON.stringify(rest) + note });
+      });
+    }
+    // Timer precision: a declared run span must end exactly there, with every key time inside it.
+    const tlJson = await b.eval('JSON.stringify(window.psim?.timeline ?? null)');
+    const tlv = JSON.parse(tlJson ?? 'null');
+    const timeDependent = await b.eval('!!document.querySelector(".psim-transport")');
+    if (tlv) {
+      await b.eval('window.psim.restart()');
+      const start = tlv.start ?? 0, span = tlv.duration - start, far = tlv.duration + 2 * span;
+      const r = await evalWithin(b, `(window.psim.advanceTo(${far}), JSON.stringify({ t: window.psim.t, done: window.psim.done }))`, 600000);
+      const end = JSON.parse(r.value ?? '{}'), exact = Math.abs((end.t ?? NaN) - tlv.duration) <= 1e-9 * Math.max(Math.abs(tlv.duration), span);
+      const inside = tlv.markers.every(m => m.t >= start && m.t <= tlv.duration);
+      out.push({ label: 'timeline: run ends exactly at its declared end', ok: !!end.done && exact && inside,
+        summary: `${r.error ?? ''}run ${start}–${tlv.duration}; after advancing to the end + 2× the span: t = ${end.t}, done = ${end.done}; key times: ${tlv.markers.map(m => `${m.label} @ ${m.t}`).join(', ') || 'none'}` });
+    } else if (timeDependent) {
+      out.push({ label: 'timeline', ok: true, summary: 'warning: no spec.timeline declared. Declare the run span and its key times (computed and requested) so the clock shows when things happen and stops at the end' });
     }
     const input = '.psim-side .psim-field input[type=number]';
     if (!(await b.eval(`!!document.querySelector('${input}')`))) {
