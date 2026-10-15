@@ -12,343 +12,9 @@
         "passed": 9
       },
       "thumb": true,
-      "skillVersion": "0.3.0"
-    },
-    {
-      "id": "hydrogen-orbitals-3d",
-      "title": "Hydrogen orbitals in 3D",
-      "prompt": "/p-simtor visualize the 3D probability clouds of hydrogen orbitals",
-      "about": "All 55 hydrogen orbitals up to n = 5 as exact 3D probability clouds: a glowing |ψ|² volume plus sampled measurements coloured by the sign of ψ.",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/hydrogen-orbitals-3d.html",
-      "checks": {
-        "total": 15,
-        "passed": 15
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0"
-    },
-    {
-      "id": "black-hole-inspiral-3d",
-      "title": "Black-hole binary inspiral in 3D",
-      "prompt": "/p-simtor show two black holes spiralling together in 3D",
-      "about": "Two spinning black holes spiral together while their orbit precesses; the computed gravitational wave spreads out as a spiral. The merger itself is marked not computed.",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/black-hole-inspiral-3d.html",
-      "checks": {
-        "total": 11,
-        "passed": 11
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0"
-    },
-    {
-      "id": "dark-matter-galaxy-3d",
-      "title": "Why galaxies need dark matter",
-      "prompt": "/p-simtor show why galaxies need dark matter, with a 3D galaxy of 100 000 stars",
-      "about": "100 000 stars orbit a Milky-Way model in 3D. Switch off the dark-matter halo and the disk swells from 10 to 39 kpc as stars escape.",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/dark-matter-galaxy-3d.html",
-      "checks": {
-        "total": 14,
-        "passed": 14
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0"
-    },
-    {
-      "id": "wave-packet-tunnelling",
-      "title": "Electron wave packet tunnelling in 2D",
-      "prompt": "/p-simtor show an electron wave packet tunnelling through a barrier in 2D",
-      "about": "An electron's probability wave hits a barrier: most reflects, a quarter tunnels through, matching the exact quantum result.",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/wave-packet-tunnelling.html",
-      "checks": {
-        "total": 17,
-        "passed": 17
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0"
-    },
-    {
-      "id": "black-body",
-      "title": "Black-body radiation",
-      "prompt": "/p-simtor simulate black body radiation",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/black-body.html",
-      "checks": {
-        "total": 11,
-        "passed": 11
-      },
-      "thumb": true,
       "skillVersion": "0.3.0",
-      "about": "Planck's law live: the real colour of hot objects, from the cosmic microwave background to a 40 000 K star."
-    },
-    {
-      "id": "black-hole-merger",
-      "title": "Binary black-hole merger",
-      "prompt": "/p-simtor simulate two black holes merging",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/black-hole-merger.html",
-      "checks": {
-        "total": 10,
-        "passed": 10
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0",
-      "about": "Two black holes spiral together and chirp (post-Newtonian inspiral); the merger itself is honestly marked as not computed."
-    },
-    {
-      "id": "quark-confinement",
-      "title": "Quark confinement",
-      "prompt": "/p-simtor explain quark confinement with an interactive, scientifically qualified visualization",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/quark-confinement.html",
-      "checks": {
-        "total": 14,
-        "passed": 14
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0",
-      "about": "Lattice gauge theory computes the energy between two colour charges: it keeps rising with distance, so they cannot separate."
-    },
-    {
-      "id": "double-pendulum",
-      "title": "Why a double pendulum is chaotic",
-      "prompt": "/p-simtor show why a double pendulum is chaotic",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/double-pendulum.html",
-      "checks": {
-        "total": 11,
-        "passed": 11
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0",
-      "about": "Two pendulums started 10⁻⁸ rad apart part ways after about 8 s; the Lyapunov exponent is measured live."
-    },
-    {
-      "id": "three-level-thermal",
-      "title": "Three-level system heating up",
-      "prompt": "/p-simtor show how the populations of a three-level quantum system change as it heats up",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/three-level-thermal.html",
-      "checks": {
-        "total": 10,
-        "passed": 10
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0",
-      "about": "Boltzmann populations of three energy levels as the temperature rises, with the heat-capacity peaks they cause."
-    },
-    {
-      "id": "lennard-jones",
-      "title": "Lennard-Jones fluid (2D)",
-      "prompt": "/p-simtor create an interactive Lennard-Jones particle simulation",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/lennard-jones.html",
-      "checks": {
-        "total": 14,
-        "passed": 14
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0",
-      "about": "Molecular dynamics of a 2D Lennard-Jones fluid: hot gas, condensing clusters and dense liquid."
-    },
-    {
-      "id": "brownian-motion",
-      "title": "Brownian motion of a pollen grain",
-      "prompt": "/p-simtor simulate Brownian motion of a pollen grain in water",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/brownian-motion.html",
-      "checks": {
-        "total": 9,
-        "passed": 9
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0",
-      "about": "Pollen grains jiggle in water; their spread grows as 4Dt, Einstein's relation, and Brown's real observation is one click away."
-    },
-    {
-      "id": "magnet-heating",
-      "title": "Heating a magnet",
-      "prompt": "/p-simtor show how a magnet loses its magnetism when heated",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/magnet-heating.html",
-      "checks": {
-        "total": 9,
-        "passed": 9
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0",
-      "about": "A 128×128 Ising magnet heated past its Curie point: ordered domains break up into noise."
-    },
-    {
-      "id": "decay-chain",
-      "title": "Radioactive decay chain, atom by atom",
-      "prompt": "/p-simtor simulate a radioactive decay chain atom by atom",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/decay-chain.html",
-      "checks": {
-        "total": 12,
-        "passed": 12
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0",
-      "about": "Radon-222 progeny decaying atom by atom, against the smooth Bateman curves."
-    },
-    {
-      "id": "salt-dissolving",
-      "title": "Salt dissolving in still water",
-      "prompt": "/p-simtor simulate how salt dissolves in a glass of water",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/salt-dissolving.html",
-      "checks": {
-        "total": 11,
-        "passed": 11
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0",
-      "about": "Salt on the bottom of a still glass dissolves in hours, but takes weeks to spread through the water by diffusion."
-    },
-    {
-      "id": "rutherford-gold-foil",
-      "title": "Rutherford's gold foil experiment",
-      "prompt": "/p-simtor recreate Rutherford's gold foil experiment in 3D: alpha particles hitting a gold foil, and show why it proved the atom has a tiny nucleus",
-      "about": "Alpha tracks computed in a gold nucleus's Coulomb field at true femtometre scale; counts match 1/sin⁴(θ/2) (χ² p = 0.29); switch to Thomson's atom and every track goes straight.",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/rutherford-gold-foil.html",
-      "checks": {
-        "total": 12,
-        "passed": 12
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0"
-    },
-    {
-      "id": "stern-gerlach-3d",
-      "title": "Stern–Gerlach in 3D",
-      "prompt": "/p-simtor simulate the Stern–Gerlach experiment in 3D, including several magnets in a row, to show that spin is quantised",
-      "about": "Silver atoms through one to three magnets; exact spin-½ evolution and the Born rule split the beam into two spots, z→x→z splits again, P(+) = cos²(θ/2).",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/stern-gerlach-3d.html",
-      "checks": {
-        "total": 24,
-        "passed": 24
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0"
-    },
-    {
-      "id": "bubble-chamber-3d",
-      "title": "Bubble chamber: π → μ → e",
-      "prompt": "/p-simtor make a 3D bubble chamber: charged particles curling in a magnetic field, with a pion decaying into a muon and then an electron",
-      "about": "π⁺ → μ⁺ → e⁺ in liquid hydrogen: Lorentz force with Bethe energy loss, PDG lifetimes and V−A decays; bubbles ∝ 1/β², neutrinos invisible.",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/bubble-chamber-3d.html",
-      "checks": {
-        "total": 20,
-        "passed": 20
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0"
-    },
-    {
-      "id": "cavendish-experiment-3d",
-      "title": "Cavendish experiment: weighing the Earth",
-      "prompt": "/p-simtor recreate the Cavendish experiment in 3D: weighing the Earth with a torsion balance",
-      "about": "Cavendish's 1798 torsion balance: the four ball-pair torques drive the beam, the readings are fitted, and G and Earth's density come out (5.48 vs 5.448 explained).",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/cavendish-experiment-3d.html",
-      "checks": {
-        "total": 15,
-        "passed": 15
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0"
-    },
-    {
-      "id": "qcd-vacuum-4d-slices",
-      "title": "Instantons in the 4D lattice vacuum",
-      "prompt": "/p-simtor visualise the 4D vacuum of a lattice gauge theory: show instantons as you move through Euclidean time, slice by slice",
-      "about": "Instantons in a 4D SU(2) lattice vacuum: Monte Carlo, then cooling; topological charge density shown slice by slice through Euclidean time (Q = −1.98).",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/qcd-vacuum-4d-slices.html",
-      "checks": {
-        "total": 15,
-        "passed": 15
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0"
-    },
-    {
-      "id": "su2-three-sphere",
-      "title": "SU(2) gauge field on the 3-sphere",
-      "prompt": "/p-simtor show the SU(2) gauge field as points on the 3-sphere in 4D",
-      "about": "Every SU(2) link and plaquette as a point on the 3-sphere: a gauge transformation scatters the links while every plaquette trace stays fixed.",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/su2-three-sphere.html",
-      "checks": {
-        "total": 17,
-        "passed": 17
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0"
-    },
-    {
-      "id": "lattice-4d-projection",
-      "title": "4D gauge lattice, projected",
-      "prompt": "/p-simtor show a 4D spacetime lattice of a gauge theory, with links, plaquettes, a Wilson loop and a Polyakov loop, by rotating it in 4D",
-      "about": "A periodic 4D lattice rotated in 4D and projected to 3D, with a plaquette, a Wilson loop and a Polyakov loop measured on a live Monte Carlo configuration.",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/lattice-4d-projection.html",
-      "checks": {
-        "total": 12,
-        "passed": 12
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0"
-    },
-    {
-      "id": "asymptotic-freedom",
-      "title": "Asymptotic freedom and the strong force",
-      "prompt": "/p-simtor show asymptotic freedom and the strong force",
-      "about": "α_s(Q) from the 4-loop renormalisation group (PDG 2024 input) next to a live SU(2) lattice showing confinement: area law, Creutz ratio 72σ from zero.",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/asymptotic-freedom.html",
-      "checks": {
-        "total": 18,
-        "passed": 18
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0"
-    },
-    {
-      "id": "yang-mills-mass-gap",
-      "title": "Yang–Mills mass gap: lattice evidence",
-      "prompt": "/p-simtor prove the Yang-Mills existence and mass gap",
-      "about": "Not a proof (it's a Millennium problem): a lattice measurement of the glueball mass gap in 2+1D SU(2), matching Teper (1999) within 0.4σ.",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/yang-mills-mass-gap.html",
-      "checks": {
-        "total": 7,
-        "passed": 7
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0"
-    },
-    {
-      "id": "weak-force",
-      "title": "The weak interaction: polarised muon decay",
-      "prompt": "/p-simtor simulate the weak force",
-      "about": "Polarised muon decay sampled event by event in V−A theory: parity violation ⟨cos θ⟩ = 1/9, Michel spectra, and the lifetime from G_F to 0.66 ppm.",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/weak-force.html",
-      "checks": {
-        "total": 19,
-        "passed": 19
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0"
+      "group": "space",
+      "gl": true
     },
     {
       "id": "double-slit-electrons",
@@ -362,7 +28,409 @@
         "passed": 24
       },
       "thumb": true,
-      "skillVersion": "0.3.0"
+      "skillVersion": "0.3.0",
+      "group": "experiments",
+      "gl": true
+    },
+    {
+      "id": "rutherford-gold-foil",
+      "title": "Rutherford's gold foil experiment",
+      "prompt": "/p-simtor recreate Rutherford's gold foil experiment in 3D: alpha particles hitting a gold foil, and show why it proved the atom has a tiny nucleus",
+      "about": "Alpha tracks computed in a gold nucleus's Coulomb field at true femtometre scale; counts match 1/sin⁴(θ/2) (χ² p = 0.29); switch to Thomson's atom and every track goes straight.",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/rutherford-gold-foil.html",
+      "checks": {
+        "total": 12,
+        "passed": 12
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0",
+      "group": "experiments",
+      "gl": true
+    },
+    {
+      "id": "stern-gerlach-3d",
+      "title": "Stern–Gerlach in 3D",
+      "prompt": "/p-simtor simulate the Stern–Gerlach experiment in 3D, including several magnets in a row, to show that spin is quantised",
+      "about": "Silver atoms through one to three magnets; exact spin-½ evolution and the Born rule split the beam into two spots, z→x→z splits again, P(+) = cos²(θ/2).",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/stern-gerlach-3d.html",
+      "checks": {
+        "total": 24,
+        "passed": 24
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0",
+      "group": "experiments",
+      "gl": true
+    },
+    {
+      "id": "bubble-chamber-3d",
+      "title": "Bubble chamber: π → μ → e",
+      "prompt": "/p-simtor make a 3D bubble chamber: charged particles curling in a magnetic field, with a pion decaying into a muon and then an electron",
+      "about": "π⁺ → μ⁺ → e⁺ in liquid hydrogen: Lorentz force with Bethe energy loss, PDG lifetimes and V−A decays; bubbles ∝ 1/β², neutrinos invisible.",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/bubble-chamber-3d.html",
+      "checks": {
+        "total": 20,
+        "passed": 20
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0",
+      "group": "experiments",
+      "gl": true
+    },
+    {
+      "id": "bec-vortex-lattice",
+      "title": "Stirred condensate: vortex lattice",
+      "prompt": "/p-simtor show a Bose–Einstein condensate being stirred until quantum vortices appear and form a lattice",
+      "about": "The 2D Gross–Pitaevskii equation in a rotating trap: stirring nucleates quantised vortices that settle into a triangular lattice; density matches Feynman's rule (1.05–1.12 × Ω/π).",
+      "date": "2026-10-15",
+      "source": "/Users/janvajda/projects/psim-test/simulations/bec-vortex-lattice.html",
+      "checks": {
+        "total": 12,
+        "passed": 12
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0",
+      "group": "experiments",
+      "gl": true
+    },
+    {
+      "id": "qcd-vacuum-4d-slices",
+      "title": "Instantons in the 4D lattice vacuum",
+      "prompt": "/p-simtor visualise the 4D vacuum of a lattice gauge theory: show instantons as you move through Euclidean time, slice by slice",
+      "about": "Instantons in a 4D SU(2) lattice vacuum: Monte Carlo, then cooling; topological charge density shown slice by slice through Euclidean time (Q = −1.98).",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/qcd-vacuum-4d-slices.html",
+      "checks": {
+        "total": 15,
+        "passed": 15
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0",
+      "group": "particles",
+      "gl": true
+    },
+    {
+      "id": "cavendish-experiment-3d",
+      "title": "Cavendish experiment: weighing the Earth",
+      "prompt": "/p-simtor recreate the Cavendish experiment in 3D: weighing the Earth with a torsion balance",
+      "about": "Cavendish's 1798 torsion balance: the four ball-pair torques drive the beam, the readings are fitted, and G and Earth's density come out (5.48 vs 5.448 explained).",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/cavendish-experiment-3d.html",
+      "checks": {
+        "total": 15,
+        "passed": 15
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0",
+      "group": "experiments",
+      "gl": true
+    },
+    {
+      "id": "hydrogen-orbitals-3d",
+      "title": "Hydrogen orbitals in 3D",
+      "prompt": "/p-simtor visualize the 3D probability clouds of hydrogen orbitals",
+      "about": "All 55 hydrogen orbitals up to n = 5 as exact 3D probability clouds: a glowing |ψ|² volume plus sampled measurements coloured by the sign of ψ.",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/hydrogen-orbitals-3d.html",
+      "checks": {
+        "total": 15,
+        "passed": 15
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0",
+      "group": "quantum",
+      "gl": true
+    },
+    {
+      "id": "black-hole-inspiral-3d",
+      "title": "Black-hole binary inspiral in 3D",
+      "prompt": "/p-simtor show two black holes spiralling together in 3D",
+      "about": "Two spinning black holes spiral together while their orbit precesses; the computed gravitational wave spreads out as a spiral. The merger itself is marked not computed.",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/black-hole-inspiral-3d.html",
+      "checks": {
+        "total": 11,
+        "passed": 11
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0",
+      "group": "space",
+      "gl": true
+    },
+    {
+      "id": "dark-matter-galaxy-3d",
+      "title": "Why galaxies need dark matter",
+      "prompt": "/p-simtor show why galaxies need dark matter, with a 3D galaxy of 100 000 stars",
+      "about": "100 000 stars orbit a Milky-Way model in 3D. Switch off the dark-matter halo and the disk swells from 10 to 39 kpc as stars escape.",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/dark-matter-galaxy-3d.html",
+      "checks": {
+        "total": 14,
+        "passed": 14
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0",
+      "group": "space",
+      "gl": true
+    },
+    {
+      "id": "wave-packet-tunnelling",
+      "title": "Electron wave packet tunnelling in 2D",
+      "prompt": "/p-simtor show an electron wave packet tunnelling through a barrier in 2D",
+      "about": "An electron's probability wave hits a barrier: most reflects, a quarter tunnels through, matching the exact quantum result.",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/wave-packet-tunnelling.html",
+      "checks": {
+        "total": 17,
+        "passed": 17
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0",
+      "group": "quantum",
+      "gl": true
+    },
+    {
+      "id": "black-body",
+      "title": "Black-body radiation",
+      "prompt": "/p-simtor simulate black body radiation",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/black-body.html",
+      "checks": {
+        "total": 11,
+        "passed": 11
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0",
+      "about": "Planck's law live: the real colour of hot objects, from the cosmic microwave background to a 40 000 K star.",
+      "group": "matter",
+      "gl": false
+    },
+    {
+      "id": "black-hole-merger",
+      "title": "Binary black-hole merger",
+      "prompt": "/p-simtor simulate two black holes merging",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/black-hole-merger.html",
+      "checks": {
+        "total": 10,
+        "passed": 10
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0",
+      "about": "Two black holes spiral together and chirp (post-Newtonian inspiral); the merger itself is honestly marked as not computed.",
+      "group": "space",
+      "gl": false
+    },
+    {
+      "id": "quark-confinement",
+      "title": "Quark confinement",
+      "prompt": "/p-simtor explain quark confinement with an interactive, scientifically qualified visualization",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/quark-confinement.html",
+      "checks": {
+        "total": 14,
+        "passed": 14
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0",
+      "about": "Lattice gauge theory computes the energy between two colour charges: it keeps rising with distance, so they cannot separate.",
+      "group": "particles",
+      "gl": false
+    },
+    {
+      "id": "double-pendulum",
+      "title": "Why a double pendulum is chaotic",
+      "prompt": "/p-simtor show why a double pendulum is chaotic",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/double-pendulum.html",
+      "checks": {
+        "total": 11,
+        "passed": 11
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0",
+      "about": "Two pendulums started 10⁻⁸ rad apart part ways after about 8 s; the Lyapunov exponent is measured live.",
+      "group": "matter",
+      "gl": false
+    },
+    {
+      "id": "three-level-thermal",
+      "title": "Three-level system heating up",
+      "prompt": "/p-simtor show how the populations of a three-level quantum system change as it heats up",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/three-level-thermal.html",
+      "checks": {
+        "total": 10,
+        "passed": 10
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0",
+      "about": "Boltzmann populations of three energy levels as the temperature rises, with the heat-capacity peaks they cause.",
+      "group": "quantum",
+      "gl": false
+    },
+    {
+      "id": "lennard-jones",
+      "title": "Lennard-Jones fluid (2D)",
+      "prompt": "/p-simtor create an interactive Lennard-Jones particle simulation",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/lennard-jones.html",
+      "checks": {
+        "total": 14,
+        "passed": 14
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0",
+      "about": "Molecular dynamics of a 2D Lennard-Jones fluid: hot gas, condensing clusters and dense liquid.",
+      "group": "matter",
+      "gl": false
+    },
+    {
+      "id": "brownian-motion",
+      "title": "Brownian motion of a pollen grain",
+      "prompt": "/p-simtor simulate Brownian motion of a pollen grain in water",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/brownian-motion.html",
+      "checks": {
+        "total": 9,
+        "passed": 9
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0",
+      "about": "Pollen grains jiggle in water; their spread grows as 4Dt, Einstein's relation, and Brown's real observation is one click away.",
+      "group": "matter",
+      "gl": false
+    },
+    {
+      "id": "magnet-heating",
+      "title": "Heating a magnet",
+      "prompt": "/p-simtor show how a magnet loses its magnetism when heated",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/magnet-heating.html",
+      "checks": {
+        "total": 9,
+        "passed": 9
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0",
+      "about": "A 128×128 Ising magnet heated past its Curie point: ordered domains break up into noise.",
+      "group": "matter",
+      "gl": false
+    },
+    {
+      "id": "decay-chain",
+      "title": "Radioactive decay chain, atom by atom",
+      "prompt": "/p-simtor simulate a radioactive decay chain atom by atom",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/decay-chain.html",
+      "checks": {
+        "total": 12,
+        "passed": 12
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0",
+      "about": "Radon-222 progeny decaying atom by atom, against the smooth Bateman curves.",
+      "group": "matter",
+      "gl": false
+    },
+    {
+      "id": "salt-dissolving",
+      "title": "Salt dissolving in still water",
+      "prompt": "/p-simtor simulate how salt dissolves in a glass of water",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/salt-dissolving.html",
+      "checks": {
+        "total": 11,
+        "passed": 11
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0",
+      "about": "Salt on the bottom of a still glass dissolves in hours, but takes weeks to spread through the water by diffusion.",
+      "group": "matter",
+      "gl": false
+    },
+    {
+      "id": "su2-three-sphere",
+      "title": "SU(2) gauge field on the 3-sphere",
+      "prompt": "/p-simtor show the SU(2) gauge field as points on the 3-sphere in 4D",
+      "about": "Every SU(2) link and plaquette as a point on the 3-sphere: a gauge transformation scatters the links while every plaquette trace stays fixed.",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/su2-three-sphere.html",
+      "checks": {
+        "total": 17,
+        "passed": 17
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0",
+      "group": "particles",
+      "gl": true
+    },
+    {
+      "id": "lattice-4d-projection",
+      "title": "4D gauge lattice, projected",
+      "prompt": "/p-simtor show a 4D spacetime lattice of a gauge theory, with links, plaquettes, a Wilson loop and a Polyakov loop, by rotating it in 4D",
+      "about": "A periodic 4D lattice rotated in 4D and projected to 3D, with a plaquette, a Wilson loop and a Polyakov loop measured on a live Monte Carlo configuration.",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/lattice-4d-projection.html",
+      "checks": {
+        "total": 12,
+        "passed": 12
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0",
+      "group": "particles",
+      "gl": true
+    },
+    {
+      "id": "asymptotic-freedom",
+      "title": "Asymptotic freedom and the strong force",
+      "prompt": "/p-simtor show asymptotic freedom and the strong force",
+      "about": "α_s(Q) from the 4-loop renormalisation group (PDG 2024 input) next to a live SU(2) lattice showing confinement: area law, Creutz ratio 72σ from zero.",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/asymptotic-freedom.html",
+      "checks": {
+        "total": 18,
+        "passed": 18
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0",
+      "group": "particles",
+      "gl": true
+    },
+    {
+      "id": "yang-mills-mass-gap",
+      "title": "Yang–Mills mass gap: lattice evidence",
+      "prompt": "/p-simtor prove the Yang-Mills existence and mass gap",
+      "about": "Not a proof (it's a Millennium problem): a lattice measurement of the glueball mass gap in 2+1D SU(2), matching Teper (1999) within 0.4σ.",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/yang-mills-mass-gap.html",
+      "checks": {
+        "total": 7,
+        "passed": 7
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0",
+      "group": "particles",
+      "gl": true
+    },
+    {
+      "id": "weak-force",
+      "title": "The weak interaction: polarised muon decay",
+      "prompt": "/p-simtor simulate the weak force",
+      "about": "Polarised muon decay sampled event by event in V−A theory: parity violation ⟨cos θ⟩ = 1/9, Michel spectra, and the lifetime from G_F to 0.66 ppm.",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/weak-force.html",
+      "checks": {
+        "total": 19,
+        "passed": 19
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0",
+      "group": "particles",
+      "gl": true
     }
   ]
 }

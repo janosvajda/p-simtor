@@ -16,7 +16,7 @@
 //   sim.timeDependent        false for static analytic visualisations (no transport)
 
 import {
-  el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast,
+  el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast, ICONS,
   transport, createClock, logPlot, download, readJsonScript, beacon, cssVar,
 } from './instrument.mjs';
 import { createPlot } from './plot.mjs';
@@ -36,6 +36,7 @@ export function createInstrument(spec) {
     title, subtitle = '', tier, tierReason, create, draw, params = [], model = {},
     timeUnit = 'T', timeLabel = 'simulated time', speed: speed0 = 1, gl: wantGL = false, drawGL, controls, onPointer, layout = 'stage', bench,
     presets = [], texts = {}, hudError = true, formatTime, timeDigits = 3, frameBudget = 9, speedRange, viewControls, testSteps = 300,
+    glResolution = 'auto',
   } = spec;
   if (!TIERS[tier]) throw new Error(`tier must be one of ${Object.keys(TIERS).join(', ')}`);
   const report = readJsonScript('psim-verification');
@@ -97,9 +98,13 @@ export function createInstrument(spec) {
     W: 0, H: 0, dpr: 1, color: cssVar, opts: {}, pointer: null, gl: glLayer?.gl ?? null, glError: glLayer && !glLayer.ok ? glLayer.reason : '',
     /** Current playback speed (simulated time per second) and state, e.g. to disclose time compression. */
     get speed() { return clock.speed; }, get playing() { return clock.playing; },
+    /** GL layer resolution as a fraction of the device pixel ratio (adaptive unless glResolution is a number). */
+    get glScale() { return glLayer?.scale ?? 1; },
     /** 'dark' or 'light': the theme now shown (e.g. additive vs alpha blending, mesh colours). */
     get theme() { return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'; },
     setLegend,
+    /** The embedded build-time report (verify()'s return value, including any extra data fields), or null. */
+    report,
   };
 
   let benchApi = null;
@@ -112,6 +117,34 @@ export function createInstrument(spec) {
     status.set('params', values);
   }
 
+  // ------------------------------------------------------------ full screen
+  // The scene (canvas, HUD, legend) and the playback bar fill the screen. Falls back to filling the
+  // window with CSS where the Fullscreen API is missing or refused (iPhone Safari, sandboxed frames).
+  const scene = benchParts?.wrap ?? stage;
+  let pseudoFs = false, fsBtn = null;
+  const fsElement = () => document.fullscreenElement ?? document.webkitFullscreenElement ?? null;
+  const isFullscreen = () => pseudoFs || fsElement() === scene;
+  function afterFullscreen() {
+    const on = isFullscreen();
+    scene.classList.toggle('psim-fs', on);
+    if (tp) { if (on && tp.parentNode !== scene) scene.append(tp); else if (!on && tp.parentNode !== stage) stage.append(tp); tp.setFullscreen(on); }
+    if (fsBtn) fsBtn.innerHTML = on ? ICONS.exitFullscreen : ICONS.fullscreen;
+    requestAnimationFrame(() => spec.onFit?.(view));
+  }
+  function setPseudo(on) { pseudoFs = on; scene.classList.toggle('psim-pseudo-fs', on); afterFullscreen(); }
+  function toggleFullscreen() {
+    if (isFullscreen()) {
+      if (pseudoFs) setPseudo(false);
+      else (document.exitFullscreen ?? document.webkitExitFullscreen)?.call(document);
+      return;
+    }
+    const request = scene.requestFullscreen ?? scene.webkitRequestFullscreen;
+    if (!request) { setPseudo(true); return; }
+    try { Promise.resolve(request.call(scene)).catch(() => setPseudo(true)); } catch { setPseudo(true); }
+  }
+  addEventListener('fullscreenchange', afterFullscreen);
+  addEventListener('webkitfullscreenchange', afterFullscreen);
+
   // ------------------------------------------------------------ transport
   const timeDependent = spec.timeDependent !== false;
   let tp = null;
@@ -122,13 +155,17 @@ export function createInstrument(spec) {
       onStep: () => { setPlaying(false); sim.step(); tDisplay = sim.t; },
       onRestart: () => rebuild(),
       onFit: () => spec.onFit?.(view),
+      onFullscreen: () => toggleFullscreen(),
       onSpeed: s => { clock.speed = s; },
     });
     stage.append(tp);
   } else {
+    fsBtn = el('button', { class: 'psim-fsbtn', title: 'Full screen (F)', 'aria-label': 'Full screen', html: ICONS.fullscreen, onclick: () => toggleFullscreen() });
+    scene.append(fsBtn);
     stage.querySelector('.psim-hud').querySelector('.dim').textContent = '';
   }
   function setPlaying(p) { clock.playing = p; tp?.setPlaying(p); }
+
 
   // ------------------------------------------------------------ side panel
   const secParams = section(texts.parameters ?? 'Parameters');
@@ -267,8 +304,33 @@ export function createInstrument(spec) {
   resize();
   if (onPointer) onPointer(canvas, view, () => sim);
 
+  // Adaptive GL resolution: when frames take longer than the display refresh while the JavaScript
+  // part is small, the GPU is the bottleneck (large or fullscreen windows, ray marching): render the
+  // GL layer at a lower pixel ratio, and raise it again when there is headroom. Display only.
+  if (glLayer && typeof glResolution === 'number') glLayer.scale = Math.min(1, Math.max(0.25, glResolution));
+  const perf = { last: null, interval: null, js: 0, refresh: Infinity, lastAdjust: 0, calm: 0 };
+  function adaptResolution(now, jsMs) {
+    if (!glLayer?.ok || glResolution !== 'auto') return;
+    if (perf.last != null) {
+      const dt = now - perf.last;
+      if (dt > 0 && dt < 250) {
+        perf.refresh = Math.min(perf.refresh * 1.0005, Math.max(dt, 4));
+        perf.interval = perf.interval == null ? dt : 0.9 * perf.interval + 0.1 * dt;
+        perf.js = 0.9 * perf.js + 0.1 * jsMs;
+        const floor = Math.max(0.35, 0.75 / (view.dpr || 1)), slow = perf.interval > 1.3 * perf.refresh;
+        if (slow && perf.interval - perf.js > 0.5 * perf.refresh && now - perf.lastAdjust > 500 && glLayer.scale > floor) {
+          glLayer.scale = Math.max(floor, glLayer.scale * 0.8); perf.lastAdjust = now; perf.calm = 0;
+        } else if (!slow && perf.interval < 1.1 * perf.refresh) {
+          if (++perf.calm > 120 && glLayer.scale < 1 && now - perf.lastAdjust > 2000) { glLayer.scale = Math.min(1, glLayer.scale * 1.15); perf.lastAdjust = now; perf.calm = 0; }
+        } else perf.calm = 0;
+      }
+    }
+    perf.last = now;
+  }
+
   let frames = 0, lastUi = 0;
   function frame(now) {
+    const frameStart = performance.now();
     if (timeDependent) {
       const target = clock.tick(now, tDisplay);
       if (target > tDisplay) {
@@ -301,6 +363,7 @@ export function createInstrument(spec) {
       if (firstErr) { status.set('drift', firstErr.value); status.set('driftLabel', firstErr.label); }
     }
     if (++frames === 1 || frames % 30 === 0) status.set('frames', frames);   // first frame at once: slow pages count as live
+    adaptResolution(now, performance.now() - frameStart);
     requestAnimationFrame(frame);
   }
 
@@ -314,6 +377,9 @@ export function createInstrument(spec) {
     setParams: (next, opts) => setParams(next, opts),
     setParam: (k, v) => setParam(k, v),
     getSim: () => sim,
+    toggleFullscreen: () => toggleFullscreen(),
+    report,
+    get fullscreen() { return isFullscreen(); },
     testSteps,
     play: () => setPlaying(true), pause: () => setPlaying(false),
     steps: n => { if (typeof sim.step === "function") for (let i = 0; i < n; i++) sim.step(); tDisplay = sim.t ?? 0; return window.psim.state(); },
@@ -321,7 +387,7 @@ export function createInstrument(spec) {
 
   if (bench && benchParts) {
     benchApi = bench({
-      ...benchParts, createPlot, createEquation, createDerivation, M, values,
+      ...benchParts, createPlot, createEquation, createDerivation, M, values, report,
       setParam, setParams, play: () => setPlaying(true), pause: () => setPlaying(false),
       getSim: () => sim,
     }) ?? null;
@@ -330,7 +396,10 @@ export function createInstrument(spec) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   setPlaying(timeDependent && (query.get('autoplay') ? query.get('autoplay') !== '0' : !reduced));
   addEventListener('keydown', e => {
-    if (e.target.closest('input, select, textarea') || !timeDependent) return;
+    if (e.target.closest('input, select, textarea')) return;
+    if ((e.key === 'f' || e.key === 'F') && !e.metaKey && !e.ctrlKey) { e.preventDefault(); toggleFullscreen(); return; }
+    if (e.key === 'Escape' && pseudoFs) { setPseudo(false); return; }
+    if (!timeDependent) return;
     if (e.code === 'Space') { e.preventDefault(); setPlaying(!clock.playing); }
     else if (e.key === '.') { setPlaying(false); sim.step(); tDisplay = sim.t; }
     else if (e.key === 'r' || e.key === 'R') rebuild();

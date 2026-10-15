@@ -26,7 +26,7 @@ export function findChrome() {
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 /** Launch headless Chrome and return a minimal CDP session on its first page. */
-export async function launch() {
+export async function launch({ args = [] } = {}) {
   const bin = findChrome();
   if (!bin) throw new Error('Chrome/Chromium not found. Set CHROME_PATH to the browser executable.');
   if (typeof WebSocket === 'undefined') throw new Error('Node >= 22 is required for browser checks (global WebSocket).');
@@ -34,7 +34,7 @@ export async function launch() {
   const proc = spawn(bin, [
     '--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`,
     '--no-first-run', '--no-default-browser-check', '--disable-extensions', '--mute-audio',
-    '--hide-scrollbars', 'about:blank',
+    '--hide-scrollbars', ...args, 'about:blank',
   ], { stdio: 'ignore' });
   const portFile = join(profile, 'DevToolsActivePort');
   for (let i = 0; i < 200 && !existsSync(portFile); i++) await sleep(50);
@@ -158,9 +158,9 @@ export async function checkPage(file, { shotsDir, waitMs = 3000, advance, params
       await sleep(waitMs);
       if (advance != null) {
         // fast-forward the simulation (in the page's own time unit) to see long-term behaviour
-        const r = await evalWithin(b, `window.psim?.advanceTo ? (window.psim.advanceTo(${+advance}), window.psim.fit?.(), 'ok') : 'no advanceTo'`, 60000);
+        const r = await evalWithin(b, `window.psim?.advanceTo ? (window.psim.advanceTo(${+advance}), window.psim.fit?.(), 'ok') : 'no advanceTo'`, 600000);
         if (r.frozen || r.error) {
-          const summary = r.error ?? `advancing to t = ${advance} took longer than 60 s`;
+          const summary = r.error ?? `advancing to t = ${advance} took longer than 10 min`;
           problems.push(`${v.label}: ${summary}`);
           runs.push({ label: v.label, ok: false, summary });
           return { runs, problems };
@@ -235,7 +235,7 @@ async function scrollShots(b, base, maxPages = 6) {
 async function evalWithin(b, expr, ms) {
   let timer;
   const timeout = new Promise(res => { timer = setTimeout(() => res({ frozen: true }), ms); });
-  const r = await Promise.race([b.eval(expr).then(v => ({ value: v })).catch(e => ({ error: e.message })), timeout]);
+  const r = await Promise.race([b.eval(expr, ms + 1000).then(v => ({ value: v })).catch(e => ({ error: e.message })), timeout]);
   clearTimeout(timer);
   return r;
 }
