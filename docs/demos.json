@@ -15,6 +15,90 @@
       "skillVersion": "0.3.0"
     },
     {
+      "id": "double-slit-electrons",
+      "title": "Double slit, one electron at a time",
+      "prompt": "/p-simtor show the double-slit experiment with single electrons, where the interference pattern builds up one electron at a time",
+      "about": "A 2D Schrödinger wave passes two nanometre slits; single electrons are drawn from the computed flux and the fringes build up dot by dot (KS p = 0.77), then vanish with a which-path detector.",
+      "date": "2026-10-15",
+      "source": "/Users/janvajda/projects/psim-test/simulations/double-slit-electrons.html",
+      "checks": {
+        "total": 24,
+        "passed": 24
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "rutherford-gold-foil",
+      "title": "Rutherford's gold foil experiment",
+      "prompt": "/p-simtor recreate Rutherford's gold foil experiment in 3D: alpha particles hitting a gold foil, and show why it proved the atom has a tiny nucleus",
+      "about": "Alpha tracks computed in a gold nucleus's Coulomb field at true femtometre scale; counts match 1/sin⁴(θ/2) (χ² p = 0.29); switch to Thomson's atom and every track goes straight.",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/rutherford-gold-foil.html",
+      "checks": {
+        "total": 12,
+        "passed": 12
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "stern-gerlach-3d",
+      "title": "Stern–Gerlach in 3D",
+      "prompt": "/p-simtor simulate the Stern–Gerlach experiment in 3D, including several magnets in a row, to show that spin is quantised",
+      "about": "Silver atoms through one to three magnets; exact spin-½ evolution and the Born rule split the beam into two spots, z→x→z splits again, P(+) = cos²(θ/2).",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/stern-gerlach-3d.html",
+      "checks": {
+        "total": 24,
+        "passed": 24
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "bubble-chamber-3d",
+      "title": "Bubble chamber: π → μ → e",
+      "prompt": "/p-simtor make a 3D bubble chamber: charged particles curling in a magnetic field, with a pion decaying into a muon and then an electron",
+      "about": "π⁺ → μ⁺ → e⁺ in liquid hydrogen: Lorentz force with Bethe energy loss, PDG lifetimes and V−A decays; bubbles ∝ 1/β², neutrinos invisible.",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/bubble-chamber-3d.html",
+      "checks": {
+        "total": 20,
+        "passed": 20
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "qcd-vacuum-4d-slices",
+      "title": "Instantons in the 4D lattice vacuum",
+      "prompt": "/p-simtor visualise the 4D vacuum of a lattice gauge theory: show instantons as you move through Euclidean time, slice by slice",
+      "about": "Instantons in a 4D SU(2) lattice vacuum: Monte Carlo, then cooling; topological charge density shown slice by slice through Euclidean time (Q = −1.98).",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/qcd-vacuum-4d-slices.html",
+      "checks": {
+        "total": 15,
+        "passed": 15
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "cavendish-experiment-3d",
+      "title": "Cavendish experiment: weighing the Earth",
+      "prompt": "/p-simtor recreate the Cavendish experiment in 3D: weighing the Earth with a torsion balance",
+      "about": "Cavendish's 1798 torsion balance: the four ball-pair torques drive the beam, the readings are fitted, and G and Earth's density come out (5.48 vs 5.448 explained).",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/cavendish-experiment-3d.html",
+      "checks": {
+        "total": 15,
+        "passed": 15
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
       "id": "hydrogen-orbitals-3d",
       "title": "Hydrogen orbitals in 3D",
       "prompt": "/p-simtor visualize the 3D probability clouds of hydrogen orbitals",
@@ -52,6 +136,76 @@
       "checks": {
         "total": 14,
         "passed": 14
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "su2-three-sphere",
+      "title": "SU(2) gauge field on the 3-sphere",
+      "prompt": "/p-simtor show the SU(2) gauge field as points on the 3-sphere in 4D",
+      "about": "Every SU(2) link and plaquette as a point on the 3-sphere: a gauge transformation scatters the links while every plaquette trace stays fixed.",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/su2-three-sphere.html",
+      "checks": {
+        "total": 17,
+        "passed": 17
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "lattice-4d-projection",
+      "title": "4D gauge lattice, projected",
+      "prompt": "/p-simtor show a 4D spacetime lattice of a gauge theory, with links, plaquettes, a Wilson loop and a Polyakov loop, by rotating it in 4D",
+      "about": "A periodic 4D lattice rotated in 4D and projected to 3D, with a plaquette, a Wilson loop and a Polyakov loop measured on a live Monte Carlo configuration.",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/lattice-4d-projection.html",
+      "checks": {
+        "total": 12,
+        "passed": 12
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "asymptotic-freedom",
+      "title": "Asymptotic freedom and the strong force",
+      "prompt": "/p-simtor show asymptotic freedom and the strong force",
+      "about": "α_s(Q) from the 4-loop renormalisation group (PDG 2024 input) next to a live SU(2) lattice showing confinement: area law, Creutz ratio 72σ from zero.",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/asymptotic-freedom.html",
+      "checks": {
+        "total": 18,
+        "passed": 18
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "yang-mills-mass-gap",
+      "title": "Yang–Mills mass gap: lattice evidence",
+      "prompt": "/p-simtor prove the Yang-Mills existence and mass gap",
+      "about": "Not a proof (it's a Millennium problem): a lattice measurement of the glueball mass gap in 2+1D SU(2), matching Teper (1999) within 0.4σ.",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/yang-mills-mass-gap.html",
+      "checks": {
+        "total": 7,
+        "passed": 7
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "weak-force",
+      "title": "The weak interaction: polarised muon decay",
+      "prompt": "/p-simtor simulate the weak force",
+      "about": "Polarised muon decay sampled event by event in V−A theory: parity violation ⟨cos θ⟩ = 1/9, Michel spectra, and the lifetime from G_F to 0.66 ppm.",
+      "date": "2026-10-14",
+      "source": "/Users/janvajda/projects/psim-test/simulations/weak-force.html",
+      "checks": {
+        "total": 19,
+        "passed": 19
       },
       "thumb": true,
       "skillVersion": "0.3.0"
@@ -209,160 +363,6 @@
       "thumb": true,
       "skillVersion": "0.3.0",
       "about": "Salt on the bottom of a still glass dissolves in hours, but takes weeks to spread through the water by diffusion."
-    },
-    {
-      "id": "rutherford-gold-foil",
-      "title": "Rutherford's gold foil experiment",
-      "prompt": "/p-simtor recreate Rutherford's gold foil experiment in 3D: alpha particles hitting a gold foil, and show why it proved the atom has a tiny nucleus",
-      "about": "Alpha tracks computed in a gold nucleus's Coulomb field at true femtometre scale; counts match 1/sin⁴(θ/2) (χ² p = 0.29); switch to Thomson's atom and every track goes straight.",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/rutherford-gold-foil.html",
-      "checks": {
-        "total": 12,
-        "passed": 12
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0"
-    },
-    {
-      "id": "stern-gerlach-3d",
-      "title": "Stern–Gerlach in 3D",
-      "prompt": "/p-simtor simulate the Stern–Gerlach experiment in 3D, including several magnets in a row, to show that spin is quantised",
-      "about": "Silver atoms through one to three magnets; exact spin-½ evolution and the Born rule split the beam into two spots, z→x→z splits again, P(+) = cos²(θ/2).",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/stern-gerlach-3d.html",
-      "checks": {
-        "total": 24,
-        "passed": 24
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0"
-    },
-    {
-      "id": "bubble-chamber-3d",
-      "title": "Bubble chamber: π → μ → e",
-      "prompt": "/p-simtor make a 3D bubble chamber: charged particles curling in a magnetic field, with a pion decaying into a muon and then an electron",
-      "about": "π⁺ → μ⁺ → e⁺ in liquid hydrogen: Lorentz force with Bethe energy loss, PDG lifetimes and V−A decays; bubbles ∝ 1/β², neutrinos invisible.",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/bubble-chamber-3d.html",
-      "checks": {
-        "total": 20,
-        "passed": 20
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0"
-    },
-    {
-      "id": "cavendish-experiment-3d",
-      "title": "Cavendish experiment: weighing the Earth",
-      "prompt": "/p-simtor recreate the Cavendish experiment in 3D: weighing the Earth with a torsion balance",
-      "about": "Cavendish's 1798 torsion balance: the four ball-pair torques drive the beam, the readings are fitted, and G and Earth's density come out (5.48 vs 5.448 explained).",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/cavendish-experiment-3d.html",
-      "checks": {
-        "total": 15,
-        "passed": 15
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0"
-    },
-    {
-      "id": "qcd-vacuum-4d-slices",
-      "title": "Instantons in the 4D lattice vacuum",
-      "prompt": "/p-simtor visualise the 4D vacuum of a lattice gauge theory: show instantons as you move through Euclidean time, slice by slice",
-      "about": "Instantons in a 4D SU(2) lattice vacuum: Monte Carlo, then cooling; topological charge density shown slice by slice through Euclidean time (Q = −1.98).",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/qcd-vacuum-4d-slices.html",
-      "checks": {
-        "total": 15,
-        "passed": 15
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0"
-    },
-    {
-      "id": "su2-three-sphere",
-      "title": "SU(2) gauge field on the 3-sphere",
-      "prompt": "/p-simtor show the SU(2) gauge field as points on the 3-sphere in 4D",
-      "about": "Every SU(2) link and plaquette as a point on the 3-sphere: a gauge transformation scatters the links while every plaquette trace stays fixed.",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/su2-three-sphere.html",
-      "checks": {
-        "total": 17,
-        "passed": 17
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0"
-    },
-    {
-      "id": "lattice-4d-projection",
-      "title": "4D gauge lattice, projected",
-      "prompt": "/p-simtor show a 4D spacetime lattice of a gauge theory, with links, plaquettes, a Wilson loop and a Polyakov loop, by rotating it in 4D",
-      "about": "A periodic 4D lattice rotated in 4D and projected to 3D, with a plaquette, a Wilson loop and a Polyakov loop measured on a live Monte Carlo configuration.",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/lattice-4d-projection.html",
-      "checks": {
-        "total": 12,
-        "passed": 12
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0"
-    },
-    {
-      "id": "asymptotic-freedom",
-      "title": "Asymptotic freedom and the strong force",
-      "prompt": "/p-simtor show asymptotic freedom and the strong force",
-      "about": "α_s(Q) from the 4-loop renormalisation group (PDG 2024 input) next to a live SU(2) lattice showing confinement: area law, Creutz ratio 72σ from zero.",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/asymptotic-freedom.html",
-      "checks": {
-        "total": 18,
-        "passed": 18
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0"
-    },
-    {
-      "id": "yang-mills-mass-gap",
-      "title": "Yang–Mills mass gap: lattice evidence",
-      "prompt": "/p-simtor prove the Yang-Mills existence and mass gap",
-      "about": "Not a proof (it's a Millennium problem): a lattice measurement of the glueball mass gap in 2+1D SU(2), matching Teper (1999) within 0.4σ.",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/yang-mills-mass-gap.html",
-      "checks": {
-        "total": 7,
-        "passed": 7
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0"
-    },
-    {
-      "id": "weak-force",
-      "title": "The weak interaction: polarised muon decay",
-      "prompt": "/p-simtor simulate the weak force",
-      "about": "Polarised muon decay sampled event by event in V−A theory: parity violation ⟨cos θ⟩ = 1/9, Michel spectra, and the lifetime from G_F to 0.66 ppm.",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/weak-force.html",
-      "checks": {
-        "total": 19,
-        "passed": 19
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0"
-    },
-    {
-      "id": "double-slit-electrons",
-      "title": "Double slit, one electron at a time",
-      "prompt": "/p-simtor show the double-slit experiment with single electrons, where the interference pattern builds up one electron at a time",
-      "about": "A 2D Schrödinger wave passes two nanometre slits; single electrons are drawn from the computed flux and the fringes build up dot by dot (KS p = 0.77), then vanish with a which-path detector.",
-      "date": "2026-10-15",
-      "source": "/Users/janvajda/projects/psim-test/simulations/double-slit-electrons.html",
-      "checks": {
-        "total": 24,
-        "passed": 24
-      },
-      "thumb": true,
-      "skillVersion": "0.3.0"
     }
   ]
 }
