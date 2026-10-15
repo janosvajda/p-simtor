@@ -424,6 +424,34 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
   border-radius: 9px; border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); cursor: pointer; }
 .psim-fsbtn:hover { background: var(--raise); color: var(--ink); }
 .psim-fsbtn svg { width: 15px; height: 15px; }
+
+/* ---------- timeline: the run's span and its key times (spec.timeline) ---------- */
+.psim-timeline { position: absolute; left: 50%; transform: translateX(-50%); bottom: 78px; width: min(560px, 62%); z-index: 3;
+  font: 10.5px var(--mono); color: var(--muted); pointer-events: auto; }
+.psim-canvaswrap > .psim-timeline { bottom: 14px; }
+.psim-app .psim-fs > .psim-timeline { bottom: 86px; }
+.psim-timeline .bar { position: relative; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--ink) 16%, transparent); cursor: pointer; }
+.psim-timeline .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 3px; background: var(--accent); }
+.psim-timeline .m { position: absolute; top: -4px; width: 2px; height: 14px; margin-left: -1px; background: var(--ink); }
+.psim-timeline .ticks { position: relative; height: 30px; }
+.psim-timeline .lab { position: absolute; bottom: 2px; transform: translateX(-50%); white-space: nowrap; color: var(--ink-2); }
+.psim-timeline .lab.r1 { bottom: 16px; }
+.psim-timeline .ends { display: flex; justify-content: space-between; margin-top: 3px; }
+.psim-timeline .m.measured, .psim-tlrow i.measured { background: var(--good, #4cc38a); }
+.psim-timeline .lab.measured { color: var(--good, #4cc38a); }
+.psim-timeline .m.requested, .psim-tlrow i.requested { background: var(--warn, #e0a030); }
+.psim-timeline .lab.requested { color: var(--warn, #e0a030); }
+.psim-timeline { background: color-mix(in srgb, var(--stage) 78%, transparent); padding: 4px 12px 6px; border-radius: 10px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.psim-tlrow { display: grid; grid-template-columns: 10px 1fr auto; gap: 2px 8px; align-items: baseline; margin: 6px 0; font-size: 12px; }
+.psim-tlrow i { width: 8px; height: 8px; border-radius: 2px; background: var(--ink); }
+.psim-tlrow code { font: 12px var(--mono); color: var(--ink); }
+.psim-tlrow small { grid-column: 2 / 4; color: var(--muted); font-size: 11px; }
+@media (max-width: 860px) {
+  .psim-timeline { left: 10px; transform: none; width: calc(50% - 16px); bottom: 70px; }
+  .psim-app .psim-legend { max-width: calc(50% - 16px); }
+  .psim-canvaswrap > .psim-timeline { bottom: 12px; }
+  .psim-timeline .lab { font-size: 9.5px; }
+}
 </style>
 </head>
 <body>
@@ -713,7 +741,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 }</script>
 <script type="application/json" id="psim-verification">{
  "figure-eight": {
-  "generated": "2026-10-15T05:06:05.267Z",
+  "generated": "2026-10-15T09:22:29.653Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
   "settings": {
@@ -783,10 +811,10 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 172
+  "runtimeMs": 185
  },
  "pythagorean": {
-  "generated": "2026-10-15T05:06:08.618Z",
+  "generated": "2026-10-15T09:22:33.190Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
   "settings": {
@@ -856,10 +884,10 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 4642
+  "runtimeMs": 4925
  },
  "lagrange": {
-  "generated": "2026-10-15T05:06:10.478Z",
+  "generated": "2026-10-15T09:22:35.176Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
   "settings": {
@@ -929,10 +957,10 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 655
+  "runtimeMs": 686
  },
  "hierarchical": {
-  "generated": "2026-10-15T05:06:12.893Z",
+  "generated": "2026-10-15T09:22:37.772Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
   "settings": {
@@ -1002,10 +1030,10 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 3289
+  "runtimeMs": 3532
  },
  "broucke-a2": {
-  "generated": "2026-10-15T05:06:14.107Z",
+  "generated": "2026-10-15T09:22:39.064Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
   "settings": {
@@ -1075,7 +1103,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 251
+  "runtimeMs": 267
  }
 }</script>
 

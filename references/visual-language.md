@@ -90,3 +90,4 @@ A screen shows two dimensions and depth hints. To show a 4D lattice, a 3-sphere 
 3. Is anything clipped, overlapping, unreadable, or empty in either theme or on the phone?
 4. Is every number labelled with units, and every convention disclosed?
 5. Does the run have an end (a merger, all particles arrived or absorbed, every nucleus decayed)? Then `done` must become true there, so the clock stops instead of counting time in which nothing is computed. Check with `psim check --advance` past the end: the HUD should say "finished".
+6. Does the timeline show the run span and the key times, and does the span match the question (a "200 fs" process is not shown as a 1000 fs run without a labelled reason)?

@@ -361,7 +361,8 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 .psim-term .mx math { font-size: 19px; }
 .psim-term .bar { width: 100%; height: 3px; border-radius: 2px; background: var(--line); }
 .psim-term .lb { font: 11px/1.25 var(--sans); color: var(--muted); text-align: center; max-width: 150px; }
-.psim-term .v { font: 12px var(--mono); color: var(--ink-2); white-space: nowrap; }
+.psim-term .v { font: 12px var(--mono); color: var(--ink-2); overflow-wrap: anywhere; }
+.psim-term { min-width: 0; max-width: 100%; }
 .psim-where { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: baseline; padding: 8px 12px; border-left: 2px solid var(--line-strong); }
 .psim-where .kw { grid-column: 1 / -1; font: italic 12px var(--serif); color: var(--muted); }
 .psim-where .w { display: contents; }
@@ -382,7 +383,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
   background: radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 90%, var(--accent) 10%) 0%, var(--stage) 65%); }
 .psim-bench .psim-canvaswrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
 .psim-bench .psim-figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
-.psim-bench .psim-eqs { display: grid; gap: 18px; }
+.psim-bench .psim-eqs { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
 .psim-app.workbench .psim-transport { position: fixed; left: calc((100vw - 372px) / 2); }
 .psim-app.workbench .psim-hud { left: 30px; top: 30px; }
 .psim-app.workbench .psim-legend { right: 30px; top: 30px; }
@@ -423,6 +424,34 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
   border-radius: 9px; border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); cursor: pointer; }
 .psim-fsbtn:hover { background: var(--raise); color: var(--ink); }
 .psim-fsbtn svg { width: 15px; height: 15px; }
+
+/* ---------- timeline: the run's span and its key times (spec.timeline) ---------- */
+.psim-timeline { position: absolute; left: 50%; transform: translateX(-50%); bottom: 78px; width: min(560px, 62%); z-index: 3;
+  font: 10.5px var(--mono); color: var(--muted); pointer-events: auto; }
+.psim-canvaswrap > .psim-timeline { bottom: 14px; }
+.psim-app .psim-fs > .psim-timeline { bottom: 86px; }
+.psim-timeline .bar { position: relative; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--ink) 16%, transparent); cursor: pointer; }
+.psim-timeline .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 3px; background: var(--accent); }
+.psim-timeline .m { position: absolute; top: -4px; width: 2px; height: 14px; margin-left: -1px; background: var(--ink); }
+.psim-timeline .ticks { position: relative; height: 30px; }
+.psim-timeline .lab { position: absolute; bottom: 2px; transform: translateX(-50%); white-space: nowrap; color: var(--ink-2); }
+.psim-timeline .lab.r1 { bottom: 16px; }
+.psim-timeline .ends { display: flex; justify-content: space-between; margin-top: 3px; }
+.psim-timeline .m.measured, .psim-tlrow i.measured { background: var(--good, #4cc38a); }
+.psim-timeline .lab.measured { color: var(--good, #4cc38a); }
+.psim-timeline .m.requested, .psim-tlrow i.requested { background: var(--warn, #e0a030); }
+.psim-timeline .lab.requested { color: var(--warn, #e0a030); }
+.psim-timeline { background: color-mix(in srgb, var(--stage) 78%, transparent); padding: 4px 12px 6px; border-radius: 10px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.psim-tlrow { display: grid; grid-template-columns: 10px 1fr auto; gap: 2px 8px; align-items: baseline; margin: 6px 0; font-size: 12px; }
+.psim-tlrow i { width: 8px; height: 8px; border-radius: 2px; background: var(--ink); }
+.psim-tlrow code { font: 12px var(--mono); color: var(--ink); }
+.psim-tlrow small { grid-column: 2 / 4; color: var(--muted); font-size: 11px; }
+@media (max-width: 860px) {
+  .psim-timeline { left: 10px; transform: none; width: calc(50% - 16px); bottom: 70px; }
+  .psim-app .psim-legend { max-width: calc(50% - 16px); }
+  .psim-canvaswrap > .psim-timeline { bottom: 12px; }
+  .psim-timeline .lab { font-size: 9.5px; }
+}
 </style>
 <style>
   .dna-barwrap { position: relative; width: 100%; height: 380px; overflow: hidden; }
@@ -433,6 +462,10 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
   .psim-bench, .psim-bench .psim-eqs { grid-template-columns: minmax(0, 1fr); }
   .psim-bench .psim-term { min-width: 0; max-width: 100%; }
   .psim-bench .psim-term .mx { max-width: 100%; overflow-x: auto; }
+/* timeline bar: bottom right on wide screens (the readout caption fills the bottom left); on phones the legend
+   fills the bottom right of the stage, so the bar sits above it at full width */
+@media (min-width: 560px) { .psim-canvaswrap > .psim-timeline { left: auto; right: 24px; transform: none; width: min(560px, 50%); } }
+@media (max-width: 559px) { .psim-canvaswrap > .psim-timeline { width: calc(100% - 28px); bottom: 136px; } }
 </style>
 </head>
 <body>
@@ -564,8 +597,8 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
   "tauT": 19640.476105875634,
   "tauF": 123508529898.71829
  },
- "generated": "2026-10-15T04:30:56.502Z",
- "runtimeMs": 11200
+ "generated": "2026-10-15T08:34:12.568Z",
+ "runtimeMs": 3133
 }</script>
 <script type="module">
 const __psim = {};
@@ -1377,6 +1410,7 @@ function compile(gl, vs, fs) {
 }
 
 const cmapTextures = new WeakMap();
+/** The 256×1 RGBA texture of a colour map (cached per context), for custom shaders. */
 function cmapTexture(gl, name) {
   let cache = cmapTextures.get(gl);
   if (!cache) cmapTextures.set(gl, cache = {});
@@ -2253,7 +2287,7 @@ void main() {
   };
 }
 
-return { perspective, lookAt, multiply, invert, orbitCamera, COLORMAPS, colormap, normalize, compile, cssColor, pixelRatio, createGLLayer, createPointRenderer, createFieldRenderer, createVolumeRenderer, createSphereRenderer, createLineRenderer, geometry, alignZ, polylines, drawColorBar, transform, compose, createMeshRenderer };
+return { perspective, lookAt, multiply, invert, orbitCamera, COLORMAPS, colormap, normalize, compile, cmapTexture, cssColor, pixelRatio, createGLLayer, createPointRenderer, createFieldRenderer, createVolumeRenderer, createSphereRenderer, createLineRenderer, geometry, alignZ, polylines, drawColorBar, transform, compose, createMeshRenderer };
 })();
 
 // ---- psim:ui/equation.mjs
@@ -2482,9 +2516,11 @@ function createInstrument(spec) {
   const {
     title, subtitle = '', tier, tierReason, create, draw, params = [], model = {},
     timeUnit = 'T', timeLabel = 'simulated time', speed: speed0 = 1, gl: wantGL = false, drawGL, controls, onPointer, layout = 'stage', bench,
-    presets = [], texts = {}, hudError = true, formatTime, timeDigits = 3, frameBudget = 9, speedRange, viewControls, testSteps = 300,
-    glResolution = 'auto',
+    presets = [], texts = {}, hudError = true, formatTime, timeDigits: digitsGiven, frameBudget = 9, speedRange, viewControls, testSteps = 300,
+    glResolution = 'auto', timeline: timelineSpec,
   } = spec;
+  // counted progress (sweeps, steps, generations, events) shows whole numbers unless told otherwise
+  const timeDigits = digitsGiven ?? (/sweep|step|generation|event|iteration|cycle|round/i.test(timeUnit) ? 0 : 3);
   if (!TIERS[tier]) throw new Error(`tier must be one of ${Object.keys(TIERS).join(', ')}`);
   const report = readJsonScript('psim-verification');
   if (report) validateModuleReport(report);
@@ -2505,6 +2541,7 @@ function createInstrument(spec) {
     </header>
     <main class="psim-stage"><canvas></canvas>
       <div class="psim-hud"><span class="dim"></span><b>0</b><span class="h1"></span><span class="dim h2"></span><span class="flag"></span></div>
+      <div class="psim-timeline" hidden><div class="ticks"></div><div class="bar"><i class="fill"></i></div><div class="ends"><span></span><span></span></div></div>
       <div class="psim-legend"></div>
     </main>
     <aside class="psim-side"></aside>
@@ -2555,9 +2592,64 @@ function createInstrument(spec) {
   };
 
   let benchApi = null;
+  // ------------------------------------------------------------ timeline: the run's span and its key times
+  // spec.timeline = { duration, markers: [{ t, label, kind: 'computed' | 'measured' | 'requested' }], note }
+  // (each may also be a function of the sim). The run stops exactly at `duration`; markers are drawn
+  // on a bar under the time readout; clicking the bar jumps to that time (recomputing if earlier).
+  let tl = null;
+  const tlEl = $('.psim-timeline');
+  if (benchParts) benchParts.wrap.append(tlEl);              // inside the scene card in the workbench layout
+  const secTimeline = timelineSpec ? section(texts.timeline ?? 'Timeline', { aside: 'key times' }) : null;
+  const shortLabel = m => m.short ?? m.label.replace(/\s*\(.*$/, '').slice(0, 28);
+  function resolveTimeline() {
+    if (!timelineSpec) { tl = null; tlEl.hidden = true; return; }
+    const val = v => (typeof v === 'function' ? v(sim, values) : v);
+    // the run spans [start, duration] on the page's own clock: start = the sim's initial time (0 usually;
+    // e.g. −1 for a log₁₀ clock); duration is the END time on that clock
+    const start = Number.isFinite(+val(timelineSpec.start)) ? +val(timelineSpec.start) : (sim.t ?? 0);
+    const duration = +val(timelineSpec.duration);
+    if (!(duration > start)) throw new Error(`timeline.duration (the end time) must be later than the start ${start}`);
+    const span = duration - start, tol = 1e-9 * Math.max(Math.abs(duration), span);
+    const markers = (val(timelineSpec.markers) ?? []).filter(m => Number.isFinite(m.t));
+    for (const m of markers) if (m.t < start - tol || m.t > duration + tol) throw new Error(`timeline marker "${m.label}" at ${m.t} lies outside the run ${start}…${duration}`);
+    tl = { start, duration, markers, note: val(timelineSpec.note) ?? '' };
+    tlEl.hidden = false;
+    const fmt = t => (formatTime ? formatTime(t) : `${+t.toPrecision(4)} ${timeUnit}`);
+    // the bar: one tick per key time, short labels above (staggered when close), full text as a tooltip
+    const bar = tlEl.querySelector('.bar'), ticks = tlEl.querySelector('.ticks');
+    bar.querySelectorAll('.m').forEach(e => e.remove());
+    let lastX = -1, level = 0;
+    ticks.replaceChildren(...markers.slice().sort((a, b) => a.t - b.t).map(m => {
+      const x = 100 * (m.t - start) / span;
+      level = x - lastX < 22 ? 1 - level : 0; lastX = x;
+      bar.append(el('span', { class: `m ${m.kind ?? 'computed'}`, style: `left:${x.toFixed(3)}%`, title: `${m.label}: ${fmt(m.t)}` }));
+      const sl = shortLabel(m), withTime = /\d/.test(sl) ? sl : `${sl} · ${fmt(m.t)}`;   // no repeated time
+      // near the ends, anchor the label at its tick instead of centring it (never clipped by the bar's edges)
+      const anchor = x < 15 ? 'translateX(0)' : x > 85 ? 'translateX(-100%)' : 'translateX(-50%)';
+      return el('span', { class: `lab ${m.kind ?? 'computed'} r${level}`, style: `left:${x.toFixed(3)}%;transform:${anchor}`, title: `${m.label}: ${fmt(m.t)}` }, withTime);
+    }));
+    const [a, b] = tlEl.querySelectorAll('.ends span');
+    a.textContent = fmt(start); b.textContent = `${fmt(duration)} (end)`;
+    // the side panel lists every key time in full, with its kind, and the note
+    if (secTimeline) {
+      const kinds = { computed: 'computed in this model', measured: 'measured (literature)', requested: 'named in the request' };
+      secTimeline.body.replaceChildren(
+        row('run', `${fmt(start)} – ${fmt(duration)}`),
+        ...markers.map(m => el('div', { class: 'psim-tlrow' }, el('i', { class: m.kind ?? 'computed' }), el('span', {}, m.label), el('code', {}, fmt(m.t)), el('small', {}, kinds[m.kind ?? 'computed']))),
+        tl.note ? el('p', { class: 'psim-hint' }, tl.note) : null);
+    }
+  }
+  tlEl.querySelector('.bar').addEventListener('click', e => {
+    if (!tl) return;
+    const r = e.currentTarget.getBoundingClientRect(), T = tl.start + Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * (tl.duration - tl.start);
+    if (T < tDisplay) rebuild();
+    window.psim.advanceTo(T);
+  });
+
   function rebuild() {
     sim = create({ ...values });
     tDisplay = sim.t ?? 0;
+    resolveTimeline();
     diagPlot.clear();
     renderDiag(true);
     benchApi?.update?.(sim, tDisplay, { rebuilt: true });
@@ -2615,7 +2707,9 @@ function createInstrument(spec) {
   // A model that ends (a merger, everything decayed, the last particle left) sets sim.done (or
   // sim.ended): the clock stops there instead of counting time in which nothing is computed,
   // and play starts the run again from the beginning.
-  const isDone = () => sim?.done === true || sim?.ended === true;
+  // the end shown on the clock: exactly the declared duration when the steps' float sum lands within round-off of it
+  const endTime = () => (tl && Math.abs(sim.t - tl.duration) <= 1e-9 * Math.max(Math.abs(tl.duration), tl.duration - tl.start) ? tl.duration : tl ? Math.min(sim.t, tl.duration) : sim.t);
+  const isDone = () => sim?.done === true || sim?.ended === true || (tl != null && (sim?.t ?? 0) >= tl.duration - 1e-12 * Math.max(Math.abs(tl.duration), tl.duration - tl.start));
   function togglePlay() {
     if (!clock.playing && isDone()) { rebuild(); setPlaying(true); return; }
     setPlaying(!clock.playing);
@@ -2745,7 +2839,7 @@ function createInstrument(spec) {
     }),
   ));
 
-  side.append(...[secParams, secView, secDiag, secVerify, secModel, secExport].filter(s => s && (s !== secParams || params.length || controls)));
+  side.append(...[secParams, secView, secTimeline, secDiag, secVerify, secModel, secExport].filter(s => s && (s !== secParams || params.length || controls)));
   if (viewControls) viewControls(secView.body, { el, slider, select, toggle, button, view, getSim: () => sim });
   if (spec.extraSections) spec.extraSections(side, { section, el, row, slider, toggle, button, values, rebuild, view });
 
@@ -2787,7 +2881,7 @@ function createInstrument(spec) {
   function frame(now) {
     const frameStart = performance.now();
     if (timeDependent) {
-      const target = clock.tick(now, tDisplay);
+      const target = tl ? Math.min(tl.duration, clock.tick(now, tDisplay)) : clock.tick(now, tDisplay);
       if (target > tDisplay) {
         // frameBudget ms of computing per frame, checked after every step, so a slow step
         // (a Monte Carlo sweep) runs at most once past the budget; fast steps run in thousands
@@ -2798,7 +2892,7 @@ function createInstrument(spec) {
         }
         limited = sim.t < target && !isDone();
         tDisplay = Math.min(target, sim.t);
-        if (isDone()) { tDisplay = sim.t; setPlaying(false); }
+        if (isDone()) { tDisplay = endTime(); setPlaying(false); }
       }
     }
     if (glLayer?.ok) { glLayer.sync(view.dpr); drawGL?.(glLayer.gl, sim, view, tDisplay); }
@@ -2810,10 +2904,11 @@ function createInstrument(spec) {
       lastUi = now;
       const d = renderDiag();
       hud.t.textContent = timeDependent ? (formatTime ? formatTime(tDisplay) : `${fix(tDisplay, timeDigits)} ${timeUnit}`) : '';
+      if (tl) tlEl.querySelector('.fill').style.width = `${(100 * Math.max(0, Math.min(1, (tDisplay - tl.start) / (tl.duration - tl.start)))).toFixed(2)}%`;
       const firstErr = d.find(x => x.kind === 'error' && !x.pending);
       hud.a.textContent = firstErr && hudError ? `${firstErr.label} ${sci(firstErr.value)}` : '';
       hud.b.textContent = spec.hudLine?.(sim) ?? '';
-      hud.flag.textContent = isDone() ? (texts.finished ?? 'finished: the computed run ends here (play starts again)')
+      hud.flag.textContent = isDone() ? (texts.finished ?? 'finished · play restarts')
         : limited ? 'compute-limited: playback slowed to keep the calculation exact' : '';
       benchApi?.update?.(sim, tDisplay, { rebuilt: false });
       status.set('t', timeDependent ? tDisplay : 1);
@@ -2829,7 +2924,14 @@ function createInstrument(spec) {
     get t() { return tDisplay; },
     state: () => ({ t: sim.t, ...sim.state() }),
     params: () => ({ ...values }),
-    advanceTo: t => { while (sim.t < t && !isDone()) sim.step(); tDisplay = Math.max(tDisplay, Math.min(t, sim.t)); return window.psim.state(); },
+    advanceTo: t => {
+      const T = tl ? Math.min(t, tl.duration) : t;
+      while (sim.t < T && !isDone()) sim.step();
+      tDisplay = isDone() ? endTime() : Math.max(tDisplay, Math.min(T, sim.t));
+      return window.psim.state();
+    },
+    /** The run's declared span and key times ({ duration, markers, note }), or null. */
+    get timeline() { return tl ? { start: tl.start, duration: tl.duration, markers: tl.markers.map(m => ({ ...m })), note: tl.note } : null; },
     get done() { return isDone(); },
     restart: () => rebuild(),
     setParams: (next, opts) => setParams(next, opts),
@@ -3404,14 +3506,16 @@ function solveTridiagonal(a, b, c, d) {
  * Wilkinson shifts; Numerical Recipes "tqli"). diag: n diagonal entries; off: n−1 entries
  * coupling i and i+1. Returns { values, vectors } with vectors[i] the unit eigenvector of
  * values[i] (unsorted). Cost O(n³) with eigenvectors: fine to n ≈ 500 in a browser.
+ * { vectors: false } returns eigenvalues only, in O(n²) (n = 10⁴ in ~3 s); for the lowest few use
+ * lowestTridiagonal (bisection, O(n) per level).
  */
-function eigenTridiagonal(diag, off) {
+function eigenTridiagonal(diag, off, { vectors: wantVectors = true } = {}) {
   const n = diag.length;
   if (off.length !== n - 1) throw new Error('eigenTridiagonal: off must have n − 1 entries');
   const d = Float64Array.from(diag), e = new Float64Array(n);
   e.set(off);
-  const z = new Float64Array(n * n);
-  for (let i = 0; i < n; i++) z[i * n + i] = 1;
+  const z = wantVectors ? new Float64Array(n * n) : null;
+  if (z) for (let i = 0; i < n; i++) z[i * n + i] = 1;
   for (let l = 0; l < n; l++) {
     let iter = 0, m;
     do {
@@ -3437,19 +3541,56 @@ function eigenTridiagonal(diag, off) {
           p = s * r;
           d[i + 1] = g + p;
           g = c * r - b;
-          for (let k = 0; k < n; k++) {
+          if (z) {for (let k = 0; k < n; k++) {
             f = z[k * n + i + 1];
             z[k * n + i + 1] = s * z[k * n + i] + c * f;
             z[k * n + i] = c * z[k * n + i] - s * f;
-          }
+          }}
         }
         if (r === 0 && i >= l) continue;
         d[l] -= p; e[l] = g; e[m] = 0;
       }
     } while (m !== l);
   }
+  if (!z) return { values: Array.from(d) };
   const vectors = Array.from({ length: n }, (_v, i) => Float64Array.from({ length: n }, (_w, k) => z[k * n + i]));
   return { values: Array.from(d), vectors };
+}
+
+/**
+ * The k lowest eigenvalues of a symmetric tridiagonal matrix by Sturm-sequence bisection:
+ * O(n · 64) per eigenvalue, accurate to round-off, exact ordering (no missed or merged levels,
+ * also for near-degenerate tunnelling doublets). Returns ascending values.
+ */
+function lowestTridiagonal(diag, off, k) {
+  const n = diag.length;
+  if (off.length !== n - 1) throw new Error('lowestTridiagonal: off must have n − 1 entries');
+  let lo = Infinity, hi = -Infinity;
+  for (let i = 0; i < n; i++) {                                 // Gershgorin bounds
+    const r = (i > 0 ? Math.abs(off[i - 1]) : 0) + (i < n - 1 ? Math.abs(off[i]) : 0);
+    lo = Math.min(lo, diag[i] - r); hi = Math.max(hi, diag[i] + r);
+  }
+  const e2 = Float64Array.from(off, v => v * v), tiny = Number.MIN_VALUE * 1e10 + 1e-300;
+  const below = x => {                                           // number of eigenvalues < x
+    let c = 0, q = diag[0] - x;
+    if (q < 0) c++;
+    for (let i = 1; i < n; i++) {
+      q = diag[i] - x - e2[i - 1] / (q !== 0 ? q : tiny);
+      if (q < 0) c++;
+    }
+    return c;
+  };
+  const out = [];
+  for (let j = 0; j < Math.min(k, n); j++) {
+    let a = j ? out[j - 1] : lo, b = hi;
+    for (let it = 0; it < 200 && b - a > 2 * Number.EPSILON * Math.max(Math.abs(a), Math.abs(b), 1e-300); it++) {
+      const m = 0.5 * (a + b);
+      if (m === a || m === b) break;
+      if (below(m) > j) b = m; else a = m;
+    }
+    out.push(0.5 * (a + b));
+  }
+  return out;
 }
 
 /** Least-squares fit y ≈ a + b x. Returns { a, b, r2 }. */
@@ -3489,7 +3630,7 @@ function meanWithError(xs, minBins = 16) {
   return { mean, error: best };
 }
 
-return { rng, rngFor, fft, fftFreq, rk4Step, DORMAND_PRINCE, dopri5, gaussLegendreNodes, gaussLegendre, adaptiveSimpson, integrateToInfinity, brent, lgamma, gamma, factorial, erf, gammaP, gammaQ, besselI, besselJ, besselJZeros, ellipticK, laguerre, legendreP, normalizedLegendre, realYlm, complexYlm, hydrogenRadial, solveTridiagonal, eigenTridiagonal, linearFit, meanWithError };
+return { rng, rngFor, fft, fftFreq, rk4Step, DORMAND_PRINCE, dopri5, gaussLegendreNodes, gaussLegendre, adaptiveSimpson, integrateToInfinity, brent, lgamma, gamma, factorial, erf, gammaP, gammaQ, besselI, besselJ, besselJZeros, ellipticK, laguerre, legendreP, normalizedLegendre, realYlm, complexYlm, hydrogenRadial, solveTridiagonal, eigenTridiagonal, lowestTridiagonal, linearFit, meanWithError };
 })();
 
 // ---- psim:core/constants.mjs
@@ -4168,6 +4309,20 @@ function eigenvalues(spec, discretization) {
     return finite(value, 'fields Fourier operator');
   });
 }
+/** Kinetic energy ħ²Σ k_a²/(2 m_a) of every Fourier mode; mass is a number or one value per axis. */
+function kineticEnergies(spec, mass, hbar) {
+  const m = typeof mass === 'number' ? spec.shape.map(() => mass) : Array.from(mass);
+  if (m.length !== spec.shape.length || !m.every(v => v > 0)) throw new Error('fields: mass must be positive (a number or one per axis)');
+  return Float64Array.from({ length: spec.size }, (_, index) => {
+    let e = 0;
+    for (let axis = 0; axis < spec.shape.length; axis++) {
+      const n = spec.shape[axis], i = Math.floor(index / spec.strides[axis]) % n, mode = i < n / 2 ? i : i - n;
+      const k = 2 * Math.PI * mode / n / spec.spacing[axis];
+      e += hbar * hbar * k * k / (2 * m[axis]);
+    }
+    return e;
+  });
+}
 function mean(values) {
   let result = 0, correction = 0;
   for (const value of values) {
@@ -4257,10 +4412,10 @@ function schrodingerND({ re0, im0, V, shape, spacing = 1, dt, mass = 1, hbar = 1
   const spec = grid(shape, spacing); fftGrid(shape); field(re0, spec.size, 'schrodingerND');
   if (im0) field(im0, spec.size, 'schrodingerND');
   if (V) field(V, spec.size, 'schrodingerND potential');
-  positive(dt, 'schrodingerND dt'); positive(mass, 'schrodingerND mass'); positive(hbar, 'schrodingerND hbar'); finite(t0, 'schrodingerND t0');
-  const lambda = eigenvalues(spec, 'spectral');
+  positive(dt, 'schrodingerND dt'); positive(hbar, 'schrodingerND hbar'); finite(t0, 'schrodingerND t0');
+  const Tk = kineticEnergies(spec, mass, hbar);                // per-axis masses allowed (anisotropic kinetic energy)
   const halfV = Float64Array.from({ length: spec.size }, (_, i) => finite(-(V?.[i] ?? 0) / hbar * (dt / 2), 'schrodingerND potential phase'));
-  const kinetic = Float64Array.from(lambda, value => finite(-hbar / mass * (value / 2) * dt, 'schrodingerND kinetic phase'));
+  const kinetic = Float64Array.from(Tk, value => finite(-value / hbar * dt, 'schrodingerND kinetic phase'));
   const re = Float64Array.from(re0), im = im0 ? Float64Array.from(im0) : new Float64Array(spec.size);
   const workRe = new Float64Array(spec.size), workIm = new Float64Array(spec.size), cellVolume = volume(spec);
   let halfDamp = null;                                    // e^{−W dt/2ħ} per cell, applied with each potential half-step
@@ -4311,6 +4466,17 @@ function schrodingerND({ re0, im0, V, shape, spacing = 1, dt, mass = 1, hbar = 1
     norm() { return finite(mean(s.probability()) * spec.size * cellVolume, 'schrodingerND norm'); },
     /** Probability removed by the absorbing layers so far (0 without absorb). */
     absorbed() { return halfDamp ? Math.max(0, initialNorm - s.norm()) : 0; },
+    /**
+     * ⟨H⟩ = ⟨T⟩ + ⟨V⟩ per unit norm (kinetic part spectral, exact for the grid). The split-operator
+     * scheme keeps it bounded with an O(Δt²) oscillation, not exactly constant: judge it by order.
+     */
+    energy() {
+      workRe.set(re); workIm.set(im); transform(workRe, workIm, spec, false);
+      let t = 0, w = 0, v = 0, nrm = 0;
+      for (let i = 0; i < spec.size; i++) { const a = workRe[i] * workRe[i] + workIm[i] * workIm[i]; t += a * Tk[i]; w += a; }
+      for (let i = 0; i < spec.size; i++) { const a = re[i] * re[i] + im[i] * im[i]; v += a * (V?.[i] ?? 0); nrm += a; }
+      return t / w + v / nrm;
+    },
   };
   const initialNorm = s.norm();
   return s;
@@ -4443,7 +4609,79 @@ function densityLevel(values, fraction) {
   return 0;
 }
 
-return { laplacianND, gradientND, divergenceND, fftND, solvePoissonPeriodic, diffusionPeriodic, schrodingerND, fftAxis, phaseWinding, probabilityCurrent, contourLines, densityLevel };
+/**
+ * Two coupled surfaces (nonadiabatic dynamics: conical intersections, avoided crossings, curve
+ * crossing): i ħ ∂ψ_k/∂t = T ψ_k + Σ_l V_kl ψ_l with a real symmetric 2×2 diabatic potential matrix
+ * (V11, V22, V12 arrays on the grid). Strang splitting: exact exp(−iVΔt/2ħ) of the 2×2 matrix at
+ * every point, shared spectral kinetic step (mass a number or per axis). Second order in Δt,
+ * unitary to round-off. Returns { t, psi: [{ re, im }, { re, im }], step(), advanceTo(t),
+ * populations() → [P1, P2] (diabatic), norm(), energy() }.
+ */
+function coupledSchrodinger2({ psi0, V11, V22, V12, shape, spacing = 1, dt, mass = 1, hbar = 1, t0 = 0 }) {
+  const spec = grid(shape, spacing); fftGrid(shape);
+  if (!Array.isArray(psi0) || psi0.length !== 2) throw new Error('coupledSchrodinger2: psi0 must be [{ re, im }, { re, im }]');
+  for (const a of [V11, V22, V12]) field(a, spec.size, 'coupledSchrodinger2 potential');
+  positive(dt, 'coupledSchrodinger2 dt');
+  const n = spec.size, vol = volume(spec), tau = dt / (2 * hbar);
+  const psi = psi0.map(p => ({ re: Float64Array.from(p.re), im: p.im ? Float64Array.from(p.im) : new Float64Array(n) }));
+  const Tk = kineticEnergies(spec, mass, hbar), kC = Float64Array.from(Tk, e => Math.cos(-e * dt / hbar)), kS = Float64Array.from(Tk, e => Math.sin(-e * dt / hbar));
+  // exp(−iHτ) = e^{−i m τ} [cos(rτ) − i sin(rτ)(d σ_z + c σ_x)/r], H = [[m + d, c], [c, m − d]]
+  const P = { pr: new Float64Array(n), pi: new Float64Array(n), a: new Float64Array(n), b: new Float64Array(n), c: new Float64Array(n) };
+  for (let i = 0; i < n; i++) {
+    const m = (V11[i] + V22[i]) / 2, d = (V11[i] - V22[i]) / 2, c = V12[i], r = Math.hypot(d, c);
+    P.pr[i] = Math.cos(-m * tau); P.pi[i] = Math.sin(-m * tau);
+    P.a[i] = Math.cos(r * tau); const sr = r > 0 ? Math.sin(r * tau) / r : tau;
+    P.b[i] = sr * d; P.c[i] = sr * c;                            // −i·(b σ_z + c σ_x)
+  }
+  const potential = () => {
+    const [u, w] = psi;
+    for (let i = 0; i < n; i++) {
+      // [x1; x2] = (a − i b σz − i c σx)[u; w]
+      const ur = u.re[i], ui = u.im[i], wr = w.re[i], wi = w.im[i], a = P.a[i], b = P.b[i], c = P.c[i];
+      const x1r = a * ur + b * ui + c * wi, x1i = a * ui - b * ur - c * wr;
+      const x2r = a * wr - b * wi + c * ui, x2i = a * wi + b * wr - c * ur;
+      const pr = P.pr[i], pi = P.pi[i];
+      u.re[i] = pr * x1r - pi * x1i; u.im[i] = pr * x1i + pi * x1r;
+      w.re[i] = pr * x2r - pi * x2i; w.im[i] = pr * x2i + pi * x2r;
+    }
+  };
+  const kinetic = () => {
+    for (const p of psi) {
+      transform(p.re, p.im, spec, false);
+      for (let i = 0; i < n; i++) { const a = p.re[i], b = p.im[i]; p.re[i] = a * kC[i] - b * kS[i]; p.im[i] = a * kS[i] + b * kC[i]; }
+      transform(p.re, p.im, spec, true);
+    }
+  };
+  const pop = p => { let s = 0; for (let i = 0; i < n; i++) s += p.re[i] * p.re[i] + p.im[i] * p.im[i]; return s * vol; };
+  const s = {
+    t: t0, psi, steps: 0,
+    step() {
+      potential(); kinetic(); potential();
+      if (!Number.isFinite(psi[0].re[0] + psi[1].re[0])) throw new Error(`coupledSchrodinger2: non-finite state at t = ${s.t}`);
+      s.t += dt; s.steps++;
+    },
+    advanceTo(target) { while (s.t < target - 1e-12 * dt) s.step(); return s; },
+    populations: () => psi.map(pop),
+    norm: () => pop(psi[0]) + pop(psi[1]),
+    energy() {
+      let e = 0;
+      for (const p of psi) {
+        const r = Float64Array.from(p.re), im = Float64Array.from(p.im); transform(r, im, spec, false);
+        let t = 0; for (let i = 0; i < n; i++) t += (r[i] * r[i] + im[i] * im[i]) * Tk[i];
+        e += t / n * vol;                                          // Parseval: Σ|ψ̃|² = n Σ|ψ|²
+      }
+      const [u, w] = psi;
+      for (let i = 0; i < n; i++) {
+        e += vol * (V11[i] * (u.re[i] ** 2 + u.im[i] ** 2) + V22[i] * (w.re[i] ** 2 + w.im[i] ** 2) + 2 * V12[i] * (u.re[i] * w.re[i] + u.im[i] * w.im[i]));
+      }
+      return e / s.norm();
+    },
+  };
+  return s;
+}
+
+
+return { laplacianND, gradientND, divergenceND, fftND, solvePoissonPeriodic, diffusionPeriodic, schrodingerND, fftAxis, phaseWinding, probabilityCurrent, contourLines, densityLevel, coupledSchrodinger2 };
 })();
 
 // ---- psim:core/pde.mjs
@@ -4459,7 +4697,7 @@ __psim["core/pde.mjs"] = (() => {
 //
 // Boundary conditions as in laplacianND: 'dirichlet' (zero ghost values), 'neumann' (copied
 // edge-cell ghosts: zero face flux, cell-centred) or 'periodic'.
-const { solveTridiagonal, eigenTridiagonal, dopri5, gaussLegendre } = __psim["core/numerics.mjs"];
+const { solveTridiagonal, lowestTridiagonal, dopri5, gaussLegendre } = __psim["core/numerics.mjs"];
 const { laplacianND } = __psim["core/fields.mjs"];
 const BCS = ['dirichlet', 'neumann', 'periodic'];
 const checkGrid = (u, dx, who) => {
@@ -4605,25 +4843,40 @@ function waveND({ u0, v0, shape, spacing = 1, bc = 'dirichlet', mask, maskBc, c,
  * Lowest stationary states of H = −ħ²/2m d²/dx² + V(x) on a grid with ψ = 0 beyond both ends
  * (second-order finite differences). Returns { energies, states } with states normalised so that
  * Σ|ψ|²dx = 1. Accuracy O(dx²); confine the domain so ψ is negligible at the walls.
- * Uses the O(n²) tridiagonal eigensolver, so fine grids (thousands of points) stay fast.
+ * The `count` lowest energies by Sturm bisection and their states by shifted inverse iteration
+ * (both O(n) per level), orthogonalised within near-degenerate groups (tunnelling doublets):
+ * 10⁴ grid points take milliseconds.
  */
 function stationaryStates1D({ V, dx, count = 5, mass = 1, hbar = 1 }) {
   const n = V.length;
   if (!(n >= 3) || !(dx > 0)) throw new Error('stationaryStates1D: need ≥ 3 grid points and dx > 0');
   const t = hbar * hbar / (2 * mass * dx * dx);
   const diag = Float64Array.from(V, v => v + 2 * t), off = new Float64Array(n - 1).fill(-t);
-  const { values, vectors } = eigenTridiagonal(diag, off);
-  const order = [...values.keys()].sort((p, q) => values[p] - values[q]).slice(0, count);
-  return {
-    energies: order.map(i => values[i]),
-    states: order.map(i => {
-      const v = vectors[i];
-      let s2 = 0; for (const a of v) s2 += a * a;
+  const energies = lowestTridiagonal(diag, off, count);
+  const scale = Math.max(...energies.map(Math.abs), t);
+  const states = [];
+  energies.forEach((E, k) => {
+    // shifted inverse iteration: (H − (E + δ)) x = b converges to the eigenvector of E
+    const shift = E + 1e-10 * scale * (1 + k * 1e-3);
+    const a = new Float64Array(n).fill(-t), c = new Float64Array(n).fill(-t), b = Float64Array.from(diag, v => v - shift);
+    let x = Float64Array.from({ length: n }, (_, i) => Math.sin((k + 1) * Math.PI * (i + 1) / (n + 1)) + 1e-3 * Math.cos(7.3 * i));
+    for (let it = 0; it < 4; it++) {
+      x = solveTridiagonal(a, b, c, x);
+      // remove components along already-found states of nearly equal energy (degenerate or doublet pairs)
+      states.forEach((v, j) => {
+        if (Math.abs(energies[j] - E) > 1e-6 * scale) return;
+        let d = 0; for (let i = 0; i < n; i++) d += v[i] * x[i] * dx;
+        for (let i = 0; i < n; i++) x[i] -= d * v[i];
+      });
+      let s2 = 0; for (const v of x) s2 += v * v;
       const f = 1 / Math.sqrt(s2 * dx);
-      const sign = v.find(a => Math.abs(a) > 1e-12) > 0 ? 1 : -1;   // first lobe positive
-      return Float64Array.from(v, a => sign * a * f);
-    }),
-  };
+      for (let i = 0; i < n; i++) x[i] *= f;
+    }
+    let peak = 0; for (const v of x) peak = Math.max(peak, Math.abs(v));
+    const sign = x.find(v => Math.abs(v) > 1e-6 * peak) > 0 ? 1 : -1;   // first lobe positive
+    states.push(Float64Array.from(x, v => sign * v));
+  });
+  return { energies, states };
 }
 
 /**
@@ -5900,7 +6153,26 @@ const { createInstrument } = __psim["ui/instrument-app.mjs"];
 const { el, slider, button, cssVar } = __psim["ui/instrument.mjs"];
 const { orbitCamera, createPointRenderer, createSphereRenderer, createLineRenderer, polylines, drawColorBar } = __psim["ui/gl.mjs"];
 const { rng } = __psim["core/numerics.mjs"];
-const { PARAMS, createSim, basePair, timeOf, fmtTime, sciTxt, mutationBudget, KB, SLOCOMBE, SEPARATION_TIMES, ERROR_RATES } = __psim["local:physics.mjs"];
+const { PARAMS, createSim, basePair, timeOf, fmtTime, sciTxt, mutationBudget, KB, SLOCOMBE, SEPARATION_TIMES, ERROR_RATES, TAU0 } = __psim["local:physics.mjs"];
+// ------------------------------------------------------------------ timeline on the logarithmic clock
+// Progress coordinate shown by the shell: u = log₁₀(t / 0.1 fs) = τ − TAU0 ≥ 0 (the shell's run bar starts at 0;
+// the physics module's τ = log₁₀(t/fs) starts at TAU0 = −1). All timeline values below are in u.
+const U = tFs => Math.log10(tFs) - TAU0;
+const MARGIN = Math.log10(1.5);                                // ×1.5 in time = +0.18 decades
+/** First grid time after which P_T and P_x stay within 1 % of their thermal values (from the computed curve). */
+function equilibrated(sim) {
+  const c = sim.curve, m = sim.model; let last = -1;
+  for (let i = 0; i < c.tau.length; i++) if (Math.abs(c.Ps[i] / m.PsEq - 1) > 0.01 || Math.abs(c.Px[i] / m.PxEq - 1) > 0.01) last = i;
+  return last + 1 < c.tau.length ? c.tau[last + 1] - TAU0 : NaN;    // u; NaN: not within the computed range
+}
+/** Run end (u): equilibrium or the mean tautomer-formation time τ_F, whichever is later, ×1.5; at most the model's end. */
+function runEnd(sim) {
+  const ueq = equilibrated(sim), uF = Number.isFinite(sim.model.tauF) ? U(sim.model.tauF) : Infinity;
+  const want = Math.max(Number.isFinite(ueq) ? ueq : Infinity, uF) + MARGIN;
+  return Math.min(sim.tauEnd - TAU0, want);
+}
+const shiftClock = sim => Object.create(sim, { t: { get: () => sim.t - TAU0 } });   // same model, clock in u
+
 // ------------------------------------------------------------------ 3D scene (representation only)
 const BP = basePair();
 const cam = orbitCamera({ target: [-0.4, 0, 0], distance: 14, yaw: 0.0, pitch: 1.05, minDistance: 4, maxDistance: 40 });
@@ -6021,7 +6293,7 @@ function draw(ctx, sim, view) {
   ctx.font = `${narrow ? 10.5 : 12}px ui-monospace, Menlo, monospace`;
   if (!narrow) lines.forEach(([t, col], i) => { ctx.fillStyle = col; ctx.fillText(t, 14, view.H - 64 - (lines.length - 1 - i) * (narrow ? 14 : 16)); });
   const cbw = narrow ? 150 : 220;
-  drawColorBar(ctx, { x: narrow ? (view.W - cbw) / 2 : view.W - cbw - 24, y: narrow ? view.H * 0.33 : view.H - 96, width: cbw, height: 9, horizontal: true, colormap: 'inferno', range: [1e-14, 10], log: true, format: e => (e % 4 === 0 ? (e === 0 ? '1' : `10${String(e).replace('-', '⁻').replace(/\d/g, d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d])}`) : ''), label: 'beads: n(x) along the H-bond (Å⁻¹)' });
+  drawColorBar(ctx, { x: narrow ? (view.W - cbw) / 2 : view.W - cbw - 24, y: narrow ? view.H * 0.33 : view.H - 124, width: cbw, height: 9, horizontal: true, colormap: 'inferno', range: [1e-14, 10], log: true, format: e => (e % 4 === 0 ? (e === 0 ? '1' : `10${String(e).replace('-', '⁻').replace(/\d/g, d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d])}`) : ''), label: 'beads: n(x) along the H-bond (Å⁻¹)' });
 }
 
 // ------------------------------------------------------------------ mutation-budget bar chart (2D canvas)
@@ -6161,7 +6433,7 @@ function bench({ eqs, figs, createPlot, createEquation, M, getSim }) {
         const pos = (arr) => ts.map((t, i) => [t, arr[i]]).filter(p => p[1] > 0);
         const all = [...c.Px, ...c.Ps, ...c.PxClosedMin, m.PsEq, m.PclEq, m.PxEq].filter(v => v > 0);
         const ymin = Math.max(1e-40, 10 ** Math.floor(Math.log10(Math.min(...all)) - 0.5));
-        pops.setX({ min: timeOf(c.tau[0]), max: timeOf(c.tau[c.tau.length - 1]) }).setY({ min: ymin, max: 1, auto: false });
+        pops.setX({ min: timeOf(c.tau[0]), max: timeOf(runEnd(sim) + TAU0) }).setY({ min: ymin, max: 1, auto: false });
         pops.data('px', pos(c.Px), { color: '--body-2', label: 'P_x with environment', width: 2 });
         pops.data('ps', pos(c.Ps), { color: '--body-0', label: 'P_T (tautomer states) with environment', width: 2 });
         pops.data('cmax', pos(c.PxClosedMax), { color: '--muted', label: 'P_x isolated proton (envelope)', dash: true, width: 1.2 });
@@ -6209,10 +6481,27 @@ createInstrument({
   tier: 'approximate',
   tierReason: 'Reduced model: one effective proton-transfer coordinate with a quartic potential whose barrier and asymmetry are taken from Slocombe et al. (2022) and whose width and bath coupling are illustrative; weak-coupling Markovian environment. The numerics are verified (instanton splitting, perturbation theory, finite differences, split-operator TDSE, RK4 Lindblad, detailed balance), the biological conclusion is model-dependent.',
   layout: 'workbench',
-  params: PARAMS, create: createSim,
+  params: PARAMS, create: p => shiftClock(createSim(p)),
   gl: true, drawGL, draw, bench,
+  timeline: {
+    duration: sim => runEnd(sim),
+    markers: sim => {
+      const m = sim.model, ueq = equilibrated(sim), ms = [];
+      if (m.tauT > 0 && Number.isFinite(m.tauT)) ms.push({ t: U(m.tauT), label: 'tautomer lifetime τ_T (mean first-passage time back to the canonical side)', short: `τ_T ${fmtTime(m.tauT)}`, kind: 'computed' });
+      if (Number.isFinite(ueq)) ms.push({ t: ueq, label: 'equilibrium: P_T and P_x within 1 % of their thermal values (from the computed curve)', short: `eq. ${fmtTime(timeOf(ueq + TAU0))}`, kind: 'computed' });
+      const hel = SEPARATION_TIMES[2];
+      ms.push({ t: U(hel.t * 1e15), label: `strand separation by helicase, t ≫ ${hel.label} (Slocombe et al., Commun. Phys. 2022)`, short: `≫${hel.label}`, kind: 'measured' });
+      if (Number.isFinite(m.tauF)) ms.push({ t: U(m.tauF), label: 'tautomer formation time τ_F (mean first-passage time canonical → tautomer)', short: `τ_F ${fmtTime(m.tauF)}`, kind: 'computed' });
+      return ms.filter(q => q.t >= 0 && q.t <= runEnd(sim) + 1e-12);
+    },
+    note: sim => {
+      const m = sim.model, ueq = equilibrated(sim), end = fmtTime(timeOf(runEnd(sim) + TAU0));
+      return `Logarithmic clock from 0.1 fs to ${end}. The populations reach equilibrium ${Number.isFinite(ueq) ? `by ${fmtTime(timeOf(ueq + TAU0))}` : 'beyond the computed range'}; the run continues to 1.5 τ_F so it covers the mean time for one base pair to form a tautomer (τ_F ${fmtTime(m.tauF)}), after which nothing further changes.`
+        + (runEnd(sim) < sim.tauEnd - TAU0 - 1e-9 ? '' : ' Here the run is limited by the model’s computed range.');
+    },
+  },
   timeUnit: 'decades', timeLabel: 'time since start (log clock)',
-  formatTime: tau => `t = ${fmtTime(timeOf(tau))}`,
+  formatTime: u => `t = ${fmtTime(timeOf(u + TAU0))}`,
   speed: 0.6, speedRange: [0.05, 6],
   hudLine: sim => `P_T ${sciTxt(sim.now.Ps)} · P_x ${sciTxt(sim.now.Px)}`,
   onPointer(canvas) { cam.attach(canvas); },
@@ -6259,7 +6548,7 @@ createInstrument({
 // GPU self-test: the cloud's fraction beyond the barrier matches the computed P_x, and a cloud point renders where the camera projects it
 window.psim.selfTest = () => {
   const sim = window.psim.getSim();
-  window.psim.advanceTo(1.5);
+  window.psim.advanceTo(1.5 - TAU0);                     // τ = 1.5 (t ≈ 32 fs); the clock runs in u = τ − TAU0
   const s = sim.now, m = sim.model;
   // fraction of quantile points beyond x‡ vs P_x: exact up to 1/NP
   const n = s.n; let cum = 0, tot = 0; for (let g = 1; g < n.length; g++) { const v = 0.5 * (n[g] + n[g - 1]) * m.hf; tot += v; if (m.fx[g] > m.pot.xb) cum += v; }

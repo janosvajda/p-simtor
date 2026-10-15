@@ -154,6 +154,12 @@ createInstrument({
   params: PARAMS,
   create: createSim,
   draw, onPointer,
+  // ten gyrations: enough to see the circular (or drifting helical) motion and the energy error stay flat
+  timeline: {
+    duration: sim => 10 * sim.analytic.period * 1e9,
+    markers: sim => [{ t: sim.analytic.period * 1e9, label: 'one gyroperiod T = 2πγm/(qB) (computed)', short: 'gyroperiod T', kind: 'computed' }],
+    note: 'Run length: ten gyroperiods.',
+  },
   timeUnit: 'ns',
   speed: 30,
   duration: 1000,

@@ -93,7 +93,11 @@ You can also just describe what you want ("simulate the planets orbiting the Sun
 
 ## Demos
 
-The demos were generated in a separate project with the skill installed. They are computed live in your browser; nothing is pre-recorded video. Apart from being rebuilt with the latest runtime, they are published as generated, with two kinds of edits: a slider hint in the 4D lattice demo wrongly said that single gauge links approach the identity and was corrected, and five demos with a natural end (wave-packet tunnelling, black-hole inspiral, Stern–Gerlach, bubble chamber, decay chain) were given a one-line end-of-run marker so their clock stops there.
+The demos were generated in a separate project with the skill installed. They are computed live in your browser; nothing is pre-recorded video. Apart from being rebuilt with the latest runtime, they are published as generated, with these later edits to page code (never to the physics or its verification):
+- every evolving demo got a **timeline**: the run's span chosen from the question, its key times computed by the model and marked on a bar, and a clock that stops exactly at the end (the vision demo now runs to 300 fs, covering the ≈200 fs process, with a labelled option to continue to 1000 fs);
+- five demos got an end-of-run marker before timelines existed; two self-tests were corrected for their non-default modes; three GPU self-tests (Rutherford, Stern–Gerlach, weak force) were changed to read pixels with `window.psim.nextFrame()`;
+- a slider hint in the 4D lattice demo wrongly said that single gauge links approach the identity and was corrected.
+Each demo's `REPLY.md` in the generating project records its timeline and why.
 
 <!-- demos:start -->
 

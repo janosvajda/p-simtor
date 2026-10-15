@@ -15,6 +15,7 @@ createInstrument({
   title: 'GPU renderer check', subtitle: 'Test fixture for ui/gl.mjs', tier: 'conceptual', tierReason: 'Test fixture only.',
   params: PARAMS, create: createSim, gl: true, timeUnit: 's',
   presets: [{ label: 'Few points, viridis', values: { n: 12, map: 'viridis' } }],
+  timeline: { duration: 20, markers: [{ t: 5, label: 'computed event', kind: 'computed' }, { t: 12, label: 'requested time', kind: 'requested' }], note: 'test fixture timeline' },
   model: { legend: ['ring: points coloured by index (inferno)', 'blob: Gaussian density, emission'] },
   onPointer(canvas) { cam.attach(canvas); },
   viewControls(body, { slider, view }) {

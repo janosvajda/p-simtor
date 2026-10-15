@@ -35,9 +35,11 @@ export function createInstrument(spec) {
   const {
     title, subtitle = '', tier, tierReason, create, draw, params = [], model = {},
     timeUnit = 'T', timeLabel = 'simulated time', speed: speed0 = 1, gl: wantGL = false, drawGL, controls, onPointer, layout = 'stage', bench,
-    presets = [], texts = {}, hudError = true, formatTime, timeDigits = 3, frameBudget = 9, speedRange, viewControls, testSteps = 300,
-    glResolution = 'auto',
+    presets = [], texts = {}, hudError = true, formatTime, timeDigits: digitsGiven, frameBudget = 9, speedRange, viewControls, testSteps = 300,
+    glResolution = 'auto', timeline: timelineSpec,
   } = spec;
+  // counted progress (sweeps, steps, generations, events) shows whole numbers unless told otherwise
+  const timeDigits = digitsGiven ?? (/sweep|step|generation|event|iteration|cycle|round/i.test(timeUnit) ? 0 : 3);
   if (!TIERS[tier]) throw new Error(`tier must be one of ${Object.keys(TIERS).join(', ')}`);
   const report = readJsonScript('psim-verification');
   if (report) validateModuleReport(report);
@@ -58,6 +60,7 @@ export function createInstrument(spec) {
     </header>
     <main class="psim-stage"><canvas></canvas>
       <div class="psim-hud"><span class="dim"></span><b>0</b><span class="h1"></span><span class="dim h2"></span><span class="flag"></span></div>
+      <div class="psim-timeline" hidden><div class="ticks"></div><div class="bar"><i class="fill"></i></div><div class="ends"><span></span><span></span></div></div>
       <div class="psim-legend"></div>
     </main>
     <aside class="psim-side"></aside>
@@ -108,9 +111,64 @@ export function createInstrument(spec) {
   };
 
   let benchApi = null;
+  // ------------------------------------------------------------ timeline: the run's span and its key times
+  // spec.timeline = { duration, markers: [{ t, label, kind: 'computed' | 'measured' | 'requested' }], note }
+  // (each may also be a function of the sim). The run stops exactly at `duration`; markers are drawn
+  // on a bar under the time readout; clicking the bar jumps to that time (recomputing if earlier).
+  let tl = null;
+  const tlEl = $('.psim-timeline');
+  if (benchParts) benchParts.wrap.append(tlEl);              // inside the scene card in the workbench layout
+  const secTimeline = timelineSpec ? section(texts.timeline ?? 'Timeline', { aside: 'key times' }) : null;
+  const shortLabel = m => m.short ?? m.label.replace(/\s*\(.*$/, '').slice(0, 28);
+  function resolveTimeline() {
+    if (!timelineSpec) { tl = null; tlEl.hidden = true; return; }
+    const val = v => (typeof v === 'function' ? v(sim, values) : v);
+    // the run spans [start, duration] on the page's own clock: start = the sim's initial time (0 usually;
+    // e.g. −1 for a log₁₀ clock); duration is the END time on that clock
+    const start = Number.isFinite(+val(timelineSpec.start)) ? +val(timelineSpec.start) : (sim.t ?? 0);
+    const duration = +val(timelineSpec.duration);
+    if (!(duration > start)) throw new Error(`timeline.duration (the end time) must be later than the start ${start}`);
+    const span = duration - start, tol = 1e-9 * Math.max(Math.abs(duration), span);
+    const markers = (val(timelineSpec.markers) ?? []).filter(m => Number.isFinite(m.t));
+    for (const m of markers) if (m.t < start - tol || m.t > duration + tol) throw new Error(`timeline marker "${m.label}" at ${m.t} lies outside the run ${start}…${duration}`);
+    tl = { start, duration, markers, note: val(timelineSpec.note) ?? '' };
+    tlEl.hidden = false;
+    const fmt = t => (formatTime ? formatTime(t) : `${+t.toPrecision(4)} ${timeUnit}`);
+    // the bar: one tick per key time, short labels above (staggered when close), full text as a tooltip
+    const bar = tlEl.querySelector('.bar'), ticks = tlEl.querySelector('.ticks');
+    bar.querySelectorAll('.m').forEach(e => e.remove());
+    let lastX = -1, level = 0;
+    ticks.replaceChildren(...markers.slice().sort((a, b) => a.t - b.t).map(m => {
+      const x = 100 * (m.t - start) / span;
+      level = x - lastX < 22 ? 1 - level : 0; lastX = x;
+      bar.append(el('span', { class: `m ${m.kind ?? 'computed'}`, style: `left:${x.toFixed(3)}%`, title: `${m.label}: ${fmt(m.t)}` }));
+      const sl = shortLabel(m), withTime = /\d/.test(sl) ? sl : `${sl} · ${fmt(m.t)}`;   // no repeated time
+      // near the ends, anchor the label at its tick instead of centring it (never clipped by the bar's edges)
+      const anchor = x < 15 ? 'translateX(0)' : x > 85 ? 'translateX(-100%)' : 'translateX(-50%)';
+      return el('span', { class: `lab ${m.kind ?? 'computed'} r${level}`, style: `left:${x.toFixed(3)}%;transform:${anchor}`, title: `${m.label}: ${fmt(m.t)}` }, withTime);
+    }));
+    const [a, b] = tlEl.querySelectorAll('.ends span');
+    a.textContent = fmt(start); b.textContent = `${fmt(duration)} (end)`;
+    // the side panel lists every key time in full, with its kind, and the note
+    if (secTimeline) {
+      const kinds = { computed: 'computed in this model', measured: 'measured (literature)', requested: 'named in the request' };
+      secTimeline.body.replaceChildren(
+        row('run', `${fmt(start)} – ${fmt(duration)}`),
+        ...markers.map(m => el('div', { class: 'psim-tlrow' }, el('i', { class: m.kind ?? 'computed' }), el('span', {}, m.label), el('code', {}, fmt(m.t)), el('small', {}, kinds[m.kind ?? 'computed']))),
+        tl.note ? el('p', { class: 'psim-hint' }, tl.note) : null);
+    }
+  }
+  tlEl.querySelector('.bar').addEventListener('click', e => {
+    if (!tl) return;
+    const r = e.currentTarget.getBoundingClientRect(), T = tl.start + Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * (tl.duration - tl.start);
+    if (T < tDisplay) rebuild();
+    window.psim.advanceTo(T);
+  });
+
   function rebuild() {
     sim = create({ ...values });
     tDisplay = sim.t ?? 0;
+    resolveTimeline();
     diagPlot.clear();
     renderDiag(true);
     benchApi?.update?.(sim, tDisplay, { rebuilt: true });
@@ -168,7 +226,9 @@ export function createInstrument(spec) {
   // A model that ends (a merger, everything decayed, the last particle left) sets sim.done (or
   // sim.ended): the clock stops there instead of counting time in which nothing is computed,
   // and play starts the run again from the beginning.
-  const isDone = () => sim?.done === true || sim?.ended === true;
+  // the end shown on the clock: exactly the declared duration when the steps' float sum lands within round-off of it
+  const endTime = () => (tl && Math.abs(sim.t - tl.duration) <= 1e-9 * Math.max(Math.abs(tl.duration), tl.duration - tl.start) ? tl.duration : tl ? Math.min(sim.t, tl.duration) : sim.t);
+  const isDone = () => sim?.done === true || sim?.ended === true || (tl != null && (sim?.t ?? 0) >= tl.duration - 1e-12 * Math.max(Math.abs(tl.duration), tl.duration - tl.start));
   function togglePlay() {
     if (!clock.playing && isDone()) { rebuild(); setPlaying(true); return; }
     setPlaying(!clock.playing);
@@ -298,7 +358,7 @@ export function createInstrument(spec) {
     }),
   ));
 
-  side.append(...[secParams, secView, secDiag, secVerify, secModel, secExport].filter(s => s && (s !== secParams || params.length || controls)));
+  side.append(...[secParams, secView, secTimeline, secDiag, secVerify, secModel, secExport].filter(s => s && (s !== secParams || params.length || controls)));
   if (viewControls) viewControls(secView.body, { el, slider, select, toggle, button, view, getSim: () => sim });
   if (spec.extraSections) spec.extraSections(side, { section, el, row, slider, toggle, button, values, rebuild, view });
 
@@ -337,10 +397,11 @@ export function createInstrument(spec) {
   }
 
   let frames = 0, lastUi = 0;
+  const frameWaiters = [];   // resolved right after a frame has been drawn (GPU self-tests read pixels then)
   function frame(now) {
     const frameStart = performance.now();
     if (timeDependent) {
-      const target = clock.tick(now, tDisplay);
+      const target = tl ? Math.min(tl.duration, clock.tick(now, tDisplay)) : clock.tick(now, tDisplay);
       if (target > tDisplay) {
         // frameBudget ms of computing per frame, checked after every step, so a slow step
         // (a Monte Carlo sweep) runs at most once past the budget; fast steps run in thousands
@@ -351,7 +412,7 @@ export function createInstrument(spec) {
         }
         limited = sim.t < target && !isDone();
         tDisplay = Math.min(target, sim.t);
-        if (isDone()) { tDisplay = sim.t; setPlaying(false); }
+        if (isDone()) { tDisplay = endTime(); setPlaying(false); }
       }
     }
     if (glLayer?.ok) { glLayer.sync(view.dpr); drawGL?.(glLayer.gl, sim, view, tDisplay); }
@@ -363,10 +424,11 @@ export function createInstrument(spec) {
       lastUi = now;
       const d = renderDiag();
       hud.t.textContent = timeDependent ? (formatTime ? formatTime(tDisplay) : `${fix(tDisplay, timeDigits)} ${timeUnit}`) : '';
+      if (tl) tlEl.querySelector('.fill').style.width = `${(100 * Math.max(0, Math.min(1, (tDisplay - tl.start) / (tl.duration - tl.start)))).toFixed(2)}%`;
       const firstErr = d.find(x => x.kind === 'error' && !x.pending);
       hud.a.textContent = firstErr && hudError ? `${firstErr.label} ${sci(firstErr.value)}` : '';
       hud.b.textContent = spec.hudLine?.(sim) ?? '';
-      hud.flag.textContent = isDone() ? (texts.finished ?? 'finished: the computed run ends here (play starts again)')
+      hud.flag.textContent = isDone() ? (texts.finished ?? 'finished · play restarts')
         : limited ? 'compute-limited: playback slowed to keep the calculation exact' : '';
       benchApi?.update?.(sim, tDisplay, { rebuilt: false });
       status.set('t', timeDependent ? tDisplay : 1);
@@ -374,6 +436,7 @@ export function createInstrument(spec) {
     }
     if (++frames === 1 || frames % 30 === 0) status.set('frames', frames);   // first frame at once: slow pages count as live
     adaptResolution(now, performance.now() - frameStart);
+    if (frameWaiters.length) { const w = frameWaiters.splice(0); w.forEach(f => f()); }
     requestAnimationFrame(frame);
   }
 
@@ -382,13 +445,22 @@ export function createInstrument(spec) {
     get t() { return tDisplay; },
     state: () => ({ t: sim.t, ...sim.state() }),
     params: () => ({ ...values }),
-    advanceTo: t => { while (sim.t < t && !isDone()) sim.step(); tDisplay = Math.max(tDisplay, Math.min(t, sim.t)); return window.psim.state(); },
+    advanceTo: t => {
+      const T = tl ? Math.min(t, tl.duration) : t;
+      while (sim.t < T && !isDone()) sim.step();
+      tDisplay = isDone() ? endTime() : Math.max(tDisplay, Math.min(T, sim.t));
+      return window.psim.state();
+    },
+    /** The run's declared span and key times ({ duration, markers, note }), or null. */
+    get timeline() { return tl ? { start: tl.start, duration: tl.duration, markers: tl.markers.map(m => ({ ...m })), note: tl.note } : null; },
     get done() { return isDone(); },
     restart: () => rebuild(),
     setParams: (next, opts) => setParams(next, opts),
     setParam: (k, v) => setParam(k, v),
     getSim: () => sim,
     toggleFullscreen: () => toggleFullscreen(),
+    /** Resolves after the next frame has been drawn: await it in a self-test before reading GPU pixels. */
+    nextFrame: () => new Promise(res => frameWaiters.push(res)),
     report,
     get fullscreen() { return isFullscreen(); },
     testSteps,

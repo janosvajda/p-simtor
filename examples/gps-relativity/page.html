@@ -160,6 +160,12 @@ createInstrument({
   create: createSim,
   draw, bench,
   timeUnit: 'h', speed: 1.5, duration: 24,
+  // the question is the clock offset per day: one day, with the satellite's orbit marked
+  timeline: {
+    duration: 24,
+    markers: sim => [{ t: sim.period / 3600, label: 'one GPS orbit (computed from the semi-major axis)', short: 'one orbit', kind: 'computed' }, { t: 2 * sim.period / 3600, label: 'two orbits (computed)', short: 'two orbits', kind: 'computed' }].filter(m => m.t <= 24),
+    note: 'One day: the clock offset accumulated per day is the quantity GPS must correct.',
+  },
   hudLine: sim => `offset ${(sim.offset() * 1e6).toFixed(4)} µs · ${(MICRO_PER_DAY * circularOffset(sim.a)).toFixed(2)} µs/day`,
   model: {
     legend: ['SI units · Earth and orbit to scale', 'clocks share coordinate time t; hands show each clock’s own time'],

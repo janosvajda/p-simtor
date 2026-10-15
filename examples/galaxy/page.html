@@ -12,6 +12,7 @@
 <script type="module">
 import { createInstrument } from 'psim:ui/instrument-app.mjs';
 import { PARAMS, createSim, circularSpeed, eilers2019, haloDensity, R0, NFW_SCALE } from './physics.mjs';
+import { TIME_UNIT_MYR } from 'psim:core/galaxy.mjs';
 
 // ------------------------------------------------------------------ stage: the stellar disk
 const cam = { tilt: 0.45, spin: 0 };            // tilt 0 = face-on
@@ -130,6 +131,12 @@ createInstrument({
   create: createSim,
   draw, onPointer, bench,
   timeUnit: 'Myr', speed: 60, duration: 2000,
+  // ~8 orbits at the Sun's radius: long enough to see whether the disk holds together without dark matter
+  timeline: {
+    duration: 2000,
+    markers: sim => { const T = 2 * Math.PI * R0 / circularSpeed(R0, sim.comps).total * TIME_UNIT_MYR; return [{ t: T, label: `one orbit at R₀ = ${R0} kpc (computed)`, short: 'one orbit at R₀', kind: 'computed' }, { t: 4 * T, label: 'four orbits at R₀ (computed)', short: '4 orbits', kind: 'computed' }].filter(m => m.t <= 2000); },
+    note: 'Run length: about 8 orbits at the Sun\'s radius, enough to see whether the disk stays together.',
+  },
   hudLine: sim => `${sim.disk.n.toLocaleString()} stars · halo ${sim.comps.halo ? 'on' : 'off'} · ${(100 * sim.escaped()).toFixed(1)} % beyond 40 kpc`,
   model: {
     legend: ['kpc · Myr · km/s · purple glow: dark-matter density (invisible in reality)', 'star colour: starting radius (inner warm → outer blue) · drag to tilt'],
