@@ -414,6 +414,15 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
   background: color-mix(in srgb, var(--stage) 72%, transparent);
   backdrop-filter: blur(3px);
 }
+
+/* ---------- full screen (scene + HUD + legend + playback bar) ---------- */
+.psim-fs { background: var(--stage, var(--bg)); border-radius: 0 !important; border: 0 !important; }
+.psim-app .psim-fs .psim-transport { position: absolute; left: 50%; right: auto; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 5; }
+.psim-pseudo-fs { position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100dvh !important; max-height: none !important; z-index: 1000; margin: 0 !important; }
+.psim-fsbtn { position: absolute; right: 12px; bottom: 12px; z-index: 4; width: 34px; height: 34px; display: grid; place-items: center;
+  border-radius: 9px; border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); cursor: pointer; }
+.psim-fsbtn:hover { background: var(--raise); color: var(--ink); }
+.psim-fsbtn svg { width: 15px; height: 15px; }
 </style>
 </head>
 <body>
@@ -459,8 +468,8 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
  "notes": [
   "Earth is a point mass here; its oblateness (J₂) changes GPS clock rates by ~10⁻¹³, far below the 4.5×10⁻¹⁰ effect shown."
  ],
- "generated": "2026-10-14T23:00:34.951Z",
- "runtimeMs": 17
+ "generated": "2026-10-15T00:32:24.936Z",
+ "runtimeMs": 19
 }</script>
 <script type="module">
 const __psim = {};
@@ -490,7 +499,9 @@ const ICONS = {
   pause: '<svg viewBox="0 0 16 16"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg>',
   step: '<svg viewBox="0 0 16 16"><path d="M3 2.5v11l7-5.5zM11 2.5h2v11h-2z" fill="currentColor"/></svg>',
   restart: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8a5 5 0 1 0 1.6-3.7"/><path d="M3 2.5v3h3"/></svg>',
-  fit: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg>',
+  fit: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="4.5"/><path d="M8 1v3M8 12v3M1 8h3M12 8h3"/></svg>',
+  fullscreen: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg>',
+  exitFullscreen: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2v4H2M10 2v4h4M6 14v-4H2M10 14v-4h4"/></svg>',
   sun: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6L13 13M3 13l1.4-1.4M11.6 4.4L13 3"/></svg>',
   moon: '<svg viewBox="0 0 16 16"><path d="M13.5 10A6 6 0 0 1 6 2.5a6 6 0 1 0 7.5 7.5z" fill="currentColor"/></svg>',
   info: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 7v4.5M8 4.6v.1"/></svg>',
@@ -544,7 +555,9 @@ function initTheme(toggleButton) {
   });
 }
 
+/** A theme token ('--accent') → its value; any other colour ('#ff8800', 'rgb(…)', 'tomato') passes through. */
 function cssVar(name) {
+  if (typeof name !== 'string' || !name.startsWith('--')) return name;
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
@@ -642,7 +655,7 @@ function toast(stage, text) {
 
 // ---------- transport ----------
 
-function transport({ onToggle, onStep, onRestart, onFit, speed, speedLabel, onSpeed, range: [lo, hi] = [speed / 100, speed * 100] }) {
+function transport({ onToggle, onStep, onRestart, onFit, onFullscreen, speed, speedLabel, onSpeed, range: [lo, hi] = [speed / 100, speed * 100] }) {
   const play = el('button', { class: 'primary', title: 'Play / pause (Space)', 'aria-label': 'Play or pause', html: ICONS.play, onclick: onToggle });
   const out = el('output', {}, speedLabel(speed));
   const range = el('input', { type: 'range', min: Math.log10(lo), max: Math.log10(hi), step: 'any', value: Math.log10(speed), 'aria-label': 'Playback speed' });
@@ -654,8 +667,13 @@ function transport({ onToggle, onStep, onRestart, onFit, speed, speedLabel, onSp
     el('span', { class: 'sep' }),
     el('label', { class: 'speed' }, 'speed', range, out),
     el('span', { class: 'sep' }),
-    el('button', { title: 'Fit view to bodies (F)', 'aria-label': 'Fit view', html: ICONS.fit, onclick: onFit }));
+    el('button', { title: 'Fit the view', 'aria-label': 'Fit view', html: ICONS.fit, onclick: onFit }),
+    onFullscreen ? el('button', { class: 'fs', title: 'Full screen (F)', 'aria-label': 'Full screen', html: ICONS.fullscreen, onclick: onFullscreen }) : null);
   bar.setPlaying = p => { play.innerHTML = p ? ICONS.pause : ICONS.play; };
+  bar.setFullscreen = on => {
+    const b = bar.querySelector('button.fs');
+    if (b) { b.innerHTML = on ? ICONS.exitFullscreen : ICONS.fullscreen; b.title = on ? 'Leave full screen (F or Esc)' : 'Full screen (F)'; }
+  };
   return bar;
 }
 
@@ -799,7 +817,7 @@ __psim["ui/plot.mjs"] = (() => {
 //   const p = createPlot({ title: 'Spectral radiance', x: { label: 'λ', unit: 'nm', min: 100, max: 3000 },
 //                          y: { label: 'B_λ', unit: 'W sr⁻¹ m⁻³', log: false } });
 //   p.fn('planck', λ => B(λ, T), { color: '--body-0', label: 'T = 5772 K' });
-//   p.vline(λmax, { label: 'λ_max' });  p.draw();
+//   p.vline('peak', λmax, { label: 'λ_max' });  p.draw();
 const { el, cssVar, sci } = __psim["ui/instrument.mjs"];
 function niceTicks(min, max, target = 5) {
   const span = max - min;
@@ -1259,12 +1277,44 @@ function cmapTexture(gl, name) {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, name === 'phase' ? gl.REPEAT : gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   return (cache[name] = tex);
 }
-const rgb = c => (typeof c === 'string' ? hex(c.length === 4 ? `#${c[1]}${c[1]}${c[2]}${c[2]}${c[3]}${c[3]}` : c) : c);
+/**
+ * Any colour → [r, g, b, a] in 0–1: '#rgb', '#rrggbb', 'rgb()/rgba()', CSS names, a theme token
+ * '--name' (read from the page, so view.color('--x') and '--x' both work) or an [r, g, b(, a)] array.
+ */
+function cssColor(c) {
+  if (Array.isArray(c) || ArrayBuffer.isView(c)) return [c[0], c[1], c[2], c[3] ?? 1];
+  let str = String(c).trim();
+  if (str.startsWith('--') && typeof getComputedStyle === 'function') str = getComputedStyle(document.documentElement).getPropertyValue(str).trim();
+  if (/^#[0-9a-f]{3}$/i.test(str)) str = `#${str[1]}${str[1]}${str[2]}${str[2]}${str[3]}${str[3]}`;
+  if (/^#[0-9a-f]{6}$/i.test(str)) return [...hex(str), 1];
+  if (/^#[0-9a-f]{8}$/i.test(str)) return [...hex(str.slice(0, 7)), parseInt(str.slice(7), 16) / 255];
+  const m = str.match(/^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)(?:[\s,/]+([\d.]+%?))?\s*\)$/i);
+  if (m) return [m[1] / 255, m[2] / 255, m[3] / 255, m[4] == null ? 1 : m[4].endsWith('%') ? parseFloat(m[4]) / 100 : +m[4]];
+  if (typeof document !== 'undefined') {                      // CSS names and other syntaxes via the browser
+    const ctx = document.createElement('canvas').getContext('2d');
+    ctx.fillStyle = '#010203'; ctx.fillStyle = str;
+    if (ctx.fillStyle !== '#010203' || /^#010203$/i.test(str)) return cssColor(ctx.fillStyle);
+  }
+  throw new Error(`gl: cannot read the colour "${c}"`);
+}
+const colorCache = new Map();
+const rgb = c => {
+  if (typeof c !== 'string' || c.startsWith('--')) return cssColor(c).slice(0, 3);   // tokens follow the theme: no cache
+  let v = colorCache.get(c);
+  if (!v) { v = cssColor(c).slice(0, 3); if (colorCache.size > 512) colorCache.clear(); colorCache.set(c, v); }
+  return v;
+};
+
+/** Device pixels per CSS pixel of the GL canvas (lower than devicePixelRatio under adaptive resolution). */
+const pixelRatio = gl => (gl.canvas.clientWidth ? gl.canvas.width / gl.canvas.clientWidth : (globalThis.devicePixelRatio || 1));
 
 /**
- * A WebGL2 canvas stacked under `canvas2d` (same box, same device-pixel ratio). The 2D canvas
- * stays on top for labels, axes and pointer events. Returns { gl, canvas, ok, reason, sync() };
+ * A WebGL2 canvas stacked under `canvas2d` (same box). The 2D canvas stays on top for labels,
+ * axes and pointer events. Returns { gl, canvas, ok, reason, sync(), scale, maxPixels };
  * when WebGL2 is unavailable, ok is false and reason says why (show it; draw a 2D fallback).
+ * The GL canvas renders at devicePixelRatio × scale (scale ≤ 1, set by the shell's adaptive
+ * resolution when the GPU cannot keep up) and never above maxPixels device pixels (default 8 M,
+ * a 4K screen); CSS stretches it to the box, so a lower scale only softens the 3D layer.
  */
 function createGLLayer(canvas2d) {
   const canvas = document.createElement('canvas');
@@ -1273,10 +1323,13 @@ function createGLLayer(canvas2d) {
   canvas2d.parentNode.insertBefore(canvas, canvas2d);
   const gl = canvas.getContext('webgl2', { alpha: true, premultipliedAlpha: true, antialias: true, preserveDrawingBuffer: true, stencil: true });
   const layer = {
-    gl, canvas, ok: !!gl, reason: gl ? '' : 'WebGL2 is not available in this browser',
-    /** Match the 2D canvas size; set the viewport and clear to transparent. */
+    gl, canvas, ok: !!gl, reason: gl ? '' : 'WebGL2 is not available in this browser', scale: 1, maxPixels: 8e6,
+    /** Match the 2D canvas size (× scale, within maxPixels); set the viewport and clear to transparent. */
     sync(dpr = devicePixelRatio || 1) {
-      const w = Math.round(canvas2d.clientWidth * dpr), h = Math.round(canvas2d.clientHeight * dpr);
+      const cw = canvas2d.clientWidth, ch = canvas2d.clientHeight;
+      let r = dpr * layer.scale;
+      if (cw * ch * r * r > layer.maxPixels) r = Math.sqrt(layer.maxPixels / (cw * ch));
+      const w = Math.max(1, Math.round(cw * r)), h = Math.max(1, Math.round(ch * r));
       if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
       if (!gl) return;
       gl.viewport(0, 0, w, h); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
@@ -1295,7 +1348,9 @@ function createGLLayer(canvas2d) {
  * or a single color. Sizes in 'world' units shrink with distance (true perspective).
  * soft: true gives 'alpha' points the same Gaussian profile as 'additive' ones, so a point looks
  * the same size in the light and dark themes. count draws only the first count points (a cloud
- * that grows: upload a preallocated buffer once with update(), then raise count each frame).
+ * that grows from precomputed events: upload once with update(), then raise count each frame);
+ * append(positions, { values, colors }) adds new points as they happen. colors are Float32 RGB
+ * in 0–1, three per point.
  */
 function createPointRenderer(gl) {
   const { p, u } = compile(gl, `#version 300 es
@@ -1332,7 +1387,8 @@ void main() {
     gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0);
   }
   gl.bindVertexArray(null);
-  let count = 0, has = { values: false, colors: false };
+  let count = 0, has = { values: false, colors: false }, cap = 0;
+  const cpu = { aPos: new Float32Array(0), aVal: new Float32Array(0), aCol: new Float32Array(0) };
   const upload = (name, data) => {
     gl.bindBuffer(gl.ARRAY_BUFFER, bufs[name].buf);
     gl.bufferData(gl.ARRAY_BUFFER, data instanceof Float32Array ? data : Float32Array.from(data), gl.DYNAMIC_DRAW);
@@ -1340,19 +1396,45 @@ void main() {
   return {
     get count() { return count; },
     update(positions, { values, colors } = {}) {
-      count = Math.floor(positions.length / 3);
+      count = Math.floor(positions.length / 3); cap = 0;
       upload('aPos', positions);
       has = { values: !!values, colors: !!colors };
       upload('aVal', values ?? new Float32Array(count));
       upload('aCol', colors ?? new Float32Array(3 * count));
     },
+    /**
+     * Add points to the end (events arriving one by one: detector hits, decays, samples) without
+     * re-uploading the old ones; capacity doubles when needed. values/colors as in update().
+     */
+    append(positions, { values, colors } = {}) {
+      const k = Math.floor(positions.length / 3);
+      if (!k) return;
+      if (count === 0) has = { values: !!values, colors: !!colors };
+      if (count + k > cap) {
+        if (cap === 0 && count > 0) throw new Error('pointRenderer: append() after update() needs the points again: call append() only, or update() with all points');
+        cap = Math.max(1024, 2 * (count + k));
+        for (const [name, size] of [['aPos', 3], ['aVal', 1], ['aCol', 3]]) {
+          const grown = new Float32Array(cap * size); grown.set(cpu[name].subarray(0, count * size)); cpu[name] = grown;
+          upload(name, grown);
+        }
+      }
+      const put = (name, size, data) => {
+        const arr = data ? Float32Array.from(data) : new Float32Array(k * size);
+        cpu[name].set(arr, count * size);
+        gl.bindBuffer(gl.ARRAY_BUFFER, bufs[name].buf); gl.bufferSubData(gl.ARRAY_BUFFER, count * size * 4, arr);
+      };
+      put('aPos', 3, positions); put('aVal', 1, values); put('aCol', 3, colors);
+      count += k;
+    },
+    /** Remove all points (keeps the allocated capacity for append). */
+    clear() { count = 0; },
     draw(camera, { aspect, size = 3, sizeUnit = 'px', color = '#ffd27a', colormap: map = 'inferno', range = [0, 1], log = false, blend = 'additive', opacity = 1, soft = false, count: shown = count } = {}) {
       const n = Math.max(0, Math.min(count, Math.floor(shown)));
       if (!n) return;
       const { viewProj, proj } = camera.matrices(aspect ?? gl.drawingBufferWidth / gl.drawingBufferHeight);
       gl.useProgram(p); gl.bindVertexArray(vao);
       gl.uniformMatrix4fv(u.uVP, false, viewProj);
-      gl.uniform1f(u.uSize, size * (sizeUnit === 'px' ? (devicePixelRatio || 1) : 1));
+      gl.uniform1f(u.uSize, size * (sizeUnit === 'px' ? pixelRatio(gl) : 1));
       gl.uniform1f(u.uWorld, sizeUnit === 'world' ? 1 : 0);
       gl.uniform1f(u.uScale, proj[5] * gl.drawingBufferHeight / 2);
       gl.uniform1f(u.uLog, log ? 1 : 0);
@@ -1410,7 +1492,7 @@ void main() { float v = texture(uField, vUV).r; if (v < 0.0) discard; vec3 c = t
     },
     draw({ rect, colormap: map = 'viridis', smooth = true, opacity = 1 } = {}) {
       if (!ready) return;
-      const W = gl.drawingBufferWidth / (devicePixelRatio || 1), H = gl.drawingBufferHeight / (devicePixelRatio || 1);
+      const W = gl.drawingBufferWidth / pixelRatio(gl), H = gl.drawingBufferHeight / pixelRatio(gl);
       const [x, y, w, h] = rect ?? [0, 0, W, H];
       gl.useProgram(p); gl.bindVertexArray(vao);
       // CSS px (y down) → clip space; the texture's row j = 0 is drawn at the bottom (y up, physics)
@@ -1437,6 +1519,12 @@ void main() { float v = texture(uField, vUV).r; if (v < 0.0) discard; vec3 c = t
  * or 'absorption' (emission–absorption: nearer matter hides farther). Opacity is a display
  * transfer function, not a physical optical depth unless you derive it from one: say which.
  * smooth: false shows each cell as a uniform block (honest for coarse grids, e.g. a lattice).
+ * Smooth volumes are ray-marched at reduced resolution (≤ ~1.5 M rays) and upscaled; pass
+ * resolution: 1 (fraction of the layer's pixels per axis) to force full resolution.
+ * update(…, { signed: true }) shows a field of either sign (charge density, vorticity, Re ψ): the
+ * colour map's middle is zero, colour gives the sign and opacity |value|; range is symmetric,
+ * [−M, M] with M = max|value| unless given. Use a diverging map ('coolwarm').
+ * Values ≤ 0 are transparent otherwise (opacity ∝ normalised value).
  */
 function createVolumeRenderer(gl) {
   const { p, u } = compile(gl, `#version 300 es
@@ -1445,7 +1533,7 @@ void main() { vNDC = aXY * 2.0 - 1.0; gl_Position = vec4(vNDC, 0.0, 1.0); }`, `#
 precision highp float; precision highp sampler3D;
 in vec2 vNDC;
 uniform mat4 uInvVP; uniform vec3 uMin, uMax; uniform sampler3D uVol; uniform sampler2D uMap;
-uniform float uOpacity, uSteps, uMode;
+uniform float uOpacity, uSteps, uMode, uSigned;
 out vec4 frag;
 void main() {
   vec4 a = uInvVP * vec4(vNDC, -1.0, 1.0), b = uInvVP * vec4(vNDC, 1.0, 1.0);
@@ -1459,9 +1547,10 @@ void main() {
   for (float s = 0.5; s < 1024.0; s += 1.0) {
     if (s > uSteps) break;
     vec3 pos = ro + rd * (near + s * dt);
-    float v = texture(uVol, (pos - uMin) / (uMax - uMin)).r;
+    float raw = texture(uVol, (pos - uMin) / (uMax - uMin)).r;
+    float v = uSigned > 0.5 ? abs(raw) : raw;
     if (v <= 0.0) continue;
-    vec3 c = texture(uMap, vec2(v, 0.5)).rgb;
+    vec3 c = texture(uMap, vec2(uSigned > 0.5 ? 0.5 + 0.5 * raw : v, 0.5)).rgb;
     float k = uOpacity * v * dt / len * 8.0;
     if (uMode < 0.5) { col += c * k; alpha += k; }
     else { float ak = 1.0 - exp(-k); col += (1.0 - alpha) * c * ak; alpha += (1.0 - alpha) * ak; if (alpha > 0.99) break; }
@@ -1474,10 +1563,35 @@ void main() {
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
   const loc = gl.getAttribLocation(p, 'aXY'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
   gl.bindVertexArray(null);
-  let ready = false;
+  let ready = false, signed = false;
+  // offscreen target for reduced-resolution ray marching, and a composite pass that upscales it
+  const comp = compile(gl, `#version 300 es
+in vec2 aXY; out vec2 vUV;
+void main() { vUV = aXY; gl_Position = vec4(aXY * 2.0 - 1.0, 0.0, 1.0); }`, `#version 300 es
+precision mediump float;
+in vec2 vUV; uniform sampler2D uTex; out vec4 frag;
+void main() { frag = texture(uTex, vUV); }`);
+  const compVao = gl.createVertexArray();
+  gl.bindVertexArray(compVao); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  const cl = gl.getAttribLocation(comp.p, 'aXY'); gl.enableVertexAttribArray(cl); gl.vertexAttribPointer(cl, 2, gl.FLOAT, false, 0, 0);
+  gl.bindVertexArray(null);
+  const fbo = gl.createFramebuffer(), target = gl.createTexture();
+  let tw = 0, th = 0;
   return {
-    update(values, nx, ny, nz, { range, log = false } = {}) {
+    update(values, nx, ny, nz, { range, log = false, signed: isSigned = false } = {}) {
       if (values.length !== nx * ny * nz) throw new Error('volumeRenderer: values must have nx·ny·nz entries');
+      signed = isSigned;
+      if (signed) {
+        let M = range ? Math.max(Math.abs(range[0]), Math.abs(range[1])) : 0;
+        if (!range) for (const v of values) if (Number.isFinite(v)) M = Math.max(M, Math.abs(v));
+        if (!(M > 0)) M = 1;
+        const data = Float32Array.from(values, v => (Number.isFinite(v) ? Math.max(-1, Math.min(1, v / M)) : 0));
+        gl.bindTexture(gl.TEXTURE_3D, tex);
+        gl.texImage3D(gl.TEXTURE_3D, 0, gl.R16F, nx, ny, nz, 0, gl.RED, gl.FLOAT, data);
+        for (const w of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T, gl.TEXTURE_WRAP_R]) gl.texParameteri(gl.TEXTURE_3D, w, gl.CLAMP_TO_EDGE);
+        ready = true;
+        return { range: [-M, M] };
+      }
       let lo = range?.[0], hi = range?.[1];
       if (lo == null || hi == null) {
         lo = Infinity; hi = -Infinity;
@@ -1492,8 +1606,27 @@ void main() {
       ready = true;
       return { range: [lo, hi] };
     },
-    draw(camera, { aspect, box = [[-1, -1, -1], [1, 1, 1]], colormap: map = 'inferno', opacity = 1, steps = 160, mode = 'emission', smooth = true } = {}) {
+    draw(camera, { aspect, box = [[-1, -1, -1], [1, 1, 1]], colormap: map = 'inferno', opacity = 1, steps = 160, mode = 'emission', smooth = true, resolution } = {}) {
       if (!ready) return;
+      // A smooth density looks the same ray-marched at reduced resolution and upscaled, at a fraction
+      // of the cost (it is the most expensive renderer per pixel): by default at most ~1.5 M samples
+      // per frame. smooth: false keeps full resolution so cell edges stay sharp.
+      const W = gl.drawingBufferWidth, H = gl.drawingBufferHeight;
+      const res = resolution ?? (smooth ? Math.min(1, Math.sqrt(1.5e6 / (W * H))) : 1);
+      const offscreen = res < 0.999;
+      if (offscreen) {
+        const w = Math.max(1, Math.round(W * res)), h = Math.max(1, Math.round(H * res));
+        gl.bindTexture(gl.TEXTURE_2D, target);
+        if (w !== tw || h !== th) {
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+          gl.bindFramebuffer(gl.FRAMEBUFFER, fbo); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target, 0);
+          tw = w; th = h;
+        }
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo); gl.viewport(0, 0, w, h);
+        gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+      }
       const f = smooth ? gl.LINEAR : gl.NEAREST;
       gl.bindTexture(gl.TEXTURE_3D, tex); gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, f); gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, f);
       const { viewProj } = camera.matrices(aspect ?? gl.drawingBufferWidth / gl.drawingBufferHeight);
@@ -1503,8 +1636,15 @@ void main() {
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_3D, tex); gl.uniform1i(u.uVol, 0);
       gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, cmapTexture(gl, map)); gl.uniform1i(u.uMap, 1);
       gl.uniform1f(u.uOpacity, opacity); gl.uniform1f(u.uSteps, Math.min(1000, steps)); gl.uniform1f(u.uMode, mode === 'emission' ? 0 : 1);
+      gl.uniform1f(u.uSigned, signed ? 1 : 0);
       gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.disable(gl.DEPTH_TEST);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      if (offscreen) {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, W, H);
+        gl.useProgram(comp.p); gl.bindVertexArray(compVao);
+        gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, target); gl.uniform1i(comp.u.uTex, 0);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      }
       gl.bindVertexArray(null);
     },
   };
@@ -1630,6 +1770,7 @@ void main() {
   }
   gl.bindVertexArray(null);
   let lines = [];   // rebuilt each draw: the camera target (the float64 origin) may move
+  let scratch = new Float32Array(0);
   return {
     update(data) { lines = Array.isArray(data) && data.length && typeof data[0] !== 'number' ? data : [data]; },
     draw(camera, { aspect, width = 2, color = '#9fb3c8', opacity = 1, dash = null, depthTest = true } = {}) {
@@ -1640,20 +1781,23 @@ void main() {
       for (const l of lines) n += Math.max(0, Math.floor(pts(l).length / 3) - 1);
       if (!n) return;
       {
-        const buf = new Float32Array(12 * n), base = rgb(color);
-        let k = 0;
+        if (scratch.length < 12 * n) scratch = new Float32Array(Math.max(12 * n, 2 * scratch.length));
+        const buf = scratch, base = rgb(color), t0 = t[0], t1 = t[1], t2 = t[2];
+        let o = 0;
         for (const line of lines) {
-          const l = pts(line), c = line.color ? rgb(line.color) : base, o = line.opacity ?? 1;
+          const l = pts(line), c = line.color ? rgb(line.color) : base, op = line.opacity ?? 1;
           let s = 0;
           for (let i = 0; i + 5 < l.length; i += 3) {
-            const a = [l[i] - t[0], l[i + 1] - t[1], l[i + 2] - t[2]], b = [l[i + 3] - t[0], l[i + 4] - t[1], l[i + 5] - t[2]];
             const len = Math.hypot(l[i + 3] - l[i], l[i + 4] - l[i + 1], l[i + 5] - l[i + 2]);
-            buf.set([...a, ...b, s, s + len, c[0], c[1], c[2], o], 12 * k++); s += len;
+            buf[o] = l[i] - t0; buf[o + 1] = l[i + 1] - t1; buf[o + 2] = l[i + 2] - t2;
+            buf[o + 3] = l[i + 3] - t0; buf[o + 4] = l[i + 4] - t1; buf[o + 5] = l[i + 5] - t2;
+            buf[o + 6] = s; buf[o + 7] = s + len; buf[o + 8] = c[0]; buf[o + 9] = c[1]; buf[o + 10] = c[2]; buf[o + 11] = op;
+            o += 12; s += len;
           }
         }
-        gl.bindBuffer(gl.ARRAY_BUFFER, inst); gl.bufferData(gl.ARRAY_BUFFER, buf, gl.DYNAMIC_DRAW);
+        gl.bindBuffer(gl.ARRAY_BUFFER, inst); gl.bufferData(gl.ARRAY_BUFFER, buf.subarray(0, 12 * n), gl.DYNAMIC_DRAW);
       }
-      const dpr = devicePixelRatio || 1;
+      const dpr = pixelRatio(gl);
       const { viewProj } = camera.matrices(aspect ?? gl.drawingBufferWidth / gl.drawingBufferHeight, { relative: true });
       gl.useProgram(p); gl.bindVertexArray(vao);
       gl.uniformMatrix4fv(u.uVP, false, viewProj);
@@ -1943,7 +2087,7 @@ void main() {
   };
 }
 
-return { perspective, lookAt, multiply, invert, orbitCamera, COLORMAPS, colormap, normalize, compile, createGLLayer, createPointRenderer, createFieldRenderer, createVolumeRenderer, createSphereRenderer, createLineRenderer, geometry, alignZ, polylines, drawColorBar, transform, compose, createMeshRenderer };
+return { perspective, lookAt, multiply, invert, orbitCamera, COLORMAPS, colormap, normalize, compile, cssColor, pixelRatio, createGLLayer, createPointRenderer, createFieldRenderer, createVolumeRenderer, createSphereRenderer, createLineRenderer, geometry, alignZ, polylines, drawColorBar, transform, compose, createMeshRenderer };
 })();
 
 // ---- psim:ui/equation.mjs
@@ -2156,7 +2300,7 @@ __psim["ui/instrument-app.mjs"] = (() => {
 //   sim.state()              JSON-serialisable state (export, tests)
 //   sim.record?()            { header: [...], rows: [[...], ...] } for CSV export
 //   sim.timeDependent        false for static analytic visualisations (no transport)
-const { el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon, cssVar } = __psim["ui/instrument.mjs"];
+const { el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast, ICONS, transport, createClock, logPlot, download, readJsonScript, beacon, cssVar } = __psim["ui/instrument.mjs"];
 const { createPlot } = __psim["ui/plot.mjs"];
 const { createGLLayer } = __psim["ui/gl.mjs"];
 const { createEquation, createDerivation, M } = __psim["ui/equation.mjs"];
@@ -2172,7 +2316,8 @@ function createInstrument(spec) {
   const {
     title, subtitle = '', tier, tierReason, create, draw, params = [], model = {},
     timeUnit = 'T', timeLabel = 'simulated time', speed: speed0 = 1, gl: wantGL = false, drawGL, controls, onPointer, layout = 'stage', bench,
-    presets = [], texts = {}, hudError = true, formatTime, timeDigits = 3, frameBudget = 9, speedRange,
+    presets = [], texts = {}, hudError = true, formatTime, timeDigits = 3, frameBudget = 9, speedRange, viewControls, testSteps = 300,
+    glResolution = 'auto',
   } = spec;
   if (!TIERS[tier]) throw new Error(`tier must be one of ${Object.keys(TIERS).join(', ')}`);
   const report = readJsonScript('psim-verification');
@@ -2222,7 +2367,9 @@ function createInstrument(spec) {
   if (glLayer) $('.psim-app').classList.add('has-gl');      // HUD and legend get a backing over bright GPU scenes
   $('.psim-hud .dim').textContent = timeLabel;
   const hud = { t: $('.psim-hud b'), a: $('.psim-hud .h1'), b: $('.psim-hud .h2'), flag: $('.psim-hud .flag') };
-  if (model.legend) $('.psim-legend').append(...model.legend.map(t => el('span', {}, t)));
+  // the legend beside the view; view.setLegend(items) replaces it when the representation changes
+  const setLegend = items => $('.psim-legend').replaceChildren(...(items ?? []).map(t => el('span', {}, t)));
+  setLegend(model.legend);
 
   // ------------------------------------------------------------ state
   const values = Object.fromEntries(params.map(p => [p.key, p.value]));
@@ -2232,6 +2379,11 @@ function createInstrument(spec) {
     W: 0, H: 0, dpr: 1, color: cssVar, opts: {}, pointer: null, gl: glLayer?.gl ?? null, glError: glLayer && !glLayer.ok ? glLayer.reason : '',
     /** Current playback speed (simulated time per second) and state, e.g. to disclose time compression. */
     get speed() { return clock.speed; }, get playing() { return clock.playing; },
+    /** GL layer resolution as a fraction of the device pixel ratio (adaptive unless glResolution is a number). */
+    get glScale() { return glLayer?.scale ?? 1; },
+    /** 'dark' or 'light': the theme now shown (e.g. additive vs alpha blending, mesh colours). */
+    get theme() { return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'; },
+    setLegend,
   };
 
   let benchApi = null;
@@ -2244,6 +2396,34 @@ function createInstrument(spec) {
     status.set('params', values);
   }
 
+  // ------------------------------------------------------------ full screen
+  // The scene (canvas, HUD, legend) and the playback bar fill the screen. Falls back to filling the
+  // window with CSS where the Fullscreen API is missing or refused (iPhone Safari, sandboxed frames).
+  const scene = benchParts?.wrap ?? stage;
+  let pseudoFs = false, fsBtn = null;
+  const fsElement = () => document.fullscreenElement ?? document.webkitFullscreenElement ?? null;
+  const isFullscreen = () => pseudoFs || fsElement() === scene;
+  function afterFullscreen() {
+    const on = isFullscreen();
+    scene.classList.toggle('psim-fs', on);
+    if (tp) { if (on && tp.parentNode !== scene) scene.append(tp); else if (!on && tp.parentNode !== stage) stage.append(tp); tp.setFullscreen(on); }
+    if (fsBtn) fsBtn.innerHTML = on ? ICONS.exitFullscreen : ICONS.fullscreen;
+    requestAnimationFrame(() => spec.onFit?.(view));
+  }
+  function setPseudo(on) { pseudoFs = on; scene.classList.toggle('psim-pseudo-fs', on); afterFullscreen(); }
+  function toggleFullscreen() {
+    if (isFullscreen()) {
+      if (pseudoFs) setPseudo(false);
+      else (document.exitFullscreen ?? document.webkitExitFullscreen)?.call(document);
+      return;
+    }
+    const request = scene.requestFullscreen ?? scene.webkitRequestFullscreen;
+    if (!request) { setPseudo(true); return; }
+    try { Promise.resolve(request.call(scene)).catch(() => setPseudo(true)); } catch { setPseudo(true); }
+  }
+  addEventListener('fullscreenchange', afterFullscreen);
+  addEventListener('webkitfullscreenchange', afterFullscreen);
+
   // ------------------------------------------------------------ transport
   const timeDependent = spec.timeDependent !== false;
   let tp = null;
@@ -2254,13 +2434,17 @@ function createInstrument(spec) {
       onStep: () => { setPlaying(false); sim.step(); tDisplay = sim.t; },
       onRestart: () => rebuild(),
       onFit: () => spec.onFit?.(view),
+      onFullscreen: () => toggleFullscreen(),
       onSpeed: s => { clock.speed = s; },
     });
     stage.append(tp);
   } else {
+    fsBtn = el('button', { class: 'psim-fsbtn', title: 'Full screen (F)', 'aria-label': 'Full screen', html: ICONS.fullscreen, onclick: () => toggleFullscreen() });
+    scene.append(fsBtn);
     stage.querySelector('.psim-hud').querySelector('.dim').textContent = '';
   }
   function setPlaying(p) { clock.playing = p; tp?.setPlaying(p); }
+
 
   // ------------------------------------------------------------ side panel
   const secParams = section(texts.parameters ?? 'Parameters');
@@ -2298,7 +2482,11 @@ function createInstrument(spec) {
       if (p.hint) secParams.body.append(el('p', { class: 'psim-hint', style: 'margin-top:-4px;font-size:11.5px' }, p.hint));
     }
   }
-  if (controls) controls(secParams.body, { values, rebuild, setParam, setParams, play: () => setPlaying(true), pause: () => setPlaying(false) });
+  if (controls) controls(secParams.body, { values, rebuild, setParam, setParams, play: () => setPlaying(true), pause: () => setPlaying(false), getSim: () => sim });
+
+  // presentation-only controls (projection, colour map, slice): never rebuild the model
+  const secView = viewControls ? section(texts.view ?? 'View') : null;
+  if (secView) secView.body.append(el('p', { class: 'psim-hint' }, texts.viewNote ?? 'These change only how the results are shown, not the calculation.'));
 
   const secDiag = section(texts.diagnostics ?? 'Diagnostics', { aside: 'live' });
   const diagPlot = logPlot({ caption: '', yMin: 1e-16, yMax: 1 });
@@ -2381,7 +2569,8 @@ function createInstrument(spec) {
     }),
   ));
 
-  side.append(...[secParams, secDiag, secVerify, secModel, secExport].filter(s => s !== secParams || params.length || controls));
+  side.append(...[secParams, secView, secDiag, secVerify, secModel, secExport].filter(s => s && (s !== secParams || params.length || controls)));
+  if (viewControls) viewControls(secView.body, { el, slider, select, toggle, button, view, getSim: () => sim });
   if (spec.extraSections) spec.extraSections(side, { section, el, row, slider, toggle, button, values, rebuild, view });
 
   // ------------------------------------------------------------ canvas & loop
@@ -2394,8 +2583,33 @@ function createInstrument(spec) {
   resize();
   if (onPointer) onPointer(canvas, view, () => sim);
 
+  // Adaptive GL resolution: when frames take longer than the display refresh while the JavaScript
+  // part is small, the GPU is the bottleneck (large or fullscreen windows, ray marching): render the
+  // GL layer at a lower pixel ratio, and raise it again when there is headroom. Display only.
+  if (glLayer && typeof glResolution === 'number') glLayer.scale = Math.min(1, Math.max(0.25, glResolution));
+  const perf = { last: null, interval: null, js: 0, refresh: Infinity, lastAdjust: 0, calm: 0 };
+  function adaptResolution(now, jsMs) {
+    if (!glLayer?.ok || glResolution !== 'auto') return;
+    if (perf.last != null) {
+      const dt = now - perf.last;
+      if (dt > 0 && dt < 250) {
+        perf.refresh = Math.min(perf.refresh * 1.0005, Math.max(dt, 4));
+        perf.interval = perf.interval == null ? dt : 0.9 * perf.interval + 0.1 * dt;
+        perf.js = 0.9 * perf.js + 0.1 * jsMs;
+        const floor = Math.max(0.35, 0.75 / (view.dpr || 1)), slow = perf.interval > 1.3 * perf.refresh;
+        if (slow && perf.interval - perf.js > 0.5 * perf.refresh && now - perf.lastAdjust > 500 && glLayer.scale > floor) {
+          glLayer.scale = Math.max(floor, glLayer.scale * 0.8); perf.lastAdjust = now; perf.calm = 0;
+        } else if (!slow && perf.interval < 1.1 * perf.refresh) {
+          if (++perf.calm > 120 && glLayer.scale < 1 && now - perf.lastAdjust > 2000) { glLayer.scale = Math.min(1, glLayer.scale * 1.15); perf.lastAdjust = now; perf.calm = 0; }
+        } else perf.calm = 0;
+      }
+    }
+    perf.last = now;
+  }
+
   let frames = 0, lastUi = 0;
   function frame(now) {
+    const frameStart = performance.now();
     if (timeDependent) {
       const target = clock.tick(now, tDisplay);
       if (target > tDisplay) {
@@ -2428,6 +2642,7 @@ function createInstrument(spec) {
       if (firstErr) { status.set('drift', firstErr.value); status.set('driftLabel', firstErr.label); }
     }
     if (++frames === 1 || frames % 30 === 0) status.set('frames', frames);   // first frame at once: slow pages count as live
+    adaptResolution(now, performance.now() - frameStart);
     requestAnimationFrame(frame);
   }
 
@@ -2440,6 +2655,10 @@ function createInstrument(spec) {
     restart: () => rebuild(),
     setParams: (next, opts) => setParams(next, opts),
     setParam: (k, v) => setParam(k, v),
+    getSim: () => sim,
+    toggleFullscreen: () => toggleFullscreen(),
+    get fullscreen() { return isFullscreen(); },
+    testSteps,
     play: () => setPlaying(true), pause: () => setPlaying(false),
     steps: n => { if (typeof sim.step === "function") for (let i = 0; i < n; i++) sim.step(); tDisplay = sim.t ?? 0; return window.psim.state(); },
   };
@@ -2455,7 +2674,10 @@ function createInstrument(spec) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   setPlaying(timeDependent && (query.get('autoplay') ? query.get('autoplay') !== '0' : !reduced));
   addEventListener('keydown', e => {
-    if (e.target.closest('input, select, textarea') || !timeDependent) return;
+    if (e.target.closest('input, select, textarea')) return;
+    if ((e.key === 'f' || e.key === 'F') && !e.metaKey && !e.ctrlKey) { e.preventDefault(); toggleFullscreen(); return; }
+    if (e.key === 'Escape' && pseudoFs) { setPseudo(false); return; }
+    if (!timeDependent) return;
     if (e.code === 'Space') { e.preventDefault(); setPlaying(!clock.playing); }
     else if (e.key === '.') { setPlaying(false); sim.step(); tDisplay = sim.t; }
     else if (e.key === 'r' || e.key === 'R') rebuild();
@@ -2871,6 +3093,8 @@ __psim["core/constants.mjs"] = (() => {
 // Physical constants, SI units. CODATA 2018 recommended values
 // (Tiesinga et al., Rev. Mod. Phys. 93, 025010, 2021). "exact" = defined by the 2019 SI.
 // Import from here instead of typing constants by hand; cite the source in the page.
+// PDG (end of file): particle-physics inputs as { value, error, unit, source }, from the PDG 2024
+// Review of Particle Physics or CODATA 2022 as each entry's source says.
 
 const CODATA = 'CODATA 2018';
 
@@ -2896,6 +3120,9 @@ const MeV = 1.602176634e-13;         // J, exact
 const mpc2MeV = 938.27208816;        // MeV (proton rest energy)
 const mec2MeV = 0.51099895000;       // MeV (electron rest energy)
 const hbarcMeVfm = 197.3269804;      // MeV fm
+const mAlphaMeV = 3727.3794066;      // MeV (alpha-particle rest energy)
+const muB = 1.602176634e-19 * (6.62607015e-34 / (2 * Math.PI)) / (2 * 9.1093837015e-31); // J T^-1, Bohr magneton eħ/2mₑ (CODATA 9.2740100783e-24)
+const ge = 2.00231930436256;         // |g| of the free electron (g_e = −2.00231930436256)
 
 // Astronomy (IAU 2012/2015 nominal values)
 const AU = 1.495978707e11;           // m, exact (IAU 2012)
@@ -2938,6 +3165,10 @@ const PDG = Object.freeze({
   mp: pdg(938.27208943, 0.00000029, 'MeV', 'CODATA 2022'),
   mpiCharged: pdg(139.57039, 0.00018, 'MeV', RPP),
   mpi0: pdg(134.9768, 0.0005, 'MeV', RPP),
+  tauPiCharged: pdg(2.6033e-8, 0.0005e-8, 's', RPP, 'π± mean life (cτ = 7.80 m)'),
+  tauPi0: pdg(8.43e-17, 0.13e-17, 's', RPP, 'π⁰ mean life'),
+  mKCharged: pdg(493.677, 0.015, 'MeV', RPP),
+  tauKCharged: pdg(1.2380e-8, 0.0020e-8, 's', RPP, 'K± mean life'),
   GF: pdg(1.1663788e-5, 0.0000006e-5, 'GeV^-2', RPP, 'G_F/(ħc)³ from the muon lifetime'),
   mW: pdg(80.3692, 0.0133, 'GeV', RPP),
   mZ: pdg(91.1876, 0.0021, 'GeV', RPP),
@@ -2955,7 +3186,15 @@ const PDG = Object.freeze({
   michelEta: pdg(0.057, 0.034, '', RPP, 'Michel parameter η (SM: 0)'),
 });
 
-return { CODATA, c, h, hbar, e, kB, NA, eps0, mu0, G, me, mp, mn, u, a0, alpha, Eh, Ry, eV, MeV, mpc2MeV, mec2MeV, hbarcMeVfm, AU, GMsun, Msun, yearJulian, G_AU_MSUN_YR, gn, GMearth, Rearth, RearthMean, GMmoon, Rmoon, earthMoonDistance, R, Mair, gammaAir, p0, T0isa, rho0isa, PDG };
+// Standard atomic weights (IUPAC; abridged values where the natural variation is large), g/mol.
+// Multiply by u·1000 (or divide by NA·1000) for the mass of one atom in kg.
+const ATOMIC_WEIGHT = Object.freeze({
+  H: 1.008, He: 4.002602, C: 12.011, N: 14.007, O: 15.999, Na: 22.98976928, Al: 26.9815384, Si: 28.085,
+  Cl: 35.45, Ar: 39.95, K: 39.0983, Fe: 55.845, Cu: 63.546, Rb: 85.4678, Ag: 107.8682, Cs: 132.90545196,
+  W: 183.84, Au: 196.966570, Hg: 200.592, Pb: 207.2, U: 238.02891,
+});
+
+return { CODATA, c, h, hbar, e, kB, NA, eps0, mu0, G, me, mp, mn, u, a0, alpha, Eh, Ry, eV, MeV, mpc2MeV, mec2MeV, hbarcMeVfm, mAlphaMeV, muB, ge, AU, GMsun, Msun, yearJulian, G_AU_MSUN_YR, gn, GMearth, Rearth, RearthMean, GMmoon, Rmoon, earthMoonDistance, R, Mair, gammaAir, p0, T0isa, rho0isa, PDG, ATOMIC_WEIGHT };
 })();
 
 // ---- psim:core/relativity.mjs

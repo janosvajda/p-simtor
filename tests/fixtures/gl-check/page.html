@@ -33,7 +33,18 @@ createInstrument({
 });
 
 // Pixel checks against the geometry the renderers must reproduce.
-window.psim.selfTest = () => {
+window.psim.selfTest = async () => {
+  // full screen without a user gesture: the API refuses, so the CSS fallback must fill the window
+  const sceneEl = document.querySelector('.psim-stage');
+  window.psim.toggleFullscreen();
+  await new Promise(r => setTimeout(r, 300));
+  const rFs = sceneEl.getBoundingClientRect(), barInside = sceneEl.contains(document.querySelector('.psim-transport'));
+  const fsOn = window.psim.fullscreen;
+  window.psim.toggleFullscreen();
+  await new Promise(r => setTimeout(r, 300));
+  const fsOff = !window.psim.fullscreen && !sceneEl.classList.contains('psim-fs');
+  const fsCheck = { label: 'Full screen fills the window with the scene and its playback bar; toggles back', w: Math.round(rFs.width), h: Math.round(rFs.height), vw: innerWidth, vh: innerHeight, barInside, fsOn, fsOff,
+    pass: fsOn && fsOff && barInside && Math.abs(rFs.width - innerWidth) <= 1 && Math.abs(rFs.height - innerHeight) <= 1 };
   const gl = document.querySelector('canvas.psim-gl').getContext('webgl2');
   const W = gl.drawingBufferWidth, H = gl.drawingBufferHeight, dpr = devicePixelRatio || 1;
   const px = (x, y) => { const b = new Uint8Array(4); gl.readPixels(Math.round(x), Math.round(H - 1 - y), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, b); return [...b]; };
@@ -175,6 +186,7 @@ window.psim.selfTest = () => {
   out.push({ label: 'View section: presentation only, legend follows', found: !!vs, legend, rebuilds: createSim.count - rebuildsBefore,
     pass: !!vs && createSim.count === rebuildsBefore && /size 6 px/.test(legend) && pointSize === 6 });
   window.psim.setParams({ n: 2000, map: 'inferno' });
+  out.push(fsCheck);
   return out;
 };
 </script>

@@ -109,7 +109,7 @@ createInstrument({
   - `colormap(name, t)` (`viridis`, `inferno`, `magma`, `coolwarm`, and cyclic `phase` for angles such as a wavefunction's phase) gives the same colours in 2D drawing and legends.
   If WebGL2 is unavailable the shell shows the reason; keep the scientific readouts in 2D so the page still informs. A page with custom shaders can still create its own canvas (see `examples/black-hole/`). Pixel self-tests: see `tests/fixtures/gl-check/page.html`.
 - MathML equations: use Unicode bold letters (𝐫 𝐯 𝐄 𝐁 𝐮) for vectors, because MathML Core ignores `mathvariant="bold"`. Leading and trailing spaces inside `<mtext>` collapse: write `<mtext>&#160;on ℝ⁴</mtext>`.
-- Only `psim:` and relative `./` imports are bundled. **No CDN scripts**: the deliverable must work offline. If you need a library (for example an FFT), write it or add it to the project as a local module.
+- Only `psim:` and relative `./` imports are bundled. **No CDN scripts**: the deliverable must work offline. Check `core/` first (FFTs, ODE and PDE solvers, linear algebra and statistics are there); anything else, write it or add it to the project as a local module.
 
 ## Shell options and UI helpers (no need to read the ui/ source)
 
@@ -126,6 +126,7 @@ createInstrument({
 | `hudLine(sim)` | Second HUD line under the time readout |
 | `presets: [{ label, values: { key: value, … }, play }]` | "Try this" buttons: set several parameters at once (sliders and dropdowns show the new values; one rebuild) |
 | `formatTime(t)`, `timeDigits` | HUD time text (e.g. a clock "14:30", "day 3"); default `t unit` with `timeDigits` (3) decimals; 0 for counts |
+| `glResolution` (`'auto'` default, or a number ≤ 1) | GL layer pixel ratio as a fraction of the device's: `'auto'` lowers it while the GPU cannot keep up (large or fullscreen windows) and raises it again; `view.glScale` reports it. The 2D overlay (labels, text) always stays sharp |
 | `frameBudget` (ms, default 9), `speedRange: [lo, hi]` | Computing time per frame; the playback-speed slider's range (default speed/100 … speed×100) |
 | `hudError: false` | Keep the error diagnostic in the side panel only (pages for non-specialists) |
 | `viewControls(container, { el, slider, select, toggle, button, view, getSim })` | A "View" section after Parameters for presentation-only controls (projection angle, colour map, slice): they redraw and never rebuild the model. `slider(…)` returns an element with `setValue(v)` for controls that follow an animation |
@@ -134,7 +135,13 @@ createInstrument({
 
 **Experimenter actions that are not parameters** (swing the masses now, fire one particle, open a shutter): call a method on `getSim()` from a `controls` or `viewControls` button, and record each action with its time in the simulation state (a schedule), so `state()`, CSV export and `advanceTo` replay it. Keep `createSim(params)` deterministic: the schedule starts empty or comes from a parameter.
 
+**Build-time data**: expensive results that are not part of the live model (a parameter scan taking minutes) can be returned as extra fields of `verify()`; they are embedded with the report and available as `report` in `bench`, `view.report` and `window.psim.report`. Label them "computed at build time" beside the figure. Keep `verify()` to a few minutes; layout iterations reuse the cached report, and an unverified build (`build` without `--verify-module`) is fine for an early layout check, never for delivery.
+
+**Overlays on a GPU field** whose colour map has a fixed dark end (inferno, viridis) need fixed light overlay colours in both themes; theme tokens are for overlays on the page background.
+
 `view.theme` is `'dark'` or `'light'` (pick additive or alpha blending, mesh colours). `view.setLegend([…])` replaces the legend beside the view when the representation changes (e.g. a different projection); `model.legend` is only the initial one.
+
+**Full screen** is built in: a button at the right end of the playback bar (a corner button on static pages) and the F key put the scene, its HUD, legend and playback bar on the whole screen (Esc leaves). Where the Fullscreen API is missing (iPhone Safari) the scene fills the window instead. Nothing to add per page; draw from `view.W`/`view.H` every frame and the view adapts (call `camera.fit` in `onFit`, which runs after the switch).
 
 It returns `{ values, rebuild, view, sim }`. `controls` and `bench` callbacks also receive `setParam(key, value)`, `setParams({ … }, { play })`, `play()` and `pause()`; `window.psim` has the same (`window.psim.setParam`, `setParams`, `play`, `pause`, `getSim`). `view.speed` and `view.playing` let `draw` disclose the current time compression.
 

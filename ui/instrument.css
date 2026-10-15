@@ -406,3 +406,12 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
   background: color-mix(in srgb, var(--stage) 72%, transparent);
   backdrop-filter: blur(3px);
 }
+
+/* ---------- full screen (scene + HUD + legend + playback bar) ---------- */
+.psim-fs { background: var(--stage, var(--bg)); border-radius: 0 !important; border: 0 !important; }
+.psim-app .psim-fs .psim-transport { position: absolute; left: 50%; right: auto; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 5; }
+.psim-pseudo-fs { position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100dvh !important; max-height: none !important; z-index: 1000; margin: 0 !important; }
+.psim-fsbtn { position: absolute; right: 12px; bottom: 12px; z-index: 4; width: 34px; height: 34px; display: grid; place-items: center;
+  border-radius: 9px; border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); cursor: pointer; }
+.psim-fsbtn:hover { background: var(--raise); color: var(--ink); }
+.psim-fsbtn svg { width: 15px; height: 15px; }

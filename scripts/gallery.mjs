@@ -8,7 +8,8 @@
 //   node scripts/gallery.mjs remove ID
 //   node scripts/gallery.mjs list
 //   node scripts/gallery.mjs order ID…      put these demos first, in this order
-//   node scripts/gallery.mjs build           regenerate docs/index.html (add/remove do this too)
+//   node scripts/gallery.mjs build           regenerate docs/index.html and the README demo list (add/remove/order do this too)
+//   add … --group experiments|space|particles|quantum|matter   the README section
 //
 // `add` copies the page into docs/, takes a thumbnail (if Chrome is available) and records the
 // prompt, the source path and the date in docs/demos.json.
@@ -61,18 +62,56 @@ async function thumbnail(id, { wait = 3500, advance, click } = {}) {
       if (!found) console.log(`  no button "${click}" on the page`);
       await new Promise(r => setTimeout(r, 1500));
     }
+    const gl = await b.eval(`!!document.querySelector('.psim-app.has-gl') || [...document.querySelectorAll('canvas')].some(c => { try { return !!c.getContext('webgl2') && c.width > 0 && c.className !== '' } catch { return false } })`).catch(() => false);
     const shot = await b.send('Page.captureScreenshot', { format: 'jpeg', quality: 82, clip: { x: 0, y: 64, width: 1280 - 372, height: 736, scale: 0.6 } });
     writeFileSync(join(DOCS, 'thumbs', `${id}.jpg`), Buffer.from(shot.data, 'base64'));
     await b.close();
-    return true;
+    return { thumb: true, gl };
   } catch (e) {
     console.log(`  no thumbnail (${e.message.split('\n')[0]})`);
-    return false;
+    return { thumb: false, gl: undefined };
   }
+}
+
+// Subject groups for the README list (a demo's group is set with --group on add).
+export const GROUPS = [
+  { key: 'experiments', title: 'Famous experiments, recreated' },
+  { key: 'space', title: 'Space and gravity' },
+  { key: 'particles', title: 'Particle physics and 4D gauge theory' },
+  { key: 'quantum', title: 'Quantum mechanics' },
+  { key: 'matter', title: 'Heat, matter and chaos' },
+];
+const SITE = 'https://janosvajda.github.io/p-simtor/';
+const README = join(ROOT, 'README.md');
+const START = '<!-- demos:start -->', END = '<!-- demos:end -->';
+
+/** The README demo list: every demo with its thumbnail and prompt, grouped, in gallery order. */
+export function readmeBlock(demos) {
+  const cell = d => `<td width="33%" valign="top"><a href="${SITE}${d.id}.html"><img src="docs/thumbs/${d.id}.jpg" alt="${esc(d.title)}"></a><br><b><a href="${SITE}${d.id}.html">${esc(d.title)}</a></b>${d.gl ? ' <sup>WebGL</sup>' : ''}<br><code>${esc(d.prompt)}</code></td>`;
+  const gpu = demos.filter(d => d.gl).length;
+  const out = [START, '', `**${demos.length} demos**, each made by an agent from the single prompt under it (${gpu} of them are WebGL scenes). Click a picture to run it in your browser.`];
+  const groups = [...GROUPS, { key: undefined, title: 'More' }];
+  for (const g of groups) {
+    const list = demos.filter(d => (g.key ? d.group === g.key : !GROUPS.some(x => x.key === d.group)));
+    if (!list.length) continue;
+    out.push('', `### ${g.title} (${list.length})`, '', '<table>');
+    for (let i = 0; i < list.length; i += 3) out.push(`<tr>${list.slice(i, i + 3).map(cell).join('')}</tr>`);
+    out.push('</table>');
+  }
+  out.push('', END);
+  return out.join('\n');
+}
+function writeReadme(demos) {
+  if (!existsSync(README)) return;
+  const text = readFileSync(README, 'utf8'), a = text.indexOf(START), b = text.indexOf(END);
+  if (a < 0 || b < a) { console.log(`README.md has no ${START} … ${END} block: list not updated`); return; }
+  writeFileSync(README, text.slice(0, a) + readmeBlock(demos) + text.slice(b + END.length));
+  console.log(`README.md: ${demos.length} demos listed.`);
 }
 
 function build() {
   const { demos } = load();
+  writeReadme(demos);
   const cards = demos.map(d => `
     <a class="card" href="${esc(d.id)}.html">
       ${d.thumb ? `<img src="thumbs/${esc(d.id)}.jpg" alt="${esc(d.title)}" loading="lazy" width="545" height="442">` : '<div class="ph"></div>'}
@@ -147,9 +186,11 @@ if (cmd === 'add') {
   if (!info.generator) fail(`${src} was not produced by p-simtor (no generator meta tag)`);
   const id = opt('id') ?? basename(src, '.html').toLowerCase().replace(/[^a-z0-9-]+/g, '-');
   const m = load();
+  const previous = m.demos.find(d => d.id === id);
   m.demos = m.demos.filter(d => d.id !== id);
   copyFileSync(src, join(DOCS, `${id}.html`));
-  const thumb = !args.includes('--no-thumb') && await thumbnail(id, { wait: +(opt('wait') ?? 3500), advance: opt('advance'), click: opt('click') });
+  const shot = args.includes('--no-thumb') ? { thumb: false } : await thumbnail(id, { wait: +(opt('wait') ?? 3500), advance: opt('advance'), click: opt('click') });
+  const thumb = shot.thumb;
   // version of the skill that built it, if the page sits in a project with the skill installed
   let skillVersion;
   for (let dir = dirname(resolve(src)); dir !== dirname(dir); dir = dirname(dir)) {
@@ -158,7 +199,8 @@ if (cmd === 'add') {
   }
   m.demos.push({
     id, title: opt('title') ?? info.title ?? id, prompt: prompt.startsWith('/p-simtor') ? prompt : `/p-simtor ${prompt}`,
-    about: opt('about'), date: new Date().toISOString().slice(0, 10), source: resolve(src), checks: info.checks, thumb, skillVersion,
+    about: opt('about'), group: opt('group') ?? previous?.group, gl: shot.gl ?? previous?.gl,
+    date: new Date().toISOString().slice(0, 10), source: resolve(src), checks: info.checks, thumb, skillVersion,
   });
   save(m);
   console.log(`Added "${id}"${info.checks ? ` (${info.checks.passed}/${info.checks.total} checks passed)` : ''}.`);
@@ -185,7 +227,7 @@ if (cmd === 'add') {
   m.demos = [...ids.map(id => m.demos.find(d => d.id === id)), ...m.demos.filter(d => !ids.includes(d.id))];
   save(m);
   build();
-} else if (cmd === 'build') {
+} else if (cmd === 'build' || cmd === 'readme') {
   build();
 } else {
   console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 12).map(l => l.replace(/^\/\/ ?/, '')).join('\n'));

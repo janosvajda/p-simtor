@@ -53,6 +53,8 @@ Choose the renderer from the size and shape of the state, as a cost estimate (se
 - **3D densities:** a scalar on a 3D grid (orbital |ψ|², gas density, a temperature field) is shown honestly as a ray-marched volume (`createVolumeRenderer`), not as a cloud of invented particles. Sampled points are a different object: label which one the view shows.
 - Additive glow suits emission on dark backgrounds; in the light theme use `blend: 'alpha', soft: true` (read `view.color('--glow')`). Additive blending of many overlapping points (≳ 10⁴ in a dense region) saturates to white and erases a colour map: when colour encodes a value, use `blend: 'alpha'` or smaller points.
 
+**GPU cost** grows with screen pixels: a Retina or fullscreen view has 8–15 M pixels. The shell lowers the GL layer's resolution automatically when the GPU falls behind, and the volume renderer ray-marches at ≤ ~1.5 M rays and upscales. Keep per-frame CPU work small too: upload only what changed (`append` for new points, `update` when positions move), and keep one physics `step()` well under a frame (~10 ms), splitting large systems across frames if needed (e.g. `sweep(lat, { sites })`).
+
 ## More than three dimensions, periodic boxes, internal spaces
 
 A screen shows two dimensions and depth hints. To show a 4D lattice, a 3-sphere or any higher-dimensional state, pick one reduction and name it beside the view:

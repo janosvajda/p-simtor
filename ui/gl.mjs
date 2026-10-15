@@ -231,12 +231,24 @@ export function cssColor(c) {
   }
   throw new Error(`gl: cannot read the colour "${c}"`);
 }
-const rgb = c => cssColor(c).slice(0, 3);
+const colorCache = new Map();
+const rgb = c => {
+  if (typeof c !== 'string' || c.startsWith('--')) return cssColor(c).slice(0, 3);   // tokens follow the theme: no cache
+  let v = colorCache.get(c);
+  if (!v) { v = cssColor(c).slice(0, 3); if (colorCache.size > 512) colorCache.clear(); colorCache.set(c, v); }
+  return v;
+};
+
+/** Device pixels per CSS pixel of the GL canvas (lower than devicePixelRatio under adaptive resolution). */
+export const pixelRatio = gl => (gl.canvas.clientWidth ? gl.canvas.width / gl.canvas.clientWidth : (globalThis.devicePixelRatio || 1));
 
 /**
- * A WebGL2 canvas stacked under `canvas2d` (same box, same device-pixel ratio). The 2D canvas
- * stays on top for labels, axes and pointer events. Returns { gl, canvas, ok, reason, sync() };
+ * A WebGL2 canvas stacked under `canvas2d` (same box). The 2D canvas stays on top for labels,
+ * axes and pointer events. Returns { gl, canvas, ok, reason, sync(), scale, maxPixels };
  * when WebGL2 is unavailable, ok is false and reason says why (show it; draw a 2D fallback).
+ * The GL canvas renders at devicePixelRatio × scale (scale ≤ 1, set by the shell's adaptive
+ * resolution when the GPU cannot keep up) and never above maxPixels device pixels (default 8 M,
+ * a 4K screen); CSS stretches it to the box, so a lower scale only softens the 3D layer.
  */
 export function createGLLayer(canvas2d) {
   const canvas = document.createElement('canvas');
@@ -245,10 +257,13 @@ export function createGLLayer(canvas2d) {
   canvas2d.parentNode.insertBefore(canvas, canvas2d);
   const gl = canvas.getContext('webgl2', { alpha: true, premultipliedAlpha: true, antialias: true, preserveDrawingBuffer: true, stencil: true });
   const layer = {
-    gl, canvas, ok: !!gl, reason: gl ? '' : 'WebGL2 is not available in this browser',
-    /** Match the 2D canvas size; set the viewport and clear to transparent. */
+    gl, canvas, ok: !!gl, reason: gl ? '' : 'WebGL2 is not available in this browser', scale: 1, maxPixels: 8e6,
+    /** Match the 2D canvas size (× scale, within maxPixels); set the viewport and clear to transparent. */
     sync(dpr = devicePixelRatio || 1) {
-      const w = Math.round(canvas2d.clientWidth * dpr), h = Math.round(canvas2d.clientHeight * dpr);
+      const cw = canvas2d.clientWidth, ch = canvas2d.clientHeight;
+      let r = dpr * layer.scale;
+      if (cw * ch * r * r > layer.maxPixels) r = Math.sqrt(layer.maxPixels / (cw * ch));
+      const w = Math.max(1, Math.round(cw * r)), h = Math.max(1, Math.round(ch * r));
       if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
       if (!gl) return;
       gl.viewport(0, 0, w, h); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
@@ -353,7 +368,7 @@ void main() {
       const { viewProj, proj } = camera.matrices(aspect ?? gl.drawingBufferWidth / gl.drawingBufferHeight);
       gl.useProgram(p); gl.bindVertexArray(vao);
       gl.uniformMatrix4fv(u.uVP, false, viewProj);
-      gl.uniform1f(u.uSize, size * (sizeUnit === 'px' ? (devicePixelRatio || 1) : 1));
+      gl.uniform1f(u.uSize, size * (sizeUnit === 'px' ? pixelRatio(gl) : 1));
       gl.uniform1f(u.uWorld, sizeUnit === 'world' ? 1 : 0);
       gl.uniform1f(u.uScale, proj[5] * gl.drawingBufferHeight / 2);
       gl.uniform1f(u.uLog, log ? 1 : 0);
@@ -411,7 +426,7 @@ void main() { float v = texture(uField, vUV).r; if (v < 0.0) discard; vec3 c = t
     },
     draw({ rect, colormap: map = 'viridis', smooth = true, opacity = 1 } = {}) {
       if (!ready) return;
-      const W = gl.drawingBufferWidth / (devicePixelRatio || 1), H = gl.drawingBufferHeight / (devicePixelRatio || 1);
+      const W = gl.drawingBufferWidth / pixelRatio(gl), H = gl.drawingBufferHeight / pixelRatio(gl);
       const [x, y, w, h] = rect ?? [0, 0, W, H];
       gl.useProgram(p); gl.bindVertexArray(vao);
       // CSS px (y down) → clip space; the texture's row j = 0 is drawn at the bottom (y up, physics)
@@ -438,6 +453,8 @@ void main() { float v = texture(uField, vUV).r; if (v < 0.0) discard; vec3 c = t
  * or 'absorption' (emission–absorption: nearer matter hides farther). Opacity is a display
  * transfer function, not a physical optical depth unless you derive it from one: say which.
  * smooth: false shows each cell as a uniform block (honest for coarse grids, e.g. a lattice).
+ * Smooth volumes are ray-marched at reduced resolution (≤ ~1.5 M rays) and upscaled; pass
+ * resolution: 1 (fraction of the layer's pixels per axis) to force full resolution.
  * update(…, { signed: true }) shows a field of either sign (charge density, vorticity, Re ψ): the
  * colour map's middle is zero, colour gives the sign and opacity |value|; range is symmetric,
  * [−M, M] with M = max|value| unless given. Use a diverging map ('coolwarm').
@@ -481,6 +498,19 @@ void main() {
   const loc = gl.getAttribLocation(p, 'aXY'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
   gl.bindVertexArray(null);
   let ready = false, signed = false;
+  // offscreen target for reduced-resolution ray marching, and a composite pass that upscales it
+  const comp = compile(gl, `#version 300 es
+in vec2 aXY; out vec2 vUV;
+void main() { vUV = aXY; gl_Position = vec4(aXY * 2.0 - 1.0, 0.0, 1.0); }`, `#version 300 es
+precision mediump float;
+in vec2 vUV; uniform sampler2D uTex; out vec4 frag;
+void main() { frag = texture(uTex, vUV); }`);
+  const compVao = gl.createVertexArray();
+  gl.bindVertexArray(compVao); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  const cl = gl.getAttribLocation(comp.p, 'aXY'); gl.enableVertexAttribArray(cl); gl.vertexAttribPointer(cl, 2, gl.FLOAT, false, 0, 0);
+  gl.bindVertexArray(null);
+  const fbo = gl.createFramebuffer(), target = gl.createTexture();
+  let tw = 0, th = 0;
   return {
     update(values, nx, ny, nz, { range, log = false, signed: isSigned = false } = {}) {
       if (values.length !== nx * ny * nz) throw new Error('volumeRenderer: values must have nx·ny·nz entries');
@@ -510,8 +540,27 @@ void main() {
       ready = true;
       return { range: [lo, hi] };
     },
-    draw(camera, { aspect, box = [[-1, -1, -1], [1, 1, 1]], colormap: map = 'inferno', opacity = 1, steps = 160, mode = 'emission', smooth = true } = {}) {
+    draw(camera, { aspect, box = [[-1, -1, -1], [1, 1, 1]], colormap: map = 'inferno', opacity = 1, steps = 160, mode = 'emission', smooth = true, resolution } = {}) {
       if (!ready) return;
+      // A smooth density looks the same ray-marched at reduced resolution and upscaled, at a fraction
+      // of the cost (it is the most expensive renderer per pixel): by default at most ~1.5 M samples
+      // per frame. smooth: false keeps full resolution so cell edges stay sharp.
+      const W = gl.drawingBufferWidth, H = gl.drawingBufferHeight;
+      const res = resolution ?? (smooth ? Math.min(1, Math.sqrt(1.5e6 / (W * H))) : 1);
+      const offscreen = res < 0.999;
+      if (offscreen) {
+        const w = Math.max(1, Math.round(W * res)), h = Math.max(1, Math.round(H * res));
+        gl.bindTexture(gl.TEXTURE_2D, target);
+        if (w !== tw || h !== th) {
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+          gl.bindFramebuffer(gl.FRAMEBUFFER, fbo); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target, 0);
+          tw = w; th = h;
+        }
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo); gl.viewport(0, 0, w, h);
+        gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+      }
       const f = smooth ? gl.LINEAR : gl.NEAREST;
       gl.bindTexture(gl.TEXTURE_3D, tex); gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, f); gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, f);
       const { viewProj } = camera.matrices(aspect ?? gl.drawingBufferWidth / gl.drawingBufferHeight);
@@ -524,6 +573,12 @@ void main() {
       gl.uniform1f(u.uSigned, signed ? 1 : 0);
       gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.disable(gl.DEPTH_TEST);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      if (offscreen) {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, W, H);
+        gl.useProgram(comp.p); gl.bindVertexArray(compVao);
+        gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, target); gl.uniform1i(comp.u.uTex, 0);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      }
       gl.bindVertexArray(null);
     },
   };
@@ -649,6 +704,7 @@ void main() {
   }
   gl.bindVertexArray(null);
   let lines = [];   // rebuilt each draw: the camera target (the float64 origin) may move
+  let scratch = new Float32Array(0);
   return {
     update(data) { lines = Array.isArray(data) && data.length && typeof data[0] !== 'number' ? data : [data]; },
     draw(camera, { aspect, width = 2, color = '#9fb3c8', opacity = 1, dash = null, depthTest = true } = {}) {
@@ -659,20 +715,23 @@ void main() {
       for (const l of lines) n += Math.max(0, Math.floor(pts(l).length / 3) - 1);
       if (!n) return;
       {
-        const buf = new Float32Array(12 * n), base = rgb(color);
-        let k = 0;
+        if (scratch.length < 12 * n) scratch = new Float32Array(Math.max(12 * n, 2 * scratch.length));
+        const buf = scratch, base = rgb(color), t0 = t[0], t1 = t[1], t2 = t[2];
+        let o = 0;
         for (const line of lines) {
-          const l = pts(line), c = line.color ? rgb(line.color) : base, o = line.opacity ?? 1;
+          const l = pts(line), c = line.color ? rgb(line.color) : base, op = line.opacity ?? 1;
           let s = 0;
           for (let i = 0; i + 5 < l.length; i += 3) {
-            const a = [l[i] - t[0], l[i + 1] - t[1], l[i + 2] - t[2]], b = [l[i + 3] - t[0], l[i + 4] - t[1], l[i + 5] - t[2]];
             const len = Math.hypot(l[i + 3] - l[i], l[i + 4] - l[i + 1], l[i + 5] - l[i + 2]);
-            buf.set([...a, ...b, s, s + len, c[0], c[1], c[2], o], 12 * k++); s += len;
+            buf[o] = l[i] - t0; buf[o + 1] = l[i + 1] - t1; buf[o + 2] = l[i + 2] - t2;
+            buf[o + 3] = l[i + 3] - t0; buf[o + 4] = l[i + 4] - t1; buf[o + 5] = l[i + 5] - t2;
+            buf[o + 6] = s; buf[o + 7] = s + len; buf[o + 8] = c[0]; buf[o + 9] = c[1]; buf[o + 10] = c[2]; buf[o + 11] = op;
+            o += 12; s += len;
           }
         }
-        gl.bindBuffer(gl.ARRAY_BUFFER, inst); gl.bufferData(gl.ARRAY_BUFFER, buf, gl.DYNAMIC_DRAW);
+        gl.bindBuffer(gl.ARRAY_BUFFER, inst); gl.bufferData(gl.ARRAY_BUFFER, buf.subarray(0, 12 * n), gl.DYNAMIC_DRAW);
       }
-      const dpr = devicePixelRatio || 1;
+      const dpr = pixelRatio(gl);
       const { viewProj } = camera.matrices(aspect ?? gl.drawingBufferWidth / gl.drawingBufferHeight, { relative: true });
       gl.useProgram(p); gl.bindVertexArray(vao);
       gl.uniformMatrix4fv(u.uVP, false, viewProj);

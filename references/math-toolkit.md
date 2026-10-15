@@ -206,7 +206,7 @@ Subject-specific but reusable: SU(2) sampling, `wilsonLoops` (all R×T at once),
 | `ketAlong`, `rotate`, `bloch`, `probability`, `measure` | Spin ½ / qubit states, precession, Born probabilities, projective measurement | Pure states; see [quantum](quantum.md) for the semiclassical beam model |
 | `maxwellSpeed(T, m)`, `effusiveSpeed(T, m)` | Gas speed laws (∝ v² and ∝ v³ e^{−mv²/2kT}) with pdf, cdf, exact sampler, mean | m in kg (`ATOMIC_WEIGHT[el]·u·1000`) |
 
-Fields: `probabilityCurrent(re, im, { shape, spacing, mass, hbar })` from `core/fields.mjs` gives j = (ħ/m)Im(ψ*∇ψ) per axis, spectrally (the flux check for absorbing layers and transmission).
+Fields: `fftAxis(re, im, shape, axis)` (one axis only), `phaseWinding(re, im, { shape })` (vortex charges of a 2D complex field), `probabilityCurrent(re, im, { shape, spacing, mass, hbar })` from `core/fields.mjs` gives j = (ħ/m)Im(ψ*∇ψ) per axis, spectrally (the flux check for absorbing layers and transmission).
 
 ODE notes: `odeStepper(...).advanceTo(t, Infinity, { exact: true })` ends exactly at t; `s.hmax` is mutable (cap steps inside a region so events there are not stepped over).
 

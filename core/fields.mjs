@@ -100,8 +100,8 @@ function fftGrid(shape) {
 }
 const rows = new Map();
 /** Separable FFT over every axis; callers check finiteness once afterwards (not per element). */
-function transform(re, im, spec, inverse) {
-  for (let axis = 0; axis < spec.shape.length; axis++) {
+function transform(re, im, spec, inverse, axes = spec.shape.map((_, k) => k)) {
+  for (const axis of axes) {
     const length = spec.shape[axis], stride = spec.strides[axis], block = length * stride;
     if (!rows.has(length)) rows.set(length, [new Float64Array(length), new Float64Array(length)]);
     const [rowRe, rowIm] = rows.get(length);
@@ -288,6 +288,40 @@ export function schrodingerND({ re0, im0, V, shape, spacing = 1, dt, mass = 1, h
   };
   const initialNorm = s.norm();
   return s;
+}
+
+/** In-place FFT along one axis only (fields.mjs storage); inverse includes 1/n. For alternating-direction splittings. */
+export function fftAxis(re, im, shape, axis, inverse = false) {
+  const spec = fftGrid(shape);
+  if (!(Number.isInteger(axis) && axis >= 0 && axis < spec.shape.length)) throw new Error('fftAxis: axis out of range');
+  field(re, spec.size, 'fftAxis'); field(im, spec.size, 'fftAxis');
+  transform(re, im, spec, inverse, [axis]);
+  field(re, spec.size, 'fftAxis'); field(im, spec.size, 'fftAxis');
+  return { re, im };
+}
+
+/**
+ * Topological charge of a complex 2D field on every grid plaquette: the phase winding
+ * (Σ of wrapped phase differences around the cell)/2π, an integer (±1 at a vortex core, 0
+ * elsewhere). Returns { winding: Int8Array (size (nx−1)(ny−1), index i + (nx−1)j), vortices:
+ * [{ x, y, charge }] at plaquette centres in grid units }. Cells where |ψ|² < threshold·max are
+ * skipped (phase undefined in empty regions).
+ */
+export function phaseWinding(re, im, { shape, threshold = 1e-3 }) {
+  const spec = grid(shape);
+  if (spec.shape.length !== 2) throw new Error('phaseWinding: a 2D shape [nx, ny] is required');
+  field(re, spec.size, 'phaseWinding'); field(im, spec.size, 'phaseWinding');
+  const [nx, ny] = spec.shape, ph = Float64Array.from(re, (r, i) => Math.atan2(im[i], r));
+  let maxRho = 0; for (let i = 0; i < spec.size; i++) maxRho = Math.max(maxRho, re[i] * re[i] + im[i] * im[i]);
+  const wrap = d => d - 2 * Math.PI * Math.round(d / (2 * Math.PI));
+  const winding = new Int8Array((nx - 1) * (ny - 1)), vortices = [];
+  for (let j = 0; j < ny - 1; j++) {for (let i = 0; i < nx - 1; i++) {
+    const a = i + nx * j, b = a + 1, c = a + 1 + nx, d = a + nx;
+    if (Math.min(...[a, b, c, d].map(k => re[k] * re[k] + im[k] * im[k])) < threshold * maxRho) continue;
+    const w = Math.round((wrap(ph[b] - ph[a]) + wrap(ph[c] - ph[b]) + wrap(ph[d] - ph[c]) + wrap(ph[a] - ph[d])) / (2 * Math.PI));
+    if (w) { winding[i + (nx - 1) * j] = w; vortices.push({ x: i + 0.5, y: j + 0.5, charge: w }); }
+  }}
+  return { winding, vortices };
 }
 
 /**

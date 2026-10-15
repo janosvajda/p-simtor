@@ -400,6 +400,29 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
   .psim-app.workbench .psim-legend { top: auto; bottom: 14px; left: auto; right: 26px; }
   .psim-bench .psim-canvaswrap { height: 70vh; }
 }
+
+/* GPU layer (ui/gl.mjs): under the 2D canvas, which keeps labels and pointer events */
+.psim-gl { pointer-events: none; }
+
+/* "Try this" presets (createInstrument presets) */
+.psim-presets { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 12px; }
+.psim-presets .psim-hint { width: 100%; margin: 0; }
+
+/* Over a GPU scene the HUD and legend get a soft backing so they stay readable on bright content */
+.psim-app.has-gl .psim-hud, .psim-app.has-gl .psim-legend {
+  padding: 6px 9px; border-radius: 8px;
+  background: color-mix(in srgb, var(--stage) 72%, transparent);
+  backdrop-filter: blur(3px);
+}
+
+/* ---------- full screen (scene + HUD + legend + playback bar) ---------- */
+.psim-fs { background: var(--stage, var(--bg)); border-radius: 0 !important; border: 0 !important; }
+.psim-app .psim-fs .psim-transport { position: absolute; left: 50%; right: auto; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 5; }
+.psim-pseudo-fs { position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100dvh !important; max-height: none !important; z-index: 1000; margin: 0 !important; }
+.psim-fsbtn { position: absolute; right: 12px; bottom: 12px; z-index: 4; width: 34px; height: 34px; display: grid; place-items: center;
+  border-radius: 9px; border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); cursor: pointer; }
+.psim-fsbtn:hover { background: var(--raise); color: var(--ink); }
+.psim-fsbtn svg { width: 15px; height: 15px; }
 </style>
 </head>
 <body>
@@ -457,8 +480,8 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
   "Hydrodynamic memory is neglected: its leading MSD correction −2√(τ_f/(πt)) is shown live; for a 15 µm grain it is ≈ 8 % at t = 0.04 s and ≈ 1.7 % at 1 s, for a 1 µm particle < 1 % at all sampled times.",
   "Walls, sedimentation and grain shape are not modelled (see Model panel)."
  ],
- "generated": "2026-10-14T08:09:04.407Z",
- "runtimeMs": 644
+ "generated": "2026-10-15T00:23:58.489Z",
+ "runtimeMs": 766
 }</script>
 <script type="module">
 const __psim = {};
@@ -488,7 +511,9 @@ const ICONS = {
   pause: '<svg viewBox="0 0 16 16"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg>',
   step: '<svg viewBox="0 0 16 16"><path d="M3 2.5v11l7-5.5zM11 2.5h2v11h-2z" fill="currentColor"/></svg>',
   restart: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8a5 5 0 1 0 1.6-3.7"/><path d="M3 2.5v3h3"/></svg>',
-  fit: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg>',
+  fit: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="4.5"/><path d="M8 1v3M8 12v3M1 8h3M12 8h3"/></svg>',
+  fullscreen: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg>',
+  exitFullscreen: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2v4H2M10 2v4h4M6 14v-4H2M10 14v-4h4"/></svg>',
   sun: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6L13 13M3 13l1.4-1.4M11.6 4.4L13 3"/></svg>',
   moon: '<svg viewBox="0 0 16 16"><path d="M13.5 10A6 6 0 0 1 6 2.5a6 6 0 1 0 7.5 7.5z" fill="currentColor"/></svg>',
   info: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 7v4.5M8 4.6v.1"/></svg>',
@@ -542,7 +567,9 @@ function initTheme(toggleButton) {
   });
 }
 
+/** A theme token ('--accent') → its value; any other colour ('#ff8800', 'rgb(…)', 'tomato') passes through. */
 function cssVar(name) {
+  if (typeof name !== 'string' || !name.startsWith('--')) return name;
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
@@ -640,10 +667,10 @@ function toast(stage, text) {
 
 // ---------- transport ----------
 
-function transport({ onToggle, onStep, onRestart, onFit, speed, speedLabel, onSpeed }) {
+function transport({ onToggle, onStep, onRestart, onFit, onFullscreen, speed, speedLabel, onSpeed, range: [lo, hi] = [speed / 100, speed * 100] }) {
   const play = el('button', { class: 'primary', title: 'Play / pause (Space)', 'aria-label': 'Play or pause', html: ICONS.play, onclick: onToggle });
   const out = el('output', {}, speedLabel(speed));
-  const range = el('input', { type: 'range', min: -2, max: 2, step: 'any', value: Math.log10(speed), 'aria-label': 'Playback speed' });
+  const range = el('input', { type: 'range', min: Math.log10(lo), max: Math.log10(hi), step: 'any', value: Math.log10(speed), 'aria-label': 'Playback speed' });
   range.addEventListener('input', () => { const s = Math.pow(10, +range.value); out.textContent = speedLabel(s); onSpeed(s); });
   const bar = el('div', { class: 'psim-transport' },
     el('button', { title: 'Restart from initial conditions (R)', 'aria-label': 'Restart', html: ICONS.restart, onclick: onRestart }),
@@ -652,8 +679,13 @@ function transport({ onToggle, onStep, onRestart, onFit, speed, speedLabel, onSp
     el('span', { class: 'sep' }),
     el('label', { class: 'speed' }, 'speed', range, out),
     el('span', { class: 'sep' }),
-    el('button', { title: 'Fit view to bodies (F)', 'aria-label': 'Fit view', html: ICONS.fit, onclick: onFit }));
+    el('button', { title: 'Fit the view', 'aria-label': 'Fit view', html: ICONS.fit, onclick: onFit }),
+    onFullscreen ? el('button', { class: 'fs', title: 'Full screen (F)', 'aria-label': 'Full screen', html: ICONS.fullscreen, onclick: onFullscreen }) : null);
   bar.setPlaying = p => { play.innerHTML = p ? ICONS.pause : ICONS.play; };
+  bar.setFullscreen = on => {
+    const b = bar.querySelector('button.fs');
+    if (b) { b.innerHTML = on ? ICONS.exitFullscreen : ICONS.fullscreen; b.title = on ? 'Leave full screen (F or Esc)' : 'Full screen (F)'; }
+  };
   return bar;
 }
 
@@ -797,7 +829,7 @@ __psim["ui/plot.mjs"] = (() => {
 //   const p = createPlot({ title: 'Spectral radiance', x: { label: 'λ', unit: 'nm', min: 100, max: 3000 },
 //                          y: { label: 'B_λ', unit: 'W sr⁻¹ m⁻³', log: false } });
 //   p.fn('planck', λ => B(λ, T), { color: '--body-0', label: 'T = 5772 K' });
-//   p.vline(λmax, { label: 'λ_max' });  p.draw();
+//   p.vline('peak', λmax, { label: 'λ_max' });  p.draw();
 const { el, cssVar, sci } = __psim["ui/instrument.mjs"];
 function niceTicks(min, max, target = 5) {
   const span = max - min;
@@ -1042,6 +1074,1034 @@ function createPlot({ title = '', x = {}, y = {}, height = 220, legend = true, o
 return { createPlot };
 })();
 
+// ---- psim:ui/gl.mjs
+__psim["ui/gl.mjs"] = (() => {
+// GPU rendering (WebGL2) for any subject, organised by what is drawn, not by topic:
+//
+//   createGLLayer(canvas2d)       a WebGL2 canvas behind the shell's 2D canvas (labels stay in 2D)
+//   orbitCamera({...})            3D camera with drag-to-rotate and wheel zoom; project() for 2D labels
+//   createPointRenderer(gl)       glowing point sprites: 10⁵–10⁶ bodies, stars, samples, molecules
+//   createFieldRenderer(gl)       2D scalar field as a colour-mapped image (heat maps, |ψ|², density)
+//   createVolumeRenderer(gl)      3D scalar field by ray marching (orbital clouds, densities, gas)
+//   createSphereRenderer(gl)      lit spheres (planets, moons, balls, atoms) with exact silhouettes
+//   createLineRenderer(gl)        thick 3D polylines (orbits, field lines, trails, axes), solid or dashed
+//   createMeshRenderer(gl)        lit solid objects (geometry.*: box, cylinder, cone, sphere, disc, plane, arrow)
+//   colormap(name, t)             scientific colour maps (perceptually uniform), also for 2D canvas
+//   drawColorBar(ctx, {...})      the matching colour-bar legend on the 2D canvas (every mapped value needs one)
+//   polylines.*                   line shapes for createLineRenderer: circle, boxEdges, grid, arrow
+//   alignZ(dir)                   rotation taking +z to a direction (orient arrows, cones, cylinders)
+//
+// Large coordinates (planetary distances): spheres and lines are drawn relative to the camera
+// target, subtracted in float64 before upload, so precision does not degrade far from the origin.
+//
+// The renderers only READ arrays the simulation computed; they never change physics. Every
+// mapping (range, log scale, colour map, opacity, glow) is a representation choice: state it
+// in the legend. Matrices are column-major Float32Array(16), as WebGL expects.
+
+// ---------------------------------------------------------------- matrix maths (pure; tested in Node)
+
+function perspective(fovy, aspect, near, far) {
+  const f = 1 / Math.tan(fovy / 2), nf = 1 / (near - far);
+  return new Float32Array([f / aspect, 0, 0, 0, 0, f, 0, 0, 0, 0, (far + near) * nf, -1, 0, 0, 2 * far * near * nf, 0]);
+}
+
+function lookAt(eye, target, up) {
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const unit = a => { const l = Math.hypot(...a) || 1; return a.map(v => v / l); };
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const z = unit(sub(eye, target)), x = unit(cross(up, z)), y = cross(z, x);
+  return new Float32Array([x[0], y[0], z[0], 0, x[1], y[1], z[1], 0, x[2], y[2], z[2], 0, -dot(x, eye), -dot(y, eye), -dot(z, eye), 1]);
+}
+
+function multiply(a, b) {
+  const out = new Float32Array(16);
+  for (let c = 0; c < 4; c++) {for (let r = 0; r < 4; r++) {
+    let s = 0;
+    for (let k = 0; k < 4; k++) s += a[k * 4 + r] * b[c * 4 + k];
+    out[c * 4 + r] = s;
+  }}
+  return out;
+}
+
+/** Inverse of a 4×4 matrix (cofactor expansion, in float64). */
+function invert(m) {
+  const a = Array.from(m), inv = new Array(16);
+  inv[0] = a[5] * a[10] * a[15] - a[5] * a[11] * a[14] - a[9] * a[6] * a[15] + a[9] * a[7] * a[14] + a[13] * a[6] * a[11] - a[13] * a[7] * a[10];
+  inv[4] = -a[4] * a[10] * a[15] + a[4] * a[11] * a[14] + a[8] * a[6] * a[15] - a[8] * a[7] * a[14] - a[12] * a[6] * a[11] + a[12] * a[7] * a[10];
+  inv[8] = a[4] * a[9] * a[15] - a[4] * a[11] * a[13] - a[8] * a[5] * a[15] + a[8] * a[7] * a[13] + a[12] * a[5] * a[11] - a[12] * a[7] * a[9];
+  inv[12] = -a[4] * a[9] * a[14] + a[4] * a[10] * a[13] + a[8] * a[5] * a[14] - a[8] * a[6] * a[13] - a[12] * a[5] * a[10] + a[12] * a[6] * a[9];
+  inv[1] = -a[1] * a[10] * a[15] + a[1] * a[11] * a[14] + a[9] * a[2] * a[15] - a[9] * a[3] * a[14] - a[13] * a[2] * a[11] + a[13] * a[3] * a[10];
+  inv[5] = a[0] * a[10] * a[15] - a[0] * a[11] * a[14] - a[8] * a[2] * a[15] + a[8] * a[3] * a[14] + a[12] * a[2] * a[11] - a[12] * a[3] * a[10];
+  inv[9] = -a[0] * a[9] * a[15] + a[0] * a[11] * a[13] + a[8] * a[1] * a[15] - a[8] * a[3] * a[13] - a[12] * a[1] * a[11] + a[12] * a[3] * a[9];
+  inv[13] = a[0] * a[9] * a[14] - a[0] * a[10] * a[13] - a[8] * a[1] * a[14] + a[8] * a[2] * a[13] + a[12] * a[1] * a[10] - a[12] * a[2] * a[9];
+  inv[2] = a[1] * a[6] * a[15] - a[1] * a[7] * a[14] - a[5] * a[2] * a[15] + a[5] * a[3] * a[14] + a[13] * a[2] * a[7] - a[13] * a[3] * a[6];
+  inv[6] = -a[0] * a[6] * a[15] + a[0] * a[7] * a[14] + a[4] * a[2] * a[15] - a[4] * a[3] * a[14] - a[12] * a[2] * a[7] + a[12] * a[3] * a[6];
+  inv[10] = a[0] * a[5] * a[15] - a[0] * a[7] * a[13] - a[4] * a[1] * a[15] + a[4] * a[3] * a[13] + a[12] * a[1] * a[7] - a[12] * a[3] * a[5];
+  inv[14] = -a[0] * a[5] * a[14] + a[0] * a[6] * a[13] + a[4] * a[1] * a[14] - a[4] * a[2] * a[13] - a[12] * a[1] * a[6] + a[12] * a[2] * a[5];
+  inv[3] = -a[1] * a[6] * a[11] + a[1] * a[7] * a[10] + a[5] * a[2] * a[11] - a[5] * a[3] * a[10] - a[9] * a[2] * a[7] + a[9] * a[3] * a[6];
+  inv[7] = a[0] * a[6] * a[11] - a[0] * a[7] * a[10] - a[4] * a[2] * a[11] + a[4] * a[3] * a[10] + a[8] * a[2] * a[7] - a[8] * a[3] * a[6];
+  inv[11] = -a[0] * a[5] * a[11] + a[0] * a[7] * a[9] + a[4] * a[1] * a[11] - a[4] * a[3] * a[9] - a[8] * a[1] * a[7] + a[8] * a[3] * a[5];
+  inv[15] = a[0] * a[5] * a[10] - a[0] * a[6] * a[9] - a[4] * a[1] * a[10] + a[4] * a[2] * a[9] + a[8] * a[1] * a[6] - a[8] * a[2] * a[5];
+  const det = a[0] * inv[0] + a[1] * inv[4] + a[2] * inv[8] + a[3] * inv[12];
+  if (!det) throw new Error('invert: singular matrix');
+  return new Float32Array(inv.map(v => v / det));
+}
+
+/**
+ * Orbit camera around `target`, z up (physics convention). yaw/pitch in radians.
+ * matrices(aspect) → { view, proj, viewProj, eye }; project([x,y,z], W, H) → CSS-pixel position
+ * (and depth) for 2D labels drawn over the GL scene; attach(element) adds drag-rotate and
+ * wheel-zoom and returns a detach function.
+ */
+function orbitCamera({ target = [0, 0, 0], distance = 5, yaw = 0.6, pitch = 0.45, fov = 0.8, near, far, minDistance = 0, maxDistance = Infinity, minPitch = -1.55, maxPitch = 1.55 } = {}) {
+  const clampD = d => Math.min(maxDistance, Math.max(minDistance, d));
+  const cam = {
+    target: [...target], distance, yaw, pitch, fov,
+    /**
+     * Frame a bounding box [[x0,y0,z0],[x1,y1,z1]] so it fits the view at this aspect ratio
+     * (both the width and the height of the screen), keeping the current yaw and pitch.
+     */
+    fit(box, aspect = 1, margin = 1.1) {
+      const c = [0, 1, 2].map(k => (box[0][k] + box[1][k]) / 2);
+      const r = Math.hypot(...[0, 1, 2].map(k => box[1][k] - box[0][k])) / 2 * margin;
+      const half = Math.min(cam.fov / 2, Math.atan(Math.tan(cam.fov / 2) * aspect));
+      cam.target = c; cam.distance = clampD(r / Math.sin(half));
+      return cam;
+    },
+    eye() {
+      const cp = Math.cos(cam.pitch);
+      return [cam.target[0] + cam.distance * cp * Math.cos(cam.yaw), cam.target[1] + cam.distance * cp * Math.sin(cam.yaw), cam.target[2] + cam.distance * Math.sin(cam.pitch)];
+    },
+    /** relative: true builds the view with the target at the origin (for target-relative data). */
+    matrices(aspect, { relative = false } = {}) {
+      const eye = cam.eye(), off = relative ? cam.target : [0, 0, 0];
+      const view = lookAt([eye[0] - off[0], eye[1] - off[1], eye[2] - off[2]], [cam.target[0] - off[0], cam.target[1] - off[1], cam.target[2] - off[2]], [0, 0, 1]);
+      const proj = perspective(cam.fov, aspect, near ?? cam.distance * 1e-3, far ?? cam.distance * 1e3);
+      return { view, proj, viewProj: multiply(proj, view), eye };
+    },
+    project(p, W, H) {
+      const m = cam.matrices(W / H).viewProj;
+      const x = m[0] * p[0] + m[4] * p[1] + m[8] * p[2] + m[12], y = m[1] * p[0] + m[5] * p[1] + m[9] * p[2] + m[13];
+      const w = m[3] * p[0] + m[7] * p[1] + m[11] * p[2] + m[15];
+      return { x: (x / w * 0.5 + 0.5) * W, y: (1 - (y / w * 0.5 + 0.5)) * H, depth: w, visible: w > 0 };
+    },
+    /**
+     * Drag to rotate, wheel or pinch to zoom. wheel: 'auto' (default) zooms with the plain wheel
+     * only when the page around the canvas does not scroll; on a scrolling page (workbench layout,
+     * phones) plain wheel scrolls the page and Ctrl/⌘ + wheel or a trackpad pinch zooms.
+     * 'always' or 'modifier' force one behaviour.
+     */
+    attach(el, { wheel: wheelMode = 'auto' } = {}) {
+      let last = null;
+      const down = e => { last = [e.clientX, e.clientY]; el.setPointerCapture?.(e.pointerId); };
+      const move = e => {
+        if (!last) return;
+        cam.yaw -= (e.clientX - last[0]) * 0.006;
+        cam.pitch = Math.max(minPitch, Math.min(maxPitch, cam.pitch + (e.clientY - last[1]) * 0.006));
+        last = [e.clientX, e.clientY];
+      };
+      const up = () => { last = null; };
+      const scrolls = () => { for (let n = el.parentElement; n; n = n.parentElement) { const o = getComputedStyle(n).overflowY; if ((o === 'auto' || o === 'scroll') && n.scrollHeight > n.clientHeight + 1) return true; } return document.scrollingElement.scrollHeight > innerHeight + 1; };
+      const wheel = e => {
+        const zoom = wheelMode === 'always' || e.ctrlKey || e.metaKey || (wheelMode === 'auto' && !scrolls());
+        if (!zoom) return;                                    // let the page scroll
+        e.preventDefault(); cam.distance = clampD(cam.distance * Math.exp(e.deltaY * 0.001));
+      };
+      el.addEventListener('pointerdown', down); el.addEventListener('pointermove', move);
+      el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+      el.addEventListener('wheel', wheel, { passive: false });
+      return () => { el.removeEventListener('pointerdown', down); el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up); el.removeEventListener('wheel', wheel); };
+    },
+  };
+  return cam;
+}
+
+// ---------------------------------------------------------------- colour maps
+
+// Anchors sampled from matplotlib's perceptually uniform maps (van der Walt & Smith, CC0) and
+// Moreland's diverging "cool-warm". Linear interpolation between anchors.
+const MAPS = {
+  viridis: ['#440154', '#482878', '#3e4989', '#31688e', '#26828e', '#1f9e89', '#35b779', '#6ece58', '#b5de2b', '#fde725'],
+  inferno: ['#000004', '#1b0c41', '#4a0c6b', '#781c6d', '#a52c60', '#cf4446', '#ed6925', '#fb9b06', '#f7d13d', '#fcffa4'],
+  magma: ['#000004', '#180f3d', '#440f76', '#721f81', '#9e2f7f', '#cd4071', '#f1605d', '#fd9668', '#feca8d', '#fcfdbf'],
+  coolwarm: ['#3b4cc0', '#6282ea', '#8db0fe', '#b8d0f9', '#dddddd', '#f5c4ad', '#f49a7b', '#de604d', '#b40426'],
+};
+const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
+const COLORMAPS = [...Object.keys(MAPS), 'phase'];
+
+/** OKLab → sRGB (Ottosson 2020), clipped to the displayable range. */
+function oklabToSrgb(L, a, b) {
+  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3, m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3, s = (L - 0.0894841775 * a - 1.2914855480 * b) ** 3;
+  const lin = [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s, -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s];
+  return lin.map(x => { const c = Math.min(1, Math.max(0, x)); return c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055; });
+}
+
+/**
+ * Colour of map `name` at t ∈ [0, 1]: [r, g, b] in [0, 1]. Sequential and diverging maps clamp t;
+ * 'phase' is cyclic (t and t + 1 give the same colour): a constant-lightness hue circle in OKLab,
+ * for angles such as the phase of a wavefunction, where no direction may look "brighter".
+ */
+function colormap(name, t) {
+  if (name === 'phase') { const h = 2 * Math.PI * ((Number.isFinite(t) ? t : 0) % 1); return oklabToSrgb(0.72, 0.11 * Math.cos(h), 0.11 * Math.sin(h)); }
+  const a = MAPS[name];
+  if (!a) throw new Error(`colormap: unknown map "${name}" (${COLORMAPS.join(', ')})`);
+  const x = Math.min(1, Math.max(0, Number.isFinite(t) ? t : 0)) * (a.length - 1), i = Math.min(a.length - 2, Math.floor(x)), f = x - i;
+  const p = hex(a[i]), q = hex(a[i + 1]);
+  return [p[0] + f * (q[0] - p[0]), p[1] + f * (q[1] - p[1]), p[2] + f * (q[2] - p[2])];
+}
+
+/** Map a value to [0, 1] for a colour map: linear or log10 between range[0] and range[1]. */
+function normalize(v, [lo, hi], log = false) {
+  if (log) { if (!(v > 0 && lo > 0)) return 0; return (Math.log10(v) - Math.log10(lo)) / (Math.log10(hi) - Math.log10(lo)); }
+  return (v - lo) / (hi - lo);
+}
+
+// ---------------------------------------------------------------- GL plumbing
+
+function compile(gl, vs, fs) {
+  const shader = (type, src) => {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(`GL shader: ${gl.getShaderInfoLog(s)}`);
+    return s;
+  };
+  const p = gl.createProgram();
+  gl.attachShader(p, shader(gl.VERTEX_SHADER, vs)); gl.attachShader(p, shader(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(`GL program: ${gl.getProgramInfoLog(p)}`);
+  const u = {};
+  for (let i = 0; i < gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS); i++) { const n = gl.getActiveUniform(p, i).name; u[n] = gl.getUniformLocation(p, n); }
+  return { p, u };
+}
+
+const cmapTextures = new WeakMap();
+function cmapTexture(gl, name) {
+  let cache = cmapTextures.get(gl);
+  if (!cache) cmapTextures.set(gl, cache = {});
+  if (cache[name]) return cache[name];
+  const data = new Uint8Array(256 * 4);
+  for (let i = 0; i < 256; i++) { const c = colormap(name, i / 255); data.set([c[0] * 255, c[1] * 255, c[2] * 255, 255].map(Math.round), 4 * i); }
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 256, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, name === 'phase' ? gl.REPEAT : gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  return (cache[name] = tex);
+}
+/**
+ * Any colour → [r, g, b, a] in 0–1: '#rgb', '#rrggbb', 'rgb()/rgba()', CSS names, a theme token
+ * '--name' (read from the page, so view.color('--x') and '--x' both work) or an [r, g, b(, a)] array.
+ */
+function cssColor(c) {
+  if (Array.isArray(c) || ArrayBuffer.isView(c)) return [c[0], c[1], c[2], c[3] ?? 1];
+  let str = String(c).trim();
+  if (str.startsWith('--') && typeof getComputedStyle === 'function') str = getComputedStyle(document.documentElement).getPropertyValue(str).trim();
+  if (/^#[0-9a-f]{3}$/i.test(str)) str = `#${str[1]}${str[1]}${str[2]}${str[2]}${str[3]}${str[3]}`;
+  if (/^#[0-9a-f]{6}$/i.test(str)) return [...hex(str), 1];
+  if (/^#[0-9a-f]{8}$/i.test(str)) return [...hex(str.slice(0, 7)), parseInt(str.slice(7), 16) / 255];
+  const m = str.match(/^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)(?:[\s,/]+([\d.]+%?))?\s*\)$/i);
+  if (m) return [m[1] / 255, m[2] / 255, m[3] / 255, m[4] == null ? 1 : m[4].endsWith('%') ? parseFloat(m[4]) / 100 : +m[4]];
+  if (typeof document !== 'undefined') {                      // CSS names and other syntaxes via the browser
+    const ctx = document.createElement('canvas').getContext('2d');
+    ctx.fillStyle = '#010203'; ctx.fillStyle = str;
+    if (ctx.fillStyle !== '#010203' || /^#010203$/i.test(str)) return cssColor(ctx.fillStyle);
+  }
+  throw new Error(`gl: cannot read the colour "${c}"`);
+}
+const colorCache = new Map();
+const rgb = c => {
+  if (typeof c !== 'string' || c.startsWith('--')) return cssColor(c).slice(0, 3);   // tokens follow the theme: no cache
+  let v = colorCache.get(c);
+  if (!v) { v = cssColor(c).slice(0, 3); if (colorCache.size > 512) colorCache.clear(); colorCache.set(c, v); }
+  return v;
+};
+
+/** Device pixels per CSS pixel of the GL canvas (lower than devicePixelRatio under adaptive resolution). */
+const pixelRatio = gl => (gl.canvas.clientWidth ? gl.canvas.width / gl.canvas.clientWidth : (globalThis.devicePixelRatio || 1));
+
+/**
+ * A WebGL2 canvas stacked under `canvas2d` (same box). The 2D canvas stays on top for labels,
+ * axes and pointer events. Returns { gl, canvas, ok, reason, sync(), scale, maxPixels };
+ * when WebGL2 is unavailable, ok is false and reason says why (show it; draw a 2D fallback).
+ * The GL canvas renders at devicePixelRatio × scale (scale ≤ 1, set by the shell's adaptive
+ * resolution when the GPU cannot keep up) and never above maxPixels device pixels (default 8 M,
+ * a 4K screen); CSS stretches it to the box, so a lower scale only softens the 3D layer.
+ */
+function createGLLayer(canvas2d) {
+  const canvas = document.createElement('canvas');
+  canvas.className = 'psim-gl';
+  canvas.setAttribute('aria-hidden', 'true');
+  canvas2d.parentNode.insertBefore(canvas, canvas2d);
+  const gl = canvas.getContext('webgl2', { alpha: true, premultipliedAlpha: true, antialias: true, preserveDrawingBuffer: true, stencil: true });
+  const layer = {
+    gl, canvas, ok: !!gl, reason: gl ? '' : 'WebGL2 is not available in this browser', scale: 1, maxPixels: 8e6,
+    /** Match the 2D canvas size (× scale, within maxPixels); set the viewport and clear to transparent. */
+    sync(dpr = devicePixelRatio || 1) {
+      const cw = canvas2d.clientWidth, ch = canvas2d.clientHeight;
+      let r = dpr * layer.scale;
+      if (cw * ch * r * r > layer.maxPixels) r = Math.sqrt(layer.maxPixels / (cw * ch));
+      const w = Math.max(1, Math.round(cw * r)), h = Math.max(1, Math.round(ch * r));
+      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+      if (!gl) return;
+      gl.viewport(0, 0, w, h); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+    },
+  };
+  return layer;
+}
+
+// ---------------------------------------------------------------- points
+
+/**
+ * Point sprites. update(positions [x,y,z,…], { values, colors }) uploads up to any count;
+ * draw(camera, { aspect, size, sizeUnit: 'px' | 'world', color, colormap, range, log, blend,
+ * opacity }) with blend 'additive' (glow on dark backgrounds) or 'alpha' (light backgrounds).
+ * values + colormap colour each point by a computed quantity; otherwise colors (r,g,b per point)
+ * or a single color. Sizes in 'world' units shrink with distance (true perspective).
+ * soft: true gives 'alpha' points the same Gaussian profile as 'additive' ones, so a point looks
+ * the same size in the light and dark themes. count draws only the first count points (a cloud
+ * that grows from precomputed events: upload once with update(), then raise count each frame);
+ * append(positions, { values, colors }) adds new points as they happen. colors are Float32 RGB
+ * in 0–1, three per point.
+ */
+function createPointRenderer(gl) {
+  const { p, u } = compile(gl, `#version 300 es
+in vec3 aPos; in float aVal; in vec3 aCol;
+uniform mat4 uVP; uniform float uSize, uWorld, uScale, uLog; uniform vec2 uRange;
+out float vVal; out vec3 vCol;
+void main() {
+  gl_Position = uVP * vec4(aPos, 1.0);
+  float px = uWorld > 0.5 ? uSize * uScale / max(gl_Position.w, 1e-6) : uSize;
+  gl_PointSize = clamp(px, 1.0, 256.0);
+  float v = uLog > 0.5 ? (log(max(aVal, 1e-30)) / log(10.0) - uRange.x) / (uRange.y - uRange.x) : (aVal - uRange.x) / (uRange.y - uRange.x);
+  vVal = clamp(v, 0.0, 1.0); vCol = aCol;
+}`, `#version 300 es
+precision highp float;
+in float vVal; in vec3 vCol;
+uniform sampler2D uMap; uniform float uMode, uGlow, uOpacity, uSoft; uniform vec3 uColor;
+out vec4 frag;
+void main() {
+  vec2 d = gl_PointCoord * 2.0 - 1.0; float r2 = dot(d, d);
+  if (r2 > 1.0) discard;
+  vec3 c = uMode < 0.5 ? uColor : uMode < 1.5 ? texture(uMap, vec2(vVal, 0.5)).rgb : vCol;
+  float a = uGlow > 0.5 ? exp(-r2 * 5.0) + 0.6 * smoothstep(0.25, 0.0, r2)
+          : uSoft > 0.5 ? exp(-r2 * 3.0) * smoothstep(1.0, 0.8, r2) : smoothstep(1.0, 0.75, r2);
+  a *= uOpacity;
+  frag = vec4(c * a, a);
+}`);
+  const vao = gl.createVertexArray(), bufs = {};
+  gl.bindVertexArray(vao);
+  for (const [name, size] of [['aPos', 3], ['aVal', 1], ['aCol', 3]]) {
+    const loc = gl.getAttribLocation(p, name);
+    bufs[name] = { buf: gl.createBuffer(), loc, size };
+    if (loc < 0) continue;
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufs[name].buf);
+    gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0);
+  }
+  gl.bindVertexArray(null);
+  let count = 0, has = { values: false, colors: false }, cap = 0;
+  const cpu = { aPos: new Float32Array(0), aVal: new Float32Array(0), aCol: new Float32Array(0) };
+  const upload = (name, data) => {
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufs[name].buf);
+    gl.bufferData(gl.ARRAY_BUFFER, data instanceof Float32Array ? data : Float32Array.from(data), gl.DYNAMIC_DRAW);
+  };
+  return {
+    get count() { return count; },
+    update(positions, { values, colors } = {}) {
+      count = Math.floor(positions.length / 3); cap = 0;
+      upload('aPos', positions);
+      has = { values: !!values, colors: !!colors };
+      upload('aVal', values ?? new Float32Array(count));
+      upload('aCol', colors ?? new Float32Array(3 * count));
+    },
+    /**
+     * Add points to the end (events arriving one by one: detector hits, decays, samples) without
+     * re-uploading the old ones; capacity doubles when needed. values/colors as in update().
+     */
+    append(positions, { values, colors } = {}) {
+      const k = Math.floor(positions.length / 3);
+      if (!k) return;
+      if (count === 0) has = { values: !!values, colors: !!colors };
+      if (count + k > cap) {
+        if (cap === 0 && count > 0) throw new Error('pointRenderer: append() after update() needs the points again: call append() only, or update() with all points');
+        cap = Math.max(1024, 2 * (count + k));
+        for (const [name, size] of [['aPos', 3], ['aVal', 1], ['aCol', 3]]) {
+          const grown = new Float32Array(cap * size); grown.set(cpu[name].subarray(0, count * size)); cpu[name] = grown;
+          upload(name, grown);
+        }
+      }
+      const put = (name, size, data) => {
+        const arr = data ? Float32Array.from(data) : new Float32Array(k * size);
+        cpu[name].set(arr, count * size);
+        gl.bindBuffer(gl.ARRAY_BUFFER, bufs[name].buf); gl.bufferSubData(gl.ARRAY_BUFFER, count * size * 4, arr);
+      };
+      put('aPos', 3, positions); put('aVal', 1, values); put('aCol', 3, colors);
+      count += k;
+    },
+    /** Remove all points (keeps the allocated capacity for append). */
+    clear() { count = 0; },
+    draw(camera, { aspect, size = 3, sizeUnit = 'px', color = '#ffd27a', colormap: map = 'inferno', range = [0, 1], log = false, blend = 'additive', opacity = 1, soft = false, count: shown = count } = {}) {
+      const n = Math.max(0, Math.min(count, Math.floor(shown)));
+      if (!n) return;
+      const { viewProj, proj } = camera.matrices(aspect ?? gl.drawingBufferWidth / gl.drawingBufferHeight);
+      gl.useProgram(p); gl.bindVertexArray(vao);
+      gl.uniformMatrix4fv(u.uVP, false, viewProj);
+      gl.uniform1f(u.uSize, size * (sizeUnit === 'px' ? pixelRatio(gl) : 1));
+      gl.uniform1f(u.uWorld, sizeUnit === 'world' ? 1 : 0);
+      gl.uniform1f(u.uScale, proj[5] * gl.drawingBufferHeight / 2);
+      gl.uniform1f(u.uLog, log ? 1 : 0);
+      gl.uniform2f(u.uRange, ...(log ? range.map(Math.log10) : range));
+      gl.uniform1f(u.uMode, has.values ? 1 : has.colors ? 2 : 0);
+      gl.uniform3f(u.uColor, ...rgb(color));
+      gl.uniform1f(u.uGlow, blend === 'additive' ? 1 : 0);
+      gl.uniform1f(u.uSoft, soft ? 1 : 0);
+      gl.uniform1f(u.uOpacity, opacity);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, cmapTexture(gl, map)); gl.uniform1i(u.uMap, 0);
+      gl.enable(gl.BLEND); gl.disable(gl.DEPTH_TEST);
+      if (blend === 'additive') gl.blendFunc(gl.ONE, gl.ONE); else gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      gl.drawArrays(gl.POINTS, 0, n);
+      gl.bindVertexArray(null);
+    },
+  };
+}
+
+// ---------------------------------------------------------------- 2D fields
+
+/**
+ * A 2D scalar field (index i + nx·j, as in core/fields.mjs) drawn as a colour-mapped image.
+ * update(values, nx, ny, { range, log }) normalises on the CPU (NaN or masked cells are
+ * transparent); draw({ rect: [x, y, w, h] in CSS px (default: whole canvas), colormap, smooth,
+ * opacity }) with smooth false showing the grid cells honestly.
+ */
+function createFieldRenderer(gl) {
+  const { p, u } = compile(gl, `#version 300 es
+in vec2 aXY; uniform vec4 uRect; out vec2 vUV;
+void main() { vUV = aXY; vec2 xy = uRect.xy + aXY * uRect.zw; gl_Position = vec4(xy, 0.0, 1.0); }`, `#version 300 es
+precision highp float;
+in vec2 vUV; uniform sampler2D uField, uMap; uniform float uOpacity; out vec4 frag;
+void main() { float v = texture(uField, vUV).r; if (v < 0.0) discard; vec3 c = texture(uMap, vec2(v, 0.5)).rgb; frag = vec4(c * uOpacity, uOpacity); }`);
+  const vao = gl.createVertexArray(), buf = gl.createBuffer(), tex = gl.createTexture();
+  gl.bindVertexArray(vao); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(p, 'aXY'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  gl.bindVertexArray(null);
+  let ready = false;
+  return {
+    update(values, nx, ny, { range, log = false } = {}) {
+      if (values.length !== nx * ny) throw new Error('fieldRenderer: values must have nx·ny entries');
+      let lo = range?.[0], hi = range?.[1];
+      if (lo == null || hi == null) {
+        lo = Infinity; hi = -Infinity;
+        for (const v of values) if (Number.isFinite(v) && (!log || v > 0)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+        if (!(hi > lo)) hi = lo + 1;
+      }
+      const data = Float32Array.from(values, v => (Number.isFinite(v) ? Math.min(1, Math.max(0, normalize(v, [lo, hi], log))) : -1));
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.R16F, nx, ny, 0, gl.RED, gl.FLOAT, data);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      ready = true;
+      return { range: [lo, hi] };
+    },
+    draw({ rect, colormap: map = 'viridis', smooth = true, opacity = 1 } = {}) {
+      if (!ready) return;
+      const W = gl.drawingBufferWidth / pixelRatio(gl), H = gl.drawingBufferHeight / pixelRatio(gl);
+      const [x, y, w, h] = rect ?? [0, 0, W, H];
+      gl.useProgram(p); gl.bindVertexArray(vao);
+      // CSS px (y down) → clip space; the texture's row j = 0 is drawn at the bottom (y up, physics)
+      gl.uniform4f(u.uRect, 2 * x / W - 1, 1 - 2 * (y + h) / H, 2 * w / W, 2 * h / H);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex);
+      const f = smooth ? gl.LINEAR : gl.NEAREST;
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, f); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, f);
+      gl.uniform1i(u.uField, 0);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, cmapTexture(gl, map)); gl.uniform1i(u.uMap, 1);
+      gl.uniform1f(u.uOpacity, opacity);
+      gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.disable(gl.DEPTH_TEST);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.bindVertexArray(null);
+    },
+  };
+}
+
+// ---------------------------------------------------------------- 3D volumes
+
+/**
+ * A 3D scalar field (index i + nx·(j + ny·k)) rendered by ray marching through its box.
+ * update(values, nx, ny, nz, { range, log }); draw(camera, { box: [[x0,y0,z0],[x1,y1,z1]],
+ * colormap, opacity, steps, mode }) with mode 'emission' (glowing gas: colour ∝ density, adds up)
+ * or 'absorption' (emission–absorption: nearer matter hides farther). Opacity is a display
+ * transfer function, not a physical optical depth unless you derive it from one: say which.
+ * smooth: false shows each cell as a uniform block (honest for coarse grids, e.g. a lattice).
+ * Smooth volumes are ray-marched at reduced resolution (≤ ~1.5 M rays) and upscaled; pass
+ * resolution: 1 (fraction of the layer's pixels per axis) to force full resolution.
+ * update(…, { signed: true }) shows a field of either sign (charge density, vorticity, Re ψ): the
+ * colour map's middle is zero, colour gives the sign and opacity |value|; range is symmetric,
+ * [−M, M] with M = max|value| unless given. Use a diverging map ('coolwarm').
+ * Values ≤ 0 are transparent otherwise (opacity ∝ normalised value).
+ */
+function createVolumeRenderer(gl) {
+  const { p, u } = compile(gl, `#version 300 es
+in vec2 aXY; out vec2 vNDC;
+void main() { vNDC = aXY * 2.0 - 1.0; gl_Position = vec4(vNDC, 0.0, 1.0); }`, `#version 300 es
+precision highp float; precision highp sampler3D;
+in vec2 vNDC;
+uniform mat4 uInvVP; uniform vec3 uMin, uMax; uniform sampler3D uVol; uniform sampler2D uMap;
+uniform float uOpacity, uSteps, uMode, uSigned;
+out vec4 frag;
+void main() {
+  vec4 a = uInvVP * vec4(vNDC, -1.0, 1.0), b = uInvVP * vec4(vNDC, 1.0, 1.0);
+  vec3 ro = a.xyz / a.w, rd = normalize(b.xyz / b.w - ro);
+  vec3 t0 = (uMin - ro) / rd, t1 = (uMax - ro) / rd;
+  vec3 tn = min(t0, t1), tf = max(t0, t1);
+  float near = max(max(tn.x, tn.y), max(tn.z, 0.0)), far = min(min(tf.x, tf.y), tf.z);
+  if (far <= near) discard;
+  float dt = (far - near) / uSteps, len = length(uMax - uMin);
+  vec3 col = vec3(0.0); float alpha = 0.0;
+  for (float s = 0.5; s < 1024.0; s += 1.0) {
+    if (s > uSteps) break;
+    vec3 pos = ro + rd * (near + s * dt);
+    float raw = texture(uVol, (pos - uMin) / (uMax - uMin)).r;
+    float v = uSigned > 0.5 ? abs(raw) : raw;
+    if (v <= 0.0) continue;
+    vec3 c = texture(uMap, vec2(uSigned > 0.5 ? 0.5 + 0.5 * raw : v, 0.5)).rgb;
+    float k = uOpacity * v * dt / len * 8.0;
+    if (uMode < 0.5) { col += c * k; alpha += k; }
+    else { float ak = 1.0 - exp(-k); col += (1.0 - alpha) * c * ak; alpha += (1.0 - alpha) * ak; if (alpha > 0.99) break; }
+  }
+  alpha = clamp(alpha, 0.0, 1.0);
+  frag = vec4(min(col, vec3(1.0)), alpha);
+}`);
+  const vao = gl.createVertexArray(), buf = gl.createBuffer(), tex = gl.createTexture();
+  gl.bindVertexArray(vao); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(p, 'aXY'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  gl.bindVertexArray(null);
+  let ready = false, signed = false;
+  // offscreen target for reduced-resolution ray marching, and a composite pass that upscales it
+  const comp = compile(gl, `#version 300 es
+in vec2 aXY; out vec2 vUV;
+void main() { vUV = aXY; gl_Position = vec4(aXY * 2.0 - 1.0, 0.0, 1.0); }`, `#version 300 es
+precision mediump float;
+in vec2 vUV; uniform sampler2D uTex; out vec4 frag;
+void main() { frag = texture(uTex, vUV); }`);
+  const compVao = gl.createVertexArray();
+  gl.bindVertexArray(compVao); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  const cl = gl.getAttribLocation(comp.p, 'aXY'); gl.enableVertexAttribArray(cl); gl.vertexAttribPointer(cl, 2, gl.FLOAT, false, 0, 0);
+  gl.bindVertexArray(null);
+  const fbo = gl.createFramebuffer(), target = gl.createTexture();
+  let tw = 0, th = 0;
+  return {
+    update(values, nx, ny, nz, { range, log = false, signed: isSigned = false } = {}) {
+      if (values.length !== nx * ny * nz) throw new Error('volumeRenderer: values must have nx·ny·nz entries');
+      signed = isSigned;
+      if (signed) {
+        let M = range ? Math.max(Math.abs(range[0]), Math.abs(range[1])) : 0;
+        if (!range) for (const v of values) if (Number.isFinite(v)) M = Math.max(M, Math.abs(v));
+        if (!(M > 0)) M = 1;
+        const data = Float32Array.from(values, v => (Number.isFinite(v) ? Math.max(-1, Math.min(1, v / M)) : 0));
+        gl.bindTexture(gl.TEXTURE_3D, tex);
+        gl.texImage3D(gl.TEXTURE_3D, 0, gl.R16F, nx, ny, nz, 0, gl.RED, gl.FLOAT, data);
+        for (const w of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T, gl.TEXTURE_WRAP_R]) gl.texParameteri(gl.TEXTURE_3D, w, gl.CLAMP_TO_EDGE);
+        ready = true;
+        return { range: [-M, M] };
+      }
+      let lo = range?.[0], hi = range?.[1];
+      if (lo == null || hi == null) {
+        lo = Infinity; hi = -Infinity;
+        for (const v of values) if (Number.isFinite(v) && (!log || v > 0)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+        if (!(hi > lo)) hi = lo + 1;
+      }
+      const data = Float32Array.from(values, v => (Number.isFinite(v) ? Math.min(1, Math.max(0, normalize(v, [lo, hi], log))) : 0));
+      gl.bindTexture(gl.TEXTURE_3D, tex);
+      gl.texImage3D(gl.TEXTURE_3D, 0, gl.R16F, nx, ny, nz, 0, gl.RED, gl.FLOAT, data);
+      for (const w of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T, gl.TEXTURE_WRAP_R]) gl.texParameteri(gl.TEXTURE_3D, w, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      ready = true;
+      return { range: [lo, hi] };
+    },
+    draw(camera, { aspect, box = [[-1, -1, -1], [1, 1, 1]], colormap: map = 'inferno', opacity = 1, steps = 160, mode = 'emission', smooth = true, resolution } = {}) {
+      if (!ready) return;
+      // A smooth density looks the same ray-marched at reduced resolution and upscaled, at a fraction
+      // of the cost (it is the most expensive renderer per pixel): by default at most ~1.5 M samples
+      // per frame. smooth: false keeps full resolution so cell edges stay sharp.
+      const W = gl.drawingBufferWidth, H = gl.drawingBufferHeight;
+      const res = resolution ?? (smooth ? Math.min(1, Math.sqrt(1.5e6 / (W * H))) : 1);
+      const offscreen = res < 0.999;
+      if (offscreen) {
+        const w = Math.max(1, Math.round(W * res)), h = Math.max(1, Math.round(H * res));
+        gl.bindTexture(gl.TEXTURE_2D, target);
+        if (w !== tw || h !== th) {
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+          gl.bindFramebuffer(gl.FRAMEBUFFER, fbo); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target, 0);
+          tw = w; th = h;
+        }
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo); gl.viewport(0, 0, w, h);
+        gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+      }
+      const f = smooth ? gl.LINEAR : gl.NEAREST;
+      gl.bindTexture(gl.TEXTURE_3D, tex); gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, f); gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, f);
+      const { viewProj } = camera.matrices(aspect ?? gl.drawingBufferWidth / gl.drawingBufferHeight);
+      gl.useProgram(p); gl.bindVertexArray(vao);
+      gl.uniformMatrix4fv(u.uInvVP, false, invert(viewProj));
+      gl.uniform3f(u.uMin, ...box[0]); gl.uniform3f(u.uMax, ...box[1]);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_3D, tex); gl.uniform1i(u.uVol, 0);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, cmapTexture(gl, map)); gl.uniform1i(u.uMap, 1);
+      gl.uniform1f(u.uOpacity, opacity); gl.uniform1f(u.uSteps, Math.min(1000, steps)); gl.uniform1f(u.uMode, mode === 'emission' ? 0 : 1);
+      gl.uniform1f(u.uSigned, signed ? 1 : 0);
+      gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.disable(gl.DEPTH_TEST);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      if (offscreen) {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, W, H);
+        gl.useProgram(comp.p); gl.bindVertexArray(compVao);
+        gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, target); gl.uniform1i(comp.u.uTex, 0);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      }
+      gl.bindVertexArray(null);
+    },
+  };
+}
+
+// ---------------------------------------------------------------- spheres
+
+/**
+ * Lit spheres drawn as exact ray-cast impostors: true silhouettes, per-pixel shading and correct
+ * overlap (depth) between spheres. draw(camera, spheres, { aspect, light, ambient }) where each
+ * sphere is { center: [x, y, z], radius, color, emissive? } and light is a point [x, y, z]
+ * (e.g. the Sun's centre: each sphere is lit from its own direction, giving the right
+ * day/night line) or { direction: [x, y, z] } for parallel light. emissive spheres glow
+ * unshaded (the Sun). Brightness ∝ max(0, n·l): the geometric share of light, not a photograph.
+ */
+function createSphereRenderer(gl) {
+  const { p, u } = compile(gl, `#version 300 es
+in vec2 aCorner; in vec3 aCenter; in float aRadius; in vec3 aColor; in float aEmit;
+uniform mat4 uView, uProj;
+out vec3 vPos; out vec3 vCenter; out float vRadius; out vec3 vColor; out float vEmit;
+void main() {
+  vec3 c = (uView * vec4(aCenter, 1.0)).xyz;
+  float d = length(c), r = aRadius;
+  float s = r * d / sqrt(max(d * d - r * r, 1e-12)) * 1.05;
+  vec3 q = c + vec3(aCorner * s, 0.0);
+  vPos = q; vCenter = c; vRadius = r; vColor = aColor; vEmit = aEmit;
+  gl_Position = uProj * vec4(q, 1.0);
+}`, `#version 300 es
+precision highp float;
+in vec3 vPos; in vec3 vCenter; in float vRadius; in vec3 vColor; in float vEmit;
+uniform mat4 uProj; uniform vec3 uLight; uniform float uPoint, uAmbient;
+out vec4 frag;
+void main() {
+  vec3 dir = normalize(vPos);
+  float b = dot(dir, vCenter), cc = dot(vCenter, vCenter) - vRadius * vRadius, disc = b * b - cc;
+  if (disc < 0.0) discard;
+  vec3 h = dir * (b - sqrt(disc));
+  vec3 n = (h - vCenter) / vRadius;
+  vec3 l = uPoint > 0.5 ? normalize(uLight - vCenter) : normalize(uLight);
+  float k = vEmit > 0.5 ? 1.0 : uAmbient + (1.0 - uAmbient) * max(dot(n, l), 0.0);
+  vec4 clip = uProj * vec4(h, 1.0);
+  gl_FragDepth = clip.z / clip.w * 0.5 + 0.5;
+  frag = vec4(vColor * k, 1.0);
+}`);
+  const vao = gl.createVertexArray(), corner = gl.createBuffer(), inst = gl.createBuffer();
+  gl.bindVertexArray(vao);
+  gl.bindBuffer(gl.ARRAY_BUFFER, corner); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+  const cl = gl.getAttribLocation(p, 'aCorner'); gl.enableVertexAttribArray(cl); gl.vertexAttribPointer(cl, 2, gl.FLOAT, false, 0, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, inst);
+  const stride = 8 * 4;
+  for (const [name, size, off] of [['aCenter', 3, 0], ['aRadius', 1, 3], ['aColor', 3, 4], ['aEmit', 1, 7]]) {
+    const loc = gl.getAttribLocation(p, name);
+    gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, stride, off * 4); gl.vertexAttribDivisor(loc, 1);
+  }
+  gl.bindVertexArray(null);
+  return {
+    draw(camera, spheres, { aspect, light = { direction: [1, 0, 0] }, ambient = 0.08 } = {}) {
+      if (!spheres.length) return;
+      const t = camera.target, data = new Float32Array(8 * spheres.length);
+      spheres.forEach((sp, i) => {
+        const c = rgb(sp.color ?? '#cfd8e3');
+        data.set([sp.center[0] - t[0], sp.center[1] - t[1], sp.center[2] - t[2], sp.radius, c[0], c[1], c[2], sp.emissive ? 1 : 0], 8 * i);
+      });
+      const { view, proj } = camera.matrices(aspect ?? gl.drawingBufferWidth / gl.drawingBufferHeight, { relative: true });
+      gl.useProgram(p); gl.bindVertexArray(vao);
+      gl.bindBuffer(gl.ARRAY_BUFFER, inst); gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
+      gl.uniformMatrix4fv(u.uView, false, view); gl.uniformMatrix4fv(u.uProj, false, proj);
+      const point = Array.isArray(light);
+      const L = point ? light.map((v, k) => v - t[k]) : light.direction;
+      // light position (point) or direction (parallel) into view space
+      const lv = point
+        ? [0, 1, 2].map(r => view[r] * L[0] + view[4 + r] * L[1] + view[8 + r] * L[2] + view[12 + r])
+        : [0, 1, 2].map(r => view[r] * L[0] + view[4 + r] * L[1] + view[8 + r] * L[2]);
+      gl.uniform3f(u.uLight, ...lv); gl.uniform1f(u.uPoint, point ? 1 : 0); gl.uniform1f(u.uAmbient, ambient);
+      gl.disable(gl.BLEND); gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true);
+      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, spheres.length);
+      gl.bindVertexArray(null);
+    },
+  };
+}
+
+// ---------------------------------------------------------------- lines
+
+/**
+ * Thick polylines in 3D (orbits, trajectories, field lines, axes), constant width in screen
+ * pixels. update(lines) with lines = [[x,y,z, x,y,z, …], …] (or one flat array), where a line may
+ * also be { points, color, opacity } to give it its own colour (e.g. age-faded tracks in one draw);
+ * draw(camera, { aspect, width, color, opacity, dash: [on, off] in world units, depthTest }).
+ * A line's own opacity multiplies the draw opacity; lines without a colour use the draw colour.
+ * Dashed lines are for reference overlays (analytic curves), solid for computed paths.
+ */
+function createLineRenderer(gl) {
+  const { p, u } = compile(gl, `#version 300 es
+in vec2 aCorner; in vec3 aA; in vec3 aB; in vec2 aS; in vec4 aC;
+uniform mat4 uVP; uniform vec2 uViewport; uniform float uWidth;
+out float vS; out vec4 vC;
+void main() {
+  vec4 a = uVP * vec4(aA, 1.0), b = uVP * vec4(aB, 1.0);
+  vec4 me = aCorner.x < 0.5 ? a : b;
+  vec2 sa = a.xy / max(a.w, 1e-6) * uViewport, sb = b.xy / max(b.w, 1e-6) * uViewport;
+  vec2 d = sb - sa; float len = length(d);
+  vec2 nrm = len > 1e-6 ? vec2(-d.y, d.x) / len : vec2(0.0, 1.0);
+  vec2 off = nrm * aCorner.y * uWidth / uViewport;
+  gl_Position = vec4(me.xy + off * me.w, me.z, me.w);
+  vS = aCorner.x < 0.5 ? aS.x : aS.y; vC = aC;
+}`, `#version 300 es
+precision highp float;
+in float vS; in vec4 vC; uniform float uOpacity; uniform vec2 uDash;
+out vec4 frag;
+void main() {
+  if (uDash.x > 0.0 && mod(vS, uDash.x + uDash.y) > uDash.x) discard;
+  float a = vC.a * uOpacity;
+  frag = vec4(vC.rgb * a, a);
+}`);
+  const vao = gl.createVertexArray(), corner = gl.createBuffer(), inst = gl.createBuffer();
+  gl.bindVertexArray(vao);
+  gl.bindBuffer(gl.ARRAY_BUFFER, corner); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, -1, 0, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+  const cl = gl.getAttribLocation(p, 'aCorner'); gl.enableVertexAttribArray(cl); gl.vertexAttribPointer(cl, 2, gl.FLOAT, false, 0, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, inst);
+  for (const [name, size, off] of [['aA', 3, 0], ['aB', 3, 3], ['aS', 2, 6], ['aC', 4, 8]]) {
+    const loc = gl.getAttribLocation(p, name);
+    gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 48, off * 4); gl.vertexAttribDivisor(loc, 1);
+  }
+  gl.bindVertexArray(null);
+  let lines = [];   // rebuilt each draw: the camera target (the float64 origin) may move
+  let scratch = new Float32Array(0);
+  return {
+    update(data) { lines = Array.isArray(data) && data.length && typeof data[0] !== 'number' ? data : [data]; },
+    draw(camera, { aspect, width = 2, color = '#9fb3c8', opacity = 1, dash = null, depthTest = true } = {}) {
+      const t = camera.target;
+      // segments relative to the camera target (float64 subtraction), with cumulative length for dashes
+      const pts = l => (Array.isArray(l) || ArrayBuffer.isView(l) ? l : l.points);
+      let n = 0;
+      for (const l of lines) n += Math.max(0, Math.floor(pts(l).length / 3) - 1);
+      if (!n) return;
+      {
+        if (scratch.length < 12 * n) scratch = new Float32Array(Math.max(12 * n, 2 * scratch.length));
+        const buf = scratch, base = rgb(color), t0 = t[0], t1 = t[1], t2 = t[2];
+        let o = 0;
+        for (const line of lines) {
+          const l = pts(line), c = line.color ? rgb(line.color) : base, op = line.opacity ?? 1;
+          let s = 0;
+          for (let i = 0; i + 5 < l.length; i += 3) {
+            const len = Math.hypot(l[i + 3] - l[i], l[i + 4] - l[i + 1], l[i + 5] - l[i + 2]);
+            buf[o] = l[i] - t0; buf[o + 1] = l[i + 1] - t1; buf[o + 2] = l[i + 2] - t2;
+            buf[o + 3] = l[i + 3] - t0; buf[o + 4] = l[i + 4] - t1; buf[o + 5] = l[i + 5] - t2;
+            buf[o + 6] = s; buf[o + 7] = s + len; buf[o + 8] = c[0]; buf[o + 9] = c[1]; buf[o + 10] = c[2]; buf[o + 11] = op;
+            o += 12; s += len;
+          }
+        }
+        gl.bindBuffer(gl.ARRAY_BUFFER, inst); gl.bufferData(gl.ARRAY_BUFFER, buf.subarray(0, 12 * n), gl.DYNAMIC_DRAW);
+      }
+      const dpr = pixelRatio(gl);
+      const { viewProj } = camera.matrices(aspect ?? gl.drawingBufferWidth / gl.drawingBufferHeight, { relative: true });
+      gl.useProgram(p); gl.bindVertexArray(vao);
+      gl.uniformMatrix4fv(u.uVP, false, viewProj);
+      gl.uniform2f(u.uViewport, gl.drawingBufferWidth / 2, gl.drawingBufferHeight / 2);
+      gl.uniform1f(u.uWidth, width * dpr / 2);
+      gl.uniform1f(u.uOpacity, opacity);
+      gl.uniform2f(u.uDash, dash?.[0] ?? 0, dash?.[1] ?? 0);
+      gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      if (depthTest) { gl.enable(gl.DEPTH_TEST); gl.depthMask(false); } else gl.disable(gl.DEPTH_TEST);
+      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, n);
+      gl.depthMask(true);
+      gl.bindVertexArray(null);
+    },
+  };
+}
+
+// ---------------------------------------------------------------- solid objects (meshes)
+
+/**
+ * Geometry for solid objects, z up, centred on the origin unless stated. Each returns
+ * { positions, normals, indices } (Float32Array/Uint32Array) for createMeshRenderer.add().
+ *   box(sx, sy, sz) · cylinder(r, h, n) (axis z, from z = 0 to h) · cone(r, h, n) (apex at z = h)
+ *   sphere(r, n) · disc(r, n) (in the xy-plane, normal +z) · plane(sx, sy) (xy-plane, normal +z)
+ *   arrow(length, { shaft, head, headLength, n }) along +z from the origin (orient with alignZ)
+ */
+const geometry = (() => {
+  const make = (pos, nrm, idx) => ({ positions: Float32Array.from(pos), normals: Float32Array.from(nrm), indices: Uint32Array.from(idx) });
+  const quad = (P, N, I, a, b, c, d, n) => { const o = P.length / 3; P.push(...a, ...b, ...c, ...d); for (let k = 0; k < 4; k++) N.push(...n); I.push(o, o + 1, o + 2, o, o + 2, o + 3); };
+  return {
+    box(sx = 1, sy = 1, sz = 1) {
+      const x = sx / 2, y = sy / 2, z = sz / 2, P = [], N = [], I = [];
+      quad(P, N, I, [-x, -y, z], [x, -y, z], [x, y, z], [-x, y, z], [0, 0, 1]);
+      quad(P, N, I, [-x, y, -z], [x, y, -z], [x, -y, -z], [-x, -y, -z], [0, 0, -1]);
+      quad(P, N, I, [x, -y, -z], [x, y, -z], [x, y, z], [x, -y, z], [1, 0, 0]);
+      quad(P, N, I, [-x, y, -z], [-x, -y, -z], [-x, -y, z], [-x, y, z], [-1, 0, 0]);
+      quad(P, N, I, [x, y, -z], [-x, y, -z], [-x, y, z], [x, y, z], [0, 1, 0]);
+      quad(P, N, I, [-x, -y, -z], [x, -y, -z], [x, -y, z], [-x, -y, z], [0, -1, 0]);
+      return make(P, N, I);
+    },
+    cylinder(r = 0.5, h = 1, n = 32) {
+      const P = [], N = [], I = [];
+      for (let i = 0; i < n; i++) {
+        const a0 = 2 * Math.PI * i / n, a1 = 2 * Math.PI * (i + 1) / n, c0 = Math.cos(a0), s0 = Math.sin(a0), c1 = Math.cos(a1), s1 = Math.sin(a1);
+        const o = P.length / 3;
+        P.push(r * c0, r * s0, 0, r * c1, r * s1, 0, r * c1, r * s1, h, r * c0, r * s0, h); N.push(c0, s0, 0, c1, s1, 0, c1, s1, 0, c0, s0, 0);
+        I.push(o, o + 1, o + 2, o, o + 2, o + 3);
+        for (const [zz, nz] of [[h, 1], [0, -1]]) { const q = P.length / 3; P.push(0, 0, zz, r * c0, r * s0, zz, r * c1, r * s1, zz); N.push(0, 0, nz, 0, 0, nz, 0, 0, nz); I.push(...(nz > 0 ? [q, q + 1, q + 2] : [q, q + 2, q + 1])); }
+      }
+      return make(P, N, I);
+    },
+    cone(r = 0.5, h = 1, n = 32) {
+      const P = [], N = [], I = [], k = r / h;
+      for (let i = 0; i < n; i++) {
+        const a0 = 2 * Math.PI * i / n, a1 = 2 * Math.PI * (i + 1) / n, am = (a0 + a1) / 2, o = P.length / 3;
+        const nn = a => { const l = Math.hypot(1, k); return [Math.cos(a) / l, Math.sin(a) / l, k / l]; };
+        P.push(r * Math.cos(a0), r * Math.sin(a0), 0, r * Math.cos(a1), r * Math.sin(a1), 0, 0, 0, h); N.push(...nn(a0), ...nn(a1), ...nn(am));
+        I.push(o, o + 1, o + 2);
+        const q = P.length / 3; P.push(0, 0, 0, r * Math.cos(a1), r * Math.sin(a1), 0, r * Math.cos(a0), r * Math.sin(a0), 0); N.push(0, 0, -1, 0, 0, -1, 0, 0, -1); I.push(q, q + 1, q + 2);
+      }
+      return make(P, N, I);
+    },
+    sphere(r = 0.5, n = 24) {
+      const P = [], N = [], I = [];
+      for (let j = 0; j <= n; j++) {for (let i = 0; i <= 2 * n; i++) {
+        const th = Math.PI * j / n, ph = Math.PI * i / n, v = [Math.sin(th) * Math.cos(ph), Math.sin(th) * Math.sin(ph), Math.cos(th)];
+        P.push(r * v[0], r * v[1], r * v[2]); N.push(...v);
+      }}
+      const w = 2 * n + 1;
+      for (let j = 0; j < n; j++) for (let i = 0; i < 2 * n; i++) { const a = j * w + i; I.push(a, a + w, a + 1, a + 1, a + w, a + w + 1); }
+      return make(P, N, I);
+    },
+    disc(r = 0.5, n = 48) {
+      const P = [0, 0, 0], N = [0, 0, 1], I = [];
+      for (let i = 0; i <= n; i++) { const a = 2 * Math.PI * i / n; P.push(r * Math.cos(a), r * Math.sin(a), 0); N.push(0, 0, 1); if (i) I.push(0, i, i + 1); }
+      return make(P, N, I);
+    },
+    plane(sx = 1, sy = 1) { const P = [], N = [], I = []; quad(P, N, I, [-sx / 2, -sy / 2, 0], [sx / 2, -sy / 2, 0], [sx / 2, sy / 2, 0], [-sx / 2, sy / 2, 0], [0, 0, 1]); return make(P, N, I); },
+    arrow(length = 1, { shaft = 0.03 * length, head = 0.08 * length, headLength = 0.22 * length, n = 24 } = {}) {
+      const hl = Math.min(headLength, length), a = this.cylinder(shaft, length - hl, n), b = this.cone(head, hl, n);
+      const off = a.positions.length / 3;
+      return {
+        positions: Float32Array.from([...a.positions, ...Array.from(b.positions, (v, i) => (i % 3 === 2 ? v + length - hl : v))]),
+        normals: Float32Array.from([...a.normals, ...b.normals]),
+        indices: Uint32Array.from([...a.indices, ...Array.from(b.indices, i => i + off)]),
+      };
+    },
+  };
+})();
+
+/** Rotation matrix (3×3, row-major) taking +z to the direction dir; pass it as transform({ rotate }). */
+function alignZ(dir) {
+  const l = Math.hypot(...dir);
+  if (!(l > 0)) throw new Error('alignZ: direction must be non-zero');
+  const [x, y, z] = dir.map(v => v / l);
+  if (z < -1 + 1e-12) return [1, 0, 0, 0, -1, 0, 0, 0, -1];
+  // Rodrigues rotation about ẑ × d by the angle between them
+  const k = 1 / (1 + z);
+  return [1 - x * x * k, -x * y * k, x, -x * y * k, 1 - y * y * k, y, -x, -y, z];
+}
+
+/**
+ * Point lists for createLineRenderer.update(): each returns one polyline [x,y,z, …] or an array of them.
+ *   circle(center, normal, r, n)        closed circle (great circles, cone rims, orbits)
+ *   boxEdges([min, max])                the 12 edges of a box, as separate segments
+ *   grid(dims, { spacing, origin })     all lattice lines of a 1–3D grid with dims points per axis
+ *   arrow(from, to, { head, normal })   shaft and a two-stroke head in the plane containing normal
+ */
+const polylines = {
+  circle(center = [0, 0, 0], normal = [0, 0, 1], r = 1, n = 96) {
+    const R = alignZ(normal), out = [];
+    for (let i = 0; i <= n; i++) {
+      const a = 2 * Math.PI * i / n, p = [r * Math.cos(a), r * Math.sin(a), 0];
+      for (let k = 0; k < 3; k++) out.push(center[k] + R[3 * k] * p[0] + R[3 * k + 1] * p[1] + R[3 * k + 2] * p[2]);
+    }
+    return out;
+  },
+  boxEdges([lo, hi]) {
+    const c = i => [i & 1 ? hi[0] : lo[0], i & 2 ? hi[1] : lo[1], i & 4 ? hi[2] : lo[2]];
+    const out = [];
+    for (let i = 0; i < 8; i++) for (const b of [1, 2, 4]) if (!(i & b)) out.push([...c(i), ...c(i | b)]);
+    return out;
+  },
+  grid(dims, { spacing = 1, origin = [0, 0, 0] } = {}) {
+    const d = [...dims, 1, 1].slice(0, 3), sp = typeof spacing === 'number' ? [spacing, spacing, spacing] : spacing, out = [];
+    for (let ax = 0; ax < dims.length; ax++) {
+      const [b, c] = [0, 1, 2].filter(k => k !== ax);
+      for (let i = 0; i < d[b]; i++) {for (let j = 0; j < d[c]; j++) {
+        const p = [0, 0, 0], q = [0, 0, 0];
+        p[b] = q[b] = i; p[c] = q[c] = j; p[ax] = 0; q[ax] = d[ax] - 1;
+        out.push([0, 1, 2].map(k => origin[k] + p[k] * sp[k]).concat([0, 1, 2].map(k => origin[k] + q[k] * sp[k])));
+      }}
+    }
+    return out;
+  },
+  arrow(from, to, { head = 0.2, normal = [0, 0, 1] } = {}) {
+    const d = [0, 1, 2].map(k => to[k] - from[k]), L = Math.hypot(...d);
+    if (!(L > 0)) return [[...from, ...to]];
+    let side = [d[1] * normal[2] - d[2] * normal[1], d[2] * normal[0] - d[0] * normal[2], d[0] * normal[1] - d[1] * normal[0]];
+    if (Math.hypot(...side) < 1e-9 * L) side = Math.abs(d[0]) < 0.9 * L ? [0, d[2], -d[1]] : [-d[2], 0, d[0]];
+    const sl = Math.hypot(...side), h = head * L;
+    const wing = sgn => [0, 1, 2].map(k => to[k] - d[k] / L * h + sgn * side[k] / sl * h * 0.5);
+    return [[...from, ...to], [...wing(1), ...to, ...wing(-1)]];
+  },
+};
+
+/**
+ * A colour-bar legend on the 2D canvas for a colormap-mapped quantity, matching the GPU colours.
+ * ctx in CSS pixels (the shell's draw ctx). Vertical by default (low at the bottom), or
+ * horizontal. Ticks at nice values (decades when log). Returns the bar's rectangle.
+ */
+function drawColorBar(ctx, { x, y, width = 12, height = 120, colormap: map = 'viridis', range = [0, 1], log = false, label = '', ticks = 5, horizontal = false, color, format } = {}) {
+  const css = name => (typeof getComputedStyle === 'function' ? getComputedStyle(document.documentElement).getPropertyValue(name).trim() : '');
+  const text = color ?? (css('--muted') || '#8a94a6');
+  const [lo, hi] = log ? range.map(Math.log10) : range;
+  const steps = Math.max(2, Math.round(horizontal ? width : height));
+  for (let i = 0; i < steps; i++) {
+    const c = colormap(map, (i + 0.5) / steps).map(v => Math.round(255 * v));
+    ctx.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`;
+    if (horizontal) ctx.fillRect(x + i * width / steps, y, width / steps + 0.5, height);
+    else ctx.fillRect(x, y + height - (i + 1) * height / steps, width, height / steps + 0.5);
+  }
+  ctx.strokeStyle = text; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, width - 1, height - 1);
+  const vals = [];
+  if (log) { for (let e = Math.ceil(lo - 1e-9); e <= hi + 1e-9; e++) vals.push(e); }
+  else {
+    const raw = (hi - lo) / Math.max(1, ticks - 1), mag = 10 ** Math.floor(Math.log10(raw)), step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= raw * 0.999) ?? raw;
+    for (let v = Math.ceil(lo / step - 1e-9) * step; v <= hi + 1e-9 * step; v += step) vals.push(Math.abs(v) < step * 1e-9 ? 0 : v);
+  }
+  const fmt = format ?? (v => (log ? `10${String(v).replace('-', '⁻').replace(/\d/g, d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d])}` : Math.abs(v) >= 1e4 || (Math.abs(v) < 1e-2 && v !== 0) ? v.toExponential(1) : String(+v.toPrecision(4))));
+  ctx.fillStyle = text; ctx.font = '11px system-ui, sans-serif';
+  for (const v of vals) {
+    const f = (v - lo) / (hi - lo);
+    if (horizontal) { const px = x + f * width; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillRect(px, y + height, 1, 3); ctx.fillText(fmt(v), px, y + height + 4); }
+    else { const py = y + height - f * height; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillRect(x + width, py, 3, 1); ctx.fillText(fmt(v), x + width + 5, py); }
+  }
+  if (label) {
+    ctx.textAlign = horizontal ? 'center' : 'left'; ctx.textBaseline = 'bottom';
+    ctx.fillText(label, horizontal ? x + width / 2 : x, y - 4);
+  }
+  return { x, y, width, height };
+}
+
+/**
+ * Model matrix (column-major, float64 array of 16) from translate [x,y,z], rotate (radians about
+ * x, then y, then z, or a row-major 3×3 rotation matrix of 9 numbers, e.g. alignZ(dir)) and scale (number or [sx,sy,sz]). compose(a, b) = a·b
+ * builds hierarchies (e.g. a seat hanging from a rotating rope).
+ */
+function transform({ translate = [0, 0, 0], rotate = [0, 0, 0], scale = 1 } = {}) {
+  const s = typeof scale === 'number' ? [scale, scale, scale] : scale;
+  let R;
+  if (rotate.length === 9) {
+    // a 3×3 rotation matrix, row-major (e.g. from alignZ), stored here column by column
+    R = [rotate[0], rotate[3], rotate[6], rotate[1], rotate[4], rotate[7], rotate[2], rotate[5], rotate[8]];
+  } else {
+    const [ax, ay, az] = rotate;
+    const cx = Math.cos(ax), sx = Math.sin(ax), cy = Math.cos(ay), sy = Math.sin(ay), cz = Math.cos(az), sz = Math.sin(az);
+    // R = Rz · Ry · Rx (rotate about x first), column by column
+    R = [cz * cy, sz * cy, -sy, cz * sy * sx - sz * cx, sz * sy * sx + cz * cx, cy * sx, cz * sy * cx + sz * sx, sz * sy * cx - cz * sx, cy * cx];
+  }
+  return [R[0] * s[0], R[1] * s[0], R[2] * s[0], 0, R[3] * s[1], R[4] * s[1], R[5] * s[1], 0, R[6] * s[2], R[7] * s[2], R[8] * s[2], 0, translate[0], translate[1], translate[2], 1];
+}
+function compose(a, b) {
+  const out = new Array(16).fill(0);
+  for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) for (let k = 0; k < 4; k++) out[c * 4 + r] += a[k * 4 + r] * b[c * 4 + k];
+  return out;
+}
+
+/**
+ * Lit solid objects. add(geometry) → mesh; draw(camera, items, options) with items
+ * [{ mesh, matrix (from transform/compose), color, opacity }] and options:
+ *   light: { direction: [x,y,z] } (towards the light, e.g. sunDirection() from core/sun.mjs) or a point
+ *   ambient (default 0.25) · shadows: { z, color, opacity }: exact hard shadows of every item on the
+ *   horizontal plane z = shadows.z for the light (no double-darkening where shadows overlap).
+ * Shading is Lambert n·l plus ambient: a readable picture of the lighting geometry, not a
+ * photometric rendering. Drawn relative to camera.target in float64 (large coordinates stay sharp).
+ */
+function createMeshRenderer(gl) {
+  const { p, u } = compile(gl, `#version 300 es
+in vec3 aPos; in vec3 aNrm;
+uniform mat4 uVP, uModel; uniform mat3 uNrm; uniform float uFlat;
+out vec3 vN; out vec3 vW;
+void main() { vec4 w = uModel * vec4(aPos, 1.0); vW = w.xyz; vN = uNrm * aNrm; gl_Position = uVP * w; }`, `#version 300 es
+precision highp float;
+in vec3 vN; in vec3 vW;
+uniform vec3 uColor, uLight; uniform float uPoint, uAmbient, uOpacity, uFlat;
+out vec4 frag;
+void main() {
+  if (uFlat > 0.5) { frag = vec4(uColor * uOpacity, uOpacity); return; }
+  vec3 n = normalize(vN), l = uPoint > 0.5 ? normalize(uLight - vW) : normalize(uLight);
+  if (!gl_FrontFacing) n = -n;
+  float k = uAmbient + (1.0 - uAmbient) * max(dot(n, l), 0.0);
+  frag = vec4(uColor * k * uOpacity, uOpacity);
+}`);
+  const meshes = [];
+  const inv3T = m => {                         // inverse-transpose of the upper 3×3 (normal matrix)
+    const a = m[0], b = m[4], c = m[8], d = m[1], e = m[5], f = m[9], g = m[2], h = m[6], i = m[10];
+    const A = e * i - f * h, B = -(d * i - f * g), C = d * h - e * g, det = a * A + b * B + c * C;
+    if (!det) return new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
+    const D = -(b * i - c * h), E = a * i - c * g, F = -(a * h - b * g), G = b * f - c * e, H = -(a * f - c * d), I = a * e - b * d;
+    return new Float32Array([A / det, B / det, C / det, D / det, E / det, F / det, G / det, H / det, I / det]);
+  };
+  const relative = (m, t) => { const r = m.slice(); r[12] -= t[0]; r[13] -= t[1]; r[14] -= t[2]; return new Float32Array(r); };
+  return {
+    add({ positions, normals, indices }) {
+      const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
+      for (const [name, data] of [['aPos', positions], ['aNrm', normals]]) {
+        const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+        const loc = gl.getAttribLocation(p, name); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 3, gl.FLOAT, false, 0, 0);
+      }
+      const ib = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+      gl.bindVertexArray(null);
+      const mesh = { vao, count: indices.length };
+      meshes.push(mesh);
+      return mesh;
+    },
+    draw(camera, items, { aspect, light = { direction: [0.4, -0.3, 1] }, ambient = 0.25, shadows = null } = {}) {
+      const t = camera.target, { viewProj } = camera.matrices(aspect ?? gl.drawingBufferWidth / gl.drawingBufferHeight, { relative: true });
+      const point = Array.isArray(light), L = point ? light.map((v, k) => v - t[k]) : light.direction;
+      gl.useProgram(p);
+      gl.uniformMatrix4fv(u.uVP, false, viewProj); gl.uniform3f(u.uLight, ...L); gl.uniform1f(u.uPoint, point ? 1 : 0); gl.uniform1f(u.uAmbient, ambient);
+      gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL);
+      const opaque = items.filter(it => (it.opacity ?? 1) >= 1), glass = items.filter(it => (it.opacity ?? 1) < 1);
+      const one = (it, model, color, opacity, flat) => {
+        gl.uniformMatrix4fv(u.uModel, false, model); gl.uniformMatrix3fv(u.uNrm, false, inv3T(it.matrix));
+        gl.uniform3f(u.uColor, ...rgb(color)); gl.uniform1f(u.uOpacity, opacity); gl.uniform1f(u.uFlat, flat ? 1 : 0);
+        gl.bindVertexArray(it.mesh.vao); gl.drawElements(gl.TRIANGLES, it.mesh.count, gl.UNSIGNED_INT, 0);
+      };
+      gl.disable(gl.BLEND); gl.depthMask(true);
+      for (const it of opaque) one(it, relative(it.matrix, t), it.color ?? '#cfd8e3', 1, false);
+      if (shadows && !point && L[2] > 1e-6) {
+        // project every vertex along the light onto z = z₀: x' = x − (z − z₀)·l/l_z (exact for parallel light)
+        const z0 = shadows.z ?? 0, S = [1, 0, 0, 0, 0, 1, 0, 0, -L[0] / L[2], -L[1] / L[2], 0, 0, z0 * L[0] / L[2], z0 * L[1] / L[2], z0, 1];
+        gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
+        gl.enable(gl.STENCIL_TEST); gl.clear(gl.STENCIL_BUFFER_BIT); gl.stencilFunc(gl.EQUAL, 0, 0xff); gl.stencilOp(gl.KEEP, gl.KEEP, gl.INCR);
+        gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(-1, -1);
+        const op = shadows.opacity ?? 0.35;
+        for (const it of items) if (!it.noShadow) one(it, relative(compose(S, it.matrix), t), shadows.color ?? '#000000', op, true);
+        gl.disable(gl.POLYGON_OFFSET_FILL); gl.disable(gl.STENCIL_TEST); gl.depthMask(true);
+      }
+      if (glass.length) {
+        gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
+        for (const it of glass) one(it, relative(it.matrix, t), it.color ?? '#9fd0ff', it.opacity, false);
+        gl.depthMask(true);
+      }
+      gl.bindVertexArray(null);
+    },
+  };
+}
+
+return { perspective, lookAt, multiply, invert, orbitCamera, COLORMAPS, colormap, normalize, compile, cssColor, pixelRatio, createGLLayer, createPointRenderer, createFieldRenderer, createVolumeRenderer, createSphereRenderer, createLineRenderer, geometry, alignZ, polylines, drawColorBar, transform, compose, createMeshRenderer };
+})();
+
 // ---- psim:ui/equation.mjs
 __psim["ui/equation.mjs"] = (() => {
 // Equations split into their physical terms.
@@ -1162,18 +2222,32 @@ __psim["core/verification.mjs"] = (() => {
 // Shared verification gates for the CLI and browser. Reports are evidence only
 // when every check is explicit and the tested settings still match the simulation.
 
-function validateModuleReport(report) {
-  if (!report || !Array.isArray(report.checks) || !report.checks.length) throw new Error('verification: need a non-empty checks array');
+/**
+ * Problems with each check of a module report, as [{ index, label, problem }]; empty when every
+ * check is well formed. Lets the CLI print the whole report and mark only the bad rows.
+ */
+function moduleReportProblems(report) {
+  if (!report || !Array.isArray(report.checks) || !report.checks.length) return [{ index: -1, label: '', problem: 'need a non-empty checks array' }];
+  const out = [];
   for (const [i, check] of report.checks.entries()) {
-    const where = `verification check ${i + 1}`;
-    if (!check || typeof check.label !== 'string' || !check.label.trim()) throw new Error(`${where}: label is required`);
-    if (typeof check.pass !== 'boolean') throw new Error(`${where}: pass must be explicitly true or false`);
-    if (typeof check.value === 'number') {
-      if (!Number.isFinite(check.value)) throw new Error(`${where}: measured value must be finite`);
-    } else if (typeof check.value !== 'string' || !check.value.trim() || /NaN|Infinity|∞|^\s*—\s*$/.test(check.value)) {
-      throw new Error(`${where}: measured value must be finite and present`);
+    const label = typeof check?.label === 'string' ? check.label : '';
+    const bad = problem => out.push({ index: i, label, problem });
+    if (!check || !label.trim()) bad('label is required');
+    if (typeof check?.pass !== 'boolean') bad('pass must be explicitly true or false');
+    if (typeof check?.value === 'number') {
+      if (!Number.isFinite(check.value)) bad(`measured value must be finite (got ${check.value})`);
+    } else if (typeof check?.value !== 'string' || !check.value.trim() || /NaN|Infinity|∞|^\s*—\s*$/.test(check.value)) {
+      bad(`measured value must be finite and present (got ${JSON.stringify(check?.value)})`);
     }
-    if (check.state != null && check.state !== 'warn') throw new Error(`${where}: optional state must be 'warn'`);
+    if (check?.state != null && check.state !== 'warn') bad("optional state must be 'warn'");
+  }
+  return out;
+}
+
+function validateModuleReport(report) {
+  const problems = moduleReportProblems(report);
+  if (problems.length) {
+    throw new Error(`verification: ${problems.map(p => (p.index < 0 ? p.problem : `check ${p.index + 1}${p.label ? ` "${p.label}"` : ''}: ${p.problem}`)).join('; ')}`);
   }
   return report;
 }
@@ -1217,7 +2291,7 @@ function gravityReportMatches(report, settings) {
   return Number.isFinite(h) && h > 0 && Number.isFinite(settings.h) && Math.abs(h - settings.h) <= 1e-12 * Math.abs(h);
 }
 
-return { validateModuleReport, gravityReportProblems, gravityReportMatches };
+return { moduleReportProblems, validateModuleReport, gravityReportProblems, gravityReportMatches };
 })();
 
 // ---- psim:ui/instrument-app.mjs
@@ -1238,8 +2312,9 @@ __psim["ui/instrument-app.mjs"] = (() => {
 //   sim.state()              JSON-serialisable state (export, tests)
 //   sim.record?()            { header: [...], rows: [[...], ...] } for CSV export
 //   sim.timeDependent        false for static analytic visualisations (no transport)
-const { el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon, cssVar } = __psim["ui/instrument.mjs"];
+const { el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast, ICONS, transport, createClock, logPlot, download, readJsonScript, beacon, cssVar } = __psim["ui/instrument.mjs"];
 const { createPlot } = __psim["ui/plot.mjs"];
+const { createGLLayer } = __psim["ui/gl.mjs"];
 const { createEquation, createDerivation, M } = __psim["ui/equation.mjs"];
 const { validateModuleReport } = __psim["core/verification.mjs"];
 const TIERS = {
@@ -1252,7 +2327,9 @@ const TIERS = {
 function createInstrument(spec) {
   const {
     title, subtitle = '', tier, tierReason, create, draw, params = [], model = {},
-    timeUnit = 'T', timeLabel = 'simulated time', speed: speed0 = 1, controls, onPointer, layout = 'stage', bench,
+    timeUnit = 'T', timeLabel = 'simulated time', speed: speed0 = 1, gl: wantGL = false, drawGL, controls, onPointer, layout = 'stage', bench,
+    presets = [], texts = {}, hudError = true, formatTime, timeDigits = 3, frameBudget = 9, speedRange, viewControls, testSteps = 300,
+    glResolution = 'auto',
   } = spec;
   if (!TIERS[tier]) throw new Error(`tier must be one of ${Object.keys(TIERS).join(', ')}`);
   const report = readJsonScript('psim-verification');
@@ -1297,15 +2374,29 @@ function createInstrument(spec) {
   }
   const canvas = stage.querySelector('canvas');
   const ctx = canvas.getContext('2d');
+  // optional GPU layer under the 2D canvas (ui/gl.mjs): drawGL renders the scene, draw adds labels
+  const glLayer = wantGL ? createGLLayer(canvas) : null;
+  if (glLayer) $('.psim-app').classList.add('has-gl');      // HUD and legend get a backing over bright GPU scenes
   $('.psim-hud .dim').textContent = timeLabel;
   const hud = { t: $('.psim-hud b'), a: $('.psim-hud .h1'), b: $('.psim-hud .h2'), flag: $('.psim-hud .flag') };
-  if (model.legend) $('.psim-legend').append(...model.legend.map(t => el('span', {}, t)));
+  // the legend beside the view; view.setLegend(items) replaces it when the representation changes
+  const setLegend = items => $('.psim-legend').replaceChildren(...(items ?? []).map(t => el('span', {}, t)));
+  setLegend(model.legend);
 
   // ------------------------------------------------------------ state
   const values = Object.fromEntries(params.map(p => [p.key, p.value]));
   let sim, tDisplay = 0, limited = false;
   const clock = createClock({ speed: speed0 });
-  const view = { W: 0, H: 0, dpr: 1, color: cssVar, opts: {}, pointer: null };
+  const view = {
+    W: 0, H: 0, dpr: 1, color: cssVar, opts: {}, pointer: null, gl: glLayer?.gl ?? null, glError: glLayer && !glLayer.ok ? glLayer.reason : '',
+    /** Current playback speed (simulated time per second) and state, e.g. to disclose time compression. */
+    get speed() { return clock.speed; }, get playing() { return clock.playing; },
+    /** GL layer resolution as a fraction of the device pixel ratio (adaptive unless glResolution is a number). */
+    get glScale() { return glLayer?.scale ?? 1; },
+    /** 'dark' or 'light': the theme now shown (e.g. additive vs alpha blending, mesh colours). */
+    get theme() { return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'; },
+    setLegend,
+  };
 
   let benchApi = null;
   function rebuild() {
@@ -1317,33 +2408,80 @@ function createInstrument(spec) {
     status.set('params', values);
   }
 
+  // ------------------------------------------------------------ full screen
+  // The scene (canvas, HUD, legend) and the playback bar fill the screen. Falls back to filling the
+  // window with CSS where the Fullscreen API is missing or refused (iPhone Safari, sandboxed frames).
+  const scene = benchParts?.wrap ?? stage;
+  let pseudoFs = false, fsBtn = null;
+  const fsElement = () => document.fullscreenElement ?? document.webkitFullscreenElement ?? null;
+  const isFullscreen = () => pseudoFs || fsElement() === scene;
+  function afterFullscreen() {
+    const on = isFullscreen();
+    scene.classList.toggle('psim-fs', on);
+    if (tp) { if (on && tp.parentNode !== scene) scene.append(tp); else if (!on && tp.parentNode !== stage) stage.append(tp); tp.setFullscreen(on); }
+    if (fsBtn) fsBtn.innerHTML = on ? ICONS.exitFullscreen : ICONS.fullscreen;
+    requestAnimationFrame(() => spec.onFit?.(view));
+  }
+  function setPseudo(on) { pseudoFs = on; scene.classList.toggle('psim-pseudo-fs', on); afterFullscreen(); }
+  function toggleFullscreen() {
+    if (isFullscreen()) {
+      if (pseudoFs) setPseudo(false);
+      else (document.exitFullscreen ?? document.webkitExitFullscreen)?.call(document);
+      return;
+    }
+    const request = scene.requestFullscreen ?? scene.webkitRequestFullscreen;
+    if (!request) { setPseudo(true); return; }
+    try { Promise.resolve(request.call(scene)).catch(() => setPseudo(true)); } catch { setPseudo(true); }
+  }
+  addEventListener('fullscreenchange', afterFullscreen);
+  addEventListener('webkitfullscreenchange', afterFullscreen);
+
   // ------------------------------------------------------------ transport
   const timeDependent = spec.timeDependent !== false;
   let tp = null;
   if (timeDependent) {
     tp = transport({
-      speed: speed0, speedLabel: s => `${sci(s, 2)} ${timeUnit}/s`,
+      speed: speed0, speedLabel: s => `${sci(s, 2)} ${timeUnit}/s`, range: speedRange,
       onToggle: () => setPlaying(!clock.playing),
       onStep: () => { setPlaying(false); sim.step(); tDisplay = sim.t; },
       onRestart: () => rebuild(),
       onFit: () => spec.onFit?.(view),
+      onFullscreen: () => toggleFullscreen(),
       onSpeed: s => { clock.speed = s; },
     });
     stage.append(tp);
   } else {
+    fsBtn = el('button', { class: 'psim-fsbtn', title: 'Full screen (F)', 'aria-label': 'Full screen', html: ICONS.fullscreen, onclick: () => toggleFullscreen() });
+    scene.append(fsBtn);
     stage.querySelector('.psim-hud').querySelector('.dim').textContent = '';
   }
   function setPlaying(p) { clock.playing = p; tp?.setPlaying(p); }
 
+
   // ------------------------------------------------------------ side panel
-  const secParams = section('Parameters');
+  const secParams = section(texts.parameters ?? 'Parameters');
   const paramInputs = new Map();
+  // set one or several parameters as if typed: every control shows the new value, one rebuild
+  function setParams(next, { play } = {}) {
+    for (const [k, v] of Object.entries(next)) { values[k] = v; paramInputs.get(k)?.setValue?.(v); }
+    rebuild();
+    if (play != null && timeDependent) setPlaying(play);
+  }
+  const setParam = (k, v) => setParams({ [k]: v });
+  if (presets.length) {
+    secParams.body.append(el('div', { class: 'psim-presets' },
+      el('span', { class: 'psim-hint' }, texts.presets ?? 'Try this'),
+      ...presets.map(pr => button(pr.label, () => setParams(pr.values ?? {}, { play: pr.play ?? true })))));
+  }
   if (params.length) {
-    secParams.body.append(el('p', { class: 'psim-hint' }, 'Changing a parameter recomputes the model from its initial state.'));
+    const note = texts.paramsNote ?? 'Changing a parameter recomputes the model from its initial state.';
+    if (note) secParams.body.append(el('p', { class: 'psim-hint' }, note));
     for (const p of params) {
       if (p.options) {
-        secParams.body.append(el('div', { class: 'psim-field' }, el('div', { class: 'top' }, el('span', {}, p.label)),
-          select(p.options, p.value, v => { values[p.key] = isNaN(+v) ? v : +v; rebuild(); })));
+        const sel = select(p.options, p.value, v => { values[p.key] = isNaN(+v) ? v : +v; rebuild(); });
+        sel.setValue = v => { sel.value = String(v); };
+        paramInputs.set(p.key, sel);
+        secParams.body.append(el('div', { class: 'psim-field' }, el('div', { class: 'top' }, el('span', {}, p.label)), sel));
       } else {
         const sl = slider({
           label: p.label, min: p.min, max: p.max, value: p.value, log: p.log, unit: p.unit ?? '', digits: p.digits ?? 3,
@@ -1356,9 +2494,13 @@ function createInstrument(spec) {
       if (p.hint) secParams.body.append(el('p', { class: 'psim-hint', style: 'margin-top:-4px;font-size:11.5px' }, p.hint));
     }
   }
-  if (controls) controls(secParams.body, { values, rebuild });
+  if (controls) controls(secParams.body, { values, rebuild, setParam, setParams, play: () => setPlaying(true), pause: () => setPlaying(false), getSim: () => sim });
 
-  const secDiag = section('Diagnostics', { aside: 'live' });
+  // presentation-only controls (projection, colour map, slice): never rebuild the model
+  const secView = viewControls ? section(texts.view ?? 'View') : null;
+  if (secView) secView.body.append(el('p', { class: 'psim-hint' }, texts.viewNote ?? 'These change only how the results are shown, not the calculation.'));
+
+  const secDiag = section(texts.diagnostics ?? 'Diagnostics', { aside: 'live' });
   const diagPlot = logPlot({ caption: '', yMin: 1e-16, yMax: 1 });
   const diagSeries = diagPlot.addSeries('--accent');
   const diagRows = new Map();
@@ -1378,10 +2520,11 @@ function createInstrument(spec) {
     for (const x of d) {
       let r = diagRows.get(x.key);
       if (!r) { r = row(x.label); diagRows.set(x.key, r); secDiag.body.append(r); }
-      const text = x.text ?? (x.kind === 'error' ? sci(x.value) : `${sci(x.value, 4)}${x.unit ? ` ${x.unit}` : ''}`);
-      r.set(text, x.kind === 'error' && x.good != null ? grade(x.value, x.good, x.warn ?? x.good * 1000) : '');
+      // pending: a quantity that is not measured yet (e.g. before enough Monte Carlo samples)
+      const text = x.pending ? (x.text ?? texts.pending ?? 'measuring…') : x.text ?? (x.kind === 'error' ? sci(x.value) : `${sci(x.value, 4)}${x.unit ? ` ${x.unit}` : ''}`);
+      r.set(text, !x.pending && x.kind === 'error' && x.good != null ? grade(x.value, x.good, x.warn ?? x.good * 1000) : '');
     }
-    const firstErr = d.find(x => x.kind === 'error');
+    const firstErr = d.find(x => x.kind === 'error' && !x.pending);
     if (firstErr && timeDependent && sim.t >= nextPlot) {
       diagPlot.push(diagSeries, sim.t, Math.max(firstErr.value, 1e-17));
       nextPlot = sim.t + (spec.duration ?? 10) / 800;
@@ -1427,10 +2570,19 @@ function createInstrument(spec) {
       if (!r) { toast(stage, 'This model records no tabular data'); return; }
       download(`${slug}-data.csv`, [`# p-simtor | ${title}`, r.header.join(','), ...r.rows.map(x => x.join(','))].join('\n'), 'text/csv');
     }),
-    button('PNG image', () => canvas.toBlob(b => el('a', { href: URL.createObjectURL(b), download: `${slug}.png` }).click())),
+    button('PNG image', () => {
+      // composite the GPU layer (if any) under the 2D overlay
+      const out = document.createElement('canvas');
+      out.width = canvas.width; out.height = canvas.height;
+      const c = out.getContext('2d');
+      if (glLayer?.ok) c.drawImage(glLayer.canvas, 0, 0);
+      c.drawImage(canvas, 0, 0);
+      out.toBlob(b => el('a', { href: URL.createObjectURL(b), download: `${slug}.png` }).click());
+    }),
   ));
 
-  side.append(...[secParams, secDiag, secVerify, secModel, secExport].filter(s => s !== secParams || params.length || controls));
+  side.append(...[secParams, secView, secDiag, secVerify, secModel, secExport].filter(s => s && (s !== secParams || params.length || controls)));
+  if (viewControls) viewControls(secView.body, { el, slider, select, toggle, button, view, getSim: () => sim });
   if (spec.extraSections) spec.extraSections(side, { section, el, row, slider, toggle, button, values, rebuild, view });
 
   // ------------------------------------------------------------ canvas & loop
@@ -1443,37 +2595,66 @@ function createInstrument(spec) {
   resize();
   if (onPointer) onPointer(canvas, view, () => sim);
 
+  // Adaptive GL resolution: when frames take longer than the display refresh while the JavaScript
+  // part is small, the GPU is the bottleneck (large or fullscreen windows, ray marching): render the
+  // GL layer at a lower pixel ratio, and raise it again when there is headroom. Display only.
+  if (glLayer && typeof glResolution === 'number') glLayer.scale = Math.min(1, Math.max(0.25, glResolution));
+  const perf = { last: null, interval: null, js: 0, refresh: Infinity, lastAdjust: 0, calm: 0 };
+  function adaptResolution(now, jsMs) {
+    if (!glLayer?.ok || glResolution !== 'auto') return;
+    if (perf.last != null) {
+      const dt = now - perf.last;
+      if (dt > 0 && dt < 250) {
+        perf.refresh = Math.min(perf.refresh * 1.0005, Math.max(dt, 4));
+        perf.interval = perf.interval == null ? dt : 0.9 * perf.interval + 0.1 * dt;
+        perf.js = 0.9 * perf.js + 0.1 * jsMs;
+        const floor = Math.max(0.35, 0.75 / (view.dpr || 1)), slow = perf.interval > 1.3 * perf.refresh;
+        if (slow && perf.interval - perf.js > 0.5 * perf.refresh && now - perf.lastAdjust > 500 && glLayer.scale > floor) {
+          glLayer.scale = Math.max(floor, glLayer.scale * 0.8); perf.lastAdjust = now; perf.calm = 0;
+        } else if (!slow && perf.interval < 1.1 * perf.refresh) {
+          if (++perf.calm > 120 && glLayer.scale < 1 && now - perf.lastAdjust > 2000) { glLayer.scale = Math.min(1, glLayer.scale * 1.15); perf.lastAdjust = now; perf.calm = 0; }
+        } else perf.calm = 0;
+      }
+    }
+    perf.last = now;
+  }
+
   let frames = 0, lastUi = 0;
   function frame(now) {
+    const frameStart = performance.now();
     if (timeDependent) {
       const target = clock.tick(now, tDisplay);
       if (target > tDisplay) {
-        const deadline = performance.now() + 9;
-        let k = 0;
+        // frameBudget ms of computing per frame, checked after every step, so a slow step
+        // (a Monte Carlo sweep) runs at most once past the budget; fast steps run in thousands
+        const deadline = performance.now() + frameBudget;
         while (sim.t < target) {
           sim.step();
-          if ((++k & 63) === 0 && performance.now() > deadline) break;
+          if (performance.now() > deadline) break;
         }
         limited = sim.t < target;
         tDisplay = Math.min(target, sim.t);
       }
     }
+    if (glLayer?.ok) { glLayer.sync(view.dpr); drawGL?.(glLayer.gl, sim, view, tDisplay); }
     ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
     ctx.clearRect(0, 0, view.W, view.H);
+    if (glLayer && !glLayer.ok) { ctx.fillStyle = cssVar('--muted'); ctx.font = '13px system-ui, sans-serif'; ctx.fillText(`${glLayer.reason}: the 3D view cannot be shown.`, 16, view.H - 20); }
     draw(ctx, sim, view, tDisplay);
     if (now - lastUi > 100) {
       lastUi = now;
       const d = renderDiag();
-      hud.t.textContent = timeDependent ? `${fix(tDisplay, 3)} ${timeUnit}` : '';
-      const firstErr = d.find(x => x.kind === 'error');
-      hud.a.textContent = firstErr ? `${firstErr.label} ${sci(firstErr.value)}` : '';
+      hud.t.textContent = timeDependent ? (formatTime ? formatTime(tDisplay) : `${fix(tDisplay, timeDigits)} ${timeUnit}`) : '';
+      const firstErr = d.find(x => x.kind === 'error' && !x.pending);
+      hud.a.textContent = firstErr && hudError ? `${firstErr.label} ${sci(firstErr.value)}` : '';
       hud.b.textContent = spec.hudLine?.(sim) ?? '';
       hud.flag.textContent = limited ? 'compute-limited: playback slowed to keep the calculation exact' : '';
       benchApi?.update?.(sim, tDisplay, { rebuilt: false });
       status.set('t', timeDependent ? tDisplay : 1);
-      if (firstErr) status.set('drift', firstErr.value);
+      if (firstErr) { status.set('drift', firstErr.value); status.set('driftLabel', firstErr.label); }
     }
     if (++frames === 1 || frames % 30 === 0) status.set('frames', frames);   // first frame at once: slow pages count as live
+    adaptResolution(now, performance.now() - frameStart);
     requestAnimationFrame(frame);
   }
 
@@ -1484,13 +2665,20 @@ function createInstrument(spec) {
     params: () => ({ ...values }),
     advanceTo: t => { while (sim.t < t) sim.step(); tDisplay = Math.max(tDisplay, Math.min(t, sim.t)); return window.psim.state(); },
     restart: () => rebuild(),
+    setParams: (next, opts) => setParams(next, opts),
+    setParam: (k, v) => setParam(k, v),
+    getSim: () => sim,
+    toggleFullscreen: () => toggleFullscreen(),
+    get fullscreen() { return isFullscreen(); },
+    testSteps,
+    play: () => setPlaying(true), pause: () => setPlaying(false),
     steps: n => { if (typeof sim.step === "function") for (let i = 0; i < n; i++) sim.step(); tDisplay = sim.t ?? 0; return window.psim.state(); },
   };
 
   if (bench && benchParts) {
     benchApi = bench({
       ...benchParts, createPlot, createEquation, createDerivation, M, values,
-      setParam: (k, v) => { values[k] = v; paramInputs.get(k)?.setValue?.(v); rebuild(); },
+      setParam, setParams, play: () => setPlaying(true), pause: () => setPlaying(false),
       getSim: () => sim,
     }) ?? null;
   }
@@ -1498,7 +2686,10 @@ function createInstrument(spec) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   setPlaying(timeDependent && (query.get('autoplay') ? query.get('autoplay') !== '0' : !reduced));
   addEventListener('keydown', e => {
-    if (e.target.closest('input, select, textarea') || !timeDependent) return;
+    if (e.target.closest('input, select, textarea')) return;
+    if ((e.key === 'f' || e.key === 'F') && !e.metaKey && !e.ctrlKey) { e.preventDefault(); toggleFullscreen(); return; }
+    if (e.key === 'Escape' && pseudoFs) { setPseudo(false); return; }
+    if (!timeDependent) return;
     if (e.code === 'Space') { e.preventDefault(); setPlaying(!clock.playing); }
     else if (e.key === '.') { setPlaying(false); sim.step(); tDisplay = sim.t; }
     else if (e.key === 'r' || e.key === 'R') rebuild();
@@ -1517,6 +2708,8 @@ __psim["core/constants.mjs"] = (() => {
 // Physical constants, SI units. CODATA 2018 recommended values
 // (Tiesinga et al., Rev. Mod. Phys. 93, 025010, 2021). "exact" = defined by the 2019 SI.
 // Import from here instead of typing constants by hand; cite the source in the page.
+// PDG (end of file): particle-physics inputs as { value, error, unit, source }, from the PDG 2024
+// Review of Particle Physics or CODATA 2022 as each entry's source says.
 
 const CODATA = 'CODATA 2018';
 
@@ -1542,6 +2735,9 @@ const MeV = 1.602176634e-13;         // J, exact
 const mpc2MeV = 938.27208816;        // MeV (proton rest energy)
 const mec2MeV = 0.51099895000;       // MeV (electron rest energy)
 const hbarcMeVfm = 197.3269804;      // MeV fm
+const mAlphaMeV = 3727.3794066;      // MeV (alpha-particle rest energy)
+const muB = 1.602176634e-19 * (6.62607015e-34 / (2 * Math.PI)) / (2 * 9.1093837015e-31); // J T^-1, Bohr magneton eħ/2mₑ (CODATA 9.2740100783e-24)
+const ge = 2.00231930436256;         // |g| of the free electron (g_e = −2.00231930436256)
 
 // Astronomy (IAU 2012/2015 nominal values)
 const AU = 1.495978707e11;           // m, exact (IAU 2012)
@@ -1554,7 +2750,66 @@ const yearJulian = 365.25 * 86400;   // s
  */
 const G_AU_MSUN_YR = 1.3271244e20 * (365.25 * 86400) ** 2 / 1.495978707e11 ** 3;
 
-return { CODATA, c, h, hbar, e, kB, NA, eps0, mu0, G, me, mp, mn, u, a0, alpha, Eh, Ry, eV, MeV, mpc2MeV, mec2MeV, hbarcMeVfm, AU, GMsun, Msun, yearJulian, G_AU_MSUN_YR };
+// Everyday mechanics and the Earth–Moon system
+const gn = 9.80665;                  // m s^-2, standard gravity (exact by definition, 3rd CGPM 1901)
+const GMearth = 3.986004e14;         // m^3 s^-2 (IAU 2015 nominal terrestrial mass parameter)
+const Rearth = 6.3781e6;             // m, equatorial (IAU 2015 nominal); mean radius 6.3710e6 m
+const RearthMean = 6.3710e6;         // m (IUGG mean radius)
+const GMmoon = 4.9028e12;            // m^3 s^-2 (JPL DE430: 4902.800066 km^3 s^-2)
+const Rmoon = 1.7374e6;              // m, mean radius (NASA lunar fact sheet)
+const earthMoonDistance = 3.844e8;   // m, mean (NASA lunar fact sheet)
+
+// Gases and the atmosphere
+const R = 8.314462618;               // J mol^-1 K^-1, molar gas constant = kB·NA (exact)
+const Mair = 28.9644e-3;             // kg mol^-1, dry air (U.S. Standard Atmosphere 1976 / ISA)
+const gammaAir = 1.4;                // cp/cv of dry air near room temperature (measured 1.401 at 20 °C)
+const p0 = 101325;                   // Pa, standard atmosphere (exact)
+const T0isa = 288.15;                // K, ISA sea-level temperature
+const rho0isa = 1.2250;              // kg m^-3, ISA sea-level density (= p0·Mair/(R·T0isa))
+
+// Particle-physics inputs: { value, error, unit, source }. PDG 2024 = Review of Particle Physics,
+// Navas et al., Phys. Rev. D 110, 030001 (2024); CODATA 2022 where it is the primary source.
+// Quark masses are MS-bar running masses except the top (direct-measurement mass).
+const pdg = (value, error, unit, source, note) => Object.freeze(note ? { value, error, unit, source, note } : { value, error, unit, source });
+const RPP = 'PDG 2024 (RPP)';
+const PDG = Object.freeze({
+  me: pdg(0.51099895069, 0.00000000016, 'MeV', 'CODATA 2022'),
+  mmu: pdg(105.6583755, 0.0000023, 'MeV', 'CODATA 2022'),
+  tauMu: pdg(2.1969811e-6, 0.0000022e-6, 's', RPP),
+  amu: pdg(116592059e-11, 22e-11, '', RPP, 'experimental world average (BNL + FNAL 2023), a_μ = (g−2)/2'),
+  mp: pdg(938.27208943, 0.00000029, 'MeV', 'CODATA 2022'),
+  mpiCharged: pdg(139.57039, 0.00018, 'MeV', RPP),
+  mpi0: pdg(134.9768, 0.0005, 'MeV', RPP),
+  tauPiCharged: pdg(2.6033e-8, 0.0005e-8, 's', RPP, 'π± mean life (cτ = 7.80 m)'),
+  tauPi0: pdg(8.43e-17, 0.13e-17, 's', RPP, 'π⁰ mean life'),
+  mKCharged: pdg(493.677, 0.015, 'MeV', RPP),
+  tauKCharged: pdg(1.2380e-8, 0.0020e-8, 's', RPP, 'K± mean life'),
+  GF: pdg(1.1663788e-5, 0.0000006e-5, 'GeV^-2', RPP, 'G_F/(ħc)³ from the muon lifetime'),
+  mW: pdg(80.3692, 0.0133, 'GeV', RPP),
+  mZ: pdg(91.1876, 0.0021, 'GeV', RPP),
+  mH: pdg(125.20, 0.11, 'GeV', RPP),
+  sin2thetaW: pdg(0.23129, 0.00004, '', RPP, 'MS-bar, at μ = M_Z'),
+  alphaS_MZ: pdg(0.1180, 0.0009, '', RPP, 'MS-bar, nf = 5, world average'),
+  alphaInv0: pdg(137.035999177, 0.000000021, '', 'CODATA 2022', 'α(0)⁻¹, Thomson limit'),
+  hbarc: pdg(197.3269804, 0, 'MeV fm', 'CODATA 2022', 'exact in the 2019 SI (shown truncated)'),
+  mc_mc: pdg(1.2730, 0.0046, 'GeV', RPP, 'MS-bar m_c(m_c)'),
+  mb_mb: pdg(4.183, 0.007, 'GeV', RPP, 'MS-bar m_b(m_b)'),
+  mt: pdg(172.57, 0.29, 'GeV', RPP, 'direct measurements (≈ pole mass)'),
+  michelRho: pdg(0.74979, 0.00026, '', RPP, 'Michel parameter ρ (SM: 3/4)'),
+  michelDelta: pdg(0.75047, 0.00034, '', RPP, 'Michel parameter δ (SM: 3/4)'),
+  michelXi: pdg(1.0009, 0.0016, '', RPP, 'Michel parameter ξ (SM: 1); asymmetric error +0.0016 −0.0007, larger side given'),
+  michelEta: pdg(0.057, 0.034, '', RPP, 'Michel parameter η (SM: 0)'),
+});
+
+// Standard atomic weights (IUPAC; abridged values where the natural variation is large), g/mol.
+// Multiply by u·1000 (or divide by NA·1000) for the mass of one atom in kg.
+const ATOMIC_WEIGHT = Object.freeze({
+  H: 1.008, He: 4.002602, C: 12.011, N: 14.007, O: 15.999, Na: 22.98976928, Al: 26.9815384, Si: 28.085,
+  Cl: 35.45, Ar: 39.95, K: 39.0983, Fe: 55.845, Cu: 63.546, Rb: 85.4678, Ag: 107.8682, Cs: 132.90545196,
+  W: 183.84, Au: 196.966570, Hg: 200.592, Pb: 207.2, U: 238.02891,
+});
+
+return { CODATA, c, h, hbar, e, kB, NA, eps0, mu0, G, me, mp, mn, u, a0, alpha, Eh, Ry, eV, MeV, mpc2MeV, mec2MeV, hbarcMeVfm, mAlphaMeV, muB, ge, AU, GMsun, Msun, yearJulian, G_AU_MSUN_YR, gn, GMearth, Rearth, RearthMean, GMmoon, Rmoon, earthMoonDistance, R, Mair, gammaAir, p0, T0isa, rho0isa, PDG, ATOMIC_WEIGHT };
 })();
 
 // ---- psim:core/numerics.mjs
@@ -1587,30 +2842,60 @@ function rng(seed = 1) {
   return next;
 }
 
+/**
+ * An independent seeded stream for item i (atom, particle, event): rngFor(seed, i) always gives
+ * the same numbers for that item, whatever else was drawn, so one item can be re-traced alone.
+ * The seed and index are mixed by a 32-bit hash (splitmix-style finaliser) before mulberry32.
+ */
+function rngFor(seed, i) {
+  let h = (Math.imul((seed >>> 0) ^ 0x9E3779B9, 0x85EBCA6B) + Math.imul(i >>> 0, 0xC2B2AE35)) >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x7FEB352D) >>> 0;
+  h = Math.imul(h ^ (h >>> 15), 0x846CA68B) >>> 0;
+  return rng((h ^ (h >>> 16)) >>> 0);
+}
+
 // ---------------------------------------------------------------- FFT
+
+const fftTables = new Map();
+/** Twiddle factors e^{−2πik/n} (k < n/2) and the bit-reversal permutation, cached per length. */
+function fftTable(n) {
+  let t = fftTables.get(n);
+  if (!t) {
+    const cos = new Float64Array(n >> 1), sin = new Float64Array(n >> 1), rev = new Uint32Array(n);
+    for (let k = 0; k < n >> 1; k++) { cos[k] = Math.cos(2 * Math.PI * k / n); sin[k] = Math.sin(2 * Math.PI * k / n); }
+    for (let i = 1, j = 0; i < n; i++) {
+      let bit = n >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit; rev[i] = j;
+    }
+    t = { cos, sin, rev };
+    if (fftTables.size > 32) fftTables.clear();
+    fftTables.set(n, t);
+  }
+  return t;
+}
 
 /** In-place radix-2 complex FFT. re/im: Float64Array, length a power of two.
  *  Forward: X_k = Σ x_n e^{−2πikn/N}. Inverse (inverse = true) includes the 1/N factor. */
 function fft(re, im, inverse = false) {
   const n = re.length;
   if (n & (n - 1)) throw new Error('fft: length must be a power of two');
-  for (let i = 1, j = 0; i < n; i++) {
-    let bit = n >> 1;
-    for (; j & bit; bit >>= 1) j ^= bit;
-    j ^= bit;
-    if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; }
+  if (n < 2) return;
+  const { cos, sin, rev } = fftTable(n);
+  for (let i = 1; i < n; i++) {
+    const j = rev[i];
+    if (i < j) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; }
   }
   const sign = inverse ? 1 : -1;
   for (let len = 2; len <= n; len <<= 1) {
-    const ang = sign * 2 * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang);
+    const half = len >> 1, step = n / len;
     for (let i = 0; i < n; i += len) {
-      let cr = 1, ci = 0;
-      for (let k = 0; k < len / 2; k++) {
-        const a = i + k, b = a + len / 2;
+      for (let k = 0; k < half; k++) {
+        const cr = cos[k * step], ci = sign * sin[k * step];
+        const a = i + k, b = a + half;
         const xr = re[b] * cr - im[b] * ci, xi = re[b] * ci + im[b] * cr;
         re[b] = re[a] - xr; im[b] = im[a] - xi;
         re[a] += xr; im[a] += xi;
-        const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t;
       }
     }
   }
@@ -1843,6 +3128,48 @@ function erf(x) {
   }
   const erfc = Math.exp(-ax * ax) / Math.sqrt(Math.PI) / f;
   return Math.sign(x) * (1 - erfc);
+}
+
+/**
+ * Regularised lower incomplete gamma P(a, x) = γ(a, x)/Γ(a), a > 0, x ≥ 0. Series for x < a + 1,
+ * Lentz continued fraction for Q otherwise (Numerical Recipes §6.2), |err| ≈ 1e-14.
+ */
+function gammaP(a, x) {
+  if (!(a > 0) || !(x >= 0)) throw new Error(`gammaP: need a > 0 and x ≥ 0 (got a = ${a}, x = ${x})`);
+  return x < a + 1 ? gammaSeries(a, x) : 1 - gammaCF(a, x);
+}
+
+/** Regularised upper incomplete gamma Q(a, x) = 1 − P(a, x); the χ² upper-tail p-value is Q(dof/2, χ²/2). */
+function gammaQ(a, x) {
+  if (!(a > 0) || !(x >= 0)) throw new Error(`gammaQ: need a > 0 and x ≥ 0 (got a = ${a}, x = ${x})`);
+  return x < a + 1 ? 1 - gammaSeries(a, x) : gammaCF(a, x);
+}
+
+function gammaSeries(a, x) {
+  if (x === 0) return 0;
+  let ap = a, del = 1 / a, sum = del;
+  for (let n = 0; n < 1000; n++) {
+    ap++; del *= x / ap; sum += del;
+    if (Math.abs(del) < Math.abs(sum) * 1e-16) break;
+  }
+  return sum * Math.exp(-x + a * Math.log(x) - lgamma(a));
+}
+
+function gammaCF(a, x) {
+  if (x === Infinity) return 0;
+  const tiny = 1e-300;
+  let b = x + 1 - a, c = 1 / tiny, d = 1 / b, h = d;
+  for (let i = 1; i < 1000; i++) {
+    const an = -i * (i - a);
+    b += 2;
+    d = an * d + b; if (Math.abs(d) < tiny) d = tiny;
+    c = b + an / c; if (Math.abs(c) < tiny) c = tiny;
+    d = 1 / d;
+    const del = d * c;
+    h *= del;
+    if (Math.abs(del - 1) < 1e-16) break;
+  }
+  return Math.exp(-x + a * Math.log(x) - lgamma(a)) * h;
 }
 
 /** Modified Bessel function of the first kind I_n(x), integer n ≥ 0 (power series; fine for x ≲ 50). */
@@ -2103,7 +3430,7 @@ function meanWithError(xs, minBins = 16) {
   return { mean, error: best };
 }
 
-return { rng, fft, fftFreq, rk4Step, DORMAND_PRINCE, dopri5, gaussLegendreNodes, gaussLegendre, adaptiveSimpson, integrateToInfinity, brent, lgamma, gamma, factorial, erf, besselI, besselJ, besselJZeros, ellipticK, laguerre, legendreP, normalizedLegendre, realYlm, complexYlm, hydrogenRadial, solveTridiagonal, eigenTridiagonal, linearFit, meanWithError };
+return { rng, rngFor, fft, fftFreq, rk4Step, DORMAND_PRINCE, dopri5, gaussLegendreNodes, gaussLegendre, adaptiveSimpson, integrateToInfinity, brent, lgamma, gamma, factorial, erf, gammaP, gammaQ, besselI, besselJ, besselJZeros, ellipticK, laguerre, legendreP, normalizedLegendre, realYlm, complexYlm, hydrogenRadial, solveTridiagonal, eigenTridiagonal, linearFit, meanWithError };
 })();
 
 // ---- psim:core/stochastic.mjs
@@ -2296,11 +3623,438 @@ function effectiveSampleSize(xs) {
 return { gillespie, eulerMaruyama, langevinBAOAB, metropolis, metropolisSites, autocorrelationTime, effectiveSampleSize, rng: makeRng };
 })();
 
+// ---- psim:core/linalg.mjs
+__psim["core/linalg.mjs"] = (() => {
+// Shared real linear algebra and nonlinear equations. Dense matrices are arrays of rows;
+// vectors may be ordinary arrays or Float64Array. Inputs are not modified.
+
+const EPS = Number.EPSILON;
+const finiteVector = (v, n, who) => {
+  if (!v || v.length !== n || !Array.from(v).every(Number.isFinite)) throw new Error(`${who}: expected ${n} finite values`);
+};
+const matrixShape = (A, who) => {
+  const m = A?.length, n = A?.[0]?.length;
+  if (!(m > 0 && n > 0)) throw new Error(`${who}: matrix must be non-empty`);
+  for (const row of A) finiteVector(row, n, who);
+  return [m, n];
+};
+const norm = v => {
+  let result = 0;
+  for (const value of v) result = Math.hypot(result, value);
+  return result;
+};
+const dot = (a, b) => {
+  let sum = 0, correction = 0;
+  for (let i = 0; i < a.length; i++) {
+    const term = a[i] * b[i], next = sum + term;
+    correction += Math.abs(sum) >= Math.abs(term) ? (sum - next) + term : (term - next) + sum;
+    sum = next;
+  }
+  return sum + correction;
+};
+const tolerance = (value, who) => {
+  if (!(Number.isFinite(value) && value >= 0)) throw new Error(`${who}: tolerance must be finite and non-negative`);
+};
+const budget = (value, who) => {
+  if (!(Number.isSafeInteger(value) && value > 0)) throw new Error(`${who}: budget must be a positive integer`);
+};
+const finiteResult = (value, who) => {
+  if (!Number.isFinite(value)) throw new Error(`${who}: numerical range exceeded; rescale the problem`);
+  return value;
+};
+
+/** Rectangular matrix-vector product, with compensated summation in each row. */
+function matrixVector(A, x) {
+  const [m, n] = matrixShape(A, 'matrixVector');
+  finiteVector(x, n, 'matrixVector');
+  return Float64Array.from({ length: m }, (_, i) => finiteResult(dot(A[i], x), 'matrixVector'));
+}
+
+/**
+ * Solve square A x = b by row equilibration and Gaussian elimination with partial pivoting.
+ * pivotTolerance is relative to each equilibrated row (default 64 epsilon).
+ * Throws for singular/numerically rank-deficient input; no inverse is formed.
+ */
+function solveLinear(A, b, { pivotTolerance = 64 * EPS } = {}) {
+  const [m, n] = matrixShape(A, 'solveLinear');
+  if (m !== n) throw new Error('solveLinear: matrix must be square');
+  finiteVector(b, n, 'solveLinear'); tolerance(pivotTolerance, 'solveLinear');
+  const M = [], rhs = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    let scale = 0;
+    for (const value of A[i]) scale = Math.max(scale, Math.abs(value));
+    if (scale === 0) throw new Error('solveLinear: singular matrix (zero row)');
+    M.push(Float64Array.from(A[i], value => value / scale));
+    rhs[i] = finiteResult(b[i] / scale, 'solveLinear');
+  }
+  for (let k = 0; k < n; k++) {
+    let pivot = k;
+    for (let i = k + 1; i < n; i++) if (Math.abs(M[i][k]) > Math.abs(M[pivot][k])) pivot = i;
+    if (!(Math.abs(M[pivot][k]) > pivotTolerance)) throw new Error('solveLinear: singular or numerically rank-deficient matrix');
+    if (pivot !== k) { [M[k], M[pivot]] = [M[pivot], M[k]]; [rhs[k], rhs[pivot]] = [rhs[pivot], rhs[k]]; }
+    for (let i = k + 1; i < n; i++) {
+      const factor = M[i][k] / M[k][k];
+      M[i][k] = 0;
+      for (let j = k + 1; j < n; j++) M[i][j] = finiteResult(M[i][j] - factor * M[k][j], 'solveLinear');
+      rhs[i] = finiteResult(rhs[i] - factor * rhs[k], 'solveLinear');
+    }
+  }
+  const x = new Float64Array(n);
+  for (let i = n - 1; i >= 0; i--) {
+    let value = rhs[i];
+    for (let j = i + 1; j < n; j++) value -= M[i][j] * x[j];
+    x[i] = finiteResult(value / M[i][i], 'solveLinear');
+  }
+  return x;
+}
+
+/**
+ * Full-column-rank least squares (m >= n), using Householder QR with column pivoting.
+ * Columns and rhs are scaled independently. Returns { x, residualNorm, rank, permutation }.
+ * Rank-deficient systems throw: this routine is not a pseudoinverse/minimum-norm solver.
+ */
+function leastSquares(A, b, { rankTolerance = 64 * EPS } = {}) {
+  const [m, n] = matrixShape(A, 'leastSquares');
+  if (m < n) throw new Error('leastSquares: need at least as many rows as columns');
+  finiteVector(b, m, 'leastSquares'); tolerance(rankTolerance, 'leastSquares');
+  const scales = new Float64Array(n), permutation = Array.from({ length: n }, (_, i) => i);
+  let bScale = 0;
+  for (const value of b) bScale = Math.max(bScale, Math.abs(value));
+  if (bScale === 0) bScale = 1;
+  for (let j = 0; j < n; j++) {
+    for (let i = 0; i < m; i++) scales[j] = Math.max(scales[j], Math.abs(A[i][j]));
+    if (scales[j] === 0) throw new Error('leastSquares: numerically rank-deficient matrix (zero column)');
+  }
+  const R = A.map(row => Float64Array.from(row, (value, j) => value / scales[j]));
+  const y = Float64Array.from(b, value => value / bScale);
+  const columnNorm = (j, start) => { let value = 0; for (let i = start; i < m; i++) value = Math.hypot(value, R[i][j]); return value; };
+  let reference = 0;
+  for (let j = 0; j < n; j++) reference = Math.max(reference, columnNorm(j, 0));
+  for (let k = 0; k < n; k++) {
+    let pivot = k;
+    for (let j = k + 1; j < n; j++) if (columnNorm(j, k) > columnNorm(pivot, k)) pivot = j;
+    if (!(columnNorm(pivot, k) > rankTolerance * reference)) throw new Error('leastSquares: numerically rank-deficient matrix');
+    if (pivot !== k) {
+      for (const row of R) [row[k], row[pivot]] = [row[pivot], row[k]];
+      [permutation[k], permutation[pivot]] = [permutation[pivot], permutation[k]];
+    }
+    const v = Float64Array.from({ length: m - k }, (_, i) => R[k + i][k]);
+    const alpha = (v[0] >= 0 ? -1 : 1) * norm(v);
+    v[0] -= alpha;
+    const vNorm = norm(v);
+    for (let i = 0; i < v.length; i++) v[i] /= vNorm;
+    for (let j = k; j < n; j++) {
+      let projection = 0;
+      for (let i = 0; i < v.length; i++) projection += v[i] * R[k + i][j];
+      for (let i = 0; i < v.length; i++) R[k + i][j] -= 2 * v[i] * projection;
+    }
+    let projection = 0;
+    for (let i = 0; i < v.length; i++) projection += v[i] * y[k + i];
+    for (let i = 0; i < v.length; i++) y[k + i] -= 2 * v[i] * projection;
+    R[k][k] = alpha;
+    for (let i = k + 1; i < m; i++) R[i][k] = 0;
+  }
+  const z = new Float64Array(n), x = new Float64Array(n);
+  for (let i = n - 1; i >= 0; i--) {
+    let value = y[i];
+    for (let j = i + 1; j < n; j++) value -= R[i][j] * z[j];
+    z[i] = value / R[i][i];
+  }
+  for (let i = 0; i < n; i++) x[permutation[i]] = finiteResult(z[i] * bScale / scales[permutation[i]], 'leastSquares');
+  const residual = Float64Array.from(matrixVector(A, x), (value, i) => value - b[i]);
+  return { x, residualNorm: finiteResult(norm(residual), 'leastSquares'), rank: n, permutation };
+}
+
+/**
+ * Real symmetric dense eigensystem by cyclic Jacobi rotations. Values sorted ascending;
+ * vectors[i] is the unit eigenvector of values[i]. O(n^3) per sweep, for modest dense systems.
+ * rtol controls the off-diagonal Frobenius norm relative to the original Frobenius norm.
+ */
+function eigenSymmetric(A, { rtol = 1e-12, symmetryTolerance = 64 * EPS, maxSweeps = 100 } = {}) {
+  const [m, n] = matrixShape(A, 'eigenSymmetric');
+  if (m !== n) throw new Error('eigenSymmetric: matrix must be square');
+  tolerance(rtol, 'eigenSymmetric'); tolerance(symmetryTolerance, 'eigenSymmetric'); budget(maxSweeps, 'eigenSymmetric');
+  let scale = 0;
+  for (const row of A) for (const value of row) scale = Math.max(scale, Math.abs(value));
+  const divisor = scale || 1;
+  const M = A.map(row => Float64Array.from(row, value => value / divisor));
+  const V = Array.from({ length: n }, (_row, i) => Float64Array.from({ length: n }, (_column, j) => i === j ? 1 : 0));
+  for (let i = 0; i < n; i++) { for (let j = i + 1; j < n; j++) {
+    if (Math.abs(M[i][j] - M[j][i]) > symmetryTolerance) throw new Error('eigenSymmetric: matrix must be symmetric');
+    M[i][j] = M[j][i] = (M[i][j] + M[j][i]) / 2;
+  } }
+  let reference = 0;
+  for (const row of M) for (const value of row) reference = Math.hypot(reference, value);
+  const target = rtol * reference;
+  const offNorm = () => { let value = 0; for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) value = Math.hypot(value, Math.SQRT2 * M[i][j]); return value; };
+  let sweeps = 0;
+  while (offNorm() > target) {
+    if (sweeps === maxSweeps) throw new Error('eigenSymmetric: sweep budget exhausted before convergence');
+    for (let p = 0; p < n; p++) { for (let q = p + 1; q < n; q++) {
+      const a = M[p][q];
+      if (Math.abs(a) <= target / (n * n)) continue;
+      const delta = (M[q][q] - M[p][p]) / 2;
+      const t = delta === 0 ? 1 : a / (delta + Math.sign(delta) * Math.hypot(delta, a));
+      const c = 1 / Math.hypot(1, t), s = t * c;
+      M[p][p] -= t * a; M[q][q] += t * a; M[p][q] = M[q][p] = 0;
+      for (let k = 0; k < n; k++) {
+        if (k !== p && k !== q) {
+          const u = M[k][p], v = M[k][q];
+          M[k][p] = M[p][k] = c * u - s * v;
+          M[k][q] = M[q][k] = s * u + c * v;
+        }
+        const u = V[k][p], v = V[k][q];
+        V[k][p] = c * u - s * v; V[k][q] = s * u + c * v;
+      }
+    } }
+    sweeps++;
+  }
+  const order = Array.from({ length: n }, (_, i) => i).sort((i, j) => M[i][i] - M[j][j]);
+  return {
+    values: Float64Array.from(order, i => finiteResult(M[i][i] * divisor, 'eigenSymmetric')),
+    vectors: order.map(i => Float64Array.from(V, row => row[i])),
+    sweeps, offDiagonalNorm: finiteResult(offNorm() * divisor, 'eigenSymmetric'),
+  };
+}
+
+/**
+ * Cholesky factor of a symmetric positive-definite matrix: A = L Lᵀ, L lower triangular (arrays of
+ * rows). Throws when A is not positive definite (a pivot ≤ rtol·max diagonal), e.g. a noisy
+ * correlation matrix at large time separation: drop that operator or that time.
+ */
+function cholesky(A, { symmetryTolerance = 64 * EPS, rtol = 64 * EPS } = {}) {
+  const [m, n] = matrixShape(A, 'cholesky');
+  if (m !== n) throw new Error('cholesky: matrix must be square');
+  let scale = 0;
+  for (let i = 0; i < n; i++) {
+    scale = Math.max(scale, Math.abs(A[i][i]));
+    for (let j = 0; j < i; j++) if (Math.abs(A[i][j] - A[j][i]) > symmetryTolerance * Math.max(1, Math.abs(A[i][j]))) throw new Error('cholesky: matrix must be symmetric');
+  }
+  const L = Array.from({ length: n }, () => new Float64Array(n));
+  for (let j = 0; j < n; j++) {
+    let d = A[j][j];
+    for (let k = 0; k < j; k++) d -= L[j][k] * L[j][k];
+    if (!(d > rtol * scale)) throw new Error(`cholesky: matrix is not positive definite (pivot ${j}: ${d})`);
+    L[j][j] = Math.sqrt(d);
+    for (let i = j + 1; i < n; i++) {
+      let v = (A[i][j] + A[j][i]) / 2;
+      for (let k = 0; k < j; k++) v -= L[i][k] * L[j][k];
+      L[i][j] = v / L[j][j];
+    }
+  }
+  return L;
+}
+
+/**
+ * Generalised symmetric-definite eigenproblem A v = λ B v (B positive definite), by Cholesky
+ * B = LLᵀ and the ordinary problem L⁻¹AL⁻ᵀ w = λ w, v = L⁻ᵀw. Values ascending; vectors[i] is
+ * B-normalised (vᵀBv = 1). The variational (GEVP) method for correlation matrices is
+ * A = C(t), B = C(t₀): the largest λ = e^{−E₀(t−t₀)} gives the ground state.
+ */
+function eigenGeneralized(A, B, options = {}) {
+  const [n] = matrixShape(A, 'eigenGeneralized');
+  if (matrixShape(B, 'eigenGeneralized')[0] !== n || A[0].length !== n) throw new Error('eigenGeneralized: A and B must be square and the same size');
+  const L = cholesky(B, options);
+  // X = L⁻¹ A (forward substitution column by column), then C = X L⁻ᵀ = L⁻¹ (L⁻¹A)ᵀ
+  const lower = M => {
+    const X = Array.from({ length: n }, () => new Float64Array(n));
+    for (let c = 0; c < n; c++) {
+      for (let i = 0; i < n; i++) {
+        let v = M[i][c];
+        for (let k = 0; k < i; k++) v -= L[i][k] * X[k][c];
+        X[i][c] = v / L[i][i];
+      }
+    }
+    return X;
+  };
+  const X = lower(A);
+  const C = lower(Array.from({ length: n }, (_a, i) => Float64Array.from({ length: n }, (_b, j) => X[j][i])));
+  for (let i = 0; i < n; i++) for (let j = 0; j < i; j++) C[i][j] = C[j][i] = (C[i][j] + C[j][i]) / 2;
+  const { values, vectors } = eigenSymmetric(C, { rtol: options.rtol ?? 1e-12 });
+  // v = L⁻ᵀ w (back substitution)
+  return {
+    values,
+    vectors: vectors.map(w => {
+      const v = new Float64Array(n);
+      for (let i = n - 1; i >= 0; i--) { let x = w[i]; for (let k = i + 1; k < n; k++) x -= L[k][i] * v[k]; v[i] = x / L[i][i]; }
+      return v;
+    }),
+  };
+}
+
+/** Dense matrix or a linear callback (x, out) -> out/array/undefined. Callback must not mutate x. */
+function linearOperator(A, n, who) {
+  if (typeof A !== 'function') {
+    const [m, columns] = matrixShape(A, who);
+    if (m !== n || columns !== n) throw new Error(`${who}: operator must be ${n} by ${n}`);
+    return (x, out) => { for (let i = 0; i < n; i++) out[i] = dot(A[i], x); finiteVector(out, n, who); return out; };
+  }
+  return (x, out) => {
+    out.fill(NaN);
+    const result = A(x, out) ?? out;
+    finiteVector(result, n, who);
+    if (result !== out) out.set(result);
+    return out;
+  };
+}
+
+/**
+ * Preconditioned conjugate gradient for symmetric positive-definite A. Dense or matrix-free.
+ * preconditioner applies M ~= A^-1, also SPD. True residual is checked before success.
+ * Returns { x, converged, iterations, residualNorm }; exhausted budgets return converged:false.
+ */
+function conjugateGradient(A, b, { x0, preconditioner, rtol = 1e-10, atol = 0, maxIterations = Math.max(20, 4 * b.length) } = {}) {
+  const n = b?.length;
+  if (!(n > 0)) throw new Error('conjugateGradient: rhs must be non-empty');
+  finiteVector(b, n, 'conjugateGradient');
+  if (x0) finiteVector(x0, n, 'conjugateGradient');
+  tolerance(rtol, 'conjugateGradient'); tolerance(atol, 'conjugateGradient'); budget(maxIterations, 'conjugateGradient');
+  const apply = linearOperator(A, n, 'conjugateGradient');
+  const precondition = preconditioner ? linearOperator(preconditioner, n, 'conjugateGradient preconditioner') : (r, z) => { z.set(r); return z; };
+  let bScale = 0;
+  for (const value of b) bScale = Math.max(bScale, Math.abs(value));
+  const bNorm = finiteResult(norm(b), 'conjugateGradient');
+  const target = Math.max(rtol * bNorm, atol);
+  if (bScale === 0) return { x: new Float64Array(n), converged: true, iterations: 0, residualNorm: 0 };
+  const y = x0 ? Float64Array.from(x0, value => value / bScale) : new Float64Array(n);
+  finiteVector(y, n, 'conjugateGradient');
+  const rhs = Float64Array.from(b, value => value / bScale), Ay = new Float64Array(n), r = new Float64Array(n), z = new Float64Array(n), p = new Float64Array(n), Ap = new Float64Array(n);
+  apply(y, Ay);
+  for (let i = 0; i < n; i++) r[i] = rhs[i] - Ay[i];
+  const report = iterations => {
+    const x = Float64Array.from(y, value => finiteResult(value * bScale, 'conjugateGradient'));
+    apply(x, Ay);
+    const residual = Float64Array.from(b, (value, i) => value - Ay[i]);
+    const residualNorm = finiteResult(norm(residual), 'conjugateGradient');
+    return { x, converged: residualNorm <= target, iterations, residualNorm, residual };
+  };
+  if (norm(r) <= target / bScale) { const result = report(0); if (result.converged) return result; }
+  precondition(r, z); p.set(z);
+  let rz = finiteResult(dot(r, z), 'conjugateGradient');
+  if (!(rz > 0)) throw new Error('conjugateGradient: non-positive preconditioned residual (need SPD preconditioner)');
+  for (let iteration = 1; iteration <= maxIterations; iteration++) {
+    apply(p, Ap);
+    const curvature = finiteResult(dot(p, Ap), 'conjugateGradient');
+    if (!(curvature > 0)) throw new Error('conjugateGradient: non-positive curvature (need SPD operator)');
+    const alpha = rz / curvature;
+    for (let i = 0; i < n; i++) { y[i] += alpha * p[i]; r[i] -= alpha * Ap[i]; }
+    finiteVector(y, n, 'conjugateGradient'); finiteVector(r, n, 'conjugateGradient');
+    let restart = false;
+    if (norm(r) <= target / bScale || iteration === maxIterations) {
+      const result = report(iteration);
+      if (result.converged || iteration === maxIterations) return result;
+      for (let i = 0; i < n; i++) r[i] = result.residual[i] / bScale;
+      restart = true;
+    }
+    precondition(r, z);
+    const next = finiteResult(dot(r, z), 'conjugateGradient');
+    if (!(next > 0)) throw new Error('conjugateGradient: non-positive preconditioned residual (need SPD preconditioner)');
+    const beta = restart ? 0 : next / rz;
+    for (let i = 0; i < n; i++) p[i] = z[i] + beta * p[i];
+    rz = next;
+  }
+}
+
+/**
+ * Damped Newton solve f(x)=0, with an analytic Jacobian or central finite differences.
+ * Use dimensionless/scaled equations; xScale sets coordinate scales for differencing.
+ * Success means ||f|| <= max(atol, rtol*||f(x0)||), not a bound on distance to a root.
+ */
+function newtonSolve(f, x0, { jacobian, xScale, rtol = 1e-10, atol = 1e-12, maxIterations = 50, maxBacktracks = 25 } = {}) {
+  const n = x0?.length;
+  if (typeof f !== 'function' || !(n > 0)) throw new Error('newtonSolve: function and non-empty initial state required');
+  finiteVector(x0, n, 'newtonSolve');
+  if (jacobian !== undefined && typeof jacobian !== 'function') throw new Error('newtonSolve: jacobian must be a function');
+  tolerance(rtol, 'newtonSolve'); tolerance(atol, 'newtonSolve'); budget(maxIterations, 'newtonSolve'); budget(maxBacktracks, 'newtonSolve');
+  const scales = xScale ? Float64Array.from(xScale) : new Float64Array(n).fill(1);
+  finiteVector(scales, n, 'newtonSolve');
+  if (!scales.every(value => value > 0)) throw new Error('newtonSolve: xScale must be positive');
+  let x = Float64Array.from(x0), residual = Float64Array.from(f(x));
+  finiteVector(residual, n, 'newtonSolve');
+  let residualNorm = finiteResult(norm(residual), 'newtonSolve');
+  const target = Math.max(atol, rtol * residualNorm);
+  const result = (iterations, reason) => ({ x, residual, residualNorm, iterations, converged: residualNorm <= target, reason });
+  for (let iteration = 0; iteration < maxIterations; iteration++) {
+    if (residualNorm <= target) return result(iteration, 'residual tolerance');
+    let J;
+    if (jacobian) J = jacobian(x);
+    else {
+      J = Array.from({ length: n }, () => new Float64Array(n));
+      for (let j = 0; j < n; j++) {
+        const h = Math.cbrt(EPS) * Math.max(Math.abs(x[j]), scales[j]);
+        const plus = x.slice(), minus = x.slice(); plus[j] += h; minus[j] -= h;
+        if (!Number.isFinite(h) || plus[j] === minus[j]) throw new Error('newtonSolve: derivative step cannot be resolved');
+        const fp = Float64Array.from(f(plus)), fm = f(minus);
+        finiteVector(fp, n, 'newtonSolve derivative'); finiteVector(fm, n, 'newtonSolve derivative');
+        for (let i = 0; i < n; i++) J[i][j] = (fp[i] - fm[i]) / (plus[j] - minus[j]);
+      }
+    }
+    const delta = solveLinear(J, Float64Array.from(residual, value => -value));
+    let accepted = false, alpha = 1;
+    for (let attempt = 0; attempt < maxBacktracks; attempt++, alpha /= 2) {
+      const trial = Float64Array.from(x, (value, i) => value + alpha * delta[i]);
+      if (!trial.every(Number.isFinite)) continue;
+      const next = f(trial);
+      if (!next || next.length !== n) throw new Error('newtonSolve: function must return one residual per coordinate');
+      if (!Array.from(next).every(Number.isFinite)) continue;
+      const nextNorm = norm(next);
+      if (nextNorm <= (1 - 1e-4 * alpha) * residualNorm || nextNorm <= target) {
+        x = trial; residual = Float64Array.from(next); residualNorm = nextNorm; accepted = true; break;
+      }
+    }
+    if (!accepted) return result(iteration, 'line search stalled');
+  }
+  return result(maxIterations, residualNorm <= target ? 'residual tolerance' : 'iteration budget exhausted');
+}
+
+/**
+ * Matrix exponential e^A of a real square matrix (Higham 2005: scaling and squaring with the
+ * degree-13 Padé approximant). x(t) = e^{At}x₀ solves any linear system x' = Ax: decay chains,
+ * first-order kinetics, compartment models, continuous-time Markov chains. Accuracy is normwise
+ * (relative to ‖e^A‖); check tiny components against a structured solution when they matter.
+ * Returns the matrix as an array of Float64Array rows.
+ */
+function expm(A) {
+  const [m, n] = matrixShape(A, 'expm');
+  if (m !== n) throw new Error('expm: matrix must be square');
+  const b = [64764752532480000, 32382376266240000, 7771770303897600, 1187353796428800, 129060195264000, 10559470521600, 670442572800, 33522128640, 1323241920, 40840800, 960960, 16380, 182, 1];
+  const mul = (X, Y) => X.map(row => { const out = new Float64Array(n); for (let k = 0; k < n; k++) { const r = row[k]; if (r) for (let j = 0; j < n; j++) out[j] += r * Y[k][j]; } return out; });
+  const comb = terms => Array.from({ length: n }, (_, i) => { const out = new Float64Array(n); for (const [c, X] of terms) for (let j = 0; j < n; j++) out[j] += c * (X === null ? (i === j ? 1 : 0) : X[i][j]); return out; });
+  const norm1 = Math.max(...Array.from({ length: n }, (_, j) => A.reduce((s, row) => s + Math.abs(row[j]), 0)));
+  const s = Math.max(0, Math.ceil(Math.log2(norm1 / 5.371920351148152)));
+  const S = A.map(row => Float64Array.from(row, v => v / 2 ** s));
+  const A2 = mul(S, S), A4 = mul(A2, A2), A6 = mul(A4, A2);
+  const U = mul(S, comb([[1, mul(A6, comb([[b[13], A6], [b[11], A4], [b[9], A2]]))], [b[7], A6], [b[5], A4], [b[3], A2], [b[1], null]]));
+  const V = comb([[1, mul(A6, comb([[b[12], A6], [b[10], A4], [b[8], A2]]))], [b[6], A6], [b[4], A4], [b[2], A2], [b[0], null]]);
+  const P = comb([[1, V], [-1, U]]), Q = comb([[1, V], [1, U]]);
+  // R = P⁻¹Q column by column, then undo the scaling by repeated squaring
+  const cols = Array.from({ length: n }, (_, j) => solveLinear(P, Q.map(row => row[j])));
+  let R = Array.from({ length: n }, (_, i) => Float64Array.from(cols, col => col[i]));
+  for (let k = 0; k < s; k++) R = mul(R, R);
+  for (const row of R) for (const v of row) finiteResult(v, 'expm');
+  return R;
+}
+
+return { matrixVector, solveLinear, leastSquares, eigenSymmetric, cholesky, eigenGeneralized, conjugateGradient, newtonSolve, expm };
+})();
+
 // ---- psim:core/data.mjs
 __psim["core/data.mjs"] = (() => {
 // Working with data, independent of subject: interpolation that does not invent wiggles,
-// histograms with uncertainties, and a goodness-of-fit test against a model distribution.
-
+// histograms with uncertainties, goodness-of-fit tests and error bars on derived quantities.
+//
+//   interpolate       linear / monotone cubic through tabulated points
+//   histogram         one-shot histogram with Poisson errors
+//   createHistogram   incremental (weighted) histogram with under/overflow and density errors
+//   ksTest            Kolmogorov–Smirnov test against a model CDF
+//   chiSquareTest     Pearson χ² of binned counts against expectations, with p-value
+//   jackknife         blocked jackknife: value, error and bias of any function of means
+//   bootstrap         blocked bootstrap: error and confidence quantiles of any function of means
+//   meanSem / pull    mean ± standard error of independent samples; (measured − expected)/error
+//   jackknifeRefit    blocked jackknife of any estimator that needs the samples themselves (a refit)
+//   curveFit          nonlinear least squares (Levenberg–Marquardt) with parameter covariance
+const { rng, gammaQ } = __psim["core/numerics.mjs"];
+const { solveLinear } = __psim["core/linalg.mjs"];
 /**
  * Interpolate tabulated data (xs strictly increasing). method 'linear' or 'monotone'
  * (Fritsch–Carlson monotone cubic: no overshoot between data points, so it never invents
@@ -2381,7 +4135,239 @@ function ksTest(samples, cdf) {
   return { D, p: Math.min(1, Math.max(0, p)) };
 }
 
-return { interpolate, histogram, ksTest };
+/**
+ * Incremental histogram over range [lo, hi] with `bins` equal bins and optional weights.
+ * add(x, w = 1); x outside the range goes to underflow / overflow, NaN to nan. total sums every
+ * weight added (in range or not). errors() = √Σw² per bin (Poisson for unit weights);
+ * density(total) → { values: counts/(total·width), errors } (default total: everything added).
+ */
+function createHistogram({ bins = 30, range } = {}) {
+  if (!(Number.isInteger(bins) && bins > 0)) throw new Error('createHistogram: bins must be a positive integer');
+  const [lo, hi] = range ?? [];
+  if (!(Number.isFinite(lo) && Number.isFinite(hi) && hi > lo)) throw new Error('createHistogram: range [lo, hi] with finite hi > lo is required');
+  const width = (hi - lo) / bins;
+  const h = {
+    bins, range: [lo, hi], width,
+    counts: new Float64Array(bins), sumW2: new Float64Array(bins),
+    total: 0, underflow: 0, overflow: 0, nan: 0,
+    edges: Array.from({ length: bins + 1 }, (_, i) => lo + i * width),
+    centers: Array.from({ length: bins }, (_, i) => lo + (i + 0.5) * width),
+    add(x, w = 1) {
+      h.total += w;
+      if (Number.isNaN(x)) h.nan += w;
+      else if (x < lo) h.underflow += w;
+      else if (x > hi) h.overflow += w;
+      else { const i = Math.min(bins - 1, Math.floor((x - lo) / width)); h.counts[i] += w; h.sumW2[i] += w * w; }
+      return h;
+    },
+    errors: () => Array.from(h.sumW2, Math.sqrt),
+    density(total = h.total) {
+      const k = 1 / (total * width);
+      return { values: Array.from(h.counts, c => c * k), errors: Array.from(h.sumW2, s => Math.sqrt(s) * k) };
+    },
+  };
+  return h;
+}
+
+/**
+ * Pearson χ² test of observed counts against expected counts: Σ(o−e)²/e, or Σ((o−e)/σ)² when
+ * errors σ are given. Bins with e ≤ 0 (or σ ≤ 0) are skipped and counted. dof = used bins − ddof
+ * (ddof: constraints, e.g. 1 if the expectation was normalised to the total, plus fitted parameters).
+ * Returns { chi2, dof, p (upper tail Q(dof/2, χ²/2)), z = (χ² − dof)/√(2 dof), skipped }.
+ * For Pearson's form the χ² law needs e ≳ 5 per bin; merge sparse bins first.
+ */
+function chiSquareTest(observed, expected, { ddof = 0, errors } = {}) {
+  if (observed.length !== expected.length || (errors && errors.length !== observed.length)) throw new Error('chiSquareTest: observed, expected (and errors) must have equal length');
+  let chi2 = 0, used = 0, skipped = 0;
+  for (let i = 0; i < observed.length; i++) {
+    const e = expected[i], s = errors ? errors[i] : Math.sqrt(e);
+    if (!(e > 0) || !(s > 0)) { skipped++; continue; }
+    chi2 += ((observed[i] - e) / s) ** 2; used++;
+  }
+  const dof = used - ddof;
+  if (!(dof > 0)) throw new Error(`chiSquareTest: no degrees of freedom left (${used} usable bins, ddof = ${ddof})`);
+  return { chi2, dof, p: Number.isFinite(chi2) ? gammaQ(dof / 2, chi2 / 2) : NaN, z: (chi2 - dof) / Math.sqrt(2 * dof), skipped };
+}
+
+/** Mean, standard error and sample standard deviation of INDEPENDENT samples (use meanWithError from numerics for correlated series). */
+function meanSem(xs) {
+  const n = xs.length;
+  if (!n) throw new Error('meanSem: no samples');
+  let mean = 0;
+  for (const x of xs) mean += x;
+  mean /= n;
+  let ss = 0;
+  for (const x of xs) ss += (x - mean) ** 2;
+  const sd = n > 1 ? Math.sqrt(ss / (n - 1)) : NaN;
+  return { mean, sem: sd / Math.sqrt(n), sd, n };
+}
+
+/** Pull (measured − expected)/error: how many standard errors a measurement is from the expectation. */
+function pull(measured, error, expected) { return (measured - expected) / error; }
+
+// Group samples (numbers or equal-length vectors) into B consecutive blocks of equal size,
+// dropping the remainder at the START (it is the least thermalised part of a chain).
+function blockSums(samples, bins, who) {
+  const n = samples?.length ?? 0;
+  if (n < 2) throw new Error(`${who}: need at least 2 samples`);
+  const B = bins ?? Math.min(n, 50);
+  if (!(Number.isInteger(B) && B >= 2 && B <= n)) throw new Error(`${who}: bins must be an integer in [2, ${n}] (got ${B})`);
+  const scalar = typeof samples[0] === 'number', dim = scalar ? 1 : samples[0].length;
+  if (!scalar && !(dim > 0)) throw new Error(`${who}: samples must be numbers or non-empty arrays`);
+  const size = Math.floor(n / B), start = n - B * size;
+  const sums = Array.from({ length: B }, () => new Float64Array(dim)), total = new Float64Array(dim);
+  for (let b = 0; b < B; b++) {
+    for (let i = start + b * size, end = i + size; i < end; i++) {
+      const s = samples[i];
+      if (scalar) sums[b][0] += s;
+      else { if (s.length !== dim) throw new Error(`${who}: sample ${i} has length ${s.length}, expected ${dim}`); for (let k = 0; k < dim; k++) sums[b][k] += s[k]; }
+    }
+    for (let k = 0; k < dim; k++) total[k] += sums[b][k];
+  }
+  // mean of a set of blocks, in the samples' own shape (number or Float64Array)
+  const meanOf = (vec, count) => scalar ? vec[0] / (count * size) : vec.map(v => v / (count * size));
+  return { B, size, scalar, dim, sums, total, meanOf };
+}
+
+const asArray = v => (typeof v === 'number' ? [v] : Array.from(v));
+
+/**
+ * Blocked jackknife error of θ = estimator(mean). samples: numbers, or arrays of observables
+ * measured together (e.g. all Wilson loops of one sweep). Consecutive samples form `bins` blocks
+ * (default min(n, 50)); the estimator sees the full mean and each leave-one-block-out mean
+ * (a number or a Float64Array, like the samples) and returns a number or an array. Blocks much
+ * longer than the autocorrelation time τ_int also make the error honest for correlated chains.
+ * Returns { value: θ(full mean), error: √((B−1)/B Σ(θᵢ−θ̄)²), bias: (B−1)(θ̄−θ), blocks: B }
+ * (arrays when the estimator returns arrays). A NaN from any block gives a NaN error, never a
+ * silently smaller one: show it as "unresolved".
+ */
+function jackknife(samples, estimator, { bins } = {}) {
+  const { B, sums, total, meanOf } = blockSums(samples, bins, 'jackknife');
+  const raw = estimator(meanOf(total.slice(), B)), vector = typeof raw !== 'number', value = asArray(raw);
+  const m = value.length, thetas = sums.map(s => {
+    const t = asArray(estimator(meanOf(total.map((v, k) => v - s[k]), B - 1)));
+    if (t.length !== m) throw new Error('jackknife: estimator returned a different length for a block');
+    return t;
+  });
+  const error = new Array(m), bias = new Array(m);
+  for (let k = 0; k < m; k++) {
+    const mean = thetas.reduce((a, t) => a + t[k], 0) / B;
+    error[k] = Math.sqrt((B - 1) / B * thetas.reduce((a, t) => a + (t[k] - mean) ** 2, 0));
+    bias[k] = (B - 1) * (mean - value[k]);
+  }
+  return vector ? { value, error, bias, blocks: B } : { value: value[0], error: error[0], bias: bias[0], blocks: B };
+}
+
+/**
+ * Blocked bootstrap of θ = estimator(mean), same sample conventions as jackknife: each of
+ * `resamples` replicas draws B blocks with replacement. rand defaults to rng(1), so results are
+ * reproducible. Returns { value: θ(full mean), error: standard deviation over replicas,
+ * quantiles(p): replica quantile(s) for p in [0, 1] (e.g. 0.16 and 0.84 for a 68 % interval),
+ * blocks, resamples }; arrays when the estimator returns arrays. NaN replicas give NaN.
+ */
+function bootstrap(samples, estimator, { resamples = 1000, bins, rand = rng(1) } = {}) {
+  if (typeof rand !== 'function') throw new Error('bootstrap: rand must be a function (e.g. rng(seed) from core/numerics.mjs)');
+  if (!(Number.isInteger(resamples) && resamples >= 2)) throw new Error('bootstrap: resamples must be an integer ≥ 2');
+  const { B, dim, sums, total, meanOf } = blockSums(samples, bins, 'bootstrap');
+  const raw = estimator(meanOf(total.slice(), B)), vector = typeof raw !== 'number', value = asArray(raw);
+  const m = value.length, reps = Array.from({ length: m }, () => new Float64Array(resamples));
+  const acc = new Float64Array(dim);
+  for (let r = 0; r < resamples; r++) {
+    acc.fill(0);
+    for (let b = 0; b < B; b++) { const s = sums[Math.floor(rand() * B)]; for (let k = 0; k < dim; k++) acc[k] += s[k]; }
+    const t = asArray(estimator(meanOf(acc.slice(), B)));
+    if (t.length !== m) throw new Error('bootstrap: estimator returned a different length for a replica');
+    for (let k = 0; k < m; k++) reps[k][r] = t[k];
+  }
+  const error = reps.map(x => {
+    const mu = x.reduce((a, v) => a + v, 0) / resamples;
+    return Math.sqrt(x.reduce((a, v) => a + (v - mu) ** 2, 0) / (resamples - 1));
+  });
+  const sorted = reps.map(x => (x.some(Number.isNaN) ? null : x.slice().sort()));
+  const quant = p => sorted.map(s => {
+    if (!s) return NaN;
+    const pos = Math.min(1, Math.max(0, p)) * (resamples - 1), i = Math.floor(pos), f = pos - i;
+    return i + 1 < resamples ? s[i] * (1 - f) + s[i + 1] * f : s[i];
+  });
+  const quantiles = p => (Array.isArray(p) ? p.map(q => (vector ? quant(q) : quant(q)[0])) : (vector ? quant(p) : quant(p)[0]));
+  return vector ? { value, error, quantiles, blocks: B, resamples } : { value: value[0], error: error[0], quantiles, blocks: B, resamples };
+}
+
+/**
+ * Blocked jackknife for estimators that need the samples themselves, not just their means (a fit,
+ * a median, a spectral estimate): fit(subset) is re-run on the data with each block left out.
+ * samples: an array of anything (points, segments, events); consecutive samples form `bins`
+ * blocks (default min(n, 20)); the remainder at the start is dropped. fit returns a number or an
+ * array. Returns { value, error, bias, blocks } like jackknife. Costs B + 1 fits.
+ */
+function jackknifeRefit(samples, fit, { bins } = {}) {
+  const n = samples.length, B = Math.min(n, bins ?? 20);
+  if (!(B >= 2)) throw new Error('jackknifeRefit: need at least 2 samples and 2 blocks');
+  const size = Math.floor(n / B), used = samples.slice(n - B * size);
+  const asArr = v => (typeof v === 'number' ? [v] : Array.from(v));
+  const raw = fit(used), vector = typeof raw !== 'number', value = asArr(raw);
+  const thetas = Array.from({ length: B }, (_, b) => asArr(fit([...used.slice(0, b * size), ...used.slice((b + 1) * size)])));
+  const mean = value.map((_, k) => thetas.reduce((a, t) => a + t[k], 0) / B);
+  const error = value.map((_, k) => Math.sqrt((B - 1) / B * thetas.reduce((a, t) => a + (t[k] - mean[k]) ** 2, 0)));
+  const bias = value.map((v, k) => (B - 1) * (mean[k] - v));
+  return vector ? { value, error, bias, blocks: B } : { value: value[0], error: error[0], bias: bias[0], blocks: B };
+}
+
+/**
+ * Nonlinear least squares by Levenberg–Marquardt: minimise Σ ((y_i − model(x_i, p)) / σ_i)².
+ * model(x, p) → number; jacobian(x, p) → ∂model/∂p (optional; central differences otherwise).
+ * sigma: per-point errors (number or array). With sigma the covariance is (JᵀWJ)⁻¹; without it,
+ * that matrix is scaled by χ²/dof (errors estimated from the scatter). Returns
+ * { p, errors, cov, chi2, dof, p_value (only with sigma), iterations, converged }.
+ * Start values matter: a damped oscillation needs a frequency guess within ~20 %.
+ */
+function curveFit(model, xs, ys, p0, { sigma, jacobian, maxIterations = 200, tol = 1e-12 } = {}) {
+  const n = xs.length, m = p0.length;
+  if (ys.length !== n || !(n > m)) throw new Error('curveFit: need equal-length xs, ys and more points than parameters');
+  const w = Array.from({ length: n }, (_, i) => { const s = sigma == null ? 1 : typeof sigma === 'number' ? sigma : sigma[i]; if (!(s > 0)) throw new Error('curveFit: sigma must be positive'); return 1 / (s * s); });
+  const resid = p => xs.map((x, i) => ys[i] - model(x, p));
+  const chi2Of = r => r.reduce((a, v, i) => a + w[i] * v * v, 0);
+  const jac = p => xs.map(x => {
+    if (jacobian) return Array.from(jacobian(x, p));
+    return p.map((pk, k) => {
+      const h = 1e-6 * Math.max(1, Math.abs(pk)), up = p.slice(), dn = p.slice();
+      up[k] += h; dn[k] -= h;
+      return (model(x, up) - model(x, dn)) / (2 * h);
+    });
+  });
+  const normal = (J, r) => {
+    const A = Array.from({ length: m }, () => new Array(m).fill(0)), g = new Array(m).fill(0);
+    for (let i = 0; i < n; i++) for (let a = 0; a < m; a++) { g[a] += w[i] * J[i][a] * r[i]; for (let b = 0; b < m; b++) A[a][b] += w[i] * J[i][a] * J[i][b]; }
+    return { A, g };
+  };
+  let p = Array.from(p0), r = resid(p), chi2 = chi2Of(r), lambda = 1e-3, it = 0, converged = false;
+  if (!Number.isFinite(chi2)) throw new Error('curveFit: the model is not finite at the start values');
+  for (; it < maxIterations; it++) {
+    const J = jac(p), { A, g } = normal(J, r);
+    let improved = false;
+    for (let tries = 0; tries < 30 && !improved; tries++) {
+      const M = A.map((row, a) => row.map((v, b) => (a === b ? v * (1 + lambda) + 1e-300 : v)));
+      let dp;
+      try { dp = solveLinear(M, g); } catch { lambda *= 10; continue; }
+      const trial = p.map((v, k) => v + dp[k]), rt = resid(trial), ct = chi2Of(rt);
+      if (Number.isFinite(ct) && ct <= chi2) {
+        const rel = (chi2 - ct) / Math.max(chi2, 1e-300), step = Math.max(...dp.map((d, k) => Math.abs(d) / Math.max(Math.abs(trial[k]), 1e-300)));
+        p = trial; r = rt; chi2 = ct; lambda = Math.max(lambda / 10, 1e-12); improved = true;
+        if (rel < tol || step < tol) converged = true;
+      } else lambda *= 10;
+    }
+    if (!improved) { converged = true; break; }   // no downhill step left: at the minimum (to round-off)
+    if (converged) break;
+  }
+  const { A } = normal(jac(p), r), dof = n - m;
+  const inv = Array.from({ length: m }, (_a, k) => solveLinear(A, Array.from({ length: m }, (_b, j) => (j === k ? 1 : 0))));
+  const scale = sigma == null ? chi2 / dof : 1;
+  const cov = inv.map(row => Array.from(row, v => v * scale));
+  return { p, errors: cov.map((row, k) => Math.sqrt(row[k])), cov, chi2, dof, p_value: sigma == null ? undefined : gammaQ(dof / 2, chi2 / 2), iterations: it, converged };
+}
+
+
+return { interpolate, histogram, ksTest, createHistogram, chiSquareTest, meanSem, pull, jackknife, bootstrap, jackknifeRefit, curveFit };
 })();
 
 // ---- local:physics.mjs

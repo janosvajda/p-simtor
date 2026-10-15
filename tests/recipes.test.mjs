@@ -28,6 +28,17 @@ test('README links the live gallery, only to demos that exist, and never to sour
   assert.equal(readme.match(/\]\(examples\/[^)]*\.html\)/g), null, 'no links to examples/*.html (GitHub shows them as source)');
 });
 
+test('README lists every gallery demo, with the right count (kept in sync by gallery.mjs)', () => {
+  const readme = readFileSync(join(ROOT, 'README.md'), 'utf8');
+  const demos = JSON.parse(readFileSync(join(ROOT, 'docs', 'demos.json'), 'utf8')).demos;
+  const block = readme.slice(readme.indexOf('<!-- demos:start -->'), readme.indexOf('<!-- demos:end -->'));
+  assert.ok(block.length > 0, 'README has the generated demo block');
+  assert.match(block, new RegExp(`\\*\\*${demos.length} demos\\*\\*`), `count says ${demos.length}`);
+  for (const d of demos) assert.ok(block.includes(`p-simtor/${d.id}.html`), `README lists ${d.id}`);
+  const counts = [...readme.matchAll(/\b(\d+) demos\b/g)].map(m => +m[1]);
+  for (const n of counts) assert.equal(n, demos.length, 'every demo count in the README is current');
+});
+
 test('recipe prompts rank their own recipe first', () => {
   const cases = {
     'model the planets orbiting the Sun': 'solar-system', 'simulate three stars orbiting each other': 'three-body',

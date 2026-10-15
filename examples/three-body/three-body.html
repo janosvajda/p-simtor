@@ -414,6 +414,15 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
   background: color-mix(in srgb, var(--stage) 72%, transparent);
   backdrop-filter: blur(3px);
 }
+
+/* ---------- full screen (scene + HUD + legend + playback bar) ---------- */
+.psim-fs { background: var(--stage, var(--bg)); border-radius: 0 !important; border: 0 !important; }
+.psim-app .psim-fs .psim-transport { position: absolute; left: 50%; right: auto; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 5; }
+.psim-pseudo-fs { position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100dvh !important; max-height: none !important; z-index: 1000; margin: 0 !important; }
+.psim-fsbtn { position: absolute; right: 12px; bottom: 12px; z-index: 4; width: 34px; height: 34px; display: grid; place-items: center;
+  border-radius: 9px; border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); cursor: pointer; }
+.psim-fsbtn:hover { background: var(--raise); color: var(--ink); }
+.psim-fsbtn svg { width: 15px; height: 15px; }
 </style>
 </head>
 <body>
@@ -703,7 +712,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 }</script>
 <script type="application/json" id="psim-verification">{
  "figure-eight": {
-  "generated": "2026-10-14T23:00:23.859Z",
+  "generated": "2026-10-15T00:32:13.518Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
   "settings": {
@@ -773,10 +782,10 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 175
+  "runtimeMs": 202
  },
  "pythagorean": {
-  "generated": "2026-10-14T23:00:27.296Z",
+  "generated": "2026-10-15T00:32:17.046Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
   "settings": {
@@ -846,10 +855,10 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 4748
+  "runtimeMs": 4861
  },
  "lagrange": {
-  "generated": "2026-10-14T23:00:29.183Z",
+  "generated": "2026-10-15T00:32:18.962Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
   "settings": {
@@ -919,10 +928,10 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 664
+  "runtimeMs": 675
  },
  "hierarchical": {
-  "generated": "2026-10-14T23:00:31.667Z",
+  "generated": "2026-10-15T00:32:21.498Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
   "settings": {
@@ -992,10 +1001,10 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 3429
+  "runtimeMs": 3459
  },
  "broucke-a2": {
-  "generated": "2026-10-14T23:00:32.958Z",
+  "generated": "2026-10-15T00:32:22.772Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
   "settings": {
@@ -1065,7 +1074,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 254
+  "runtimeMs": 258
  }
 }</script>
 
@@ -1902,7 +1911,9 @@ const ICONS = {
   pause: '<svg viewBox="0 0 16 16"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg>',
   step: '<svg viewBox="0 0 16 16"><path d="M3 2.5v11l7-5.5zM11 2.5h2v11h-2z" fill="currentColor"/></svg>',
   restart: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8a5 5 0 1 0 1.6-3.7"/><path d="M3 2.5v3h3"/></svg>',
-  fit: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg>',
+  fit: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="4.5"/><path d="M8 1v3M8 12v3M1 8h3M12 8h3"/></svg>',
+  fullscreen: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg>',
+  exitFullscreen: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2v4H2M10 2v4h4M6 14v-4H2M10 14v-4h4"/></svg>',
   sun: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6L13 13M3 13l1.4-1.4M11.6 4.4L13 3"/></svg>',
   moon: '<svg viewBox="0 0 16 16"><path d="M13.5 10A6 6 0 0 1 6 2.5a6 6 0 1 0 7.5 7.5z" fill="currentColor"/></svg>',
   info: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 7v4.5M8 4.6v.1"/></svg>',
@@ -1956,7 +1967,9 @@ function initTheme(toggleButton) {
   });
 }
 
+/** A theme token ('--accent') → its value; any other colour ('#ff8800', 'rgb(…)', 'tomato') passes through. */
 function cssVar(name) {
+  if (typeof name !== 'string' || !name.startsWith('--')) return name;
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
@@ -2054,7 +2067,7 @@ function toast(stage, text) {
 
 // ---------- transport ----------
 
-function transport({ onToggle, onStep, onRestart, onFit, speed, speedLabel, onSpeed, range: [lo, hi] = [speed / 100, speed * 100] }) {
+function transport({ onToggle, onStep, onRestart, onFit, onFullscreen, speed, speedLabel, onSpeed, range: [lo, hi] = [speed / 100, speed * 100] }) {
   const play = el('button', { class: 'primary', title: 'Play / pause (Space)', 'aria-label': 'Play or pause', html: ICONS.play, onclick: onToggle });
   const out = el('output', {}, speedLabel(speed));
   const range = el('input', { type: 'range', min: Math.log10(lo), max: Math.log10(hi), step: 'any', value: Math.log10(speed), 'aria-label': 'Playback speed' });
@@ -2066,8 +2079,13 @@ function transport({ onToggle, onStep, onRestart, onFit, speed, speedLabel, onSp
     el('span', { class: 'sep' }),
     el('label', { class: 'speed' }, 'speed', range, out),
     el('span', { class: 'sep' }),
-    el('button', { title: 'Fit view to bodies (F)', 'aria-label': 'Fit view', html: ICONS.fit, onclick: onFit }));
+    el('button', { title: 'Fit the view', 'aria-label': 'Fit view', html: ICONS.fit, onclick: onFit }),
+    onFullscreen ? el('button', { class: 'fs', title: 'Full screen (F)', 'aria-label': 'Full screen', html: ICONS.fullscreen, onclick: onFullscreen }) : null);
   bar.setPlaying = p => { play.innerHTML = p ? ICONS.pause : ICONS.play; };
+  bar.setFullscreen = on => {
+    const b = bar.querySelector('button.fs');
+    if (b) { b.innerHTML = on ? ICONS.exitFullscreen : ICONS.fullscreen; b.title = on ? 'Leave full screen (F or Esc)' : 'Full screen (F)'; }
+  };
   return bar;
 }
 
