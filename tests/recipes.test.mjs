@@ -58,3 +58,9 @@ test('typical requests rank the right recipe first', () => {
     assert.equal(first, expected, request);
   }
 });
+
+test('requests that only mention an object (earth, moon, sun, electron, temperature) get no recipe', () => {
+  for (const prompt of ['a hammer and a feather falling on earth and on the moon', 'how shadows change with the sun position', 'why we see lightning before thunder at different air temperature', 'an electron wave packet tunnelling through a barrier']) {
+    assert.match(psim('recipes', ...prompt.split(' ')), /No close recipe/, prompt);
+  }
+});

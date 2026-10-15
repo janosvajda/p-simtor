@@ -21,7 +21,7 @@ Use this process even when the subject has no guide, recipe or solver in this re
 2. **Formulate the model.** Establish the state variables, equations or dataset, units, parameters, initial/boundary conditions and assumptions from checked sources. Classify its mathematical structure, not just the subject's name. If those foundations are missing, research them before writing a solver.
 3. **Define observables.** Specify how each requested quantity is calculated from the state or data, which parts are directly measurable, and the applicable uncertainty. Do not substitute an easy-to-draw quantity for the quantity the user requested.
 4. **Define the representation.** Map each visual channel to an observable or a disclosed symbol: position, height, colour, arrows, markers and playback axis. State whether the axes describe physical space, internal coordinates, probabilities or sampling. This determines the legend and conventions for any subject.
-5. **Choose a feasible method.** Select an analytical, numerical, stochastic or data-based calculation from the problem's structure and accuracy needs. Reuse suitable tools; implement missing mathematics when feasible. If a reduction would change the requested scientific scope, obtain agreement before substituting it.
+5. **Choose a feasible method.** Select an analytical, numerical, stochastic or data-based calculation from the problem's structure and accuracy needs. Reuse suitable tools; implement missing mathematics when feasible. If a reduction would change the requested scientific scope, obtain agreement before substituting it. **When you cannot ask** (a non-interactive run, or the user asked you not to): build the most representative computable version, put the scope decision in the `Fact check:` line, the page title or subtitle and the model panel, and list the alternatives you did not build.
 6. **Establish evidence, then build.** Choose independent benchmarks, applicable invariants and resolution/sampling checks for the actual claims. Implement the calculation, observables and renderer separately; verify, inspect the page, and report only what the evidence supports.
 
 Keep these decisions in the physics module's documentation and the page's model panel. A topic's absence from the repository is a reason to research its model, not to choose an unrelated recipe or stop at an unsupported animation.
@@ -40,11 +40,11 @@ Without a matching model, use the compose contract below. Reuse a layout if help
 
 1. **Reuse suitable implementations.** Check `core/` before writing a solver or numerical primitive. Verify that its variables, equations and regime fit the chosen model; a similar name or visual is insufficient. Independent derivations or reference solutions remain useful verification.
    For any general mathematics, read [references/math-toolkit.md](references/math-toolkit.md) for working imports, conditions and failure handling.
-2. **No throwaway prototypes.** Put experiments directly into `verify()` and run `psim verify-module`. It's fast and it stays as evidence.
+2. **No throwaway prototypes.** Put experiments directly into `verify()` and run `psim verify-module`. It stays as evidence. For a timing measurement (the cost of one step before choosing sizes), run a short script with `psim node script.mjs`, then delete it.
 3. **Precision with purpose.** Choose tolerances from the observable, benchmark and relevant uncertainty (see `references/verification.md`). Numerical drift, a Monte Carlo error bar and a measured constant need different criteria. Don't chase extra digits that do not support the claim.
 4. **Two strikes rule.** If a check fails twice, stop tuning and re-examine the expectation: a sign convention, a known discretisation error, an approximation's real limit. Fix the cause or report the limit honestly.
 5. **Browser check once,** at the end (`psim check`), then look at the dark-desktop and phone screenshots, including the `scrolled:` ones (figures below the stage, the control column, the phone page). To see long-term behaviour, use `psim check --advance <time>` (in the page's time unit); don't write your own browser scripts. Use `verify-module` while developing.
-6. **Keep implementation compact.** For a matching recipe, make focused edits. For a new model, use the shared shell, plots and equation components instead of duplicating an application. Keep `page.html` under ~400 lines where practical.
+6. **Keep implementation compact.** For a matching recipe, make focused edits. For a new model, use the shared shell, plots and equation components instead of duplicating an application. Keep physics, observables and checks in `physics.mjs` and only presentation in `page.html`; a rich 3D page may be longer, but repeated drawing code belongs in a shared renderer, not copied per page.
 
 ## Check premises and sources
 
@@ -105,23 +105,28 @@ Clarifying questions and discussions before a build need no delivery block. Neve
 
 ## Files
 
-- `scripts/psim.mjs`: `recipes`, `new`, `gravity`, `presets`, `build`, `verify-module`, `verify`, `check`, `open`
+- `scripts/psim.mjs`: `recipes`, `new`, `gravity`, `presets`, `build`, `verify-module`, `verify`, `check`, `open`, `node` (scratch scripts with `psim:` imports)
 - `core/`:
-  - `numerics` (rng, fft, rk4Step, dopri5, gaussLegendre, adaptiveSimpson, integrateToInfinity, brent, lgamma, erf, besselI, besselJ, besselJZeros, laguerre, complexYlm, hydrogenRadial, legendreP, realYlm, solveTridiagonal, eigenTridiagonal, linearFit, meanWithError)
-  - `constants` (CODATA 2018, IAU)
-  - `linalg` (matrixVector, solveLinear, leastSquares, eigenSymmetric, expm, conjugateGradient, newtonSolve)
-  - `fields` (laplacianND, gradientND, divergenceND, fftND, solvePoissonPeriodic, diffusionPeriodic, schrodingerND with absorbing edges, contourLines, densityLevel; optional domain masks)
-  - `probability` (logSumExp, normalizeWeights, normalizeLogWeights, shannonEntropy, relativeEntropy, covarianceMatrix, canonicalEnsemble)
+  - `numerics` (rng, fft, rk4Step, dopri5, gaussLegendre, adaptiveSimpson, integrateToInfinity, brent, lgamma, gammaP, gammaQ, erf, besselI, besselJ, besselJZeros, laguerre, complexYlm, hydrogenRadial, legendreP, realYlm, solveTridiagonal, eigenTridiagonal, linearFit, meanWithError)
+  - `constants` (CODATA 2018, IAU, μ_B, g_e, α mass; `PDG` particle data with uncertainties and edition; IUPAC `ATOMIC_WEIGHT`)
+  - `matter` (Bethe stopping power, ranges, PDG material table), `spin` (spin ½ / qubits: rotation, Born rule, measurement)
+  - `linalg` (matrixVector, solveLinear, leastSquares, eigenSymmetric, cholesky, eigenGeneralized, expm, conjugateGradient, newtonSolve)
+  - `fields` (laplacianND, gradientND, divergenceND, fftND, solvePoissonPeriodic, diffusionPeriodic, schrodingerND with absorbing edges, probabilityCurrent, contourLines, densityLevel; optional domain masks)
+  - `probability` (maxwellSpeed, effusiveSpeed, logSumExp, normalizeWeights, normalizeLogWeights, shannonEntropy, relativeEntropy, covarianceMatrix, canonicalEnsemble)
   - `ode` (odeStepper: rk4/dopri5 with dense output; mechanicsStepper: leapfrog/yoshida4; refinementOrder, lyapunovExponent, linearChain)
   - `particles` (createParticles with optional periodic box; gravity, coulomb, lennardJones, uniformField, centralBody, drag, springs, externalPotential; forEachPairWithin)
   - `pde` (diffusion1D with held/flux walls and sources, waveND, stationaryStates1D)
   - `stochastic` (gillespie, eulerMaruyama, langevinBAOAB with heat, metropolis, metropolisSites, autocorrelationTime, effectiveSampleSize)
-  - `data` (interpolate, histogram, ksTest)
+  - `data` (interpolate, histogram, createHistogram, ksTest, chiSquareTest, jackknife, jackknifeRefit, bootstrap, curveFit, meanSem, pull)
+  - `kinematics` (4-vectors, boosts, random directions and rotations, twoBodyDecay, rambo phase space, acceptReject)
   - `nbody`, `nbody-verify`, `kepler`, `presets`, `solar-system`
   - `radiation` (Planck, Wien, σ, colour)
   - `schwarzschild` (light: tracePhoton, deflectionExact, shadowAngle; orbits with Einstein's correction: precessionPerOrbit, precessionSI, relativisticOrbit; ISCO, diskRedshift)
   - `relativity` (clock rates, GPS)
+  - `sun` (the Sun's position in the sky, sunrise/sunset, equation of time)
   - `galaxy` (bulge/disk/NFW potentials, rotation curves, star disks)
-  - `lattice-gauge` (SU(2) Monte Carlo, Wilson loops)
-- `ui/`: `instrument-app.mjs` (shell; `stage` or `workbench` layout; `gl: true` adds a GPU layer), `gl.mjs` (WebGL2 points, 2D fields, 3D volumes, orbit camera, colour maps), `plot.mjs`, `equation.mjs`, `instrument.mjs`, `orbit-view.mjs`, `instrument.css`
+  - `lattice-gauge` (SU(2) Monte Carlo, wilsonLoops, polyakovLoop, plaquetteField, apeSmear, strongCouplingPlaquette, gauge transforms, centre symmetry, Landau gauge, topology and cooling, BPST instanton benchmark)
+  - `projection` (4D rotations and projections, S³ maps: stereographic, axis–angle, Hopf)
+  - `qcd` (running coupling α_s: β coefficients, 1–4-loop MS-bar running with flavour thresholds)
+- `ui/`: `instrument-app.mjs` (shell; `stage` or `workbench` layout; `gl: true` adds a GPU layer), `gl.mjs` (WebGL2 points, 2D fields, 3D volumes, spheres, lines, solid meshes with shadows and arrows, orbit camera, colour maps and colour bars, line shapes), `plot.mjs`, `equation.mjs`, `instrument.mjs`, `orbit-view.mjs`, `instrument.css`
 - `examples/`: the recipes (`catalog.json`), each with `physics.mjs`, `page.html` and a built page

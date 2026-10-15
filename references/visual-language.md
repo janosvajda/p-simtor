@@ -34,6 +34,16 @@ Use this mapping to write the adjacent legend and `model.conventions`. Colour mi
 
 Label physical time, sample/sweep number, iteration, parameter scans and static views separately. A computed configuration is not necessarily an instantaneous physical snapshot. Label any conceptual overlay so it cannot borrow the computation's credibility.
 
+## Writing for the audience
+
+The standards (computed, verified, disclosed) never change; the wording and emphasis follow who asked. For children, students or the public:
+
+- Lead with the scene and one plain sentence of what it shows. Short words; name things as people know them ("the swing's rope", not "pendulum length L").
+- Few controls with everyday names, and two or three `presets` ("Try this") that demonstrate the point. Use `texts` for section titles and `hudError: false` so error figures stay in the side panel.
+- Put a short "What is real, what is drawn" note beside the view: computed quantities, exaggerated sizes, slowed or sped-up time, and drawn scenery (a house, a cloud, a child) labelled as scenery. Scenery is allowed when it is disclosed and does not stand for a computed result.
+- Keep equations, verification and the model panel lower on the page for teachers; they are still required.
+- The trust tier stays honest even when it sounds technical; explain it in one plain sentence in the reply.
+
 ## When to use the GPU (`ui/gl.mjs`)
 
 Choose the renderer from the size and shape of the state, as a cost estimate (see method selection §5):
@@ -41,7 +51,23 @@ Choose the renderer from the size and shape of the state, as a cost estimate (se
 - **Points:** up to ~10⁴ moving bodies draw well in 2D canvas; beyond that, or when depth and glow carry meaning (a galaxy, a gas, a sampled probability cloud), use `createPointRenderer` with an `orbitCamera`.
 - **2D fields:** above ~200 × 200 cells updated every frame, use `createFieldRenderer` instead of `putImageData`.
 - **3D densities:** a scalar on a 3D grid (orbital |ψ|², gas density, a temperature field) is shown honestly as a ray-marched volume (`createVolumeRenderer`), not as a cloud of invented particles. Sampled points are a different object: label which one the view shows.
-- Additive glow suits emission on dark backgrounds; in the light theme use `blend: 'alpha'` (read `view.color('--glow')`).
+- Additive glow suits emission on dark backgrounds; in the light theme use `blend: 'alpha', soft: true` (read `view.color('--glow')`). Additive blending of many overlapping points (≳ 10⁴ in a dense region) saturates to white and erases a colour map: when colour encodes a value, use `blend: 'alpha'` or smaller points.
+
+## More than three dimensions, periodic boxes, internal spaces
+
+A screen shows two dimensions and depth hints. To show a 4D lattice, a 3-sphere or any higher-dimensional state, pick one reduction and name it beside the view:
+
+| Reduction | What stays exact | Caption example |
+|---|---|---|
+| **Slice** (fix one coordinate) | Everything inside the slice; nothing outside | "Slice t = 2 of the 6⁴ lattice (one of 6 time slices)" |
+| **Projection** (`project4` after `rotation4` from `core/projection.mjs`) | Connectivity; lengths and angles are distorted | "4D → 3D perspective projection of all time slices (not a slice)" |
+| **Section through a manifold** (stereographic, axis–angle, Hopf) | Stereographic: angles (conformal); axis–angle: distance from the identity | "Group space S³ (not spacetime), stereographic from −𝟙" |
+| **Small multiples** (one panel per slice) | Everything, at small size | "Time slices t = 0…3 left to right" |
+
+- Say whether the axes are spacetime, Euclidean time, momentum space or an internal (group, colour, spin) space.
+- **Periodic boundaries:** draw wrap-around links as dashed lines to a faint ghost copy of the first slice, labelled "≡ t = 0".
+- **Gauge-dependent quantities** (link variables, potentials A_μ, wavefunction phases in a chosen gauge) change under a symmetry that leaves the physics unchanged. Never colour them as if they were measurable; draw them as neutral geometry and say "gauge-dependent". Colour only gauge-invariant quantities (traces of closed loops, field strengths |F|², densities). A "gauge transformation" button that changes the links while every invariant stays fixed is a strong demonstration.
+- A projection animated by rotation (`rotation4` with a slowly changing angle) helps the eye recover the fourth dimension; keep the rotation a View control, never a model parameter.
 - Brightness, opacity, glow and colour-map range are representation choices: put them in the legend and `model.conventions`. A log colour scale must say so.
 
 ## Craft rules

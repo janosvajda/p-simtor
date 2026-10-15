@@ -1,9 +1,12 @@
 // Test fixture for ui/gl.mjs: a static ring of points, a 2D field and a 3D Gaussian blob.
 // Exists only so `npm run test:browser` can check the GPU renderers pixel by pixel.
 
-export const PARAMS = [{ key: 'n', label: 'Points on the ring', min: 3, max: 20000, value: 2000, integer: true, log: true }];
+export const PARAMS = [
+  { key: 'n', label: 'Points on the ring', min: 3, max: 20000, value: 2000, integer: true, log: true },
+  { key: 'map', label: 'Colour map', value: 'inferno', options: [{ value: 'inferno', label: 'Inferno' }, { value: 'viridis', label: 'Viridis' }] },
+];
 
-export function createSim({ n }) {
+export function createSim({ n, map = 'inferno' }) {
   const ring = new Float32Array(3 * n), vals = new Float32Array(n);
   for (let i = 0; i < n; i++) { const a = 2 * Math.PI * i / n; ring.set([Math.cos(a), Math.sin(a), 0], 3 * i); vals[i] = i / n; }
   const N = 32, blob = new Float32Array(N ** 3);
@@ -11,7 +14,7 @@ export function createSim({ n }) {
     const x = (i + 0.5) / N * 2 - 1, y = (j + 0.5) / N * 2 - 1, z = (k + 0.5) / N * 2 - 1;
     blob[i + N * (j + N * k)] = Math.exp(-(x * x + y * y + z * z) / 0.1);
   }}}
-  return { t: 0, ring, vals, blob, N, step() { this.t += 0.01; }, diagnostics: () => [], state: () => ({ n }) };
+  return { t: 0, ring, vals, blob, N, step() { this.t += 0.01; }, diagnostics: () => [], state: () => ({ n, map }), map, builds: (createSim.count = (createSim.count ?? 0) + 1) };
 }
 
 export function verify() {

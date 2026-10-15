@@ -403,6 +403,17 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 
 /* GPU layer (ui/gl.mjs): under the 2D canvas, which keeps labels and pointer events */
 .psim-gl { pointer-events: none; }
+
+/* "Try this" presets (createInstrument presets) */
+.psim-presets { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 12px; }
+.psim-presets .psim-hint { width: 100%; margin: 0; }
+
+/* Over a GPU scene the HUD and legend get a soft backing so they stay readable on bright content */
+.psim-app.has-gl .psim-hud, .psim-app.has-gl .psim-legend {
+  padding: 6px 9px; border-radius: 8px;
+  background: color-mix(in srgb, var(--stage) 72%, transparent);
+  backdrop-filter: blur(3px);
+}
 </style>
 </head>
 <body>
@@ -758,7 +769,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 }</script>
 <script type="application/json" id="psim-verification">{
  "inner": {
-  "generated": "2026-10-14T10:09:36.692Z",
+  "generated": "2026-10-14T23:00:33.185Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
   "settings": {
@@ -828,10 +839,10 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 130
+  "runtimeMs": 129
  },
  "outer": {
-  "generated": "2026-10-14T10:09:36.831Z",
+  "generated": "2026-10-14T23:00:33.326Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
   "settings": {
@@ -901,10 +912,10 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 130
+  "runtimeMs": 133
  },
  "all": {
-  "generated": "2026-10-14T10:09:37.381Z",
+  "generated": "2026-10-14T23:00:33.892Z",
   "integrator": "logh4",
   "integratorLabel": "LogH + Yoshida 4",
   "settings": {
@@ -974,7 +985,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
     "matchesLiterature": true
    }
   ],
-  "runtimeMs": 745
+  "runtimeMs": 768
  }
 }</script>
 
@@ -1713,18 +1724,32 @@ __psim["core/verification.mjs"] = (() => {
 // Shared verification gates for the CLI and browser. Reports are evidence only
 // when every check is explicit and the tested settings still match the simulation.
 
-function validateModuleReport(report) {
-  if (!report || !Array.isArray(report.checks) || !report.checks.length) throw new Error('verification: need a non-empty checks array');
+/**
+ * Problems with each check of a module report, as [{ index, label, problem }]; empty when every
+ * check is well formed. Lets the CLI print the whole report and mark only the bad rows.
+ */
+function moduleReportProblems(report) {
+  if (!report || !Array.isArray(report.checks) || !report.checks.length) return [{ index: -1, label: '', problem: 'need a non-empty checks array' }];
+  const out = [];
   for (const [i, check] of report.checks.entries()) {
-    const where = `verification check ${i + 1}`;
-    if (!check || typeof check.label !== 'string' || !check.label.trim()) throw new Error(`${where}: label is required`);
-    if (typeof check.pass !== 'boolean') throw new Error(`${where}: pass must be explicitly true or false`);
-    if (typeof check.value === 'number') {
-      if (!Number.isFinite(check.value)) throw new Error(`${where}: measured value must be finite`);
-    } else if (typeof check.value !== 'string' || !check.value.trim() || /NaN|Infinity|∞|^\s*—\s*$/.test(check.value)) {
-      throw new Error(`${where}: measured value must be finite and present`);
+    const label = typeof check?.label === 'string' ? check.label : '';
+    const bad = problem => out.push({ index: i, label, problem });
+    if (!check || !label.trim()) bad('label is required');
+    if (typeof check?.pass !== 'boolean') bad('pass must be explicitly true or false');
+    if (typeof check?.value === 'number') {
+      if (!Number.isFinite(check.value)) bad(`measured value must be finite (got ${check.value})`);
+    } else if (typeof check?.value !== 'string' || !check.value.trim() || /NaN|Infinity|∞|^\s*—\s*$/.test(check.value)) {
+      bad(`measured value must be finite and present (got ${JSON.stringify(check?.value)})`);
     }
-    if (check.state != null && check.state !== 'warn') throw new Error(`${where}: optional state must be 'warn'`);
+    if (check?.state != null && check.state !== 'warn') bad("optional state must be 'warn'");
+  }
+  return out;
+}
+
+function validateModuleReport(report) {
+  const problems = moduleReportProblems(report);
+  if (problems.length) {
+    throw new Error(`verification: ${problems.map(p => (p.index < 0 ? p.problem : `check ${p.index + 1}${p.label ? ` "${p.label}"` : ''}: ${p.problem}`)).join('; ')}`);
   }
   return report;
 }
@@ -1768,7 +1793,7 @@ function gravityReportMatches(report, settings) {
   return Number.isFinite(h) && h > 0 && Number.isFinite(settings.h) && Math.abs(h - settings.h) <= 1e-12 * Math.abs(h);
 }
 
-return { validateModuleReport, gravityReportProblems, gravityReportMatches };
+return { moduleReportProblems, validateModuleReport, gravityReportProblems, gravityReportMatches };
 })();
 
 // ---- psim:ui/instrument.mjs
@@ -1949,10 +1974,10 @@ function toast(stage, text) {
 
 // ---------- transport ----------
 
-function transport({ onToggle, onStep, onRestart, onFit, speed, speedLabel, onSpeed }) {
+function transport({ onToggle, onStep, onRestart, onFit, speed, speedLabel, onSpeed, range: [lo, hi] = [speed / 100, speed * 100] }) {
   const play = el('button', { class: 'primary', title: 'Play / pause (Space)', 'aria-label': 'Play or pause', html: ICONS.play, onclick: onToggle });
   const out = el('output', {}, speedLabel(speed));
-  const range = el('input', { type: 'range', min: -2, max: 2, step: 'any', value: Math.log10(speed), 'aria-label': 'Playback speed' });
+  const range = el('input', { type: 'range', min: Math.log10(lo), max: Math.log10(hi), step: 'any', value: Math.log10(speed), 'aria-label': 'Playback speed' });
   range.addEventListener('input', () => { const s = Math.pow(10, +range.value); out.textContent = speedLabel(s); onSpeed(s); });
   const bar = el('div', { class: 'psim-transport' },
     el('button', { title: 'Restart from initial conditions (R)', 'aria-label': 'Restart', html: ICONS.restart, onclick: onRestart }),

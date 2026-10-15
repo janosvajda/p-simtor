@@ -1,5 +1,131 @@
 # Changelog
 
+## Unreleased — gaps reported by the famous-experiment builds
+
+The Rutherford, Stern–Gerlach, bubble chamber and Cavendish builds were audited; these gaps are now filled and tested.
+
+- **`psim check --params mode=…`** checks and screenshots non-default modes. Two builders had to hand-edit defaults to see theirs. The check's step-running evaluations no longer hit a fixed 10 s limit on slow Monte Carlo pages, and a timeout now names the expression.
+- **Colours.** Plots, `view.color()` and the GPU renderers accept theme tokens and any CSS colour. Before this, `rgba()` tokens rendered as garbage in GPU lines and hex colours vanished from plots. `cssColor()` is exported.
+- **New `core/matter.mjs`.** Bethe stopping power with the density effect, CSDA range, and PDG data for liquid hydrogen, water, silicon, lead and air. Each material's minimum ionisation is within 0.1 % of the PDG value.
+- **New `core/spin.mjs`.** Spin ½ / qubit states, precession, Born probabilities and measurement. `quantum.md` now describes the semiclassical beam model.
+- **Statistics (`core/data.mjs`).**
+  - `curveFit` (Levenberg–Marquardt with parameter covariance; pull rms ≈ 1 on synthetic data).
+  - `jackknifeRefit` (re-runs any fit with each block left out).
+- **Other core additions.**
+  - `maxwellSpeed` and `effusiveSpeed`, with exact samplers.
+  - `rngFor(seed, i)`: an independent random stream per item.
+  - `odeStepper`: `advanceTo(t, …, { exact: true })` and a mutable `hmax`; its documentation now warns that events within a single step can be missed.
+- **Double slit build:**
+  - **Faster solver.** `schrodingerND` is 1.75× faster (cached FFT twiddles, precomputed phase factors, and one finiteness check per step).
+  - **New `probabilityCurrent`.** A spectral probability current, so what absorbing layers take can be checked against the flux through a line (agreement within 2 % in tests).
+  - **`quantum.md`.** It now points to `schrodingerND` instead of telling builders to write an FFT. It also gives the right points-per-wavelength for spectral methods, says to refine Δt with Δx², calls the norm-plus-absorbed check a tautology, and says to sample detections from the flux.
+- **Constants.** New: μ_B, g_e, the alpha mass, π± and π⁰ lifetimes, the K± mass and lifetime, and IUPAC `ATOMIC_WEIGHT`.
+- **Shell.**
+  - `getSim` is available in `controls` and on `window.psim`.
+  - `view.theme`.
+  - Point renderer `append()`/`clear()` for events that arrive during a run (pixel-tested).
+- **Guidance.**
+  - Experimenter actions as a recorded schedule.
+  - `state()` must change within `testSteps`.
+  - Captions wrapped with their figures.
+  - Energy *balance* normalisation.
+  - Meaning of `state: 'warn'` (a disclosed known limit).
+  - Importance-sampling disclosure.
+  - Position-space detector tracks with invisible neutrinos.
+
+## Unreleased — gaps reported by the particle-physics builds
+
+The asymptotic-freedom, Yang–Mills mass-gap and weak-force builds audited the skill; their gaps are now filled and tested.
+
+- **Guidance.**
+  - Open problems: a `facts.md` row for "prove/solve an open problem" (Millennium problems). It says to build evidence for a regularised version and never write "proved".
+  - Non-interactive runs: a rule in SKILL.md step 5 for when the user can't be asked. Build the most representative computable version, state the scope in the Fact check line, title and model panel, and list the alternatives.
+  - `particle-physics.md`:
+    - a mass-gap section (smeared loops, time-slice correlators, GEVP, the bias of variational estimates, continuum evidence);
+    - a strong-coupling check for any dimension;
+    - measured sweep and measurement costs;
+    - jackknife errors;
+    - running α_s via `core/qcd.mjs`.
+  - New `weak-interaction.md`: candidate processes, Michel-parameter benchmarks, why recomputing τ_μ from G_F is circular, and momentum-space views with undetectable neutrinos.
+- **Lattice (`core/lattice-gauge.mjs`).**
+  - `wilsonLoops` measures every R×T loop in one pass, about 16× faster than repeated `wilsonLoop` calls. It is identical to `wilsonLoop` to 10⁻¹⁶ and can be limited to chosen planes.
+  - New functions: `polyakovLoop`, `plaquetteField` (local action density), `apeSmear`, `strongCouplingPlaquette(β, d)`, `siteCoords`/`siteIndex` and `qmulInto`.
+  - `staple` no longer allocates, so sweeps are about 2.5× faster (6⁴: 6 ms).
+- **QCD (new `core/qcd.mjs`).**
+  - β coefficients to four loops in Casimir form; for SU(3) they reproduce the ζ₃ polynomial.
+  - MS-bar running of α_s with flavour thresholds, which agrees with the exact 1-loop and 2-loop solutions to 10⁻¹⁰.
+- **Particle data.** `PDG` in `core/constants.mjs`: masses, lifetimes, G_F, m_W, m_Z, m_H, α_s, quark masses and Michel parameters, each with its uncertainty and edition.
+- **Statistics (`core/data.mjs`).**
+  - New: `jackknife` and `bootstrap` (blocked, for vector observables and nonlinear estimators), the incremental `createHistogram`, `chiSquareTest`, `meanSem` and `pull`.
+  - New in `core/numerics.mjs`: `gammaP` and `gammaQ`.
+- **Kinematics (new `core/kinematics.mjs`).** 4-vectors and boosts, random directions and rotations, `twoBodyDecay`, RAMBO phase space (exact weights), and `acceptReject`, which refuses a wrong bound instead of biasing the sample.
+- **Linear algebra (`core/linalg.mjs`).** New: `cholesky` and `eigenGeneralized` (the variational method for correlation matrices).
+- **GPU (`ui/gl.mjs`).**
+  - New helpers: `drawColorBar`, `geometry.arrow`, `alignZ`, `polylines` (circle, box edges, lattice grid, arrow); `transform` now accepts a rotation matrix, and `compile` is exported.
+  - Renderer changes:
+    - lines can carry their own colour and opacity in one draw;
+    - points accept `count` (a growing cloud without re-uploading) and `soft` (the same look in light and dark themes);
+    - volumes accept `smooth: false`.
+- **Shell.**
+  - The frame budget is now checked after every step, so a slow Monte Carlo step can't stall a frame. It is set with `frameBudget`.
+  - New options: `speedRange`, `timeDigits` (integer sweep counts) and `pending: true` diagnostics ("measuring…").
+  - `window.psim.setParam` now exists, as the documentation already said.
+- **CLI.**
+  - `psim check`:
+    - names the page's own error label, not "|ΔE/E0|";
+    - its parameter-edit test stays inside [min, max];
+    - a value-less diagnostic names its row.
+  - `verify-module`:
+    - prints every check and marks malformed ones `BAD`, instead of aborting on the first;
+    - `verify({ log })` prints progress.
+  - `build --verify-module` reuses the last passing report while the physics files are unchanged (`--reverify` forces a new run).
+  - New `psim node script.mjs` for timing scripts that use `psim:` imports.
+- **Docs (`compose.md`).** The plot API; several calculations on one page; that self-tests run at t = 0 and may be async; and MathML spaces.
+
+Also from the 4D gauge-theory builds (4D lattice projection, SU(2) as a 3-sphere):
+
+- **Topology (from the QCD-vacuum build).**
+  - `topology()`: clover field strength, giving the action density s(x), the charge density q(x), Q and S. The improved clover is within 1.5 % of Q = 1 on an exact instanton; the plain clover is 7–13 % low.
+  - `bpstInstanton()`: an exact BPST instanton as a benchmark; its anti-instanton is built by time reflection and gives exactly −Q.
+  - Cooling (`sweep({ cool: true })`): the action never rises and the instanton survives, becoming self-dual.
+  - Ranged sweeps (`sweep({ sites })`) spread a slow sweep over frames.
+- **Signed volumes.** `createVolumeRenderer` `update(…, { signed: true })` shows hue as the sign and opacity as |value| (pixel-tested).
+- **`verification.md`.** Node and Chrome can differ in the last bit of exp, log and cos, so chaotic or Monte Carlo pages should verify statistics, not one seed's exact trajectory.
+- **New `core/projection.mjs`. 4D rotations and 4D → 3D projections, and maps of S³: stereographic, axis–angle, and the Hopf map and fibres. All are tested.
+- **Lattice.**
+  - `gaugeTransform` accepts a given g (or a separate rand) and returns g.
+  - New: `centreTransform` (Z₂ centre symmetry), `landauGauge` (over-relaxed, converges to θ < 10⁻¹² with every plaquette unchanged), `haarSU2`, `qexp` and `qlog`.
+- **Shell.**
+  - `viewControls`: a "View" section for presentation-only controls that never rebuild the model.
+  - `view.setLegend()`: the legend can follow the representation.
+  - `testSteps`: lowers the cost of the check's parameter-edit test for slow steps.
+- **Guidance.**
+  - `visual-language.md`: how to show more than three dimensions (slice, projection, manifold section, small multiples, each with a caption), periodic boundaries, gauge-dependent quantities, and additive-blend saturation.
+  - `particle-physics.md`: Elitzur's theorem (links are Haar-distributed; only loops are physical), finite-temperature lattices and the Polyakov loop, and the check's warm-up.
+  - `facts.md`: a row on gauge-dependent links; a rule to say when a value was quoted from memory.
+  - `compose.md`: the √3 trap in `camera.fit`, and that GPU self-tests must draw before reading pixels.
+
+## Unreleased — gaps reported by four audited builds
+
+All four builds (lightning, sundial, see-saw, hammer and feather) read SKILL.md and six references and reused the toolkit; their audits named these gaps, now filled and tested:
+
+- Solid objects: `createMeshRenderer`, `geometry` (box, cylinder, cone, sphere, disc, plane), `transform`/`compose`, Lambert lighting and exact planar shadows without double darkening (pixel tests: top/side shading 1.0/0.25, shadow edges at the ray-predicted x = −3 and −1, depth order).
+- Shell: `presets` ("Try this", several parameters at once, every control in sync, one rebuild), `setParam`/`setParams`/`play`/`pause` for `controls` and `bench`, dropdowns now follow `setParam`, `formatTime`, `hudError: false`, `texts`, `view.speed`/`view.playing`, a readable HUD backing over GPU scenes.
+- Camera: `fit(box, aspect)`, distance and pitch limits, and the wheel no longer hijacks page scrolling.
+- `odeStepper` events (located on the dense output, optionally terminal): ground contact matches √(2h/g) to 10⁻¹².
+- `core/sun.mjs`: the Sun's position, sunrise/sunset and equation of time (Meeus ch. 25).
+- Constants: standard gravity, Earth/Moon GM and radii, gas constant, dry air and the ISA atmosphere.
+- Recipe search: object names (earth, sun, electron, temperature …) are now weak mentions, so unrelated requests get "No close recipe" instead of the Solar System recipe.
+- `visual-language.md`: writing for children, students and the public without lowering the standards.
+
+## Unreleased — gaps found by auditing seven primary-school builds
+
+- An independent audit of the builders' tool calls showed every build read SKILL.md and 6–7 references, and reused core/ (Kepler, planet data, ODE steppers, roots, quadrature, contours, radiation colours, GPU points, camera). The gaps it found:
+- `ui/gl.mjs`: `createSphereRenderer` (exact ray-cast lit spheres with correct day/night line and overlap; three builds had hand-drawn their own) and `createLineRenderer` (thick 3D polylines, solid or dashed). Both draw relative to the camera target in float64, so astronomical coordinates stay precise; `camera.matrices(aspect, { relative: true })` for custom shaders. Cyclic `phase` colour map (constant lightness in OKLab).
+- `compose.md` now documents every `createInstrument` option and the `ui/instrument.mjs` helpers (`el`, `button`, `toggle`, `select`, `slider`, `section`, `sci`, …): every builder had been reading the ui/ source to find them.
+- SKILL.md: the page-length rule now separates physics from presentation instead of a fixed line count.
+- Tests: sphere silhouette equals the exact angular size, shading equals n·l from an exact ray–sphere intersection (130 vs 129 of 255), a sphere 10⁸ units from the origin renders identically, lines land at `project()` with the requested width; relative matrices equal absolute ones; the phase map is cyclic with constant OKLab lightness.
+
 ## Unreleased — GPU-rendered scenes
 
 - `ui/gl.mjs`: WebGL2 renderers chosen by what is drawn: glowing point sprites (10⁵–10⁶ bodies or samples, colour-mapped by a computed value), 2D fields as colour-mapped images, ray-marched 3D volumes (emission or emission–absorption), an orbit camera with `project()` for 2D labels, and perceptually uniform colour maps (viridis, inferno, magma, coolwarm).

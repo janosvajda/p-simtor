@@ -92,8 +92,9 @@ export async function launch() {
         await Promise.race([loaded, new Promise((_res, rej) => { timer = setTimeout(() => rej(new Error('Chrome page load timed out')), 10000); })]);
       } finally { clearTimeout(timer); }
     },
-    async eval(expression) {
-      const r = await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
+    async eval(expression, timeoutMs = 10000) {
+      const r = await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, timeoutMs)
+        .catch(e => { throw new Error(`${e.message} (${timeoutMs / 1000} s) while evaluating: ${expression.replace(/\s+/g, ' ').slice(0, 70)}…`); });
       if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description ?? r.exceptionDetails.text);
       return r.result.value;
     },
@@ -127,7 +128,7 @@ const READ_ATTRS = `(() => {
  * errors, verify the simulation is live, check for horizontal overflow, save
  * screenshots. Then run model-specific interaction tests (see interactionTests).
  */
-export async function checkPage(file, { shotsDir, waitMs = 3000, advance } = {}) {
+export async function checkPage(file, { shotsDir, waitMs = 3000, advance, params } = {}) {
   if (!findChrome()) {
     return { runs: [], problems: ['Chrome/Chromium not found. Set CHROME_PATH, or open the page manually and check the browser console.'] };
   }
@@ -144,6 +145,16 @@ export async function checkPage(file, { shotsDir, waitMs = 3000, advance } = {})
     for (const v of variants) {
       b.consoleErrors.length = 0;
       await b.goto(`${pathToFileURL(file).href}?${v.q}&autoplay=1`, v);
+      if (params) {
+        // a non-default mode or setting: set through the page, exactly as a preset would
+        const r = await evalWithin(b, `window.psim?.setParams ? (window.psim.setParams(${JSON.stringify(params)}, { play: true }), JSON.stringify(window.psim.params())) : 'no setParams'`, 60000);
+        if (r.frozen || r.error || r.value === 'no setParams') {
+          const summary = r.error ?? (r.frozen ? 'setting --params froze the page' : 'the page has no window.psim.setParams');
+          problems.push(`${v.label}: ${summary}`);
+          runs.push({ label: v.label, ok: false, summary });
+          return { runs, problems };
+        }
+      }
       await sleep(waitMs);
       if (advance != null) {
         // fast-forward the simulation (in the page's own time unit) to see long-term behaviour
@@ -171,7 +182,7 @@ export async function checkPage(file, { shotsDir, waitMs = 3000, advance } = {})
       const summary = a.ready === undefined
         ? 'page did not report ready (script failed to start?)'
         : `frames ${a.frames ?? 0}, t = ${typeof a.t === 'number' ? a.t.toFixed(3) : '—'}, steps ${a.steps ?? '—'}`
-          + `${typeof a.drift === 'number' ? `, |ΔE/E0| ${a.drift.toExponential(2)}` : ''}`
+          + `${typeof a.drift === 'number' ? `, ${a.driftLabel ?? 'error'} ${a.drift.toExponential(2)}` : ''}`
           + `${overflow > 1 ? `, horizontal overflow ${overflow}px` : ''}`
           + `${blank.length ? `, diagnostics without a value: ${blank.join(', ')}` : ''}`
           + `${errors.length ? `, errors: ${errors.join(' | ')}` : ''}`;
@@ -254,7 +265,7 @@ export async function stressInputs(b, file, { timeoutMs = 3000, settleMs = 400, 
         return result();
       }
       await sleep(settleMs);
-      const alive = await evalWithin(b, `JSON.stringify({ label: document.querySelectorAll('.psim-side input[type=number]')[${i}].getAttribute('aria-label'), errors: JSON.parse(document.documentElement.dataset.psimErrors || '[]'), invalid: [...document.querySelectorAll('.psim-row .v')].some(r => /^(—|NaN|[−-]?∞|[+-]?Infinity)(?:$|\\s)|NaN/.test(r.textContent.trim())) })`, timeoutMs);
+      const alive = await evalWithin(b, `JSON.stringify({ label: document.querySelectorAll('.psim-side input[type=number]')[${i}].getAttribute('aria-label'), errors: JSON.parse(document.documentElement.dataset.psimErrors || '[]'), invalid: [...document.querySelectorAll('.psim-row')].filter(r => /^(—|NaN|[−-]?∞|[+-]?Infinity)(?:$|\\s)|NaN/.test(r.querySelector('.v')?.textContent.trim() ?? '')).map(r => r.querySelector('.k')?.textContent + ' = ' + r.querySelector('.v')?.textContent.trim()) })`, timeoutMs);
       if (alive.frozen || alive.error) {
         bad.push(`input #${i} = ${value}: page froze`);
         return result();
@@ -262,7 +273,7 @@ export async function stressInputs(b, file, { timeoutMs = 3000, settleMs = 400, 
       const info = JSON.parse(alive.value ?? '{}');
       const errs = [...(info.errors ?? []), ...b.consoleErrors];
       if (errs.length) { bad.push(`"${info.label}" = ${value}: ${errs[0]}`); break; }
-      if (info.invalid) { bad.push(`"${info.label}" = ${value}: non-finite diagnostic`); break; }
+      if (info.invalid?.length) { bad.push(`"${info.label}" = ${value}: diagnostic without a finite value (${info.invalid.join(', ')}; use { pending: true } for a quantity not measured yet)`); break; }
     }
     await b.goto(url, { width: 1440, height: 900 });
     await sleep(150);
@@ -282,7 +293,7 @@ export const interactionTests = {
     // Optional page self-test (e.g. GPU output vs an exact formula): window.psim.selfTest()
     // returns { label, pass, ...measurements } or an array of them.
     if (await b.eval('typeof window.psim?.selfTest === "function"')) {
-      const r = await b.eval('Promise.resolve(window.psim.selfTest())').catch(e => ({ label: 'page self-test', pass: false, error: e.message }));
+      const r = await b.eval('Promise.resolve(window.psim.selfTest())', 120000).catch(e => ({ label: 'page self-test', pass: false, error: e.message }));
       for (const t of [].concat(r)) {
         const { label, pass, ...rest } = t;
         out.push({ label: label ?? 'page self-test', ok: pass === true, summary: JSON.stringify(rest) });
@@ -293,11 +304,21 @@ export const interactionTests = {
       return [...out, { label: 'parameter edit → model', ok: true, summary: 'no numeric parameters to test' }];
     }
     await b.eval('window.psim.restart()');
-    const s1 = await b.eval('window.psim.steps(300)');
+    const n = await b.eval('window.psim.testSteps ?? 300');
+    const s1 = await b.eval(`window.psim.steps(${n})`, 120000);
     const p0 = await b.eval('window.psim.params()');
-    await b.eval(`(() => { const i = document.querySelector('${input}'); i.value = String(+i.value * 1.3 || 1); i.dispatchEvent(new Event('change')); })()`);
+    // a new value inside [min, max]: ×1.3, or towards the middle of the range when that would leave it
+    await b.eval(`(() => {
+      const i = document.querySelector('${input}'), v = +i.value;
+      const lo = i.min === '' ? -Infinity : +i.min, hi = i.max === '' ? Infinity : +i.max;
+      let next = v * 1.3 || 1;
+      if (!(next >= lo && next <= hi) || next === v) next = Number.isFinite(lo) && Number.isFinite(hi) ? (v - lo > hi - v ? v - 0.3 * (v - lo) : v + 0.3 * (hi - v)) : v * 0.7 || -1;
+      const st = +i.step > 0 ? +i.step : 0;
+      if (st) { next = Math.round(next / st) * st; if (next === v) next = v + st <= hi ? v + st : v - st; }
+      i.value = String(next); i.dispatchEvent(new Event('change'));
+    })()`);
     const p1 = await b.eval('window.psim.params()');
-    const s2 = await b.eval('window.psim.steps(300)');
+    const s2 = await b.eval(`window.psim.steps(${n})`, 120000);
     const changedKey = Object.keys(p0).find(k => p0[k] !== p1[k]);
     const differs = JSON.stringify(s1) !== JSON.stringify(s2);
     // Blackbody's scale selector is a display control: changing only the scale
@@ -314,7 +335,7 @@ export const interactionTests = {
       label: 'parameter edit → model',
       ok: !!changedKey && differs,
       summary: changedKey
-        ? `${changedKey}: ${p0[changedKey]} → ${p1[changedKey]} via the UI; recomputed state after 300 steps ${differs ? 'differs' : 'is IDENTICAL (parameter not wired to the physics?)'}`
+        ? `${changedKey}: ${p0[changedKey]} → ${p1[changedKey]} via the UI; recomputed state after ${n} steps ${differs ? 'differs' : 'is IDENTICAL (parameter not wired to the physics?)'}`
         : 'editing the first parameter input did not change the model parameters',
     }];
   },

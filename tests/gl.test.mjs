@@ -39,7 +39,56 @@ test('colour maps: published endpoints, monotonic lightness for sequential maps,
   }
   const mid = colormap('coolwarm', 0.5);
   assert.ok(Math.max(...mid) - Math.min(...mid) < 0.01, 'coolwarm midpoint is grey');
-  assert.deepEqual(COLORMAPS, ['viridis', 'inferno', 'magma', 'coolwarm']);
+  assert.deepEqual(COLORMAPS, ['viridis', 'inferno', 'magma', 'coolwarm', 'phase']);
   close(normalize(100, [1, 1e4], true), 0.5, 1e-15); close(normalize(3, [2, 4]), 0.5, 1e-15);
   assert.throws(() => colormap('rainbow', 0.5), /unknown/);
+});
+
+test('relative camera matrices give the same projection as absolute ones; phase map is cyclic with constant lightness', () => {
+  const cam = orbitCamera({ target: [3, -2, 1], distance: 7, yaw: 1.1, pitch: 0.3 });
+  const abs = cam.matrices(1.5).viewProj, rel = cam.matrices(1.5, { relative: true }).viewProj;
+  for (const p of [[3, -2, 1], [4, 0, -1], [-2, 5, 3]]) {
+    const a = apply(abs, p), r = apply(rel, [p[0] - 3, p[1] + 2, p[2] - 1]);
+    close(a[0] / a[3], r[0] / r[3], 1e-5); close(a[1] / a[3], r[1] / r[3], 1e-5);
+  }
+  colormap('phase', 0).forEach((x, i) => close(x, colormap('phase', 1)[i], 1e-12, 'cyclic'));
+  const toLin = x => (x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4);
+  const okL = c => { const [r, g, b] = c.map(toLin); const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b), m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b), s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b); return 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s; };
+  for (let t = 0; t < 1; t += 0.05) close(okL(colormap('phase', t)), 0.72, 0.02, `OKLab lightness at ${t}`);
+  assert.ok(COLORMAPS.includes('phase'));
+});
+
+test('orbitCamera.fit frames a box on wide and tall screens; limits clamp the distance', () => {
+  const box = [[-2, -1, -0.5], [2, 1, 0.5]], r = Math.hypot(4, 2, 1) / 2;
+  for (const aspect of [16 / 9, 0.46]) {
+    const cam = orbitCamera({ yaw: 0.7, pitch: 0.4 }).fit(box, aspect, 1);
+    // every corner projects inside the screen
+    for (const x of [-2, 2]) {for (const y of [-1, 1]) {for (const z of [-0.5, 0.5]) {
+      const p = cam.project([x, y, z], 1000 * aspect, 1000);
+      assert.ok(p.x >= -1 && p.x <= 1000 * aspect + 1 && p.y >= -1 && p.y <= 1001, `corner inside at aspect ${aspect}`);
+    }}}
+    assert.ok(Math.abs(Math.sin(Math.min(cam.fov / 2, Math.atan(Math.tan(cam.fov / 2) * aspect))) * cam.distance - r) < 1e-9, 'bounding sphere touches the narrower edge');
+  }
+  const limited = orbitCamera({ minDistance: 10, maxDistance: 20 }).fit(box, 1);
+  assert.equal(limited.distance, 10, 'clamped to the minimum distance');
+});
+
+test('mesh geometry and transforms: outward unit normals, exact radii, rotation order, composition', async () => {
+  const { geometry, transform, compose } = await import('../ui/gl.mjs');
+  const box = geometry.box(2, 3, 4);
+  for (let f = 0; f < 6; f++) {                       // each face: 4 vertices, normal points away from the centre
+    const i = 4 * f, n = [box.normals[3 * i], box.normals[3 * i + 1], box.normals[3 * i + 2]];
+    const c = [0, 1, 2].map(k => (box.positions[3 * i + k] + box.positions[3 * (i + 2) + k]) / 2);
+    close(Math.hypot(...n), 1, 1e-7); assert.ok(n[0] * c[0] + n[1] * c[1] + n[2] * c[2] > 0, `face ${f} outward`);
+  }
+  const sph = geometry.sphere(1.5, 12);
+  for (let i = 0; i < sph.positions.length; i += 3) close(Math.hypot(sph.positions[i], sph.positions[i + 1], sph.positions[i + 2]), 1.5, 1e-6);
+  const cyl = geometry.cylinder(0.5, 2, 16);
+  assert.ok(Math.max(...cyl.positions.filter((_, i) => i % 3 === 2)) === 2 && Math.min(...cyl.positions.filter((_, i) => i % 3 === 2)) === 0);
+  const T = transform({ translate: [1, 2, 3], rotate: [0, 0, Math.PI / 2], scale: 2 });
+  const map = (m, p) => [0, 1, 2].map(r => m[r] * p[0] + m[4 + r] * p[1] + m[8 + r] * p[2] + m[12 + r]);
+  map(T, [1, 0, 0]).forEach((v, i) => close(v, [1, 4, 3][i], 1e-12, 'x → y, doubled, then shifted'));
+  const R = transform({ rotate: [Math.PI / 2, 0, Math.PI / 2] });  // about x first, then z
+  map(R, [0, 1, 0]).forEach((v, i) => close(v, [0, 0, 1][i], 1e-12, 'y →(x-rot) z →(z-rot) z'));
+  map(compose(transform({ translate: [5, 0, 0] }), T), [0, 0, 0]).forEach((v, i) => close(v, [6, 2, 3][i], 1e-12));
 });

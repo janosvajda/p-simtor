@@ -395,3 +395,14 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 
 /* GPU layer (ui/gl.mjs): under the 2D canvas, which keeps labels and pointer events */
 .psim-gl { pointer-events: none; }
+
+/* "Try this" presets (createInstrument presets) */
+.psim-presets { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 12px; }
+.psim-presets .psim-hint { width: 100%; margin: 0; }
+
+/* Over a GPU scene the HUD and legend get a soft backing so they stay readable on bright content */
+.psim-app.has-gl .psim-hud, .psim-app.has-gl .psim-legend {
+  padding: 6px 9px; border-radius: 8px;
+  background: color-mix(in srgb, var(--stage) 72%, transparent);
+  backdrop-filter: blur(3px);
+}

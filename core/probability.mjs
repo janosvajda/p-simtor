@@ -1,6 +1,8 @@
 // Stable probabilities, information measures, sample covariances and finite-spectrum
 // canonical equilibrium. No physical model is inferred from a list of numbers.
 
+import { erf } from './numerics.mjs';
+
 function sum(values) {
   let result = 0, correction = 0;
   for (const value of values) {
@@ -147,4 +149,39 @@ export function canonicalEnsemble(energies, { kT, degeneracies } = {}) {
   const entropy = logShiftedPartition + sum(Array.from(probabilities, (value, i) => value === 0 ? 0 : value * gaps[i]));
   const freeEnergy = finite(referenceEnergy - kT * logShiftedPartition, 'canonicalEnsemble');
   return { probabilities, meanEnergy, energyVariance, heatCapacity, entropy, freeEnergy, referenceEnergy, logShiftedPartition };
+}
+
+/**
+ * Speeds of gas molecules of mass m (kg) at temperature T (K), with σ = √(kT/m):
+ *   maxwellSpeed(T, m)   speeds in the gas, f(v) ∝ v² e^{−v²/2σ²}
+ *   effusiveSpeed(T, m)  speeds of molecules leaving a small hole (beam from an oven), ∝ v³ e^{−v²/2σ²}
+ * Each returns { pdf(v), cdf(v), sample(rand), mean, mostProbable, rms, sigma }. Sampling is exact:
+ * σ√χ²₃ (three normals) and σ√χ²₄ = σ√(−2 ln(u₁u₂)).
+ */
+const KB = 1.380649e-23;
+export function maxwellSpeed(T, m) {
+  const sigma = Math.sqrt(KB * T / m);
+  if (!(sigma > 0)) throw new Error('maxwellSpeed: T and m must be positive');
+  const c = Math.sqrt(2 / Math.PI) / sigma ** 3;
+  return {
+    sigma, mean: sigma * Math.sqrt(8 / Math.PI), mostProbable: sigma * Math.SQRT2, rms: sigma * Math.sqrt(3),
+    pdf: v => (v < 0 ? 0 : c * v * v * Math.exp(-v * v / (2 * sigma * sigma))),
+    cdf: v => { if (v <= 0) return 0; const x = v / sigma; return erf(x / Math.SQRT2) - Math.sqrt(2 / Math.PI) * x * Math.exp(-x * x / 2); },
+    sample: rand => { let s2 = 0; for (let k = 0; k < 3; k++) { const z = normalFrom(rand); s2 += z * z; } return sigma * Math.sqrt(s2); },
+  };
+}
+export function effusiveSpeed(T, m) {
+  const sigma = Math.sqrt(KB * T / m);
+  if (!(sigma > 0)) throw new Error('effusiveSpeed: T and m must be positive');
+  return {
+    sigma, mean: sigma * 3 * Math.sqrt(Math.PI / 8), mostProbable: sigma * Math.sqrt(3), rms: sigma * 2,
+    pdf: v => (v < 0 ? 0 : v ** 3 / (2 * sigma ** 4) * Math.exp(-v * v / (2 * sigma * sigma))),
+    cdf: v => { if (v <= 0) return 0; const x2 = v * v / (sigma * sigma); return 1 - (1 + x2 / 2) * Math.exp(-x2 / 2); },
+    sample: rand => { let u1 = 0, u2 = 0; while (u1 === 0) u1 = rand(); while (u2 === 0) u2 = rand(); return sigma * Math.sqrt(-2 * Math.log(u1 * u2)); },
+  };
+}
+function normalFrom(rand) {
+  if (rand.normal) return rand.normal();
+  let u = 0; while (u === 0) u = rand();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * rand());
 }

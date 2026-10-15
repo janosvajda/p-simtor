@@ -26,30 +26,60 @@ export function rng(seed = 1) {
   return next;
 }
 
+/**
+ * An independent seeded stream for item i (atom, particle, event): rngFor(seed, i) always gives
+ * the same numbers for that item, whatever else was drawn, so one item can be re-traced alone.
+ * The seed and index are mixed by a 32-bit hash (splitmix-style finaliser) before mulberry32.
+ */
+export function rngFor(seed, i) {
+  let h = (Math.imul((seed >>> 0) ^ 0x9E3779B9, 0x85EBCA6B) + Math.imul(i >>> 0, 0xC2B2AE35)) >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x7FEB352D) >>> 0;
+  h = Math.imul(h ^ (h >>> 15), 0x846CA68B) >>> 0;
+  return rng((h ^ (h >>> 16)) >>> 0);
+}
+
 // ---------------------------------------------------------------- FFT
+
+const fftTables = new Map();
+/** Twiddle factors e^{−2πik/n} (k < n/2) and the bit-reversal permutation, cached per length. */
+function fftTable(n) {
+  let t = fftTables.get(n);
+  if (!t) {
+    const cos = new Float64Array(n >> 1), sin = new Float64Array(n >> 1), rev = new Uint32Array(n);
+    for (let k = 0; k < n >> 1; k++) { cos[k] = Math.cos(2 * Math.PI * k / n); sin[k] = Math.sin(2 * Math.PI * k / n); }
+    for (let i = 1, j = 0; i < n; i++) {
+      let bit = n >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit; rev[i] = j;
+    }
+    t = { cos, sin, rev };
+    if (fftTables.size > 32) fftTables.clear();
+    fftTables.set(n, t);
+  }
+  return t;
+}
 
 /** In-place radix-2 complex FFT. re/im: Float64Array, length a power of two.
  *  Forward: X_k = Σ x_n e^{−2πikn/N}. Inverse (inverse = true) includes the 1/N factor. */
 export function fft(re, im, inverse = false) {
   const n = re.length;
   if (n & (n - 1)) throw new Error('fft: length must be a power of two');
-  for (let i = 1, j = 0; i < n; i++) {
-    let bit = n >> 1;
-    for (; j & bit; bit >>= 1) j ^= bit;
-    j ^= bit;
-    if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; }
+  if (n < 2) return;
+  const { cos, sin, rev } = fftTable(n);
+  for (let i = 1; i < n; i++) {
+    const j = rev[i];
+    if (i < j) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; }
   }
   const sign = inverse ? 1 : -1;
   for (let len = 2; len <= n; len <<= 1) {
-    const ang = sign * 2 * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang);
+    const half = len >> 1, step = n / len;
     for (let i = 0; i < n; i += len) {
-      let cr = 1, ci = 0;
-      for (let k = 0; k < len / 2; k++) {
-        const a = i + k, b = a + len / 2;
+      for (let k = 0; k < half; k++) {
+        const cr = cos[k * step], ci = sign * sin[k * step];
+        const a = i + k, b = a + half;
         const xr = re[b] * cr - im[b] * ci, xi = re[b] * ci + im[b] * cr;
         re[b] = re[a] - xr; im[b] = im[a] - xi;
         re[a] += xr; im[a] += xi;
-        const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t;
       }
     }
   }
@@ -282,6 +312,48 @@ export function erf(x) {
   }
   const erfc = Math.exp(-ax * ax) / Math.sqrt(Math.PI) / f;
   return Math.sign(x) * (1 - erfc);
+}
+
+/**
+ * Regularised lower incomplete gamma P(a, x) = γ(a, x)/Γ(a), a > 0, x ≥ 0. Series for x < a + 1,
+ * Lentz continued fraction for Q otherwise (Numerical Recipes §6.2), |err| ≈ 1e-14.
+ */
+export function gammaP(a, x) {
+  if (!(a > 0) || !(x >= 0)) throw new Error(`gammaP: need a > 0 and x ≥ 0 (got a = ${a}, x = ${x})`);
+  return x < a + 1 ? gammaSeries(a, x) : 1 - gammaCF(a, x);
+}
+
+/** Regularised upper incomplete gamma Q(a, x) = 1 − P(a, x); the χ² upper-tail p-value is Q(dof/2, χ²/2). */
+export function gammaQ(a, x) {
+  if (!(a > 0) || !(x >= 0)) throw new Error(`gammaQ: need a > 0 and x ≥ 0 (got a = ${a}, x = ${x})`);
+  return x < a + 1 ? 1 - gammaSeries(a, x) : gammaCF(a, x);
+}
+
+function gammaSeries(a, x) {
+  if (x === 0) return 0;
+  let ap = a, del = 1 / a, sum = del;
+  for (let n = 0; n < 1000; n++) {
+    ap++; del *= x / ap; sum += del;
+    if (Math.abs(del) < Math.abs(sum) * 1e-16) break;
+  }
+  return sum * Math.exp(-x + a * Math.log(x) - lgamma(a));
+}
+
+function gammaCF(a, x) {
+  if (x === Infinity) return 0;
+  const tiny = 1e-300;
+  let b = x + 1 - a, c = 1 / tiny, d = 1 / b, h = d;
+  for (let i = 1; i < 1000; i++) {
+    const an = -i * (i - a);
+    b += 2;
+    d = an * d + b; if (Math.abs(d) < tiny) d = tiny;
+    c = b + an / c; if (Math.abs(c) < tiny) c = tiny;
+    d = 1 / d;
+    const del = d * c;
+    h *= del;
+    if (Math.abs(del - 1) < 1e-16) break;
+  }
+  return Math.exp(-x + a * Math.log(x) - lgamma(a)) * h;
 }
 
 /** Modified Bessel function of the first kind I_n(x), integer n ≥ 0 (power series; fine for x ≲ 50). */

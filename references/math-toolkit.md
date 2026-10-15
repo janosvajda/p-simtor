@@ -6,7 +6,9 @@ Choose tools from the model's mathematical structure. Their numerical checks do 
 
 ## Numerical primitives: `core/numerics.mjs`
 
-Seeded `rng(seed)` (with `.normal()`), 1D `fft`/`fftFreq`, `rk4Step`, `dopri5`, quadrature (`gaussLegendre`, `adaptiveSimpson`, `integrateToInfinity`), `brent` roots, special functions (`lgamma`, `gamma`, `erf`, `besselI`, `besselJ`, `besselJZeros`, `laguerre`, `complexYlm`, `hydrogenRadial`, `legendreP`, `normalizedLegendre`, `realYlm`, `ellipticK`), `solveTridiagonal`, `eigenTridiagonal`, `linearFit` and `meanWithError` (blocking error bars for correlated series).
+Constants (`core/constants.mjs`): CODATA 2018, IAU, standard gravity `gn`, Earth/Moon `GM` and radii, gas constant `R`, dry-air `Mair`, `gammaAir` and ISA sea-level values.
+
+Seeded `rng(seed)` (with `.normal()`) and `rngFor(seed, i)` (an independent reproducible stream per item, to re-trace one particle alone), 1D `fft`/`fftFreq`, regularised incomplete gamma `gammaP`/`gammaQ` (χ² p-values), `rk4Step`, `dopri5`, quadrature (`gaussLegendre`, `adaptiveSimpson`, `integrateToInfinity`), `brent` roots, special functions (`lgamma`, `gamma`, `erf`, `besselI`, `besselJ`, `besselJZeros`, `laguerre`, `complexYlm`, `hydrogenRadial`, `legendreP`, `normalizedLegendre`, `realYlm`, `ellipticK`), `solveTridiagonal`, `eigenTridiagonal`, `linearFit` and `meanWithError` (blocking error bars for correlated series).
 
 **Bessel functions.** `besselJ(n, x)` (integer n ≥ 0, any real x; relative accuracy even where J_n is tiny) and `besselJZeros(n, count)` give the exact modes of circular and cylindrical problems, for example ω_{n,s} = c·j_{n,s}/R for a clamped membrane, and serve as benchmarks for grid solvers on a disk.
 
@@ -20,13 +22,17 @@ Seeded `rng(seed)` (with `.normal()`), 1D `fft`/`fftFreq`, `rk4Step`, `dopri5`, 
 
 | Export | Use and result | Conditions |
 |---|---|---|
-| `odeStepper({ f, y0, t0, method, h, rtol, atol, hmax })` | `'rk4'` fixed step or `'dopri5'` adaptive; `step`, `advanceTo`, `sampleAt(t)` (cubic Hermite dense output), step/reject counts | Non-stiff ODEs; dense output lets frames sample any time without changing the step sequence |
+| `odeStepper({ f, y0, t0, method, h, rtol, atol, hmax, events })` | `'rk4'` fixed step or `'dopri5'` adaptive; `step`, `advanceTo`, `sampleAt(t)` (cubic Hermite dense output), step/reject counts | Non-stiff ODEs; dense output lets frames sample any time without changing the step sequence. `events: [{ g(t, y), direction, terminal }]` locates sign changes of g (ground contact, collisions, thresholds) and can stop there; results in `events`, `stopped` |
 | `mechanicsStepper({ accel, q0, v0, t0, h, method })` | Symplectic `'leapfrog'` or `'yoshida4'` for ẍ = a(t, q); `sampleAt(t, outQ, outV)`; negative h runs backwards | Accelerations independent of velocity; fixed h (symplectic only at fixed step) |
 | `refinementOrder(run, h)` | Measured convergence order from runs at h, h/2, h/4 | Asymptotic regime; report the measured order, not the nominal one |
 | `lyapunovExponent({ f, jvp, y0, duration, interval, transient })` | Largest Lyapunov exponent: linearised equations when `jvp(t, y, w)` = J·w is given, otherwise a twin trajectory; `{ lambda, history }` | A finite-time estimate for one start: report how `history` settles and compare both methods |
 | `linearChain({ rates, links })` | Exact (Bateman) solution of first-order chains with branching: decay series, sequential reactions, compartments; `at(t, x0)`, `matrix` | Distinct rates (equal rates: `expm`); links go from lower to higher index |
 | `createParticles({ bodies, forces, method, h, rtol, atol, box })` | Interacting bodies from force terms: `gravity`, `coulomb` (uses `body.charge`), `lennardJones` (shifted-force cutoff by default; per-body `sigma`/`epsilon` with Lorentz–Berthelot mixing), `uniformField({E, B})`, `centralBody` (optional 1PN with `energyCorrection`), `drag`, `springs`, `externalPotential`. `method: 'auto'` picks Yoshida-4 for position-only forces, otherwise Dormand–Prince with the dissipated work integrated alongside. `box: [Lx, Ly, Lz]` makes axes periodic (0 = open; `[Lx, Ly]` for 2D): positions stay unwrapped, short-range forces use the minimum image, `wrapped()` folds positions for drawing | `energy()`, `energyBalanceError()` (includes work done by drag/fields), `momentumDrift()` (null when external forces act). Short-range forces use cell lists (cost ∝ N); gravity and Coulomb are all-pairs and refuse a periodic box (that needs Ewald summation) |
 | `forEachPairWithin(x, n, rc, box, fn)` | Every pair closer than rc once, with the minimum-image displacement, by cell lists | For your own short-range interactions; rc ≤ half the box |
+
+## The Sun in the sky: `core/sun.mjs`
+
+`sunEquatorial(date)` (declination, right ascension, equation of time), `sunPosition(date, lat, lon)` (altitude, azimuth from north), `sunDirection(date, lat, lon)` ([east, north, up] unit vector, ready for `createMeshRenderer` shadows) and `sunriseSunset(date, lat, lon)` (with polar day/night). Meeus ch. 25 low-precision theory, ~0.01°; checked against Meeus' example, 2024 equinox/solstice, equation-of-time extremes and published London sunrise/sunset. No refraction except the standard −0.833° horizon.
 
 ## Grid evolution with walls, sources and waves: `core/pde.mjs`
 
@@ -47,7 +53,9 @@ Dense matrices are arrays of finite rows (ordinary arrays or typed rows); vector
 | `matrixVector(A, x)` | Rectangular matrix-vector product, compensated row sums | Consistent finite dimensions |
 | `solveLinear(A, b, options?)` | Square Ax = b, row equilibration and partial pivoting; returns x | Nonsingular at the specified relative `pivotTolerance` |
 | `leastSquares(A, b, options?)` | Column-scaled, pivoted Householder QR; returns `{ x, residualNorm, rank, permutation }` | Rows ≥ columns, full column rank; `rankTolerance` controls numerical rank rejection |
-| `eigenSymmetric(A, options?)` | Cyclic Jacobi; returns ascending `values`, matching unit `vectors`, `sweeps`, `offDiagonalNorm` | Real symmetric, modest dense size; relative Frobenius `rtol`, symmetry tolerance and sweep budget |
+| `eigenSymmetric(A, options?)` | Cyclic Jacobi; returns ascending `values`, matching unit `vectors` (`vectors[k]` belongs to `values[k]`), `sweeps`, `offDiagonalNorm` | Real symmetric, modest dense size; relative Frobenius `rtol`, symmetry tolerance and sweep budget |
+| `cholesky(A)` | Lower-triangular L with A = LLᵀ (arrays of rows) | Symmetric positive definite; throws with the failing pivot otherwise (e.g. a noisy correlation matrix) |
+| `eigenGeneralized(A, B)` | A v = λ B v: ascending `values`, B-normalised `vectors` (vᵀBv = 1) | A symmetric, B SPD. The variational (GEVP) method for correlation matrices: A = C(t), B = C(t₀), largest λ → ground-state energy −ln λ/(t − t₀) |
 | `expm(A)` | Matrix exponential (scaling and squaring, degree-13 Padé): x(t) = e^{At}x₀ for any linear x' = Ax | Normwise accuracy; check tiny components against `linearChain` or a structured solution |
 | `conjugateGradient(A, b, options?)` | Matrix-free or dense SPD solve; returns `{ x, converged, iterations, residualNorm }` | Symmetric positive-definite operator; optional SPD inverse preconditioner |
 | `newtonSolve(f, x0, options?)` | Damped nonlinear root search; returns x, residual, residual norm, convergence flag, iterations and reason | Scaled equations; pure callbacks; analytic `jacobian` or central differences using `xScale` |
@@ -153,3 +161,52 @@ Every routine takes `rand = rng(seed)`, so runs are reproducible.
 | `interpolate(xs, ys, { method, extrapolate })` | `'monotone'` (Fritsch–Carlson: no invented extrema) or `'linear'`; NaN outside the data unless `extrapolate` | Strictly increasing xs; interpolation is not new data, so label it |
 | `histogram(samples, { bins, range, density })` | Counts, density values and Poisson errors; `inRange` | Errors assume independent samples |
 | `ksTest(samples, cdf)` | Kolmogorov–Smirnov D and asymptotic p against a model CDF | Independent samples: thin correlated chains first |
+| `createHistogram({ bins, range })` | Incremental: `add(x, w)` per event; `counts`, `errors()` (√Σw²), `density()`, `underflow`/`overflow`/`nan`, `edges`, `centers` | For live Monte Carlo pages (events arrive one by one); `histogram` is the batch version |
+| `chiSquareTest(observed, expected, { ddof, errors })` | Pearson χ² (or Σ((o−e)/σ)² with `errors`) → `{ chi2, dof, p, z, skipped }` | Expected counts ≳ 5 per bin; bins with expected ≤ 0 are skipped and counted |
+| `jackknife(samples, estimator, { bins })` | Blocked leave-one-out → `{ value, error, bias, blocks }`; samples are numbers or vectors measured together; the estimator may return a vector | Nonlinear functions of means (ratios, logs, effective masses, fits). Blocks ≫ autocorrelation time. A NaN on any block gives a NaN error: report "unresolved" |
+| `bootstrap(samples, estimator, { resamples, bins, rand })` | Block bootstrap → `{ value, error, quantiles(p) }` | Same conditions; asymmetric intervals from `quantiles` |
+| `jackknifeRefit(samples, fit, { bins })` | Jackknife of an estimator that needs the samples themselves (a refit, a median): fit re-run with each block left out | B + 1 fits; blocks ≫ autocorrelation time |
+| `curveFit(model, xs, ys, p0, { sigma, jacobian })` | Levenberg–Marquardt nonlinear least squares → `{ p, errors, cov, chi2, dof, p_value, converged }`; without sigma, errors from the scatter | Start values within the basin (frequency of an oscillation within ~20 %); check pulls on synthetic data |
+| `meanSem(xs)`, `pull(measured, error, expected)` | Mean ± standard error of independent samples; (measured − expected)/error | For correlated series use `meanWithError` |
+
+## Relativistic kinematics and event sampling: `core/kinematics.mjs`
+
+4-vectors are `[E, px, py, pz]` with c = 1 and metric (+, −, −, −); units are the caller's (state them).
+
+| Export | Use | Conditions |
+|---|---|---|
+| `dot4(p, q)`, `mass(p)`, `add4(...ps)` | Invariant products, invariant mass, sums | `mass` returns 0 for slightly negative p² from round-off |
+| `boost(p, β)`, `restFrameBoost(P)` | Active boost by velocity β; the β taking P to its rest frame (`boost(P, restFrameBoost(P))` has zero momentum) | \|β\| < 1 |
+| `randomUnitVector(rand)`, `randomRotation(rand)`, `orthonormalFrame(n)` | Uniform direction on S²; uniform SO(3) rotation (3×3 rows); right-handed frame [e₁, e₂, n] | |
+| `twoBodyDecay(M, m1, m2, rand)` | Isotropic two-body decay in the rest frame, momentum from the Källén function | M ≥ m1 + m2 |
+| `rambo(n, √s, rand, masses?)` | Uniform n-body phase space (Kleiss, Stirling & Ellis 1986) → `{ momenta, weight }`; weight is the phase-space volume in the (2π) convention (constant when massless) | n ≥ 2; exact 4-momentum conservation |
+| `acceptReject(sample, weight, wmax, rand)` | Unweighted events from weighted ones → `{ value, tries }` | Throws if a weight exceeds `wmax` (a wrong bound never biases silently) |
+
+Benchmarks: massless 3-body phase space gives x = 2E/√s distributed as 2x on [0, 1]; 2-body phase-space volume 1/(8π); muon-decay spectra in [weak interaction](weak-interaction.md).
+
+## Higher dimensions and the 3-sphere: `core/projection.mjs`
+
+| Export | Use | Conditions |
+|---|---|---|
+| `rotation4({ xy, xz, xw, yz, yw, zw })`, `apply4(R, p)` | 4D rotation from plane angles (row-major 4×4) | Orthogonal, det +1 (tested) |
+| `project4(p, { mode: 'perspective' \| 'orthographic', eye })` | 4D → 3D for ui/gl.mjs; perspective scales by eye/(eye − w) | Perspective throws for points behind the 4D eye; connectivity exact, lengths not |
+| `stereographic(q)`, `inverseStereographic(x)` | S³ ↔ ℝ³ from the pole −1 (conformal) | Points near −1 go far out: clip or use `axisAngle` |
+| `axisAngle(q)` | S³ → ball of radius π (distance from the identity) | Every point finite; antipodal shell points are identified |
+| `hopfMap(q)`, `hopfFibre(p, n)` | S³ → S² and the U(1) circle above p (left multiplication by exp(itσ₃)) | Unit quaternions |
+
+## Lattice gauge fields and the QCD coupling: `core/lattice-gauge.mjs`, `core/qcd.mjs`
+
+Subject-specific but reusable: SU(2) sampling, `wilsonLoops` (all R×T at once), `polyakovLoop`, `plaquetteField`, `apeSmear`, `strongCouplingPlaquette(β, d)`, `siteCoords`/`siteIndex`, allocation-free `qmulInto`, gauge tools (`gaugeTransform` with a given g, `centreTransform`, `landauGauge`, `haarSU2`, `qexp`/`qlog`), topology (`topology`: clover s(x), q(x), Q; `bpstInstanton` benchmark; cooling and ranged sweeps via `sweep` options); the MS-bar running coupling `runAlphaS({ loops, thresholds })`, `betaCoefficients(nf, { group })`, `alphaS1Loop`, `exactTwoLoop`. Usage, costs and required checks: [particle physics](particle-physics.md).
+
+## Matter, spin and gas: `core/matter.mjs`, `core/spin.mjs`, `core/probability.mjs`
+
+| Export | Use | Conditions |
+|---|---|---|
+| `betheStoppingPower(βγ, { mass, z, material })`, `csdaRange(T, …)`, `MATERIALS` | Mean energy loss (MeV cm²/g) and range (g/cm²) of heavy charged particles in liquid hydrogen, water, silicon, lead, air (PDG data; minimum ionisation within 0.1 %) | 0.1 ≲ βγ ≲ 1000; mean loss only (no straggling); not for e± |
+| `ketAlong`, `rotate`, `bloch`, `probability`, `measure` | Spin ½ / qubit states, precession, Born probabilities, projective measurement | Pure states; see [quantum](quantum.md) for the semiclassical beam model |
+| `maxwellSpeed(T, m)`, `effusiveSpeed(T, m)` | Gas speed laws (∝ v² and ∝ v³ e^{−mv²/2kT}) with pdf, cdf, exact sampler, mean | m in kg (`ATOMIC_WEIGHT[el]·u·1000`) |
+
+Fields: `probabilityCurrent(re, im, { shape, spacing, mass, hbar })` from `core/fields.mjs` gives j = (ħ/m)Im(ψ*∇ψ) per axis, spectrally (the flux check for absorbing layers and transmission).
+
+ODE notes: `odeStepper(...).advanceTo(t, Infinity, { exact: true })` ends exactly at t; `s.hmax` is mutable (cap steps inside a region so events there are not stepped over).
+

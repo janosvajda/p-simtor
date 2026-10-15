@@ -1,0 +1,3651 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="p-simtor">
+<title>Asymptotic freedom and the strong force</title>
+<style>/* psim:ui/instrument.css */
+/* p-simtor instrument shell.
+   A simulation page is a scientific instrument: a large stage for the physics,
+   a quiet control column, and numbers you can trust at a glance.
+   Colours are tokens so every domain view (orbits, fields, densities) can read them. */
+
+:root {
+  --bg: #07090d;
+  --stage: #0a0d13;
+  --panel: #0e1219;
+  --raise: #141923;
+  --line: rgba(196, 214, 255, 0.09);
+  --line-strong: rgba(196, 214, 255, 0.18);
+  --ink: #e6e9ef;
+  --ink-2: #b6bdcb;
+  --muted: #7b8396;
+  --faint: #4a5163;
+  --accent: #8cc8ff;
+  --accent-ink: #06121f;
+  --good: #7fd8a4;
+  --warn: #f2c46d;
+  --bad: #ff7a85;
+  --grid: rgba(150, 175, 230, 0.06);
+  --grid-strong: rgba(150, 175, 230, 0.13);
+  --glow: 1;
+  --body-0: #ffb35c;
+  --body-1: #68c3ff;
+  --body-2: #ff6f9a;
+  --body-3: #9be08a;
+  --body-4: #c49bff;
+  --body-5: #ffe07a;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --sans: ui-sans-serif, -apple-system, "Segoe UI", "Inter", system-ui, sans-serif;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --radius: 10px;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg: #efede7;
+  --stage: #f7f5f0;
+  --panel: #fbfaf7;
+  --raise: #ffffff;
+  --line: rgba(30, 34, 46, 0.09);
+  --line-strong: rgba(30, 34, 46, 0.18);
+  --ink: #171a21;
+  --ink-2: #3a3f4b;
+  --muted: #6b7180;
+  --faint: #a4a8b2;
+  --accent: #1c6fd1;
+  --accent-ink: #ffffff;
+  --good: #23864f;
+  --warn: #a8700f;
+  --bad: #c43b4a;
+  --grid: rgba(30, 40, 70, 0.055);
+  --grid-strong: rgba(30, 40, 70, 0.12);
+  --glow: 0;
+  --body-0: #d4731c;
+  --body-1: #1a78bf;
+  --body-2: #cf2f63;
+  --body-3: #3a8f33;
+  --body-4: #7a48cf;
+  --body-5: #a88600;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 13px/1.45 var(--sans);
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
+
+.psim-app {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 372px;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* ---------- header ---------- */
+.psim-head {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.psim-mark {
+  width: 22px; height: 22px; flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  position: relative;
+}
+.psim-mark::before, .psim-mark::after {
+  content: ""; position: absolute; border-radius: 50%;
+}
+.psim-mark::before { inset: 5px; border: 1px solid var(--accent); transform: scaleX(1.6) rotate(-25deg); opacity: .8; }
+.psim-mark::after { width: 4px; height: 4px; left: 9px; top: 9px; background: var(--ink); }
+.psim-title { min-width: 0; flex: 0 1 auto; }
+.psim-title h1 {
+  margin: 0; font: 600 15px/1.2 var(--sans); letter-spacing: .01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.psim-title p { margin: 2px 0 0; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.psim-head .spacer { flex: 1; }
+
+.psim-tier {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 4px 10px 4px 8px; border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  font: 500 11px/1 var(--sans); letter-spacing: .04em; text-transform: uppercase;
+  color: var(--ink-2); background: transparent; cursor: pointer; white-space: nowrap;
+}
+.psim-tier i { width: 7px; height: 7px; border-radius: 50%; background: var(--good); }
+.psim-tier[data-tier="approximate"] i { background: var(--warn); }
+.psim-tier[data-tier="unverified"] i { background: var(--warn); }
+.psim-tier[data-tier="analytical"] i { background: var(--accent); }
+.psim-tier[data-tier="conceptual"] i { background: var(--muted); }
+
+.psim-iconbtn {
+  width: 32px; height: 32px; display: grid; place-items: center;
+  border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink-2);
+  cursor: pointer;
+}
+.psim-iconbtn:hover { border-color: var(--line-strong); color: var(--ink); }
+.psim-iconbtn svg { width: 16px; height: 16px; }
+
+/* ---------- stage ---------- */
+.psim-stage {
+  position: relative; min-height: 0; overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 92%, var(--accent) 8%) 0%, var(--stage) 60%);
+}
+.psim-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.psim-stage canvas.grab { cursor: grab; }
+.psim-stage canvas.grabbing { cursor: grabbing; }
+.psim-stage canvas.move { cursor: move; }
+
+.psim-hud {
+  position: absolute; left: 16px; top: 14px;
+  display: grid; gap: 2px; pointer-events: none;
+  font: 12px/1.35 var(--mono); color: var(--ink-2);
+}
+.psim-hud b { font-weight: 500; color: var(--ink); font-size: 20px; letter-spacing: -.01em; }
+.psim-hud .dim { color: var(--muted); }
+.psim-hud .flag { color: var(--warn); }
+
+.psim-legend {
+  position: absolute; right: 16px; top: 14px; display: grid; gap: 4px; justify-items: end;
+  font: 11px/1.3 var(--sans); color: var(--muted); pointer-events: none; text-align: right;
+}
+
+.psim-transport {
+  position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 4px;
+  padding: 5px; border-radius: 12px;
+  background: color-mix(in srgb, var(--panel) 86%, transparent);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  max-width: calc(100% - 32px);
+}
+.psim-transport button {
+  height: 32px; min-width: 32px; padding: 0 9px; border-radius: 8px;
+  border: 0; background: transparent; color: var(--ink-2); cursor: pointer;
+  display: inline-grid; place-items: center; font: 500 12px var(--sans);
+}
+.psim-transport button:hover { background: var(--raise); color: var(--ink); }
+.psim-transport button.primary { background: var(--ink); color: var(--bg); width: 40px; }
+.psim-transport svg { width: 15px; height: 15px; }
+.psim-transport .sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
+.psim-transport label { display: flex; align-items: center; gap: 8px; padding: 0 8px; color: var(--muted); font-size: 11px; }
+.psim-transport input[type=range] { width: 110px; }
+.psim-transport output { font: 12px var(--mono); color: var(--ink-2); min-width: 64px; }
+
+.psim-scalebar {
+  position: absolute; left: 16px; bottom: 22px; pointer-events: none;
+  font: 11px var(--mono); color: var(--muted);
+}
+.psim-scalebar span { display: block; height: 6px; border: 1px solid var(--muted); border-top: 0; margin-bottom: 4px; }
+
+/* ---------- side column ---------- */
+.psim-side {
+  min-height: 0; overflow: auto;
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+  scrollbar-width: thin;
+}
+.psim-sec { border-bottom: 1px solid var(--line); }
+.psim-sec > summary {
+  list-style: none; cursor: pointer; user-select: none;
+  display: flex; align-items: center; gap: 8px;
+  padding: 13px 18px;
+  font: 600 11px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+}
+.psim-sec > summary::-webkit-details-marker { display: none; }
+.psim-sec > summary::after {
+  content: ""; margin-left: auto; width: 6px; height: 6px;
+  border-right: 1.5px solid var(--faint); border-bottom: 1.5px solid var(--faint);
+  transform: rotate(-45deg); transition: transform .15s;
+}
+.psim-sec[open] > summary::after { transform: rotate(45deg); }
+.psim-sec > summary .aside { margin-left: auto; text-transform: none; letter-spacing: 0; font: 11px var(--mono); color: var(--faint); }
+.psim-sec > summary .aside + ::after { margin-left: 8px; }
+.psim-body { padding: 2px 18px 16px; display: grid; gap: 10px; }
+
+.psim-row { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 10px; }
+.psim-row .k { color: var(--muted); }
+.psim-row .v { font: 12px var(--mono); color: var(--ink); text-align: right; }
+.psim-row .v.good { color: var(--good); }
+.psim-row .v.warn { color: var(--warn); }
+.psim-row .v.bad { color: var(--bad); }
+
+.psim-field { display: grid; gap: 6px; }
+.psim-field .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.psim-field .top span { color: var(--ink-2); }
+.psim-field .top input[type=number], .psim-num {
+  width: 108px; text-align: right;
+  font: 12px var(--mono); color: var(--ink);
+  background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 2px 6px;
+}
+.psim-field .top input[type=number]:hover, .psim-num:hover { border-color: var(--line); }
+.psim-field .top input[type=number]:focus, .psim-num:focus { outline: none; border-color: var(--accent); }
+.psim-hint { color: var(--muted); font-size: 12px; margin: 0; }
+.psim-limit { color: var(--warn); font: 11px var(--mono); }
+.psim-limit:empty { display: none; }
+.psim-hint b { color: var(--ink-2); font-weight: 500; }
+
+select.psim-select {
+  width: 100%; height: 34px; padding: 0 10px; border-radius: 8px;
+  background: var(--raise); color: var(--ink); border: 1px solid var(--line);
+  font: 13px var(--sans);
+}
+
+input[type=range] {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 18px; background: transparent; margin: 0;
+}
+input[type=range]::-webkit-slider-runnable-track { height: 2px; background: var(--line-strong); border-radius: 2px; }
+input[type=range]::-moz-range-track { height: 2px; background: var(--line-strong); border-radius: 2px; }
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 12px; height: 12px; margin-top: -5px; border-radius: 50%;
+  background: var(--ink); border: 2px solid var(--panel); box-shadow: 0 0 0 1px var(--line-strong);
+}
+input[type=range]::-moz-range-thumb {
+  width: 10px; height: 10px; border-radius: 50%; background: var(--ink); border: 2px solid var(--panel);
+}
+input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 40%, transparent); }
+
+.psim-btn {
+  height: 32px; padding: 0 12px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--line-strong); background: transparent; color: var(--ink);
+  font: 500 12px var(--sans);
+}
+.psim-btn:hover { background: var(--raise); }
+.psim-btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.psim-btn:disabled { opacity: .5; cursor: progress; }
+.psim-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.psim-toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--ink-2); cursor: pointer; }
+.psim-toggle input { appearance: none; -webkit-appearance: none; width: 28px; height: 16px; border-radius: 99px; background: var(--line-strong); position: relative; cursor: pointer; margin: 0; flex: none; transition: background .15s; }
+.psim-toggle input::after { content: ""; position: absolute; left: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--ink); transition: transform .15s; }
+.psim-toggle input:checked { background: var(--accent); }
+.psim-toggle input:checked::after { transform: translateX(12px); background: var(--accent-ink); }
+
+/* body cards */
+.psim-bodycard { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; display: grid; gap: 8px; }
+.psim-bodycard header { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.psim-bodycard header i { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 10px currentColor; }
+.psim-bodycard header .m { margin-left: auto; font: 12px var(--mono); color: var(--muted); font-weight: 400; }
+.psim-vec { display: grid; grid-template-columns: 22px repeat(3, minmax(0, 1fr)); gap: 4px; align-items: center; }
+.psim-vec span { color: var(--muted); font: 11px var(--mono); }
+.psim-vec input { width: 100%; min-width: 0; text-align: right; font: 11.5px var(--mono); color: var(--ink); background: var(--raise); border: 1px solid var(--line); border-radius: 6px; padding: 4px 5px; }
+.psim-vec input:focus { outline: none; border-color: var(--accent); }
+
+/* plots */
+.psim-plot { position: relative; height: 112px; border-radius: 8px; background: color-mix(in srgb, var(--stage) 70%, transparent); border: 1px solid var(--line); }
+.psim-plot canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.psim-plot .cap { position: absolute; left: 8px; top: 6px; font: 10.5px var(--mono); color: var(--muted); pointer-events: none; }
+
+/* model / maths */
+.psim-math { overflow-x: auto; padding: 10px 12px; border-radius: 8px; background: color-mix(in srgb, var(--stage) 60%, transparent); border: 1px solid var(--line); }
+.psim-math math { font-size: 15px; color: var(--ink); }
+.psim-prose { color: var(--ink-2); font-size: 12.5px; }
+.psim-prose p { margin: 0 0 8px; }
+.psim-prose ul { margin: 0; padding-left: 18px; }
+.psim-prose li { margin: 3px 0; }
+.psim-prose cite { font-style: normal; color: var(--muted); }
+
+.psim-check { display: grid; grid-template-columns: 16px 1fr; column-gap: 8px; row-gap: 2px; align-items: baseline; }
+.psim-check code { grid-column: 2; overflow-wrap: anywhere; }
+.psim-check i { width: 8px; height: 8px; border-radius: 50%; background: var(--good); transform: translateY(-1px); }
+.psim-check i.warn { background: var(--warn); }
+.psim-check i.bad { background: var(--bad); }
+.psim-check span { color: var(--ink-2); }
+.psim-check code { font: 11.5px var(--mono); color: var(--ink); }
+
+.psim-toast {
+  position: absolute; left: 50%; top: 16px; transform: translate(-50%, -8px); opacity: 0;
+  padding: 8px 12px; border-radius: 8px; background: var(--ink); color: var(--bg); font-size: 12px;
+  transition: opacity .2s, transform .2s; pointer-events: none;
+}
+.psim-toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (max-width: 860px) {
+  .psim-app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 64vh auto; height: auto; }
+  .psim-head { gap: 10px; }
+  .psim-title { flex: 1; }
+  .psim-tier { padding: 6px; }
+  .psim-tier span { display: none; }
+  .psim-side { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+  .psim-head { padding: 10px 16px; }
+  .psim-title p { display: none; }
+  .psim-transport label.speed { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+
+/* ---------- figures (ui/plot.mjs) ---------- */
+.psim-figure { margin: 0; display: grid; gap: 6px; min-width: 0; }
+.psim-plot-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.psim-plot-head .t { font: 600 12px/1.3 var(--sans); color: var(--ink-2); }
+.psim-plot-head .l { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.psim-plot-head .k { display: inline-flex; align-items: center; gap: 6px; font: 11px var(--sans); color: var(--muted); cursor: default; }
+.psim-plot-head .k.on { color: var(--ink); }
+.psim-plot-head .k i { width: 12px; height: 2.5px; border-radius: 2px; }
+.psim-plot2 { position: relative; border-radius: 10px; background: color-mix(in srgb, var(--stage) 75%, transparent); border: 1px solid var(--line); }
+.psim-plot2 canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* ---------- equations split into terms (ui/equation.mjs) ---------- */
+.psim-equation { display: grid; gap: 10px; }
+.psim-equation h3, .psim-derivation h3 { margin: 0; font: 600 11px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.psim-eqrow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 6px; }
+.psim-eqrow .op { align-self: center; font: 20px var(--serif); color: var(--muted); padding: 0 2px; }
+.psim-term {
+  display: grid; grid-template-rows: auto 3px auto auto; justify-items: center; align-content: start; gap: 5px;
+  padding: 10px 12px 9px; border-radius: 10px; min-width: 88px;
+  background: color-mix(in srgb, var(--stage) 70%, transparent); border: 1px solid var(--line);
+  transition: opacity .15s, border-color .15s; outline: none;
+}
+.psim-term[data-id]:not([data-id=""]) { cursor: default; }
+.psim-term:hover, .psim-term:focus-visible { border-color: var(--line-strong); }
+.psim-term.dim { opacity: .35; }
+.psim-term.lhs { background: transparent; border-style: dashed; }
+.psim-term .mx { font-size: 19px; line-height: 1.2; color: var(--ink); min-height: 30px; display: grid; place-items: center; }
+.psim-term .mx math { font-size: 19px; }
+.psim-term .bar { width: 100%; height: 3px; border-radius: 2px; background: var(--line); }
+.psim-term .lb { font: 11px/1.25 var(--sans); color: var(--muted); text-align: center; max-width: 150px; }
+.psim-term .v { font: 12px var(--mono); color: var(--ink-2); white-space: nowrap; }
+.psim-where { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: baseline; padding: 8px 12px; border-left: 2px solid var(--line-strong); }
+.psim-where .kw { grid-column: 1 / -1; font: italic 12px var(--serif); color: var(--muted); }
+.psim-where .w { display: contents; }
+.psim-where .mx math { font-size: 15px; color: var(--ink); }
+.psim-where .mean { color: var(--ink-2); font-size: 12.5px; }
+.psim-where .v { font: 12px var(--mono); color: var(--ink); text-align: right; }
+.psim-derivation ol { margin: 8px 0 0; padding: 0; list-style: none; counter-reset: step; display: grid; gap: 8px; }
+.psim-derivation li { counter-increment: step; display: grid; grid-template-columns: 22px 1fr; column-gap: 8px; align-items: center; }
+.psim-derivation li::before { content: counter(step); grid-row: span 2; align-self: start; margin-top: 8px; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--line-strong); font: 10.5px/18px var(--mono); text-align: center; color: var(--muted); }
+.psim-derivation .mx { overflow-x: auto; padding: 4px 0; }
+.psim-derivation .mx math { font-size: 17px; color: var(--ink); }
+.psim-derivation .why { font-size: 12px; color: var(--muted); }
+
+/* ---------- workbench layout: stage + figures + equations (instrument-app layout: 'workbench') ---------- */
+.psim-app.workbench .psim-stage { overflow: auto; background: var(--stage); }
+.psim-bench { position: relative; display: grid; gap: 18px; padding: 18px 18px 84px; min-height: 100%; }
+.psim-bench .psim-canvaswrap { position: relative; height: clamp(300px, 52vh, 620px); border-radius: 12px; overflow: hidden; border: 1px solid var(--line);
+  background: radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 90%, var(--accent) 10%) 0%, var(--stage) 65%); }
+.psim-bench .psim-canvaswrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+.psim-bench .psim-figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+.psim-bench .psim-eqs { display: grid; gap: 18px; }
+.psim-app.workbench .psim-transport { position: fixed; left: calc((100vw - 372px) / 2); }
+.psim-app.workbench .psim-hud { left: 30px; top: 30px; }
+.psim-app.workbench .psim-legend { right: 30px; top: 30px; }
+@media (max-width: 860px) {
+  .psim-app.workbench .psim-transport { left: 50%; }
+  .psim-bench { padding: 12px 12px 84px; }
+}
+
+@media (max-width: 860px) {
+  /* phones: legend bottom-right, clear of HUD (top-left), scale bars (bottom-left) and transport */
+  .psim-legend { top: auto; bottom: 70px; left: auto; right: 14px; max-width: 58%; justify-items: end; text-align: right; font-size: 10.5px; }
+  .psim-app.workbench { grid-template-rows: auto auto auto; }
+  .psim-app.workbench .psim-stage { overflow: visible; }
+  .psim-app.workbench .psim-transport { position: absolute; }
+  .psim-app.workbench .psim-legend { top: auto; bottom: 14px; left: auto; right: 26px; }
+  .psim-bench .psim-canvaswrap { height: 70vh; }
+}
+
+/* GPU layer (ui/gl.mjs): under the 2D canvas, which keeps labels and pointer events */
+.psim-gl { pointer-events: none; }
+</style>
+</head>
+<body>
+<script type="application/json" id="psim-verification">{
+ "summary": "QCD running coupling checked against closed-form and exact 2-loop solutions; SU(2) lattice checked against exact 2D results, strong-coupling expansions, gauge invariance and run-to-run agreement.",
+ "checks": [
+  {
+   "label": "β₀, β₁, β₂ (SU(3), n_f = 0…6) equal the Casimir formulas",
+   "value": "max rel. diff 7.9e-15",
+   "pass": true
+  },
+  {
+   "label": "β₃ matches van Ritbergen–Vermaseren–Larin decimals",
+   "value": "max rel. diff 1.3e-5",
+   "pass": true
+  },
+  {
+   "label": "1-loop RG integration vs closed form (n_f = 5, μ = 5…1000 GeV)",
+   "value": "max rel. err 1.8e-13",
+   "pass": true
+  },
+  {
+   "label": "2-loop RG integration vs exact implicit solution (Brent)",
+   "value": "max rel. err 2.0e-13",
+   "pass": true
+  },
+  {
+   "label": "β₀ > 0 up to n_f = 16, < 0 at 17 (asymptotic freedom condition)",
+   "value": "β₀(16) = 0.333, β₀(17) = -0.333",
+   "pass": true
+  },
+  {
+   "label": "Round trip M_Z → 1.5 GeV → M_Z (4 loops, thresholds)",
+   "value": "α_s(1.5 GeV) = 0.3496, rel. err 4.0e-13",
+   "pass": true
+  },
+  {
+   "label": "At 2 GeV: 3- vs 4-loop difference below the PDG input uncertainty",
+   "value": "0.43 % vs 2.18 %",
+   "pass": true
+  },
+  {
+   "label": "Fast all-loops routine = core wilsonLoop (4⁴, R,T ≤ 2)",
+   "value": "max |Δ| 4.4e-16",
+   "pass": true
+  },
+  {
+   "label": "Wilson & Polyakov loops gauge invariant (random local transformation)",
+   "value": "max |Δ| 1.1e-16",
+   "pass": true
+  },
+  {
+   "label": "Over-relaxation preserves the Wilson action",
+   "value": "|ΔS/S| 1.4e-15",
+   "pass": true
+  },
+  {
+   "label": "2D SU(2) exact: ⟨P⟩ = I₂(β)/I₁(β), β = 2, 16², 600 sweeps",
+   "value": "0.4334 ± 0.0011 vs 0.4331 (0.3σ)",
+   "pass": true
+  },
+  {
+   "label": "2D SU(2) exact: W(2,2) = u⁴",
+   "value": "0.0347 ± 0.0015 vs 0.0352 (0.3σ)",
+   "pass": true
+  },
+  {
+   "label": "4D strong coupling: ⟨P⟩ = u + 4u⁵ (β = 0.5, 4⁴, 300 sweeps)",
+   "value": "0.1245 ± 0.0008 vs 0.1238 (0.8σ)",
+   "pass": true
+  },
+  {
+   "label": "4D strong-coupling area law: χ(2,2) = −ln u (β = 1, 6⁴, 240 configs)",
+   "value": "1.449 ± 0.135 vs 1.426 (allowance 3σ + 4u⁴)",
+   "pass": true
+  },
+  {
+   "label": "β = 2.3, 6⁴: cold start (seed 1) and hot start (seed 2) plaquettes agree",
+   "value": "0.6031 ± 0.0008 vs 0.6049 ± 0.0009 (1.5σ)",
+   "pass": true
+  },
+  {
+   "label": "β = 2.3: χ(2,2) independent of seed/start",
+   "value": "0.3136 ± 0.0043 vs 0.3054 ± 0.0041 (1.4σ)",
+   "pass": true
+  },
+  {
+   "label": "β = 2.3: string tension resolved, χ(2,2) > 0",
+   "value": "72.4σ from zero (240 configs)",
+   "pass": true
+  },
+  {
+   "label": "β = 2.3: χ(3,3) (larger loop; noisier)",
+   "value": "0.197 ± 0.011",
+   "pass": true
+  }
+ ],
+ "notes": [
+  "Running coupling: perturbative MS-bar RG with PDG 2024 inputs; continuous matching at m_c, m_b, m_t neglects the O(α_s³) decoupling constant (≈ 0.1 % at m_b, below the 0.8 % input uncertainty). Not trustworthy where α_s approaches 1 (Q ≲ 1 GeV).",
+  "Lattice: pure SU(2), no dynamical quarks, one lattice spacing, small periodic volume; results are in lattice units and are not extrapolated to the continuum or converted to physical units."
+ ],
+ "generated": "2026-10-14T22:31:43.470Z",
+ "runtimeMs": 24894
+}</script>
+<script type="module">
+const __psim = {};
+// ---- psim:ui/instrument.mjs
+__psim["ui/instrument.mjs"] = (() => {
+// Reusable instrument UI: DOM helpers, controls, log-scale plots, the simulation
+// clock, number formatting, theme handling and data export.
+// Domain-agnostic: orbit, field and density views all build on these pieces.
+
+function el(tag, attrs = {}, ...children) {
+  const node = document.createElementNS(
+    tag === 'svg' || attrs.xmlns === 'svg' ? 'http://www.w3.org/2000/svg' : 'http://www.w3.org/1999/xhtml', tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false || k === 'xmlns') continue;
+    if (k.startsWith('on') && typeof v === 'function') node.addEventListener(k.slice(2), v);
+    else if (k === 'class') node.className = v;
+    else if (k === 'html') node.innerHTML = v;
+    else if (k in node && typeof v !== 'string') node[k] = v;
+    else node.setAttribute(k, v === true ? '' : v);
+  }
+  for (const c of children.flat()) if (c != null && c !== false) node.append(c.nodeType ? c : document.createTextNode(String(c)));
+  return node;
+}
+
+const ICONS = {
+  play: '<svg viewBox="0 0 16 16"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg>',
+  pause: '<svg viewBox="0 0 16 16"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg>',
+  step: '<svg viewBox="0 0 16 16"><path d="M3 2.5v11l7-5.5zM11 2.5h2v11h-2z" fill="currentColor"/></svg>',
+  restart: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8a5 5 0 1 0 1.6-3.7"/><path d="M3 2.5v3h3"/></svg>',
+  fit: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg>',
+  sun: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6L13 13M3 13l1.4-1.4M11.6 4.4L13 3"/></svg>',
+  moon: '<svg viewBox="0 0 16 16"><path d="M13.5 10A6 6 0 0 1 6 2.5a6 6 0 1 0 7.5 7.5z" fill="currentColor"/></svg>',
+  info: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 7v4.5M8 4.6v.1"/></svg>',
+};
+
+// ---------- formatting ----------
+
+const SUP = { '-': '⁻', 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹' };
+
+/** 2.44e-11 -> "2.4×10⁻¹¹". */
+function sci(x, digits = 2) {
+  if (x == null || Number.isNaN(x)) return '—';
+  if (x === 0) return '0';
+  if (!Number.isFinite(x)) return x > 0 ? '∞' : '−∞';
+  const e = Math.floor(Math.log10(Math.abs(x)));
+  if (e >= -2 && e < 4) return fix(x, Math.max(0, digits - 1 - e));
+  const m = x / Math.pow(10, e);
+  return `${m.toFixed(digits - 1)}×10${String(e).split('').map(c => SUP[c]).join('')}`;
+}
+
+function fix(x, d = 3) {
+  if (x == null || Number.isNaN(x)) return '—';
+  return x.toFixed(d).replace('-', '−');
+}
+
+/** Classify a relative error against thresholds -> 'good' | 'warn' | 'bad'. */
+function grade(x, good, warn) {
+  if (!(x <= warn)) return 'bad';
+  return x <= good ? 'good' : 'warn';
+}
+
+// ---------- theme ----------
+
+function initTheme(toggleButton) {
+  const root = document.documentElement;
+  let stored = null;
+  try { stored = localStorage.getItem('psim-theme'); } catch { /* storage unavailable */ }
+  const query = new URLSearchParams(location.search).get('theme');
+  const sys = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  const apply = t => {
+    root.dataset.theme = t;
+    if (toggleButton) toggleButton.innerHTML = t === 'dark' ? ICONS.sun : ICONS.moon;
+    if (toggleButton) toggleButton.title = t === 'dark' ? 'Light theme' : 'Dark theme';
+    root.dispatchEvent(new CustomEvent('psim-theme', { detail: t }));
+  };
+  apply(query || stored || root.dataset.theme || sys);
+  toggleButton?.addEventListener('click', () => {
+    const t = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    try { localStorage.setItem('psim-theme', t); } catch { /* ignore */ }
+    apply(t);
+  });
+}
+
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+// ---------- layout pieces ----------
+
+function section(title, { open = true, aside } = {}) {
+  const body = el('div', { class: 'psim-body' });
+  const asideEl = aside != null ? el('span', { class: 'aside' }, aside) : null;
+  const sec = el('details', { class: 'psim-sec', open }, el('summary', {}, title, asideEl), body);
+  sec.body = body;
+  sec.aside = asideEl;
+  return sec;
+}
+
+function row(label, value = '—', cls = '') {
+  const v = el('span', { class: `v ${cls}` }, value);
+  const r = el('div', { class: 'psim-row' }, el('span', { class: 'k' }, label), v);
+  r.set = (text, c) => { v.textContent = text; v.className = `v ${c ?? ''}`; };
+  return r;
+}
+
+/** Value for a numeric input: short, exact enough, scientific notation for small or huge numbers. */
+const inputValue = v => {
+  const a = Math.abs(v);
+  return a !== 0 && (a < 1e-3 || a >= 1e7) ? v.toExponential(4) : String(+Number(v).toPrecision(6));
+};
+
+/**
+ * Slider + exact numeric entry, linear or logarithmic. onInput receives the number.
+ * Typed values are clamped to `limits` (default: the slider's [min, max]) and rounded when
+ * `integer` is set, so a typo like 100000000 can never freeze the page. Pass wider `limits`
+ * when a quantity may legitimately exceed the slider's range.
+ */
+function slider({ label, min, max, step = 'any', value, log = false, unit = '', digits = 3, integer = false, limits = [min, max], onInput }) {
+  const toS = v => log ? Math.log10(v) : v;
+  const fromS = s => log ? Math.pow(10, s) : s;
+  const [lo, hi] = limits;
+  const tidy = v => {
+    const c = Math.min(hi, Math.max(lo, v));
+    return integer ? Math.round(c) : c;
+  };
+  const range = el('input', { type: 'range', min: toS(min), max: toS(max), step: log ? 'any' : step, value: toS(value), 'aria-label': label });
+  const num = el('input', { type: 'number', step: integer ? 1 : 'any', min: lo, max: hi, value: inputValue(value), 'aria-label': `${label} value` });
+  const unitEl = unit ? el('span', { style: 'color:var(--muted);font:11px var(--mono)' }, unit) : null;
+  const note = el('span', { class: 'psim-limit', role: 'status' });
+  const field = el('label', { class: 'psim-field' },
+    el('div', { class: 'top' }, el('span', {}, label), el('div', { style: 'display:flex;align-items:baseline;gap:4px' }, num, unitEl)),
+    range, note);
+  range.addEventListener('input', () => {
+    const v = tidy(+(+fromS(+range.value)).toPrecision(digits + 1));
+    num.value = inputValue(v);
+    note.textContent = '';
+    onInput?.(v);
+  });
+  num.addEventListener('change', () => {
+    const raw = +num.value;
+    if (!Number.isFinite(raw)) { num.value = inputValue(tidy(fromS(+range.value))); return; }
+    const v = tidy(raw);
+    note.textContent = v !== raw ? `limited to ${inputValue(v)} (allowed ${inputValue(lo)}–${inputValue(hi)})` : '';
+    num.value = inputValue(v);
+    range.value = toS(v);
+    onInput?.(v);
+  });
+  field.setValue = v => { range.value = toS(v); num.value = inputValue(v); };
+  return field;
+}
+
+function toggle(label, checked, onChange) {
+  const input = el('input', { type: 'checkbox', checked });
+  input.addEventListener('change', () => onChange(input.checked));
+  const t = el('label', { class: 'psim-toggle' }, el('span', {}, label), input);
+  t.input = input;
+  return t;
+}
+
+function select(options, value, onChange) {
+  const s = el('select', { class: 'psim-select' },
+    options.map(o => el('option', { value: o.value, selected: o.value === value }, o.label)));
+  s.addEventListener('change', () => onChange(s.value));
+  return s;
+}
+
+function button(label, onClick, cls = '') {
+  return el('button', { class: `psim-btn ${cls}`, type: 'button', onclick: onClick }, label);
+}
+
+function toast(stage, text) {
+  let t = stage.querySelector('.psim-toast');
+  if (!t) { t = el('div', { class: 'psim-toast', role: 'status' }); stage.append(t); }
+  t.textContent = text;
+  t.classList.add('on');
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove('on'), 1800);
+}
+
+// ---------- transport ----------
+
+function transport({ onToggle, onStep, onRestart, onFit, speed, speedLabel, onSpeed }) {
+  const play = el('button', { class: 'primary', title: 'Play / pause (Space)', 'aria-label': 'Play or pause', html: ICONS.play, onclick: onToggle });
+  const out = el('output', {}, speedLabel(speed));
+  const range = el('input', { type: 'range', min: -2, max: 2, step: 'any', value: Math.log10(speed), 'aria-label': 'Playback speed' });
+  range.addEventListener('input', () => { const s = Math.pow(10, +range.value); out.textContent = speedLabel(s); onSpeed(s); });
+  const bar = el('div', { class: 'psim-transport' },
+    el('button', { title: 'Restart from initial conditions (R)', 'aria-label': 'Restart', html: ICONS.restart, onclick: onRestart }),
+    play,
+    el('button', { title: 'Advance one integrator step (.)', 'aria-label': 'Step', html: ICONS.step, onclick: onStep }),
+    el('span', { class: 'sep' }),
+    el('label', { class: 'speed' }, 'speed', range, out),
+    el('span', { class: 'sep' }),
+    el('button', { title: 'Fit view to bodies (F)', 'aria-label': 'Fit view', html: ICONS.fit, onclick: onFit }));
+  bar.setPlaying = p => { play.innerHTML = p ? ICONS.pause : ICONS.play; };
+  return bar;
+}
+
+/**
+ * Simulation clock. Converts wall-clock frames into a target *physical* time.
+ * The integrator then advances to that target with its own step sequence, so
+ * the physics never depends on frame rate. Long frames (background tabs) are capped.
+ */
+function createClock({ speed = 1 } = {}) {
+  return {
+    speed, playing: false, last: null,
+    tick(now, t) {
+      if (this.last == null || !this.playing) { this.last = now; return t; }
+      const dt = Math.min(0.1, (now - this.last) / 1000);
+      this.last = now;
+      return t + dt * this.speed;
+    },
+  };
+}
+
+// ---------- plots ----------
+
+/**
+ * Lightweight log-y line plot for diagnostics (energy error, separations).
+ * series: [{ color: cssVarName, data: [[x, y], ...] }]
+ */
+function logPlot({ caption, yMin = 1e-16, yMax = 1, height = 112 }) {
+  const canvas = el('canvas');
+  const box = el('div', { class: 'psim-plot', style: `height:${height}px` }, canvas, el('span', { class: 'cap' }, caption));
+  const series = [];
+  let xMax = 1, dirty = true, refLines = [];
+  const ctx = canvas.getContext('2d');
+  const plot = {
+    el: box,
+    addSeries(color, opts = {}) { const s = { color, data: [], ...opts }; series.push(s); return s; },
+    push(s, x, y) { s.data.push([x, y]); if (s.data.length > 4000) decimate(s); xMax = Math.max(xMax, x); dirty = true; },
+    clear() { for (const s of series) s.data.length = 0; xMax = 1; dirty = true; },
+    setXMax(x) { xMax = x; dirty = true; },
+    setRefLines(lines) { refLines = lines; dirty = true; },
+    invalidate() { dirty = true; },
+    draw() {
+      if (!dirty) return;
+      dirty = false;
+      const dpr = devicePixelRatio || 1;
+      const w = box.clientWidth, h = box.clientHeight;
+      if (!w) return;
+      if (canvas.width !== Math.round(w * dpr)) { canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      const l0 = Math.log10(yMin), l1 = Math.log10(yMax);
+      const pad = { l: 34, r: 8, t: 20, b: 14 };
+      const X = x => pad.l + (x / xMax) * (w - pad.l - pad.r);
+      const Y = y => {
+        const ly = Math.min(l1, Math.max(l0, Math.log10(Math.max(y, 1e-300))));
+        return pad.t + (1 - (ly - l0) / (l1 - l0)) * (h - pad.t - pad.b);
+      };
+      ctx.font = '9.5px ui-monospace, Menlo, monospace';
+      ctx.fillStyle = cssVar('--faint');
+      ctx.strokeStyle = cssVar('--grid-strong');
+      ctx.lineWidth = 1;
+      const stepDec = Math.max(1, Math.round((l1 - l0) / 4));
+      for (let e = Math.ceil(l0); e <= l1; e += stepDec) {
+        const y = Math.round(Y(Math.pow(10, e))) + 0.5;
+        ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+        ctx.fillText(`1e${e}`, 2, y + 3);
+      }
+      for (const r of refLines) {
+        ctx.setLineDash([3, 3]); ctx.strokeStyle = cssVar(r.color);
+        const y = Y(r.y); ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      for (const s of series) {
+        if (!s.data.length) continue;
+        ctx.strokeStyle = cssVar(s.color);
+        ctx.lineWidth = s.width ?? 1.4;
+        ctx.globalAlpha = s.alpha ?? 1;
+        ctx.beginPath();
+        s.data.forEach(([x, y], i) => i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)));
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+    },
+  };
+  new ResizeObserver(() => { dirty = true; plot.draw(); }).observe(box);
+  document.documentElement.addEventListener('psim-theme', () => { dirty = true; plot.draw(); });
+  return plot;
+}
+
+function decimate(s) {
+  // Keep the envelope: max of each pair (errors are what matter, so keep the worse one).
+  const out = [];
+  for (let i = 0; i < s.data.length; i += 2) {
+    const a = s.data[i], b = s.data[i + 1];
+    out.push(!b || a[1] >= b[1] ? a : b);
+  }
+  s.data = out;
+}
+
+// ---------- export ----------
+
+function download(filename, text, mime = 'text/plain') {
+  const url = URL.createObjectURL(new Blob([text], { type: mime }));
+  const a = el('a', { href: url, download: filename });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function readJsonScript(id) {
+  const node = document.getElementById(id);
+  if (!node) return null;
+  const text = node.textContent.trim();
+  return text ? JSON.parse(text) : null;
+}
+
+/**
+ * Status beacon read by scripts/psim.mjs check (headless Chrome).
+ * Pages set fields on it; it is mirrored into <html data-psim-*> attributes.
+ */
+function beacon() {
+  const root = document.documentElement;
+  const errors = [];
+  addEventListener('error', e => { errors.push(String(e.message)); root.dataset.psimErrors = JSON.stringify(errors); });
+  addEventListener('unhandledrejection', e => { errors.push(String(e.reason)); root.dataset.psimErrors = JSON.stringify(errors); });
+  root.dataset.psimErrors = '[]';
+  return {
+    set(key, value) { root.dataset[`psim${key[0].toUpperCase()}${key.slice(1)}`] = typeof value === 'string' ? value : JSON.stringify(value); },
+  };
+}
+
+return { el, ICONS, sci, fix, grade, initTheme, cssVar, section, row, inputValue, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon };
+})();
+
+// ---- psim:ui/plot.mjs
+__psim["ui/plot.mjs"] = (() => {
+// Scientific 2D plot: linear or log axes with 1-2-5 ticks, function and data
+// series, shaded validity bands, reference lines, markers, a draggable cursor,
+// and highlighting linked to equation terms. Theme-aware (reads CSS tokens).
+//
+//   const p = createPlot({ title: 'Spectral radiance', x: { label: 'λ', unit: 'nm', min: 100, max: 3000 },
+//                          y: { label: 'B_λ', unit: 'W sr⁻¹ m⁻³', log: false } });
+//   p.fn('planck', λ => B(λ, T), { color: '--body-0', label: 'T = 5772 K' });
+//   p.vline(λmax, { label: 'λ_max' });  p.draw();
+const { el, cssVar, sci } = __psim["ui/instrument.mjs"];
+function niceTicks(min, max, target = 5) {
+  const span = max - min;
+  if (!(span > 0)) return [min];
+  const raw = span / target, e = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / e;
+  const step = (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * e;
+  const out = [];
+  for (let v = Math.ceil(min / step) * step; v <= max + step * 1e-9; v += step) out.push(Math.abs(v) < step * 1e-9 ? 0 : v);
+  return out;
+}
+
+const SUPS = { '-': '⁻', 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹' };
+/** Powers of ten on log axes read as 10ⁿ. */
+function fmtPow10(v) {
+  const e = Math.round(Math.log10(v));
+  if (e >= 0 && e <= 3) return String(10 ** e);
+  return `10${String(e).split('').map(ch => SUPS[ch]).join('')}`;
+}
+
+function fmtTick(v) {
+  const a = Math.abs(v);
+  if (a !== 0 && (a < 1e-3 || a >= 1e5)) return sci(v, 2);
+  return String(+v.toPrecision(6)).replace('-', '−');
+}
+
+function createPlot({ title = '', x = {}, y = {}, height = 220, legend = true, onCursor } = {}) {
+  const canvas = el('canvas');
+  const head = el('div', { class: 'psim-plot-head' }, el('span', { class: 't' }, title), el('span', { class: 'l' }));
+  const box = el('div', { class: 'psim-plot2', style: `height:${height}px` }, canvas);
+  const root = el('figure', { class: 'psim-figure' }, head, box);
+  const ctx = canvas.getContext('2d');
+  const items = new Map();
+  let order = [], focus = null, cursor = null, dirty = true;
+  const ax = { x: { min: 0, max: 1, log: false, ...x }, y: { min: 0, max: 1, log: false, auto: y.min == null || y.max == null, ...y } };
+  const pad = { l: 60, r: 14, t: 10, b: 34 };
+  let W = 0, H = 0;
+
+  const tr = (a, v) => a.log ? Math.log10(v) : v;
+  const X = v => pad.l + (tr(ax.x, v) - tr(ax.x, ax.x.min)) / (tr(ax.x, ax.x.max) - tr(ax.x, ax.x.min)) * (W - pad.l - pad.r);
+  const Y = v => H - pad.b - (tr(ax.y, v) - tr(ax.y, ax.y.min)) / (tr(ax.y, ax.y.max) - tr(ax.y, ax.y.min)) * (H - pad.t - pad.b);
+  const invX = px => {
+    const f = (px - pad.l) / (W - pad.l - pad.r);
+    const v = tr(ax.x, ax.x.min) + f * (tr(ax.x, ax.x.max) - tr(ax.x, ax.x.min));
+    return ax.x.log ? Math.pow(10, v) : v;
+  };
+
+  const add = (id, item) => { if (!items.has(id)) order.push(id); items.set(id, item); dirty = true; return api; };
+
+  const api = {
+    el: root,
+    /** Plot a function y = f(x), sampled per pixel column. */
+    fn(id, f, opts = {}) { return add(id, { kind: 'fn', f, ...opts }); },
+    /** Plot data points [[x, y], ...] as a line (or dots with { dots: true }). */
+    data(id, pts, opts = {}) { return add(id, { kind: 'data', pts, ...opts }); },
+    /** Shaded x-range, e.g. where a formula is invalid. */
+    band(id, x0, x1, opts = {}) { return add(id, { kind: 'band', x0, x1, ...opts }); },
+    hline(id, yv, opts = {}) { return add(id, { kind: 'hline', y: yv, ...opts }); },
+    vline(id, xv, opts = {}) { return add(id, { kind: 'vline', x: xv, ...opts }); },
+    marker(id, xv, yv, opts = {}) { return add(id, { kind: 'marker', x: xv, y: yv, ...opts }); },
+    remove(id) { items.delete(id); order = order.filter(o => o !== id); dirty = true; return api; },
+    setX(o) { Object.assign(ax.x, o); dirty = true; return api; },
+    setY(o) { Object.assign(ax.y, o); dirty = true; return api; },
+    /** Highlight one series (dims the others); null clears. Used by equation terms. */
+    highlight(id) { focus = id; dirty = true; api.draw(); },
+    /** Show a draggable vertical cursor at x; drag calls onCursor(x). */
+    cursor(xv) { cursor = xv; dirty = true; return api; },
+    invalidate() { dirty = true; },
+    draw,
+  };
+
+  function autoY() {
+    let lo = Infinity, hi = -Infinity;
+    for (const it of items.values()) {
+      if (it.kind === 'fn' && !it.ignoreScale) {
+        for (let i = 0; i <= 200; i++) {
+          const xv = ax.x.log ? Math.pow(10, Math.log10(ax.x.min) + i / 200 * (Math.log10(ax.x.max) - Math.log10(ax.x.min))) : ax.x.min + i / 200 * (ax.x.max - ax.x.min);
+          const v = it.f(xv);
+          if (Number.isFinite(v) && (!ax.y.log || v > 0)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+        }
+      } else if (it.kind === 'data' && !it.ignoreScale) {
+        for (const [, v] of it.pts) if (Number.isFinite(v) && (!ax.y.log || v > 0)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+      }
+    }
+    if (!Number.isFinite(lo)) return;
+    if (ax.y.log) { ax.y.min = Math.pow(10, Math.floor(Math.log10(lo))); ax.y.max = Math.pow(10, Math.ceil(Math.log10(hi))); }
+    else {
+      const span = hi - lo || Math.abs(hi) || 1;
+      ax.y.min = ax.y.zero !== false && lo >= 0 ? 0 : lo - 0.06 * span;
+      ax.y.max = hi + 0.08 * span;
+    }
+  }
+
+  function draw() {
+    if (!dirty) return;
+    dirty = false;
+    const dpr = devicePixelRatio || 1;
+    W = box.clientWidth; H = box.clientHeight;
+    if (!W) return;
+    if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) { canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr); }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    if (ax.y.auto) autoY();
+    const C = cssVar;
+    ctx.font = '10.5px ui-monospace, Menlo, monospace';
+
+    const labelBoxes = [];                              // band and vertical-line labels placed this frame
+    // bands (behind everything)
+    for (const id of order) {
+      const it = items.get(id);
+      if (it.kind !== 'band') continue;
+      const x0 = Math.max(pad.l, X(it.x0)), x1 = Math.min(W - pad.r, X(it.x1));
+      ctx.fillStyle = C(it.color ?? '--grid-strong');
+      ctx.globalAlpha = it.alpha ?? 0.5;
+      ctx.fillRect(x0, pad.t, x1 - x0, H - pad.t - pad.b);
+      ctx.globalAlpha = 1;
+      if (it.label) { ctx.fillStyle = C('--muted'); ctx.fillText(it.label, x0 + 6, pad.t + 12); labelBoxes.push({ x: x0 + 6, w: ctx.measureText(it.label).width, y: pad.t + 12 }); }
+    }
+
+    // grid + ticks
+    ctx.strokeStyle = C('--grid'); ctx.fillStyle = C('--faint'); ctx.lineWidth = 1;
+    const xt = ax.x.log ? logTicks(ax.x.min, ax.x.max) : niceTicks(ax.x.min, ax.x.max, Math.max(3, Math.floor(W / 90)));
+    const yt = ax.y.log ? logTicks(ax.y.min, ax.y.max) : niceTicks(ax.y.min, ax.y.max, Math.max(3, Math.floor(H / 45)));
+    ctx.textAlign = 'center';
+    for (const v of xt) { const px = Math.round(X(v)) + 0.5; ctx.beginPath(); ctx.moveTo(px, pad.t); ctx.lineTo(px, H - pad.b); ctx.stroke(); ctx.fillText(ax.x.log ? fmtPow10(v) : fmtTick(v), px, H - pad.b + 14); }
+    ctx.textAlign = 'right';
+    for (const v of yt) { const py = Math.round(Y(v)) + 0.5; ctx.beginPath(); ctx.moveTo(pad.l, py); ctx.lineTo(W - pad.r, py); ctx.stroke(); ctx.fillText(ax.y.log ? fmtPow10(v) : fmtTick(v), pad.l - 6, py + 3.5); }
+    ctx.textAlign = 'start';
+    ctx.strokeStyle = C('--line-strong');
+    ctx.beginPath(); ctx.moveTo(pad.l + 0.5, pad.t); ctx.lineTo(pad.l + 0.5, H - pad.b + 0.5); ctx.lineTo(W - pad.r, H - pad.b + 0.5); ctx.stroke();
+    // axis labels
+    ctx.fillStyle = C('--muted'); ctx.font = '11px ui-sans-serif, -apple-system, system-ui, sans-serif';
+    const xl = `${ax.x.label ?? ''}${ax.x.unit ? ` (${ax.x.unit})` : ''}`;
+    ctx.textAlign = 'right'; ctx.fillText(xl, W - pad.r, H - 4); ctx.textAlign = 'start';
+    const yl = `${ax.y.label ?? ''}${ax.y.unit ? ` (${ax.y.unit})` : ''}`;
+    ctx.save(); ctx.translate(11, pad.t); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'right'; ctx.fillText(yl, 0, 0); ctx.restore();
+
+    // clip to plot area
+    ctx.save();
+    ctx.beginPath(); ctx.rect(pad.l, pad.t - 2, W - pad.l - pad.r, H - pad.t - pad.b + 4); ctx.clip();
+    const legendItems = [];
+    for (const id of order) {
+      const it = items.get(id);
+      const dim = focus && focus !== id && it.kind !== 'band' ? 0.18 : 1;
+      const col = C(it.color ?? '--accent');
+      ctx.globalAlpha = dim * (it.alpha ?? 1);
+      ctx.strokeStyle = col; ctx.fillStyle = col;
+      ctx.lineWidth = (it.width ?? 1.8) * (focus === id ? 1.6 : 1);
+      ctx.setLineDash(it.dash ? [5, 4] : it.dot ? [1.5, 3.5] : []);
+      if (it.kind === 'fn') {
+        ctx.beginPath();
+        let pen = false;
+        const n = Math.max(2, Math.round((W - pad.l - pad.r) * (it.oversample ?? 1)));
+        for (let i = 0; i <= n; i++) {
+          const px = pad.l + i / n * (W - pad.l - pad.r);
+          const v = it.f(invX(px));
+          if (!Number.isFinite(v) || (ax.y.log && v <= 0)) { pen = false; continue; }
+          const py = Y(v);
+          pen ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+          pen = true;
+        }
+        ctx.stroke();
+        if (it.fill) { ctx.globalAlpha = 0.12 * dim; ctx.lineTo(W - pad.r, Y(Math.max(ax.y.min, 0))); ctx.lineTo(pad.l, Y(Math.max(ax.y.min, 0))); ctx.fill(); }
+      } else if (it.kind === 'data') {
+        if (it.dots) {
+          const shown = ([a, b]) => Number.isFinite(a) && Number.isFinite(b) && (!ax.y.log || b > 0) && (!ax.x.log || a > 0);
+          for (const p of it.pts) { if (!shown(p)) continue; ctx.beginPath(); ctx.arc(X(p[0]), Y(p[1]), it.r ?? 2.4, 0, 7); ctx.fill(); }
+          if (it.errors) {for (let i = 0; i < it.pts.length; i++) {
+            const [a, b] = it.pts[i], e = Math.abs(it.errors[i]);
+            if (!shown(it.pts[i]) || !Number.isFinite(e)) continue;
+            // On a log axis a bar reaching zero or below has no finite end: run it to the axis floor.
+            const lo = ax.y.log && b - e <= ax.y.min ? ax.y.min : b - e;
+            ctx.beginPath(); ctx.moveTo(X(a), Y(lo)); ctx.lineTo(X(a), Y(b + e)); ctx.stroke();
+          }}
+        } else {
+          ctx.beginPath();
+          it.pts.forEach(([a, b], i) => i ? ctx.lineTo(X(a), Y(b)) : ctx.moveTo(X(a), Y(b)));
+          ctx.stroke();
+        }
+      } else if (it.kind === 'hline' || it.kind === 'vline') {
+        ctx.lineWidth = 1; ctx.setLineDash(it.solid ? [] : [3, 4]);
+        ctx.beginPath();
+        if (it.kind === 'hline') { ctx.moveTo(pad.l, Y(it.y)); ctx.lineTo(W - pad.r, Y(it.y)); }
+        else { ctx.moveTo(X(it.x), pad.t); ctx.lineTo(X(it.x), H - pad.b); }
+        ctx.stroke();
+        if (it.label) {
+          ctx.setLineDash([]); ctx.font = '10.5px ui-monospace, Menlo, monospace';
+          if (it.kind === 'hline') ctx.fillText(it.label, W - pad.r - ctx.measureText(it.label).width - 4, Y(it.y) - 5 < pad.t + 10 ? Y(it.y) + 13 : Y(it.y) - 5);   // below the line near the top edge
+          else {
+            // stack labels of nearby vertical lines instead of drawing them on top of each other
+            const x0 = X(it.x) + 5, w = ctx.measureText(it.label).width;
+            let ly = pad.t + 12;
+            while (labelBoxes.some(b => x0 < b.x + b.w + 4 && b.x < x0 + w + 4 && Math.abs(b.y - ly) < 12)) ly += 13;
+            labelBoxes.push({ x: x0, w, y: ly });
+            ctx.fillText(it.label, x0, ly);
+          }
+        }
+      } else if (it.kind === 'marker') {
+        ctx.setLineDash([]);
+        ctx.beginPath(); ctx.arc(X(it.x), Y(it.y), it.r ?? 4.5, 0, 7); ctx.fill();
+        ctx.strokeStyle = C('--panel'); ctx.lineWidth = 1.5; ctx.stroke();
+        if (it.label) { ctx.fillStyle = C('--ink-2'); ctx.font = '10.5px ui-monospace, Menlo, monospace'; ctx.fillText(it.label, X(it.x) + 8, Y(it.y) - 7); }
+      }
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+      if (it.label && (it.kind === 'fn' || it.kind === 'data') && legend) legendItems.push([col, it.label, it.dash, id]);
+    }
+    if (cursor != null) {
+      ctx.strokeStyle = C('--ink'); ctx.lineWidth = 1; ctx.setLineDash([2, 3]);
+      ctx.beginPath(); ctx.moveTo(X(cursor), pad.t); ctx.lineTo(X(cursor), H - pad.b); ctx.stroke(); ctx.setLineDash([]);
+    }
+    ctx.restore();
+    const l = head.querySelector('.l');
+    l.replaceChildren(...legendItems.map(([c, t, dash, id]) => el('span', {
+      class: `k${focus === id ? ' on' : ''}`, onmouseenter: () => api.highlight(id), onmouseleave: () => api.highlight(null),
+    }, el('i', { style: `background:${c};${dash ? 'opacity:.6' : ''}` }), t)));
+  }
+
+  function logTicks(min, max) {
+    const out = [], e0 = Math.ceil(Math.log10(min) - 1e-9), e1 = Math.floor(Math.log10(max) + 1e-9);
+    const stride = Math.max(1, Math.ceil((e1 - e0 + 1) / 6));
+    for (let e = e0; e <= e1; e += stride) out.push(Math.pow(10, e));
+    return out;
+  }
+
+  // cursor dragging
+  let dragging = false;
+  const setFromEvent = e => {
+    if (cursor == null || !onCursor) return;
+    const r = canvas.getBoundingClientRect();
+    const xv = Math.min(ax.x.max, Math.max(ax.x.min, invX(e.clientX - r.left)));
+    cursor = xv; dirty = true; onCursor(xv); draw();
+  };
+  canvas.addEventListener('pointerdown', e => { if (cursor == null || !onCursor) return; dragging = true; canvas.setPointerCapture(e.pointerId); setFromEvent(e); });
+  canvas.addEventListener('pointermove', e => { if (dragging) setFromEvent(e); });
+  canvas.addEventListener('pointerup', () => { dragging = false; });
+  if (onCursor) canvas.style.cursor = 'ew-resize';
+
+  new ResizeObserver(() => { dirty = true; draw(); }).observe(box);
+  document.documentElement.addEventListener('psim-theme', () => { dirty = true; draw(); });
+  return api;
+}
+
+return { createPlot };
+})();
+
+// ---- psim:ui/gl.mjs
+__psim["ui/gl.mjs"] = (() => {
+// GPU rendering (WebGL2) for any subject, organised by what is drawn, not by topic:
+//
+//   createGLLayer(canvas2d)       a WebGL2 canvas behind the shell's 2D canvas (labels stay in 2D)
+//   orbitCamera({...})            3D camera with drag-to-rotate and wheel zoom; project() for 2D labels
+//   createPointRenderer(gl)       glowing point sprites: 10⁵–10⁶ bodies, stars, samples, molecules
+//   createFieldRenderer(gl)       2D scalar field as a colour-mapped image (heat maps, |ψ|², density)
+//   createVolumeRenderer(gl)      3D scalar field by ray marching (orbital clouds, densities, gas)
+//   createSphereRenderer(gl)      lit spheres (planets, moons, balls, atoms) with exact silhouettes
+//   createLineRenderer(gl)        thick 3D polylines (orbits, field lines, trails, axes), solid or dashed
+//   colormap(name, t)             scientific colour maps (perceptually uniform), also for 2D canvas
+//
+// Large coordinates (planetary distances): spheres and lines are drawn relative to the camera
+// target, subtracted in float64 before upload, so precision does not degrade far from the origin.
+//
+// The renderers only READ arrays the simulation computed; they never change physics. Every
+// mapping (range, log scale, colour map, opacity, glow) is a representation choice: state it
+// in the legend. Matrices are column-major Float32Array(16), as WebGL expects.
+
+// ---------------------------------------------------------------- matrix maths (pure; tested in Node)
+
+function perspective(fovy, aspect, near, far) {
+  const f = 1 / Math.tan(fovy / 2), nf = 1 / (near - far);
+  return new Float32Array([f / aspect, 0, 0, 0, 0, f, 0, 0, 0, 0, (far + near) * nf, -1, 0, 0, 2 * far * near * nf, 0]);
+}
+
+function lookAt(eye, target, up) {
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const unit = a => { const l = Math.hypot(...a) || 1; return a.map(v => v / l); };
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const z = unit(sub(eye, target)), x = unit(cross(up, z)), y = cross(z, x);
+  return new Float32Array([x[0], y[0], z[0], 0, x[1], y[1], z[1], 0, x[2], y[2], z[2], 0, -dot(x, eye), -dot(y, eye), -dot(z, eye), 1]);
+}
+
+function multiply(a, b) {
+  const out = new Float32Array(16);
+  for (let c = 0; c < 4; c++) {for (let r = 0; r < 4; r++) {
+    let s = 0;
+    for (let k = 0; k < 4; k++) s += a[k * 4 + r] * b[c * 4 + k];
+    out[c * 4 + r] = s;
+  }}
+  return out;
+}
+
+/** Inverse of a 4×4 matrix (cofactor expansion, in float64). */
+function invert(m) {
+  const a = Array.from(m), inv = new Array(16);
+  inv[0] = a[5] * a[10] * a[15] - a[5] * a[11] * a[14] - a[9] * a[6] * a[15] + a[9] * a[7] * a[14] + a[13] * a[6] * a[11] - a[13] * a[7] * a[10];
+  inv[4] = -a[4] * a[10] * a[15] + a[4] * a[11] * a[14] + a[8] * a[6] * a[15] - a[8] * a[7] * a[14] - a[12] * a[6] * a[11] + a[12] * a[7] * a[10];
+  inv[8] = a[4] * a[9] * a[15] - a[4] * a[11] * a[13] - a[8] * a[5] * a[15] + a[8] * a[7] * a[13] + a[12] * a[5] * a[11] - a[12] * a[7] * a[9];
+  inv[12] = -a[4] * a[9] * a[14] + a[4] * a[10] * a[13] + a[8] * a[5] * a[14] - a[8] * a[6] * a[13] - a[12] * a[5] * a[10] + a[12] * a[6] * a[9];
+  inv[1] = -a[1] * a[10] * a[15] + a[1] * a[11] * a[14] + a[9] * a[2] * a[15] - a[9] * a[3] * a[14] - a[13] * a[2] * a[11] + a[13] * a[3] * a[10];
+  inv[5] = a[0] * a[10] * a[15] - a[0] * a[11] * a[14] - a[8] * a[2] * a[15] + a[8] * a[3] * a[14] + a[12] * a[2] * a[11] - a[12] * a[3] * a[10];
+  inv[9] = -a[0] * a[9] * a[15] + a[0] * a[11] * a[13] + a[8] * a[1] * a[15] - a[8] * a[3] * a[13] - a[12] * a[1] * a[11] + a[12] * a[3] * a[9];
+  inv[13] = a[0] * a[9] * a[14] - a[0] * a[10] * a[13] - a[8] * a[1] * a[14] + a[8] * a[2] * a[13] + a[12] * a[1] * a[10] - a[12] * a[2] * a[9];
+  inv[2] = a[1] * a[6] * a[15] - a[1] * a[7] * a[14] - a[5] * a[2] * a[15] + a[5] * a[3] * a[14] + a[13] * a[2] * a[7] - a[13] * a[3] * a[6];
+  inv[6] = -a[0] * a[6] * a[15] + a[0] * a[7] * a[14] + a[4] * a[2] * a[15] - a[4] * a[3] * a[14] - a[12] * a[2] * a[7] + a[12] * a[3] * a[6];
+  inv[10] = a[0] * a[5] * a[15] - a[0] * a[7] * a[13] - a[4] * a[1] * a[15] + a[4] * a[3] * a[13] + a[12] * a[1] * a[7] - a[12] * a[3] * a[5];
+  inv[14] = -a[0] * a[5] * a[14] + a[0] * a[6] * a[13] + a[4] * a[1] * a[14] - a[4] * a[2] * a[13] - a[12] * a[1] * a[6] + a[12] * a[2] * a[5];
+  inv[3] = -a[1] * a[6] * a[11] + a[1] * a[7] * a[10] + a[5] * a[2] * a[11] - a[5] * a[3] * a[10] - a[9] * a[2] * a[7] + a[9] * a[3] * a[6];
+  inv[7] = a[0] * a[6] * a[11] - a[0] * a[7] * a[10] - a[4] * a[2] * a[11] + a[4] * a[3] * a[10] + a[8] * a[2] * a[7] - a[8] * a[3] * a[6];
+  inv[11] = -a[0] * a[5] * a[11] + a[0] * a[7] * a[9] + a[4] * a[1] * a[11] - a[4] * a[3] * a[9] - a[8] * a[1] * a[7] + a[8] * a[3] * a[5];
+  inv[15] = a[0] * a[5] * a[10] - a[0] * a[6] * a[9] - a[4] * a[1] * a[10] + a[4] * a[2] * a[9] + a[8] * a[1] * a[6] - a[8] * a[2] * a[5];
+  const det = a[0] * inv[0] + a[1] * inv[4] + a[2] * inv[8] + a[3] * inv[12];
+  if (!det) throw new Error('invert: singular matrix');
+  return new Float32Array(inv.map(v => v / det));
+}
+
+/**
+ * Orbit camera around `target`, z up (physics convention). yaw/pitch in radians.
+ * matrices(aspect) → { view, proj, viewProj, eye }; project([x,y,z], W, H) → CSS-pixel position
+ * (and depth) for 2D labels drawn over the GL scene; attach(element) adds drag-rotate and
+ * wheel-zoom and returns a detach function.
+ */
+function orbitCamera({ target = [0, 0, 0], distance = 5, yaw = 0.6, pitch = 0.45, fov = 0.8, near, far } = {}) {
+  const cam = {
+    target: [...target], distance, yaw, pitch, fov,
+    eye() {
+      const cp = Math.cos(cam.pitch);
+      return [cam.target[0] + cam.distance * cp * Math.cos(cam.yaw), cam.target[1] + cam.distance * cp * Math.sin(cam.yaw), cam.target[2] + cam.distance * Math.sin(cam.pitch)];
+    },
+    /** relative: true builds the view with the target at the origin (for target-relative data). */
+    matrices(aspect, { relative = false } = {}) {
+      const eye = cam.eye(), off = relative ? cam.target : [0, 0, 0];
+      const view = lookAt([eye[0] - off[0], eye[1] - off[1], eye[2] - off[2]], [cam.target[0] - off[0], cam.target[1] - off[1], cam.target[2] - off[2]], [0, 0, 1]);
+      const proj = perspective(cam.fov, aspect, near ?? cam.distance * 1e-3, far ?? cam.distance * 1e3);
+      return { view, proj, viewProj: multiply(proj, view), eye };
+    },
+    project(p, W, H) {
+      const m = cam.matrices(W / H).viewProj;
+      const x = m[0] * p[0] + m[4] * p[1] + m[8] * p[2] + m[12], y = m[1] * p[0] + m[5] * p[1] + m[9] * p[2] + m[13];
+      const w = m[3] * p[0] + m[7] * p[1] + m[11] * p[2] + m[15];
+      return { x: (x / w * 0.5 + 0.5) * W, y: (1 - (y / w * 0.5 + 0.5)) * H, depth: w, visible: w > 0 };
+    },
+    attach(el) {
+      let last = null;
+      const down = e => { last = [e.clientX, e.clientY]; el.setPointerCapture?.(e.pointerId); };
+      const move = e => {
+        if (!last) return;
+        cam.yaw -= (e.clientX - last[0]) * 0.006;
+        cam.pitch = Math.max(-1.55, Math.min(1.55, cam.pitch + (e.clientY - last[1]) * 0.006));
+        last = [e.clientX, e.clientY];
+      };
+      const up = () => { last = null; };
+      const wheel = e => { e.preventDefault(); cam.distance *= Math.exp(e.deltaY * 0.001); };
+      el.addEventListener('pointerdown', down); el.addEventListener('pointermove', move);
+      el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+      el.addEventListener('wheel', wheel, { passive: false });
+      return () => { el.removeEventListener('pointerdown', down); el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up); el.removeEventListener('wheel', wheel); };
+    },
+  };
+  return cam;
+}
+
+// ---------------------------------------------------------------- colour maps
+
+// Anchors sampled from matplotlib's perceptually uniform maps (van der Walt & Smith, CC0) and
+// Moreland's diverging "cool-warm". Linear interpolation between anchors.
+const MAPS = {
+  viridis: ['#440154', '#482878', '#3e4989', '#31688e', '#26828e', '#1f9e89', '#35b779', '#6ece58', '#b5de2b', '#fde725'],
+  inferno: ['#000004', '#1b0c41', '#4a0c6b', '#781c6d', '#a52c60', '#cf4446', '#ed6925', '#fb9b06', '#f7d13d', '#fcffa4'],
+  magma: ['#000004', '#180f3d', '#440f76', '#721f81', '#9e2f7f', '#cd4071', '#f1605d', '#fd9668', '#feca8d', '#fcfdbf'],
+  coolwarm: ['#3b4cc0', '#6282ea', '#8db0fe', '#b8d0f9', '#dddddd', '#f5c4ad', '#f49a7b', '#de604d', '#b40426'],
+};
+const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
+const COLORMAPS = [...Object.keys(MAPS), 'phase'];
+
+/** OKLab → sRGB (Ottosson 2020), clipped to the displayable range. */
+function oklabToSrgb(L, a, b) {
+  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3, m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3, s = (L - 0.0894841775 * a - 1.2914855480 * b) ** 3;
+  const lin = [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s, -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s];
+  return lin.map(x => { const c = Math.min(1, Math.max(0, x)); return c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055; });
+}
+
+/**
+ * Colour of map `name` at t ∈ [0, 1]: [r, g, b] in [0, 1]. Sequential and diverging maps clamp t;
+ * 'phase' is cyclic (t and t + 1 give the same colour): a constant-lightness hue circle in OKLab,
+ * for angles such as the phase of a wavefunction, where no direction may look "brighter".
+ */
+function colormap(name, t) {
+  if (name === 'phase') { const h = 2 * Math.PI * ((Number.isFinite(t) ? t : 0) % 1); return oklabToSrgb(0.72, 0.11 * Math.cos(h), 0.11 * Math.sin(h)); }
+  const a = MAPS[name];
+  if (!a) throw new Error(`colormap: unknown map "${name}" (${COLORMAPS.join(', ')})`);
+  const x = Math.min(1, Math.max(0, Number.isFinite(t) ? t : 0)) * (a.length - 1), i = Math.min(a.length - 2, Math.floor(x)), f = x - i;
+  const p = hex(a[i]), q = hex(a[i + 1]);
+  return [p[0] + f * (q[0] - p[0]), p[1] + f * (q[1] - p[1]), p[2] + f * (q[2] - p[2])];
+}
+
+/** Map a value to [0, 1] for a colour map: linear or log10 between range[0] and range[1]. */
+function normalize(v, [lo, hi], log = false) {
+  if (log) { if (!(v > 0 && lo > 0)) return 0; return (Math.log10(v) - Math.log10(lo)) / (Math.log10(hi) - Math.log10(lo)); }
+  return (v - lo) / (hi - lo);
+}
+
+// ---------------------------------------------------------------- GL plumbing
+
+function compile(gl, vs, fs) {
+  const shader = (type, src) => {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(`GL shader: ${gl.getShaderInfoLog(s)}`);
+    return s;
+  };
+  const p = gl.createProgram();
+  gl.attachShader(p, shader(gl.VERTEX_SHADER, vs)); gl.attachShader(p, shader(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(`GL program: ${gl.getProgramInfoLog(p)}`);
+  const u = {};
+  for (let i = 0; i < gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS); i++) { const n = gl.getActiveUniform(p, i).name; u[n] = gl.getUniformLocation(p, n); }
+  return { p, u };
+}
+
+const cmapTextures = new WeakMap();
+function cmapTexture(gl, name) {
+  let cache = cmapTextures.get(gl);
+  if (!cache) cmapTextures.set(gl, cache = {});
+  if (cache[name]) return cache[name];
+  const data = new Uint8Array(256 * 4);
+  for (let i = 0; i < 256; i++) { const c = colormap(name, i / 255); data.set([c[0] * 255, c[1] * 255, c[2] * 255, 255].map(Math.round), 4 * i); }
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 256, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, name === 'phase' ? gl.REPEAT : gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  return (cache[name] = tex);
+}
+const rgb = c => (typeof c === 'string' ? hex(c.length === 4 ? `#${c[1]}${c[1]}${c[2]}${c[2]}${c[3]}${c[3]}` : c) : c);
+
+/**
+ * A WebGL2 canvas stacked under `canvas2d` (same box, same device-pixel ratio). The 2D canvas
+ * stays on top for labels, axes and pointer events. Returns { gl, canvas, ok, reason, sync() };
+ * when WebGL2 is unavailable, ok is false and reason says why (show it; draw a 2D fallback).
+ */
+function createGLLayer(canvas2d) {
+  const canvas = document.createElement('canvas');
+  canvas.className = 'psim-gl';
+  canvas.setAttribute('aria-hidden', 'true');
+  canvas2d.parentNode.insertBefore(canvas, canvas2d);
+  const gl = canvas.getContext('webgl2', { alpha: true, premultipliedAlpha: true, antialias: true, preserveDrawingBuffer: true });
+  const layer = {
+    gl, canvas, ok: !!gl, reason: gl ? '' : 'WebGL2 is not available in this browser',
+    /** Match the 2D canvas size; set the viewport and clear to transparent. */
+    sync(dpr = devicePixelRatio || 1) {
+      const w = Math.round(canvas2d.clientWidth * dpr), h = Math.round(canvas2d.clientHeight * dpr);
+      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+      if (!gl) return;
+      gl.viewport(0, 0, w, h); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    },
+  };
+  return layer;
+}
+
+// ---------------------------------------------------------------- points
+
+/**
+ * Point sprites. update(positions [x,y,z,…], { values, colors }) uploads up to any count;
+ * draw(camera, { aspect, size, sizeUnit: 'px' | 'world', color, colormap, range, log, blend,
+ * opacity }) with blend 'additive' (glow on dark backgrounds) or 'alpha' (light backgrounds).
+ * values + colormap colour each point by a computed quantity; otherwise colors (r,g,b per point)
+ * or a single color. Sizes in 'world' units shrink with distance (true perspective).
+ */
+function createPointRenderer(gl) {
+  const { p, u } = compile(gl, `#version 300 es
+in vec3 aPos; in float aVal; in vec3 aCol;
+uniform mat4 uVP; uniform float uSize, uWorld, uScale, uLog; uniform vec2 uRange;
+out float vVal; out vec3 vCol;
+void main() {
+  gl_Position = uVP * vec4(aPos, 1.0);
+  float px = uWorld > 0.5 ? uSize * uScale / max(gl_Position.w, 1e-6) : uSize;
+  gl_PointSize = clamp(px, 1.0, 256.0);
+  float v = uLog > 0.5 ? (log(max(aVal, 1e-30)) / log(10.0) - uRange.x) / (uRange.y - uRange.x) : (aVal - uRange.x) / (uRange.y - uRange.x);
+  vVal = clamp(v, 0.0, 1.0); vCol = aCol;
+}`, `#version 300 es
+precision highp float;
+in float vVal; in vec3 vCol;
+uniform sampler2D uMap; uniform float uMode, uGlow, uOpacity; uniform vec3 uColor;
+out vec4 frag;
+void main() {
+  vec2 d = gl_PointCoord * 2.0 - 1.0; float r2 = dot(d, d);
+  if (r2 > 1.0) discard;
+  vec3 c = uMode < 0.5 ? uColor : uMode < 1.5 ? texture(uMap, vec2(vVal, 0.5)).rgb : vCol;
+  float a = uGlow > 0.5 ? exp(-r2 * 5.0) + 0.6 * smoothstep(0.25, 0.0, r2) : smoothstep(1.0, 0.75, r2);
+  a *= uOpacity;
+  frag = vec4(c * a, a);
+}`);
+  const vao = gl.createVertexArray(), bufs = {};
+  gl.bindVertexArray(vao);
+  for (const [name, size] of [['aPos', 3], ['aVal', 1], ['aCol', 3]]) {
+    const loc = gl.getAttribLocation(p, name);
+    bufs[name] = { buf: gl.createBuffer(), loc, size };
+    if (loc < 0) continue;
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufs[name].buf);
+    gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0);
+  }
+  gl.bindVertexArray(null);
+  let count = 0, has = { values: false, colors: false };
+  const upload = (name, data) => {
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufs[name].buf);
+    gl.bufferData(gl.ARRAY_BUFFER, data instanceof Float32Array ? data : Float32Array.from(data), gl.DYNAMIC_DRAW);
+  };
+  return {
+    get count() { return count; },
+    update(positions, { values, colors } = {}) {
+      count = Math.floor(positions.length / 3);
+      upload('aPos', positions);
+      has = { values: !!values, colors: !!colors };
+      upload('aVal', values ?? new Float32Array(count));
+      upload('aCol', colors ?? new Float32Array(3 * count));
+    },
+    draw(camera, { aspect, size = 3, sizeUnit = 'px', color = '#ffd27a', colormap: map = 'inferno', range = [0, 1], log = false, blend = 'additive', opacity = 1 } = {}) {
+      if (!count) return;
+      const { viewProj, proj } = camera.matrices(aspect ?? gl.drawingBufferWidth / gl.drawingBufferHeight);
+      gl.useProgram(p); gl.bindVertexArray(vao);
+      gl.uniformMatrix4fv(u.uVP, false, viewProj);
+      gl.uniform1f(u.uSize, size * (sizeUnit === 'px' ? (devicePixelRatio || 1) : 1));
+      gl.uniform1f(u.uWorld, sizeUnit === 'world' ? 1 : 0);
+      gl.uniform1f(u.uScale, proj[5] * gl.drawingBufferHeight / 2);
+      gl.uniform1f(u.uLog, log ? 1 : 0);
+      gl.uniform2f(u.uRange, ...(log ? range.map(Math.log10) : range));
+      gl.uniform1f(u.uMode, has.values ? 1 : has.colors ? 2 : 0);
+      gl.uniform3f(u.uColor, ...rgb(color));
+      gl.uniform1f(u.uGlow, blend === 'additive' ? 1 : 0);
+      gl.uniform1f(u.uOpacity, opacity);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, cmapTexture(gl, map)); gl.uniform1i(u.uMap, 0);
+      gl.enable(gl.BLEND); gl.disable(gl.DEPTH_TEST);
+      if (blend === 'additive') gl.blendFunc(gl.ONE, gl.ONE); else gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      gl.drawArrays(gl.POINTS, 0, count);
+      gl.bindVertexArray(null);
+    },
+  };
+}
+
+// ---------------------------------------------------------------- 2D fields
+
+/**
+ * A 2D scalar field (index i + nx·j, as in core/fields.mjs) drawn as a colour-mapped image.
+ * update(values, nx, ny, { range, log }) normalises on the CPU (NaN or masked cells are
+ * transparent); draw({ rect: [x, y, w, h] in CSS px (default: whole canvas), colormap, smooth,
+ * opacity }) with smooth false showing the grid cells honestly.
+ */
+function createFieldRenderer(gl) {
+  const { p, u } = compile(gl, `#version 300 es
+in vec2 aXY; uniform vec4 uRect; out vec2 vUV;
+void main() { vUV = aXY; vec2 xy = uRect.xy + aXY * uRect.zw; gl_Position = vec4(xy, 0.0, 1.0); }`, `#version 300 es
+precision highp float;
+in vec2 vUV; uniform sampler2D uField, uMap; uniform float uOpacity; out vec4 frag;
+void main() { float v = texture(uField, vUV).r; if (v < 0.0) discard; vec3 c = texture(uMap, vec2(v, 0.5)).rgb; frag = vec4(c * uOpacity, uOpacity); }`);
+  const vao = gl.createVertexArray(), buf = gl.createBuffer(), tex = gl.createTexture();
+  gl.bindVertexArray(vao); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(p, 'aXY'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  gl.bindVertexArray(null);
+  let ready = false;
+  return {
+    update(values, nx, ny, { range, log = false } = {}) {
+      if (values.length !== nx * ny) throw new Error('fieldRenderer: values must have nx·ny entries');
+      let lo = range?.[0], hi = range?.[1];
+      if (lo == null || hi == null) {
+        lo = Infinity; hi = -Infinity;
+        for (const v of values) if (Number.isFinite(v) && (!log || v > 0)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+        if (!(hi > lo)) hi = lo + 1;
+      }
+      const data = Float32Array.from(values, v => (Number.isFinite(v) ? Math.min(1, Math.max(0, normalize(v, [lo, hi], log))) : -1));
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.R16F, nx, ny, 0, gl.RED, gl.FLOAT, data);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      ready = true;
+      return { range: [lo, hi] };
+    },
+    draw({ rect, colormap: map = 'viridis', smooth = true, opacity = 1 } = {}) {
+      if (!ready) return;
+      const W = gl.drawingBufferWidth / (devicePixelRatio || 1), H = gl.drawingBufferHeight / (devicePixelRatio || 1);
+      const [x, y, w, h] = rect ?? [0, 0, W, H];
+      gl.useProgram(p); gl.bindVertexArray(vao);
+      // CSS px (y down) → clip space; the texture's row j = 0 is drawn at the bottom (y up, physics)
+      gl.uniform4f(u.uRect, 2 * x / W - 1, 1 - 2 * (y + h) / H, 2 * w / W, 2 * h / H);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex);
+      const f = smooth ? gl.LINEAR : gl.NEAREST;
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, f); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, f);
+      gl.uniform1i(u.uField, 0);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, cmapTexture(gl, map)); gl.uniform1i(u.uMap, 1);
+      gl.uniform1f(u.uOpacity, opacity);
+      gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.disable(gl.DEPTH_TEST);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.bindVertexArray(null);
+    },
+  };
+}
+
+// ---------------------------------------------------------------- 3D volumes
+
+/**
+ * A 3D scalar field (index i + nx·(j + ny·k)) rendered by ray marching through its box.
+ * update(values, nx, ny, nz, { range, log }); draw(camera, { box: [[x0,y0,z0],[x1,y1,z1]],
+ * colormap, opacity, steps, mode }) with mode 'emission' (glowing gas: colour ∝ density, adds up)
+ * or 'absorption' (emission–absorption: nearer matter hides farther). Opacity is a display
+ * transfer function, not a physical optical depth unless you derive it from one: say which.
+ */
+function createVolumeRenderer(gl) {
+  const { p, u } = compile(gl, `#version 300 es
+in vec2 aXY; out vec2 vNDC;
+void main() { vNDC = aXY * 2.0 - 1.0; gl_Position = vec4(vNDC, 0.0, 1.0); }`, `#version 300 es
+precision highp float; precision highp sampler3D;
+in vec2 vNDC;
+uniform mat4 uInvVP; uniform vec3 uMin, uMax; uniform sampler3D uVol; uniform sampler2D uMap;
+uniform float uOpacity, uSteps, uMode;
+out vec4 frag;
+void main() {
+  vec4 a = uInvVP * vec4(vNDC, -1.0, 1.0), b = uInvVP * vec4(vNDC, 1.0, 1.0);
+  vec3 ro = a.xyz / a.w, rd = normalize(b.xyz / b.w - ro);
+  vec3 t0 = (uMin - ro) / rd, t1 = (uMax - ro) / rd;
+  vec3 tn = min(t0, t1), tf = max(t0, t1);
+  float near = max(max(tn.x, tn.y), max(tn.z, 0.0)), far = min(min(tf.x, tf.y), tf.z);
+  if (far <= near) discard;
+  float dt = (far - near) / uSteps, len = length(uMax - uMin);
+  vec3 col = vec3(0.0); float alpha = 0.0;
+  for (float s = 0.5; s < 1024.0; s += 1.0) {
+    if (s > uSteps) break;
+    vec3 pos = ro + rd * (near + s * dt);
+    float v = texture(uVol, (pos - uMin) / (uMax - uMin)).r;
+    if (v <= 0.0) continue;
+    vec3 c = texture(uMap, vec2(v, 0.5)).rgb;
+    float k = uOpacity * v * dt / len * 8.0;
+    if (uMode < 0.5) { col += c * k; alpha += k; }
+    else { float ak = 1.0 - exp(-k); col += (1.0 - alpha) * c * ak; alpha += (1.0 - alpha) * ak; if (alpha > 0.99) break; }
+  }
+  alpha = clamp(alpha, 0.0, 1.0);
+  frag = vec4(min(col, vec3(1.0)), alpha);
+}`);
+  const vao = gl.createVertexArray(), buf = gl.createBuffer(), tex = gl.createTexture();
+  gl.bindVertexArray(vao); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(p, 'aXY'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  gl.bindVertexArray(null);
+  let ready = false;
+  return {
+    update(values, nx, ny, nz, { range, log = false } = {}) {
+      if (values.length !== nx * ny * nz) throw new Error('volumeRenderer: values must have nx·ny·nz entries');
+      let lo = range?.[0], hi = range?.[1];
+      if (lo == null || hi == null) {
+        lo = Infinity; hi = -Infinity;
+        for (const v of values) if (Number.isFinite(v) && (!log || v > 0)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+        if (!(hi > lo)) hi = lo + 1;
+      }
+      const data = Float32Array.from(values, v => (Number.isFinite(v) ? Math.min(1, Math.max(0, normalize(v, [lo, hi], log))) : 0));
+      gl.bindTexture(gl.TEXTURE_3D, tex);
+      gl.texImage3D(gl.TEXTURE_3D, 0, gl.R16F, nx, ny, nz, 0, gl.RED, gl.FLOAT, data);
+      for (const w of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T, gl.TEXTURE_WRAP_R]) gl.texParameteri(gl.TEXTURE_3D, w, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      ready = true;
+      return { range: [lo, hi] };
+    },
+    draw(camera, { aspect, box = [[-1, -1, -1], [1, 1, 1]], colormap: map = 'inferno', opacity = 1, steps = 160, mode = 'emission' } = {}) {
+      if (!ready) return;
+      const { viewProj } = camera.matrices(aspect ?? gl.drawingBufferWidth / gl.drawingBufferHeight);
+      gl.useProgram(p); gl.bindVertexArray(vao);
+      gl.uniformMatrix4fv(u.uInvVP, false, invert(viewProj));
+      gl.uniform3f(u.uMin, ...box[0]); gl.uniform3f(u.uMax, ...box[1]);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_3D, tex); gl.uniform1i(u.uVol, 0);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, cmapTexture(gl, map)); gl.uniform1i(u.uMap, 1);
+      gl.uniform1f(u.uOpacity, opacity); gl.uniform1f(u.uSteps, Math.min(1000, steps)); gl.uniform1f(u.uMode, mode === 'emission' ? 0 : 1);
+      gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.disable(gl.DEPTH_TEST);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.bindVertexArray(null);
+    },
+  };
+}
+
+// ---------------------------------------------------------------- spheres
+
+/**
+ * Lit spheres drawn as exact ray-cast impostors: true silhouettes, per-pixel shading and correct
+ * overlap (depth) between spheres. draw(camera, spheres, { aspect, light, ambient }) where each
+ * sphere is { center: [x, y, z], radius, color, emissive? } and light is a point [x, y, z]
+ * (e.g. the Sun's centre: each sphere is lit from its own direction, giving the right
+ * day/night line) or { direction: [x, y, z] } for parallel light. emissive spheres glow
+ * unshaded (the Sun). Brightness ∝ max(0, n·l): the geometric share of light, not a photograph.
+ */
+function createSphereRenderer(gl) {
+  const { p, u } = compile(gl, `#version 300 es
+in vec2 aCorner; in vec3 aCenter; in float aRadius; in vec3 aColor; in float aEmit;
+uniform mat4 uView, uProj;
+out vec3 vPos; out vec3 vCenter; out float vRadius; out vec3 vColor; out float vEmit;
+void main() {
+  vec3 c = (uView * vec4(aCenter, 1.0)).xyz;
+  float d = length(c), r = aRadius;
+  float s = r * d / sqrt(max(d * d - r * r, 1e-12)) * 1.05;
+  vec3 q = c + vec3(aCorner * s, 0.0);
+  vPos = q; vCenter = c; vRadius = r; vColor = aColor; vEmit = aEmit;
+  gl_Position = uProj * vec4(q, 1.0);
+}`, `#version 300 es
+precision highp float;
+in vec3 vPos; in vec3 vCenter; in float vRadius; in vec3 vColor; in float vEmit;
+uniform mat4 uProj; uniform vec3 uLight; uniform float uPoint, uAmbient;
+out vec4 frag;
+void main() {
+  vec3 dir = normalize(vPos);
+  float b = dot(dir, vCenter), cc = dot(vCenter, vCenter) - vRadius * vRadius, disc = b * b - cc;
+  if (disc < 0.0) discard;
+  vec3 h = dir * (b - sqrt(disc));
+  vec3 n = (h - vCenter) / vRadius;
+  vec3 l = uPoint > 0.5 ? normalize(uLight - vCenter) : normalize(uLight);
+  float k = vEmit > 0.5 ? 1.0 : uAmbient + (1.0 - uAmbient) * max(dot(n, l), 0.0);
+  vec4 clip = uProj * vec4(h, 1.0);
+  gl_FragDepth = clip.z / clip.w * 0.5 + 0.5;
+  frag = vec4(vColor * k, 1.0);
+}`);
+  const vao = gl.createVertexArray(), corner = gl.createBuffer(), inst = gl.createBuffer();
+  gl.bindVertexArray(vao);
+  gl.bindBuffer(gl.ARRAY_BUFFER, corner); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+  const cl = gl.getAttribLocation(p, 'aCorner'); gl.enableVertexAttribArray(cl); gl.vertexAttribPointer(cl, 2, gl.FLOAT, false, 0, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, inst);
+  const stride = 8 * 4;
+  for (const [name, size, off] of [['aCenter', 3, 0], ['aRadius', 1, 3], ['aColor', 3, 4], ['aEmit', 1, 7]]) {
+    const loc = gl.getAttribLocation(p, name);
+    gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, stride, off * 4); gl.vertexAttribDivisor(loc, 1);
+  }
+  gl.bindVertexArray(null);
+  return {
+    draw(camera, spheres, { aspect, light = { direction: [1, 0, 0] }, ambient = 0.08 } = {}) {
+      if (!spheres.length) return;
+      const t = camera.target, data = new Float32Array(8 * spheres.length);
+      spheres.forEach((sp, i) => {
+        const c = rgb(sp.color ?? '#cfd8e3');
+        data.set([sp.center[0] - t[0], sp.center[1] - t[1], sp.center[2] - t[2], sp.radius, c[0], c[1], c[2], sp.emissive ? 1 : 0], 8 * i);
+      });
+      const { view, proj } = camera.matrices(aspect ?? gl.drawingBufferWidth / gl.drawingBufferHeight, { relative: true });
+      gl.useProgram(p); gl.bindVertexArray(vao);
+      gl.bindBuffer(gl.ARRAY_BUFFER, inst); gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
+      gl.uniformMatrix4fv(u.uView, false, view); gl.uniformMatrix4fv(u.uProj, false, proj);
+      const point = Array.isArray(light);
+      const L = point ? light.map((v, k) => v - t[k]) : light.direction;
+      // light position (point) or direction (parallel) into view space
+      const lv = point
+        ? [0, 1, 2].map(r => view[r] * L[0] + view[4 + r] * L[1] + view[8 + r] * L[2] + view[12 + r])
+        : [0, 1, 2].map(r => view[r] * L[0] + view[4 + r] * L[1] + view[8 + r] * L[2]);
+      gl.uniform3f(u.uLight, ...lv); gl.uniform1f(u.uPoint, point ? 1 : 0); gl.uniform1f(u.uAmbient, ambient);
+      gl.disable(gl.BLEND); gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true);
+      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, spheres.length);
+      gl.bindVertexArray(null);
+    },
+  };
+}
+
+// ---------------------------------------------------------------- lines
+
+/**
+ * Thick polylines in 3D (orbits, trajectories, field lines, axes), constant width in screen
+ * pixels. update(lines) with lines = [[x,y,z, x,y,z, …], …] (or one flat array);
+ * draw(camera, { aspect, width, color, opacity, dash: [on, off] in world units, depthTest }).
+ * Dashed lines are for reference overlays (analytic curves), solid for computed paths.
+ */
+function createLineRenderer(gl) {
+  const { p, u } = compile(gl, `#version 300 es
+in vec2 aCorner; in vec3 aA; in vec3 aB; in vec2 aS;
+uniform mat4 uVP; uniform vec2 uViewport; uniform float uWidth;
+out float vS;
+void main() {
+  vec4 a = uVP * vec4(aA, 1.0), b = uVP * vec4(aB, 1.0);
+  vec4 me = aCorner.x < 0.5 ? a : b;
+  vec2 sa = a.xy / max(a.w, 1e-6) * uViewport, sb = b.xy / max(b.w, 1e-6) * uViewport;
+  vec2 d = sb - sa; float len = length(d);
+  vec2 nrm = len > 1e-6 ? vec2(-d.y, d.x) / len : vec2(0.0, 1.0);
+  vec2 off = nrm * aCorner.y * uWidth / uViewport;
+  gl_Position = vec4(me.xy + off * me.w, me.z, me.w);
+  vS = aCorner.x < 0.5 ? aS.x : aS.y;
+}`, `#version 300 es
+precision highp float;
+in float vS; uniform vec3 uColor; uniform float uOpacity; uniform vec2 uDash;
+out vec4 frag;
+void main() {
+  if (uDash.x > 0.0 && mod(vS, uDash.x + uDash.y) > uDash.x) discard;
+  frag = vec4(uColor * uOpacity, uOpacity);
+}`);
+  const vao = gl.createVertexArray(), corner = gl.createBuffer(), inst = gl.createBuffer();
+  gl.bindVertexArray(vao);
+  gl.bindBuffer(gl.ARRAY_BUFFER, corner); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, -1, 0, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+  const cl = gl.getAttribLocation(p, 'aCorner'); gl.enableVertexAttribArray(cl); gl.vertexAttribPointer(cl, 2, gl.FLOAT, false, 0, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, inst);
+  for (const [name, size, off] of [['aA', 3, 0], ['aB', 3, 3], ['aS', 2, 6]]) {
+    const loc = gl.getAttribLocation(p, name);
+    gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 32, off * 4); gl.vertexAttribDivisor(loc, 1);
+  }
+  gl.bindVertexArray(null);
+  let lines = [];   // rebuilt each draw: the camera target (the float64 origin) may move
+  return {
+    update(data) { lines = Array.isArray(data) && data.length && typeof data[0] !== 'number' ? data : [data]; },
+    draw(camera, { aspect, width = 2, color = '#9fb3c8', opacity = 1, dash = null, depthTest = true } = {}) {
+      const t = camera.target;
+      // segments relative to the camera target (float64 subtraction), with cumulative length for dashes
+      let n = 0;
+      for (const l of lines) n += Math.max(0, l.length / 3 - 1);
+      if (!n) return;
+      {
+        const buf = new Float32Array(8 * n);
+        let k = 0;
+        for (const l of lines) {
+          let s = 0;
+          for (let i = 0; i + 5 < l.length; i += 3) {
+            const a = [l[i] - t[0], l[i + 1] - t[1], l[i + 2] - t[2]], b = [l[i + 3] - t[0], l[i + 4] - t[1], l[i + 5] - t[2]];
+            const len = Math.hypot(l[i + 3] - l[i], l[i + 4] - l[i + 1], l[i + 5] - l[i + 2]);
+            buf.set([...a, ...b, s, s + len], 8 * k++); s += len;
+          }
+        }
+        gl.bindBuffer(gl.ARRAY_BUFFER, inst); gl.bufferData(gl.ARRAY_BUFFER, buf, gl.DYNAMIC_DRAW);
+      }
+      const dpr = devicePixelRatio || 1;
+      const { viewProj } = camera.matrices(aspect ?? gl.drawingBufferWidth / gl.drawingBufferHeight, { relative: true });
+      gl.useProgram(p); gl.bindVertexArray(vao);
+      gl.uniformMatrix4fv(u.uVP, false, viewProj);
+      gl.uniform2f(u.uViewport, gl.drawingBufferWidth / 2, gl.drawingBufferHeight / 2);
+      gl.uniform1f(u.uWidth, width * dpr / 2);
+      gl.uniform3f(u.uColor, ...rgb(color)); gl.uniform1f(u.uOpacity, opacity);
+      gl.uniform2f(u.uDash, dash?.[0] ?? 0, dash?.[1] ?? 0);
+      gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      if (depthTest) { gl.enable(gl.DEPTH_TEST); gl.depthMask(false); } else gl.disable(gl.DEPTH_TEST);
+      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, n);
+      gl.depthMask(true);
+      gl.bindVertexArray(null);
+    },
+  };
+}
+
+return { perspective, lookAt, multiply, invert, orbitCamera, COLORMAPS, colormap, normalize, createGLLayer, createPointRenderer, createFieldRenderer, createVolumeRenderer, createSphereRenderer, createLineRenderer };
+})();
+
+// ---- psim:ui/equation.mjs
+__psim["ui/equation.mjs"] = (() => {
+// Equations split into their physical terms.
+//
+// An equation is shown as a row of term cards. Each card holds one term's maths,
+// its name, its live numerical value with units, and a colour that matches the
+// curve or element it produces in the plots. Hovering a term highlights its curve.
+// A "where" block defines every symbol with its value; a derivation lists steps.
+//
+//   const eq = createEquation({
+//     lhs: { mathml: '<mi>V</mi><mo>(</mo><mi>r</mi><mo>)</mo>', label: 'potential', value: () => V, unit: 'GeV' },
+//     terms: [
+//       { id: 'coul', mathml: '<mo>−</mo><mfrac>…</mfrac>', label: 'Coulomb (gluon exchange)', color: '--body-1', value: () => Vc, unit: 'GeV' },
+//       { id: 'lin', sign: '+', mathml: '<mi>σ</mi><mi>r</mi>', label: 'string (confinement)', color: '--body-0', value: () => s * r, unit: 'GeV' },
+//     ],
+//     where: [{ mathml: '<mi>σ</mi>', meaning: 'string tension', value: () => 0.926, unit: 'GeV/fm' }],
+//     link: plot,
+//   });
+//   eq.update();   // refresh live values (call every UI tick)
+const { el, sci } = __psim["ui/instrument.mjs"];
+const m = inner => `<math display="inline">${inner}</math>`;
+
+function fmt(v, digits = 4) {
+  if (typeof v === 'string') return v;
+  if (v == null || Number.isNaN(v)) return '—';
+  const a = Math.abs(v);
+  if (a !== 0 && (a < 1e-3 || a >= 1e5)) return sci(v, digits - 1);
+  return (+v.toPrecision(digits)).toString().replace('-', '−');
+}
+
+function createEquation({ title, lhs, op = '=', terms = [], where = [], note, link, onFocus } = {}) {
+  const valueEls = [];
+  const focusTerm = id => {
+    for (const c of root.querySelectorAll('.psim-term')) c.classList.toggle('dim', id != null && c.dataset.id !== id);
+    const targets = Array.isArray(link) ? link : link ? [link] : [];
+    targets.forEach(p => p.highlight(id));
+    onFocus?.(id);
+  };
+
+  const card = (t, kind) => {
+    const v = el('span', { class: 'v' });
+    if (t.value) valueEls.push([v, t]);
+    const c = el('div', {
+      class: `psim-term ${kind}`, 'data-id': t.id ?? '', tabindex: t.id ? 0 : null,
+      onmouseenter: () => t.id && focusTerm(t.id), onmouseleave: () => t.id && focusTerm(null),
+      onfocus: () => t.id && focusTerm(t.id), onblur: () => t.id && focusTerm(null),
+    },
+    el('div', { class: 'mx', html: m(t.mathml) }),
+    el('i', { class: 'bar', style: t.color ? `background:var(${t.color})` : '' }),
+    t.label ? el('span', { class: 'lb' }, t.label) : null,
+    v);
+    return c;
+  };
+
+  const row = el('div', { class: 'psim-eqrow' });
+  if (lhs) row.append(card(lhs, 'lhs'), el('span', { class: 'op' }, op));
+  terms.forEach((t, i) => {
+    if (i > 0) row.append(el('span', { class: 'op' }, t.sign ?? '+'));
+    row.append(card(t, 'rhs'));
+  });
+
+  const whereEl = where.length ? el('div', { class: 'psim-where' },
+    el('span', { class: 'kw' }, 'where'),
+    ...where.map(w => {
+      const v = el('span', { class: 'v' });
+      if (w.value) valueEls.push([v, w]);
+      return el('div', { class: 'w' }, el('span', { class: 'mx', html: m(w.mathml) }), el('span', { class: 'mean' }, w.meaning), v);
+    })) : null;
+
+  const root = el('section', { class: 'psim-equation' },
+    title ? el('h3', {}, title) : null, row, whereEl, note ? el('p', { class: 'psim-hint' }, note) : null);
+
+  const api = {
+    el: root,
+    update() {
+      for (const [node, t] of valueEls) {
+        let v;
+        try { v = t.value(); } catch { v = NaN; }
+        node.textContent = `${fmt(v, t.digits)}${t.unit ? ` ${t.unit}` : ''}`;
+      }
+    },
+    focus: focusTerm,
+  };
+  api.update();
+  return api;
+}
+
+/** Numbered derivation: each step is one line of maths plus the reason for it. */
+function createDerivation(steps, { title } = {}) {
+  return el('section', { class: 'psim-derivation' },
+    title ? el('h3', {}, title) : null,
+    el('ol', {}, steps.map(s => el('li', {},
+      el('div', { class: 'mx', html: `<math display="inline">${s.mathml}</math>` }),
+      s.note ? el('span', { class: 'why' }, s.note) : null))));
+}
+
+/** Helpers for writing MathML compactly. */
+const M = {
+  i: s => `<mi>${s}</mi>`,
+  n: s => `<mn>${s}</mn>`,
+  o: s => `<mo>${s}</mo>`,
+  // msub/msup take exactly two children: wrap both, so a multi-part exponent such as −x survives
+  sub: (b, s) => `<msub><mrow>${b}</mrow><mrow>${s}</mrow></msub>`,
+  sup: (b, s) => `<msup><mrow>${b}</mrow><mrow>${s}</mrow></msup>`,
+  frac: (a, b) => `<mfrac><mrow>${a}</mrow><mrow>${b}</mrow></mfrac>`,
+  sqrt: a => `<msqrt>${a}</msqrt>`,
+  row: (...a) => `<mrow>${a.join('')}</mrow>`,
+  paren: a => `<mo>(</mo>${a}<mo>)</mo>`,
+  /** Vector symbol: Unicode mathematical bold (MathML Core ignores mathvariant). */
+  vec: s => `<mi>${{ r: '𝐫', v: '𝐯', E: '𝐄', B: '𝐁', u: '𝐮', F: '𝐅', p: '𝐩', k: '𝐤', x: '𝐱', a: '𝐚' }[s] ?? s}</mi>`,
+};
+
+return { createEquation, createDerivation, M };
+})();
+
+// ---- psim:core/verification.mjs
+__psim["core/verification.mjs"] = (() => {
+// Shared verification gates for the CLI and browser. Reports are evidence only
+// when every check is explicit and the tested settings still match the simulation.
+
+function validateModuleReport(report) {
+  if (!report || !Array.isArray(report.checks) || !report.checks.length) throw new Error('verification: need a non-empty checks array');
+  for (const [i, check] of report.checks.entries()) {
+    const where = `verification check ${i + 1}`;
+    if (!check || typeof check.label !== 'string' || !check.label.trim()) throw new Error(`${where}: label is required`);
+    if (typeof check.pass !== 'boolean') throw new Error(`${where}: pass must be explicitly true or false`);
+    if (typeof check.value === 'number') {
+      if (!Number.isFinite(check.value)) throw new Error(`${where}: measured value must be finite`);
+    } else if (typeof check.value !== 'string' || !check.value.trim() || /NaN|Infinity|∞|^\s*—\s*$/.test(check.value)) {
+      throw new Error(`${where}: measured value must be finite and present`);
+    }
+    if (check.state != null && check.state !== 'warn') throw new Error(`${where}: optional state must be 'warn'`);
+  }
+  return report;
+}
+
+/** Reasons a gravity report cannot support a successful verification claim. */
+function gravityReportProblems(report) {
+  const problems = [];
+  const finiteError = (value, limit, label) => {
+    if (!(Number.isFinite(value) && value >= 0)) problems.push(`${label} is missing or non-finite`);
+    else if (value > limit) problems.push(`${label} ${value.toExponential(2)} exceeds ${limit.toExponential(0)}`);
+  };
+  const c = report?.conservation, cv = report?.convergence;
+  finiteError(c?.dE, report?.settings?.softening > 0 ? 1e-4 : 1e-8, 'energy error');
+  finiteError(c?.dP, 1e-10, 'momentum drift');
+  finiteError(c?.dL, 1e-10, 'angular momentum drift');
+  if (!(Number.isFinite(c?.h) && c.h > 0)) problems.push('step parameter is missing or non-finite');
+  if (!(Number.isFinite(report?.duration) && report.duration > 0)) problems.push('verification duration is invalid');
+  if (!(Number.isFinite(cv?.observedOrder) && Number.isFinite(cv?.expectedOrder) && cv.expectedOrder > 0)) problems.push('convergence order is unresolved or non-finite');
+  else if (Math.abs(cv.observedOrder - cv.expectedOrder) > 0.6) problems.push('observed convergence order differs from theory');
+  if (!(Number.isFinite(cv?.horizon) && cv.horizon >= 0 && cv.horizon <= report.duration && typeof cv.converged === 'boolean')) problems.push('convergence horizon is invalid');
+  finiteError(cv?.finalDifference, Infinity, 'final refinement difference');
+  if (report?.determinism?.identical !== true || report?.frameIndependence?.identical !== true) problems.push('reproducibility check failed');
+  if (!Array.isArray(report?.benchmarks) || !report.benchmarks.length) problems.push('benchmarks are missing');
+  else {for (const b of report.benchmarks) {
+    const name = b?.name ?? 'unnamed benchmark';
+    finiteError(b?.dE, 1e-9, `${name}: energy error`);
+    if (b && Object.hasOwn(b, 'positionError')) finiteError(b.positionError, 1e-3, `${name}: position error`);
+    else if (b && Object.hasOwn(b, 'returnError')) finiteError(b.returnError, 1e-6, `${name}: return error`);
+    else if (b?.matchesLiterature !== true) problems.push(`benchmark failed: ${name}`);
+  }}
+  return problems;
+}
+
+/** Match solver settings, allowing only round-off in the computed step parameter. */
+function gravityReportMatches(report, settings) {
+  if (!report?.settings || report.integrator !== settings.integrator) return false;
+  for (const key of ['integrator', 'G', 'softening', 'stepsPerCrossing']) {
+    if (report.settings[key] !== settings[key]) return false;
+  }
+  const h = report.conservation?.h;
+  return Number.isFinite(h) && h > 0 && Number.isFinite(settings.h) && Math.abs(h - settings.h) <= 1e-12 * Math.abs(h);
+}
+
+return { validateModuleReport, gravityReportProblems, gravityReportMatches };
+})();
+
+// ---- psim:ui/instrument-app.mjs
+__psim["ui/instrument-app.mjs"] = (() => {
+// Generic instrument shell for composed simulations (any domain).
+//
+// The page supplies a physics module that follows the simulation contract
+// (see references/compose.md) and a draw function; this shell provides the
+// header, trust tier, theme, transport, frame-rate-independent clock,
+// parameter controls, live diagnostics, verification report, model panel,
+// export and the window.psim hook used by automated checks.
+//
+// Simulation contract (returned by create(params)):
+//   sim.t                    physical time of the latest computed state
+//   sim.step()               advance by one integrator step (or one analytic tick)
+//   sim.sample?(t)           state at t between steps, for drawing (default: current state)
+//   sim.diagnostics()        [{ key, label, value, kind: 'error'|'value', unit?, good?, warn? }]
+//   sim.state()              JSON-serialisable state (export, tests)
+//   sim.record?()            { header: [...], rows: [[...], ...] } for CSV export
+//   sim.timeDependent        false for static analytic visualisations (no transport)
+const { el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon, cssVar } = __psim["ui/instrument.mjs"];
+const { createPlot } = __psim["ui/plot.mjs"];
+const { createGLLayer } = __psim["ui/gl.mjs"];
+const { createEquation, createDerivation, M } = __psim["ui/equation.mjs"];
+const { validateModuleReport } = __psim["core/verification.mjs"];
+const TIERS = {
+  validated: 'Validated numerical',
+  approximate: 'Approximate numerical',
+  analytical: 'Analytical',
+  conceptual: 'Conceptual illustration',
+};
+
+function createInstrument(spec) {
+  const {
+    title, subtitle = '', tier, tierReason, create, draw, params = [], model = {},
+    timeUnit = 'T', timeLabel = 'simulated time', speed: speed0 = 1, gl: wantGL = false, drawGL, controls, onPointer, layout = 'stage', bench,
+  } = spec;
+  if (!TIERS[tier]) throw new Error(`tier must be one of ${Object.keys(TIERS).join(', ')}`);
+  const report = readJsonScript('psim-verification');
+  if (report) validateModuleReport(report);
+  const verified = report?.checks.every(c => c.pass === true) === true;
+  const trustLabel = verified ? TIERS[tier] : 'Verification needed';
+  const status = beacon();
+  const query = new URLSearchParams(location.search);
+
+  document.title = title;
+  document.body.innerHTML = `
+  <div class="psim-app ${layout === 'workbench' ? 'workbench' : ''}">
+    <header class="psim-head">
+      <div class="psim-mark" aria-hidden="true"></div>
+      <div class="psim-title"><h1></h1><p></p></div>
+      <div class="spacer"></div>
+      <button class="psim-tier" type="button"><i></i><span></span></button>
+      <button class="psim-iconbtn" type="button" aria-label="Toggle theme"></button>
+    </header>
+    <main class="psim-stage"><canvas></canvas>
+      <div class="psim-hud"><span class="dim"></span><b>0</b><span class="h1"></span><span class="dim h2"></span><span class="flag"></span></div>
+      <div class="psim-legend"></div>
+    </main>
+    <aside class="psim-side"></aside>
+  </div>`;
+  const $ = s => document.querySelector(s);
+  $('.psim-title h1').textContent = title;
+  $('.psim-title p').textContent = subtitle;
+  const tierBtn = $('.psim-tier');
+  tierBtn.dataset.tier = verified ? tier : 'unverified';
+  tierBtn.querySelector('span').textContent = trustLabel;
+  initTheme($('.psim-iconbtn'));
+  const stage = $('.psim-stage'), side = $('.psim-side');
+  // Workbench layout: the live canvas on top, then term-split equations and figures that
+  // update with the model (spec.bench builds them; see references/compose.md).
+  let benchParts = null;
+  if (layout === 'workbench') {
+    const wrap = el('div', { class: 'psim-canvaswrap' }, stage.querySelector('canvas'), stage.querySelector('.psim-hud'), stage.querySelector('.psim-legend'));
+    const eqs = el('div', { class: 'psim-eqs' }), figs = el('div', { class: 'psim-figs' });
+    stage.prepend(el('div', { class: 'psim-bench' }, wrap, eqs, figs));
+    benchParts = { wrap, eqs, figs };
+  }
+  const canvas = stage.querySelector('canvas');
+  const ctx = canvas.getContext('2d');
+  // optional GPU layer under the 2D canvas (ui/gl.mjs): drawGL renders the scene, draw adds labels
+  const glLayer = wantGL ? createGLLayer(canvas) : null;
+  $('.psim-hud .dim').textContent = timeLabel;
+  const hud = { t: $('.psim-hud b'), a: $('.psim-hud .h1'), b: $('.psim-hud .h2'), flag: $('.psim-hud .flag') };
+  if (model.legend) $('.psim-legend').append(...model.legend.map(t => el('span', {}, t)));
+
+  // ------------------------------------------------------------ state
+  const values = Object.fromEntries(params.map(p => [p.key, p.value]));
+  let sim, tDisplay = 0, limited = false;
+  const clock = createClock({ speed: speed0 });
+  const view = { W: 0, H: 0, dpr: 1, color: cssVar, opts: {}, pointer: null, gl: glLayer?.gl ?? null, glError: glLayer && !glLayer.ok ? glLayer.reason : '' };
+
+  let benchApi = null;
+  function rebuild() {
+    sim = create({ ...values });
+    tDisplay = sim.t ?? 0;
+    diagPlot.clear();
+    renderDiag(true);
+    benchApi?.update?.(sim, tDisplay, { rebuilt: true });
+    status.set('params', values);
+  }
+
+  // ------------------------------------------------------------ transport
+  const timeDependent = spec.timeDependent !== false;
+  let tp = null;
+  if (timeDependent) {
+    tp = transport({
+      speed: speed0, speedLabel: s => `${sci(s, 2)} ${timeUnit}/s`,
+      onToggle: () => setPlaying(!clock.playing),
+      onStep: () => { setPlaying(false); sim.step(); tDisplay = sim.t; },
+      onRestart: () => rebuild(),
+      onFit: () => spec.onFit?.(view),
+      onSpeed: s => { clock.speed = s; },
+    });
+    stage.append(tp);
+  } else {
+    stage.querySelector('.psim-hud').querySelector('.dim').textContent = '';
+  }
+  function setPlaying(p) { clock.playing = p; tp?.setPlaying(p); }
+
+  // ------------------------------------------------------------ side panel
+  const secParams = section('Parameters');
+  const paramInputs = new Map();
+  if (params.length) {
+    secParams.body.append(el('p', { class: 'psim-hint' }, 'Changing a parameter recomputes the model from its initial state.'));
+    for (const p of params) {
+      if (p.options) {
+        secParams.body.append(el('div', { class: 'psim-field' }, el('div', { class: 'top' }, el('span', {}, p.label)),
+          select(p.options, p.value, v => { values[p.key] = isNaN(+v) ? v : +v; rebuild(); })));
+      } else {
+        const sl = slider({
+          label: p.label, min: p.min, max: p.max, value: p.value, log: p.log, unit: p.unit ?? '', digits: p.digits ?? 3,
+          integer: p.integer, limits: p.limits,
+          onInput: v => { values[p.key] = v; rebuild(); },
+        });
+        paramInputs.set(p.key, sl);
+        secParams.body.append(sl);
+      }
+      if (p.hint) secParams.body.append(el('p', { class: 'psim-hint', style: 'margin-top:-4px;font-size:11.5px' }, p.hint));
+    }
+  }
+  if (controls) controls(secParams.body, { values, rebuild });
+
+  const secDiag = section('Diagnostics', { aside: 'live' });
+  const diagPlot = logPlot({ caption: '', yMin: 1e-16, yMax: 1 });
+  const diagSeries = diagPlot.addSeries('--accent');
+  const diagRows = new Map();
+  secDiag.body.append(diagPlot.el);
+  let nextPlot = 0;
+  function renderDiag(reset = false) {
+    const d = sim.diagnostics();
+    if (reset) {
+      diagRows.forEach(r => r.remove());
+      diagRows.clear();
+      nextPlot = 0;
+      const firstErr = d.find(x => x.kind === 'error');
+      diagPlot.el.style.display = firstErr ? '' : 'none';
+      diagPlot.el.querySelector('.cap').textContent = firstErr ? `${firstErr.label}   vs   t` : '';
+      if (spec.duration) diagPlot.setXMax(spec.duration);
+    }
+    for (const x of d) {
+      let r = diagRows.get(x.key);
+      if (!r) { r = row(x.label); diagRows.set(x.key, r); secDiag.body.append(r); }
+      const text = x.text ?? (x.kind === 'error' ? sci(x.value) : `${sci(x.value, 4)}${x.unit ? ` ${x.unit}` : ''}`);
+      r.set(text, x.kind === 'error' && x.good != null ? grade(x.value, x.good, x.warn ?? x.good * 1000) : '');
+    }
+    const firstErr = d.find(x => x.kind === 'error');
+    if (firstErr && timeDependent && sim.t >= nextPlot) {
+      diagPlot.push(diagSeries, sim.t, Math.max(firstErr.value, 1e-17));
+      nextPlot = sim.t + (spec.duration ?? 10) / 800;
+    }
+    diagPlot.draw();
+    return d;
+  }
+
+  const secVerify = section('Verification', { aside: report ? 'report embedded' : 'no report' });
+  if (report?.checks) {
+    secVerify.body.append(el('p', { class: 'psim-hint' }, report.summary ?? `Measured when this page was built (${(report.generated ?? '').slice(0, 10)}):`));
+    for (const c of report.checks) {
+      secVerify.body.append(el('div', { class: 'psim-check' },
+        el('i', { class: c.pass !== true ? 'bad' : c.state === 'warn' ? 'warn' : '' }),
+        el('span', {}, c.label), el('code', {}, c.value)));
+    }
+    if (report.notes) for (const n of report.notes) secVerify.body.append(el('p', { class: 'psim-hint' }, n));
+  } else {
+    secVerify.body.append(el('p', { class: 'psim-hint' }, 'No build-time verification report is embedded in this page.'));
+  }
+
+  const secModel = section('Model, assumptions & limits', { open: false });
+  secModel.body.append(
+    el('div', { class: 'psim-prose' }, el('p', {}, el('b', {}, `${trustLabel}. `), tierReason ?? '')),
+    ...(model.equations ?? []).flatMap(eq => [
+      eq.caption ? el('p', { class: 'psim-hint' }, eq.caption) : null,
+      el('div', { class: 'psim-math', html: eq.mathml }),
+    ]),
+    model.assumptions ? el('div', { class: 'psim-prose' }, el('p', {}, el('b', {}, 'Assumptions and limits')), el('ul', {}, model.assumptions.map(a => el('li', {}, a)))) : null,
+    model.conventions ? el('div', { class: 'psim-prose' }, el('p', {}, el('b', {}, 'Visual conventions')), el('ul', {}, model.conventions.map(a => el('li', {}, a)))) : null,
+    model.references ? el('div', { class: 'psim-prose' }, el('p', {}, el('b', {}, 'References')), el('ul', {}, model.references.map(a => el('li', {}, el('cite', {}, a))))) : null,
+  );
+  tierBtn.addEventListener('click', () => { secModel.open = true; secModel.scrollIntoView({ behavior: 'smooth' }); });
+
+  const secExport = section('Export', { open: false });
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  secExport.body.append(el('div', { class: 'psim-btns' },
+    button('State JSON', () => download(`${slug}-state.json`, JSON.stringify({
+      generator: 'p-simtor', title, tier: tierBtn.dataset.tier, params: values, t: sim.t, state: sim.state(), diagnostics: sim.diagnostics(), verification: report,
+    }, null, 2), 'application/json')),
+    button('Data CSV', () => {
+      const r = sim.record?.();
+      if (!r) { toast(stage, 'This model records no tabular data'); return; }
+      download(`${slug}-data.csv`, [`# p-simtor | ${title}`, r.header.join(','), ...r.rows.map(x => x.join(','))].join('\n'), 'text/csv');
+    }),
+    button('PNG image', () => {
+      // composite the GPU layer (if any) under the 2D overlay
+      const out = document.createElement('canvas');
+      out.width = canvas.width; out.height = canvas.height;
+      const c = out.getContext('2d');
+      if (glLayer?.ok) c.drawImage(glLayer.canvas, 0, 0);
+      c.drawImage(canvas, 0, 0);
+      out.toBlob(b => el('a', { href: URL.createObjectURL(b), download: `${slug}.png` }).click());
+    }),
+  ));
+
+  side.append(...[secParams, secDiag, secVerify, secModel, secExport].filter(s => s !== secParams || params.length || controls));
+  if (spec.extraSections) spec.extraSections(side, { section, el, row, slider, toggle, button, values, rebuild, view });
+
+  // ------------------------------------------------------------ canvas & loop
+  function resize() {
+    view.dpr = devicePixelRatio || 1;
+    view.W = canvas.clientWidth; view.H = canvas.clientHeight;
+    canvas.width = Math.round(view.W * view.dpr); canvas.height = Math.round(view.H * view.dpr);
+  }
+  new ResizeObserver(resize).observe(canvas);
+  resize();
+  if (onPointer) onPointer(canvas, view, () => sim);
+
+  let frames = 0, lastUi = 0;
+  function frame(now) {
+    if (timeDependent) {
+      const target = clock.tick(now, tDisplay);
+      if (target > tDisplay) {
+        const deadline = performance.now() + 9;
+        let k = 0;
+        while (sim.t < target) {
+          sim.step();
+          if ((++k & 63) === 0 && performance.now() > deadline) break;
+        }
+        limited = sim.t < target;
+        tDisplay = Math.min(target, sim.t);
+      }
+    }
+    if (glLayer?.ok) { glLayer.sync(view.dpr); drawGL?.(glLayer.gl, sim, view, tDisplay); }
+    ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
+    ctx.clearRect(0, 0, view.W, view.H);
+    if (glLayer && !glLayer.ok) { ctx.fillStyle = cssVar('--muted'); ctx.font = '13px system-ui, sans-serif'; ctx.fillText(`${glLayer.reason}: the 3D view cannot be shown.`, 16, view.H - 20); }
+    draw(ctx, sim, view, tDisplay);
+    if (now - lastUi > 100) {
+      lastUi = now;
+      const d = renderDiag();
+      hud.t.textContent = timeDependent ? `${fix(tDisplay, 3)} ${timeUnit}` : '';
+      const firstErr = d.find(x => x.kind === 'error');
+      hud.a.textContent = firstErr ? `${firstErr.label} ${sci(firstErr.value)}` : '';
+      hud.b.textContent = spec.hudLine?.(sim) ?? '';
+      hud.flag.textContent = limited ? 'compute-limited: playback slowed to keep the calculation exact' : '';
+      benchApi?.update?.(sim, tDisplay, { rebuilt: false });
+      status.set('t', timeDependent ? tDisplay : 1);
+      if (firstErr) status.set('drift', firstErr.value);
+    }
+    if (++frames === 1 || frames % 30 === 0) status.set('frames', frames);   // first frame at once: slow pages count as live
+    requestAnimationFrame(frame);
+  }
+
+  window.psim = {
+    model: 'generic',
+    get t() { return tDisplay; },
+    state: () => ({ t: sim.t, ...sim.state() }),
+    params: () => ({ ...values }),
+    advanceTo: t => { while (sim.t < t) sim.step(); tDisplay = Math.max(tDisplay, Math.min(t, sim.t)); return window.psim.state(); },
+    restart: () => rebuild(),
+    steps: n => { if (typeof sim.step === "function") for (let i = 0; i < n; i++) sim.step(); tDisplay = sim.t ?? 0; return window.psim.state(); },
+  };
+
+  if (bench && benchParts) {
+    benchApi = bench({
+      ...benchParts, createPlot, createEquation, createDerivation, M, values,
+      setParam: (k, v) => { values[k] = v; paramInputs.get(k)?.setValue?.(v); rebuild(); },
+      getSim: () => sim,
+    }) ?? null;
+  }
+  rebuild();
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  setPlaying(timeDependent && (query.get('autoplay') ? query.get('autoplay') !== '0' : !reduced));
+  addEventListener('keydown', e => {
+    if (e.target.closest('input, select, textarea') || !timeDependent) return;
+    if (e.code === 'Space') { e.preventDefault(); setPlaying(!clock.playing); }
+    else if (e.key === '.') { setPlaying(false); sim.step(); tDisplay = sim.t; }
+    else if (e.key === 'r' || e.key === 'R') rebuild();
+  });
+  status.set('model', 'generic');
+  status.set('ready', true);
+  requestAnimationFrame(frame);
+  return { values, rebuild, view, get sim() { return sim; } };
+}
+
+return { createInstrument };
+})();
+
+// ---- psim:core/numerics.mjs
+__psim["core/numerics.mjs"] = (() => {
+// General numerical toolkit: random numbers, FFT, ODE solvers, quadrature, root
+// finding, special functions, linear algebra. Pure functions, browser + Node.
+// Every routine is tested against known values in tests/numerics.test.mjs.
+// Import these instead of writing them again in a page.
+
+// ---------------------------------------------------------------- random numbers
+
+/** Seeded PRNG (mulberry32), uniform in [0, 1). Deterministic for a given seed. */
+function rng(seed = 1) {
+  let a = seed >>> 0;
+  const next = () => {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  let spare = null;
+  next.normal = () => {               // standard normal (Box–Muller, cached pair)
+    if (spare != null) { const s = spare; spare = null; return s; }
+    let u = 0; while (u === 0) u = next();
+    const v = next(), r = Math.sqrt(-2 * Math.log(u));
+    spare = r * Math.sin(2 * Math.PI * v);
+    return r * Math.cos(2 * Math.PI * v);
+  };
+  return next;
+}
+
+// ---------------------------------------------------------------- FFT
+
+/** In-place radix-2 complex FFT. re/im: Float64Array, length a power of two.
+ *  Forward: X_k = Σ x_n e^{−2πikn/N}. Inverse (inverse = true) includes the 1/N factor. */
+function fft(re, im, inverse = false) {
+  const n = re.length;
+  if (n & (n - 1)) throw new Error('fft: length must be a power of two');
+  for (let i = 1, j = 0; i < n; i++) {
+    let bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; }
+  }
+  const sign = inverse ? 1 : -1;
+  for (let len = 2; len <= n; len <<= 1) {
+    const ang = sign * 2 * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang);
+    for (let i = 0; i < n; i += len) {
+      let cr = 1, ci = 0;
+      for (let k = 0; k < len / 2; k++) {
+        const a = i + k, b = a + len / 2;
+        const xr = re[b] * cr - im[b] * ci, xi = re[b] * ci + im[b] * cr;
+        re[b] = re[a] - xr; im[b] = im[a] - xi;
+        re[a] += xr; im[a] += xi;
+        const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t;
+      }
+    }
+  }
+  if (inverse) for (let i = 0; i < n; i++) { re[i] /= n; im[i] /= n; }
+}
+
+/** Angular wavenumbers k for an FFT grid of n points with spacing dx (FFT ordering). */
+function fftFreq(n, dx) {
+  const k = new Float64Array(n);
+  for (let i = 0; i < n; i++) k[i] = 2 * Math.PI * (i < n / 2 ? i : i - n) / (n * dx);
+  return k;
+}
+
+// ---------------------------------------------------------------- ODEs
+
+/** Classical RK4 step for y' = f(t, y). y: array; returns new array. */
+function rk4Step(f, t, y, h) {
+  const k1 = f(t, y);
+  const k2 = f(t + h / 2, y.map((v, i) => v + h / 2 * k1[i]));
+  const k3 = f(t + h / 2, y.map((v, i) => v + h / 2 * k2[i]));
+  const k4 = f(t + h, y.map((v, i) => v + h * k3[i]));
+  return y.map((v, i) => v + h / 6 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]));
+}
+
+// Dormand–Prince 5(4) coefficients (Dormand & Prince 1980; Hairer, Nørsett & Wanner, Table 5.2).
+const DP = {
+  c: [0, 1 / 5, 3 / 10, 4 / 5, 8 / 9, 1, 1],
+  a: [[], [1 / 5], [3 / 40, 9 / 40], [44 / 45, -56 / 15, 32 / 9],
+    [19372 / 6561, -25360 / 2187, 64448 / 6561, -212 / 729],
+    [9017 / 3168, -355 / 33, 46732 / 5247, 49 / 176, -5103 / 18656],
+    [35 / 384, 0, 500 / 1113, 125 / 192, -2187 / 6784, 11 / 84]],
+  b: [35 / 384, 0, 500 / 1113, 125 / 192, -2187 / 6784, 11 / 84, 0],
+  e: [71 / 57600, 0, -71 / 16695, 71 / 1920, -17253 / 339200, 22 / 525, -1 / 40],
+};
+
+/** The Dormand–Prince 5(4) tableau (for steppers built on top of dopri5). */
+const DORMAND_PRINCE = DP;
+
+/**
+ * Adaptive Dormand–Prince 5(4) integration of y' = f(t, y) from t0 to t1.
+ * Error control per component: |err_i| <= atol + rtol·max(|y_i|, |y_new_i|).
+ * onStep(t, y) is called after every accepted step (return false to stop early).
+ * Returns { t, y, steps, rejected, stopped }. Throws if tolerance cannot be met or
+ * the step budget is exhausted; stopped is reserved for an intentional onStep stop.
+ */
+function dopri5(f, t0, y0, t1, { rtol = 1e-9, atol = 1e-12, h0, hmax = Infinity, maxSteps = 1e6, onStep } = {}) {
+  if (!Number.isFinite(t0) || !Number.isFinite(t1) || !y0.length || !Array.from(y0).every(Number.isFinite)) throw new Error('dopri5: finite times and a non-empty finite state are required');
+  if (!(Number.isFinite(rtol) && rtol > 0 && Number.isFinite(atol) && atol > 0)) throw new Error('dopri5: tolerances must be finite and positive');
+  if (!(hmax > 0) || (hmax !== Infinity && !Number.isFinite(hmax)) || (h0 != null && !(Number.isFinite(h0) && h0 !== 0))) throw new Error('dopri5: step sizes must be non-zero and finite (hmax may be Infinity)');
+  if (!(Number.isSafeInteger(maxSteps) && maxSteps > 0)) throw new Error('dopri5: maxSteps must be a positive integer');
+  const n = y0.length, dir = Math.sign(t1 - t0) || 1;
+  let t = t0;
+  const y = Float64Array.from(y0);
+  let h = dir * Math.min(Math.abs(h0 ?? (t1 - t0) / 100), hmax);
+  const k = Array.from({ length: 7 }, () => new Float64Array(n));
+  const yt = new Float64Array(n), yn = new Float64Array(n);
+  let steps = 0, rejected = 0, stopped = false;
+  const maxAttempts = 4 * maxSteps;
+  k[0].set(f(t, y));
+  while (dir * (t1 - t) > 0 && steps < maxSteps && steps + rejected < maxAttempts) {
+    if (dir * (t + h - t1) > 0) h = t1 - t;
+    // This checks floating-point progress, not a dimensional time threshold. A
+    // femtosecond step can be perfectly resolvable and still need error control.
+    if (h === 0 || t + h === t) throw new Error(`dopri5: step underflow at t = ${t}; cannot meet tolerance`);
+    for (let s = 1; s < 7; s++) {
+      for (let i = 0; i < n; i++) {
+        let acc = y[i];
+        for (let j = 0; j < s; j++) acc += h * DP.a[s][j] * k[j][i];
+        yt[i] = acc;
+      }
+      k[s].set(f(t + DP.c[s] * h, yt));
+    }
+    let err = 0;
+    for (let i = 0; i < n; i++) {
+      let acc = y[i], e = 0;
+      for (let j = 0; j < 7; j++) { acc += h * DP.b[j] * k[j][i]; e += h * DP.e[j] * k[j][i]; }
+      yn[i] = acc;
+      const sc = atol + rtol * Math.max(Math.abs(y[i]), Math.abs(acc));
+      err = Math.max(err, Math.abs(e) / sc);
+    }
+    if (!Number.isFinite(err)) throw new Error(`dopri5: non-finite derivative or state at t = ${t}`);
+    if (err <= 1) {
+      t += h; y.set(yn); k[0].set(k[6]); steps++;      // FSAL: k7 of this step = k1 of the next
+      if (onStep && onStep(t, y) === false) { stopped = true; break; }
+    } else rejected++;
+    const fac = err === 0 ? 5 : Math.min(5, Math.max(0.2, 0.9 * Math.pow(err, -0.2)));
+    h = dir * Math.min(Math.abs(h * fac), hmax);
+  }
+  if (!stopped && dir * (t1 - t) > 0) throw new Error(`dopri5: step budget exhausted at t = ${t}, before t = ${t1}`);
+  return { t, y, steps, rejected, stopped };
+}
+
+// ---------------------------------------------------------------- quadrature
+
+const GL_CACHE = new Map();
+/** Gauss–Legendre nodes and weights on [−1, 1] (Newton iteration on P_n). */
+function gaussLegendreNodes(n) {
+  if (GL_CACHE.has(n)) return GL_CACHE.get(n);
+  const x = new Float64Array(n), w = new Float64Array(n);
+  for (let i = 0; i < Math.ceil(n / 2); i++) {
+    let z = Math.cos(Math.PI * (i + 0.75) / (n + 0.5)), dp = 0;
+    for (let it = 0; it < 100; it++) {
+      let p0 = 1, p1 = z;
+      for (let k = 2; k <= n; k++) { const p2 = ((2 * k - 1) * z * p1 - (k - 1) * p0) / k; p0 = p1; p1 = p2; }
+      const pn = n === 1 ? z : p1, pm = n === 1 ? 1 : p0;
+      dp = n * (z * pn - pm) / (z * z - 1);
+      const dz = pn / dp;
+      z -= dz;
+      if (Math.abs(dz) < 1e-16) break;
+    }
+    x[i] = -z; x[n - 1 - i] = z;
+    w[i] = w[n - 1 - i] = 2 / ((1 - z * z) * dp * dp);
+  }
+  const out = { x, w };
+  GL_CACHE.set(n, out);
+  return out;
+}
+
+/** ∫_a^b f(x) dx with n-point Gauss–Legendre (exact for polynomials of degree 2n−1). */
+function gaussLegendre(f, a, b, n = 32) {
+  const { x, w } = gaussLegendreNodes(n);
+  const m = (b - a) / 2, c = (a + b) / 2;
+  let s = 0;
+  for (let i = 0; i < n; i++) s += w[i] * f(m * x[i] + c);
+  return s * m;
+}
+
+/** Adaptive Simpson quadrature to absolute tolerance tol. */
+function adaptiveSimpson(f, a, b, tol = 1e-10, maxDepth = 50) {
+  const simpson = (fl, fmid, fr, lo, hi) => (hi - lo) / 6 * (fl + 4 * fmid + fr);
+  const recurse = (lo, hi, fl, fmid, fr, whole, eps, depth) => {
+    const mid = (lo + hi) / 2, lm = (lo + mid) / 2, rm = (mid + hi) / 2;
+    const flm = f(lm), frm = f(rm);
+    const left = simpson(fl, flm, fmid, lo, mid), right = simpson(fmid, frm, fr, mid, hi);
+    if (depth <= 0 || Math.abs(left + right - whole) <= 15 * eps) return left + right + (left + right - whole) / 15;
+    return recurse(lo, mid, fl, flm, fmid, left, eps / 2, depth - 1) + recurse(mid, hi, fmid, frm, fr, right, eps / 2, depth - 1);
+  };
+  const fa = f(a), fb = f(b), fm = f((a + b) / 2);
+  return recurse(a, b, fa, fm, fb, simpson(fa, fm, fb, a, b), tol, maxDepth);
+}
+
+/** ∫_0^∞ f(x) dx via the substitution x = t/(1−t) and Gauss–Legendre panels. */
+function integrateToInfinity(f, { panels = 16, n = 32 } = {}) {
+  const g = t => { const x = t / (1 - t); return f(x) / ((1 - t) * (1 - t)); };
+  let s = 0;
+  for (let p = 0; p < panels; p++) s += gaussLegendre(g, p / panels, (p + 1) / panels, n);   // nodes never hit t = 1
+  return s;
+}
+
+// ---------------------------------------------------------------- roots
+
+/** Brent's method: root of f in [a, b] where f(a)·f(b) < 0. */
+function brent(f, lo, hi, tol = 1e-14, maxIter = 200) {
+  let a = lo, b = hi;                      // b: best estimate; a: previous; c: bracket partner
+  let fa = f(a), fb = f(b);
+  if (fa * fb > 0) throw new Error('brent: root not bracketed');
+  let c = a, fc = fa, d = b - a, e = d;
+  for (let i = 0; i < maxIter; i++) {
+    if (fb * fc > 0) { c = a; fc = fa; d = e = b - a; }
+    if (Math.abs(fc) < Math.abs(fb)) { a = b; b = c; c = a; fa = fb; fb = fc; fc = fa; }
+    const tol1 = 2 * Number.EPSILON * Math.abs(b) + tol / 2, m = (c - b) / 2;
+    if (Math.abs(m) <= tol1 || fb === 0) return b;
+    if (Math.abs(e) >= tol1 && Math.abs(fa) > Math.abs(fb)) {
+      let p, q, r;
+      const s = fb / fa;
+      if (a === c) { p = 2 * m * s; q = 1 - s; }
+      else { q = fa / fc; r = fb / fc; p = s * (2 * m * q * (q - r) - (b - a) * (r - 1)); q = (q - 1) * (r - 1) * (s - 1); }
+      if (p > 0) q = -q; else p = -p;
+      if (2 * p < Math.min(3 * m * q - Math.abs(tol1 * q), Math.abs(e * q))) { e = d; d = p / q; }
+      else { d = m; e = d; }
+    } else { d = m; e = d; }
+    a = b; fa = fb;
+    b += Math.abs(d) > tol1 ? d : (m > 0 ? tol1 : -tol1);
+    fb = f(b);
+  }
+  return b;
+}
+
+// ---------------------------------------------------------------- special functions
+
+const LANCZOS = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313,
+  -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+
+/** ln Γ(x) for x > 0 (Lanczos, g = 7, n = 9; relative error ~1e-15). */
+function lgamma(z) {
+  if (z <= 0 && Number.isInteger(z)) return Infinity;   // poles of Γ
+  if (z < 0.5) return Math.log(Math.PI / Math.abs(Math.sin(Math.PI * z))) - lgamma(1 - z);
+  const x = z - 1;
+  let a = LANCZOS[0];
+  const t = x + 7.5;
+  for (let i = 1; i < 9; i++) a += LANCZOS[i] / (x + i);
+  return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a);
+}
+
+function gamma(x) {
+  if (x <= 0 && Number.isInteger(x)) return NaN;        // poles of Γ
+  if (x < 0.5) return Math.PI / (Math.sin(Math.PI * x) * gamma(1 - x));
+  return Math.exp(lgamma(x));
+}
+
+function factorial(n) {
+  let f = 1;
+  for (let i = 2; i <= n; i++) f *= i;
+  return f;
+}
+
+/** Error function (Abramowitz–Stegun 7.1.26 is too coarse; this uses a series / continued fraction, |err| < 1e-14). */
+function erf(x) {
+  const ax = Math.abs(x);
+  if (ax > 6) return Math.sign(x);                      // erfc(6) ≈ 2e-17 < double precision near 1
+  if (ax < 2.5) {
+    let sum = ax, term = ax;
+    for (let n = 1; n < 100; n++) {
+      term *= -ax * ax / n;
+      const add = term / (2 * n + 1);
+      sum += add;
+      if (Math.abs(add) < 1e-17 * Math.abs(sum)) break;
+    }
+    return Math.sign(x) * 2 / Math.sqrt(Math.PI) * sum;
+  }
+  // erfc continued fraction (Lentz)
+  let f = ax, C = ax, D = 0;
+  for (let n = 1; n < 200; n++) {
+    const an = n / 2;
+    D = ax + an * D; D = 1 / (D === 0 ? 1e-300 : D);
+    C = ax + an / C; if (C === 0) C = 1e-300;
+    const delta = C * D;
+    f *= delta;
+    if (Math.abs(delta - 1) < 1e-16) break;
+  }
+  const erfc = Math.exp(-ax * ax) / Math.sqrt(Math.PI) / f;
+  return Math.sign(x) * (1 - erfc);
+}
+
+/** Modified Bessel function of the first kind I_n(x), integer n ≥ 0 (power series; fine for x ≲ 50). */
+function besselI(n, x) {
+  let term = Math.pow(x / 2, n) / factorial(n), sum = term;
+  for (let k = 1; k < 500; k++) {
+    term *= (x * x / 4) / (k * (k + n));
+    sum += term;
+    if (Math.abs(term) < 1e-17 * Math.abs(sum)) break;
+  }
+  return sum;
+}
+
+/**
+ * Bessel function of the first kind J_n(x), integer n ≥ 0, any real x. Miller's backward
+ * recurrence normalised by J₀ + 2ΣJ₂ₖ = 1: relative accuracy also where J_n is tiny (x ≪ n),
+ * absolute accuracy ~1e-15·√(x) for large x. J_n(−x) = (−1)ⁿJ_n(x).
+ */
+function besselJ(n, x) {
+  if (!(Number.isInteger(n) && n >= 0)) throw new Error('besselJ: order must be an integer ≥ 0');
+  if (!Number.isFinite(x)) return Number.isNaN(x) ? NaN : 0;     // J_n(±∞) = 0
+  if (x < 0) return (n % 2 ? -1 : 1) * besselJ(n, -x);
+  if (x === 0) return n === 0 ? 1 : 0;
+  const top = Math.max(n, x);
+  const m = 2 * Math.ceil((top + 20 + Math.sqrt(60 * top)) / 2);    // even start index well above n and x
+  let jp = 0, j = 1e-300, norm = 0, result = 0;
+  for (let k = m; k > 0; k--) {
+    const jm = (2 * k / x) * j - jp;                                  // J_{k−1} from J_k, J_{k+1}
+    jp = j; j = jm;
+    if (Math.abs(j) > 1e250) { j *= 1e-250; jp *= 1e-250; norm *= 1e-250; result *= 1e-250; }
+    if (k - 1 === n) result = j;
+    if ((k - 1) % 2 === 0 && k - 1 > 0) norm += 2 * j;
+  }
+  return result / (norm + j);
+}
+
+/**
+ * First `count` positive zeros j_{n,1} < j_{n,2} < … of J_n (integer n ≥ 0): bracketed by a scan
+ * finer than the zero spacing (always > π), refined with Brent. Mode frequencies of circular
+ * membranes, waveguides and diffraction minima: ω_{n,s} = c·j_{n,s}/R.
+ */
+function besselJZeros(n, count) {
+  if (!(Number.isInteger(n) && n >= 0 && Number.isInteger(count) && count > 0)) throw new Error('besselJZeros: need integers n ≥ 0, count > 0');
+  const zeros = [], step = 0.5;
+  let a = n === 0 ? 1 : n, fa = besselJ(n, a);                        // j_{n,1} > n for n > 0, j_{0,1} > 2
+  while (zeros.length < count) {
+    const b = a + step, fb = besselJ(n, b);
+    if (fa === 0) zeros.push(a);
+    else if (fa * fb < 0) zeros.push(brent(x => besselJ(n, x), a, b, 1e-15));
+    a = b; fa = fb;
+  }
+  return zeros;
+}
+
+/**
+ * Complete elliptic integral of the first kind K(m) = ∫₀^{π/2} dθ / √(1 − m sin²θ), parameter
+ * m = k² < 1, by the arithmetic–geometric mean: K = π / (2 AGM(1, √(1 − m))).
+ */
+function ellipticK(m) {
+  if (!(m < 1)) return m === 1 ? Infinity : NaN;
+  let a = 1, b = Math.sqrt(1 - m);
+  for (let i = 0; i < 40 && Math.abs(a - b) > 1e-16 * a; i++) [a, b] = [(a + b) / 2, Math.sqrt(a * b)];
+  return Math.PI / (2 * a);
+}
+
+/** Generalised Laguerre polynomial L_n^(α)(x) by three-term recurrence. */
+function laguerre(n, alpha, x) {
+  if (n === 0) return 1;
+  let l0 = 1, l1 = 1 + alpha - x;
+  for (let k = 1; k < n; k++) {
+    const l2 = ((2 * k + 1 + alpha - x) * l1 - (k + alpha) * l0) / (k + 1);
+    l0 = l1; l1 = l2;
+  }
+  return l1;
+}
+
+/** Associated Legendre P_l^m(x), m ≥ 0, with the Condon–Shortley phase (−1)^m. */
+function legendreP(l, m, x) {
+  let pmm = 1;
+  if (m > 0) {
+    const s = Math.sqrt((1 - x) * (1 + x));
+    let fact = 1;
+    for (let i = 1; i <= m; i++) { pmm *= -fact * s; fact += 2; }
+  }
+  if (l === m) return pmm;
+  let pmmp1 = x * (2 * m + 1) * pmm;
+  if (l === m + 1) return pmmp1;
+  let pll = 0;
+  for (let ll = m + 2; ll <= l; ll++) {
+    pll = ((2 * ll - 1) * x * pmmp1 - (ll + m - 1) * pmm) / (ll - m);
+    pmm = pmmp1; pmmp1 = pll;
+  }
+  return pll;
+}
+
+/**
+ * Fully normalised associated Legendre function P̄_l^m(x) = N_lm P_l^m(x) with
+ * N_lm = √((2l+1)/(4π) · (l−m)!/(l+m)!), Condon–Shortley phase included. Uses the standard
+ * stable recurrences (no factorials), so it is accurate for large l and m.
+ */
+function normalizedLegendre(l, m, x) {
+  const s = Math.sqrt(Math.max(0, (1 - x) * (1 + x)));
+  let pmm = 1 / Math.sqrt(4 * Math.PI);
+  for (let i = 1; i <= m; i++) pmm *= -Math.sqrt((2 * i + 1) / (2 * i)) * s;
+  if (l === m) return pmm;
+  let pm1 = x * Math.sqrt(2 * m + 3) * pmm;
+  if (l === m + 1) return pm1;
+  let pl = 0;
+  for (let ll = m + 2; ll <= l; ll++) {
+    const a = Math.sqrt((4 * ll * ll - 1) / (ll * ll - m * m));
+    const b = Math.sqrt(((ll - 1) ** 2 - m * m) / (4 * (ll - 1) ** 2 - 1));
+    pl = a * (x * pm1 - b * pmm);
+    pmm = pm1; pm1 = pl;
+  }
+  return pl;
+}
+
+/**
+ * Real (tesseral) spherical harmonic, orthonormal on the sphere.
+ * m > 0: √2 P̄_l^m cos(mφ); m < 0: √2 P̄_l^|m| sin(|m|φ); m = 0: P̄_l^0.
+ * The Condon–Shortley phase is removed, so p_x ∝ +x, p_y ∝ +y.
+ */
+function realYlm(l, m, theta, phi) {
+  const am = Math.abs(m);
+  const P = normalizedLegendre(l, am, Math.cos(theta)) * (am % 2 ? -1 : 1);
+  if (m === 0) return P;
+  return Math.SQRT2 * P * (m > 0 ? Math.cos(am * phi) : Math.sin(am * phi));
+}
+
+/**
+ * Complex spherical harmonic Y_l^m(θ, φ) with the Condon–Shortley phase (the quantum-mechanics
+ * convention): Y_l^m = P̄_l^|m|(cos θ) e^{imφ} for m ≥ 0 and Y_l^{−m} = (−1)^m conj(Y_l^m).
+ * Orthonormal on the sphere; eigenfunctions of L² and L_z. Returns { re, im }.
+ */
+function complexYlm(l, m, theta, phi) {
+  if (!(Number.isInteger(l) && Number.isInteger(m) && l >= 0 && Math.abs(m) <= l)) throw new Error('complexYlm: need integers l ≥ 0, |m| ≤ l');
+  const am = Math.abs(m), P = normalizedLegendre(l, am, Math.cos(theta));
+  const sign = m < 0 && am % 2 ? -1 : 1;
+  return { re: sign * P * Math.cos(m * phi), im: sign * P * Math.sin(m * phi) };
+}
+
+/**
+ * Radial function R_nl(r) of a hydrogen-like atom (one electron, nuclear charge Z, point nucleus,
+ * non-relativistic), normalised so ∫R²r²dr = 1:
+ *   R_nl = √((2Z/na₀)³ (n−l−1)!/(2n (n+l)!)) e^{−ρ/2} ρ^l L_{n−l−1}^{(2l+1)}(ρ),  ρ = 2Zr/(na₀).
+ * Lengths in units of a₀ unless a0 is given (use the reduced-mass a₀ for exact spectroscopy).
+ */
+function hydrogenRadial(n, l, r, { Z = 1, a0 = 1 } = {}) {
+  if (!(Number.isInteger(n) && Number.isInteger(l) && n >= 1 && l >= 0 && l < n)) throw new Error('hydrogenRadial: need integers n ≥ 1, 0 ≤ l < n');
+  const rho = 2 * Z * r / (n * a0);
+  const lnNorm = 1.5 * Math.log(2 * Z / (n * a0)) + 0.5 * (lgamma(n - l) - lgamma(n + l + 1) - Math.log(2 * n));
+  return Math.exp(lnNorm - rho / 2) * rho ** l * laguerre(n - l - 1, 2 * l + 1, rho);
+}
+
+// ---------------------------------------------------------------- linear algebra
+
+/** Solve a tridiagonal system (Thomas algorithm). a: sub, b: diag, c: super, d: rhs. Works for complex via callers. */
+function solveTridiagonal(a, b, c, d) {
+  const n = b.length, cp = new Float64Array(n), dp = new Float64Array(n), x = new Float64Array(n);
+  cp[0] = c[0] / b[0]; dp[0] = d[0] / b[0];
+  for (let i = 1; i < n; i++) {
+    const m = b[i] - a[i] * cp[i - 1];
+    cp[i] = c[i] / m;
+    dp[i] = (d[i] - a[i] * dp[i - 1]) / m;
+  }
+  x[n - 1] = dp[n - 1];
+  for (let i = n - 2; i >= 0; i--) x[i] = dp[i] - cp[i] * x[i + 1];
+  return x;
+}
+
+/**
+ * All eigenvalues and eigenvectors of a real symmetric tridiagonal matrix (implicit QL with
+ * Wilkinson shifts; Numerical Recipes "tqli"). diag: n diagonal entries; off: n−1 entries
+ * coupling i and i+1. Returns { values, vectors } with vectors[i] the unit eigenvector of
+ * values[i] (unsorted). Cost O(n³) with eigenvectors: fine to n ≈ 500 in a browser.
+ */
+function eigenTridiagonal(diag, off) {
+  const n = diag.length;
+  if (off.length !== n - 1) throw new Error('eigenTridiagonal: off must have n − 1 entries');
+  const d = Float64Array.from(diag), e = new Float64Array(n);
+  e.set(off);
+  const z = new Float64Array(n * n);
+  for (let i = 0; i < n; i++) z[i * n + i] = 1;
+  for (let l = 0; l < n; l++) {
+    let iter = 0, m;
+    do {
+      for (m = l; m < n - 1; m++) {
+        const dd = Math.abs(d[m]) + Math.abs(d[m + 1]);
+        if (Math.abs(e[m]) <= Number.EPSILON * dd) break;
+      }
+      if (m !== l) {
+        if (iter++ === 60) throw new Error('eigenTridiagonal: no convergence');
+        let g = (d[l + 1] - d[l]) / (2 * e[l]);
+        let r = Math.hypot(g, 1);
+        g = d[m] - d[l] + e[l] / (g + (g >= 0 ? r : -r));
+        let s = 1, c = 1, p = 0, i;
+        for (i = m - 1; i >= l; i--) {
+          let f = s * e[i];
+          const b = c * e[i];
+          r = Math.hypot(f, g);
+          e[i + 1] = r;
+          if (r === 0) { d[i + 1] -= p; e[m] = 0; break; }
+          s = f / r; c = g / r;
+          g = d[i + 1] - p;
+          r = (d[i] - g) * s + 2 * c * b;
+          p = s * r;
+          d[i + 1] = g + p;
+          g = c * r - b;
+          for (let k = 0; k < n; k++) {
+            f = z[k * n + i + 1];
+            z[k * n + i + 1] = s * z[k * n + i] + c * f;
+            z[k * n + i] = c * z[k * n + i] - s * f;
+          }
+        }
+        if (r === 0 && i >= l) continue;
+        d[l] -= p; e[l] = g; e[m] = 0;
+      }
+    } while (m !== l);
+  }
+  const vectors = Array.from({ length: n }, (_v, i) => Float64Array.from({ length: n }, (_w, k) => z[k * n + i]));
+  return { values: Array.from(d), vectors };
+}
+
+/** Least-squares fit y ≈ a + b x. Returns { a, b, r2 }. */
+function linearFit(xs, ys) {
+  // two-pass (centred) sums: no cancellation when x has a large offset (e.g. timestamps)
+  const n = xs.length;
+  let mx = 0, my = 0;
+  for (let i = 0; i < n; i++) { mx += xs[i]; my += ys[i]; }
+  mx /= n; my /= n;
+  let sxx = 0, sxy = 0, syy = 0;
+  for (let i = 0; i < n; i++) { const dx = xs[i] - mx, dy = ys[i] - my; sxx += dx * dx; sxy += dx * dy; syy += dy * dy; }
+  const b = sxy / sxx, a = my - b * mx;
+  const r2 = syy === 0 ? 1 : (sxy * sxy) / (sxx * syy);
+  return { a, b, r2 };
+}
+
+/**
+ * Mean and standard error of a correlated series by binning (blocking) analysis. Returns the
+ * largest error over block sizes with ≥ minBins blocks: conservative (≈ 10 % high for
+ * uncorrelated data). Series too short for blocking fall back to the naive standard error.
+ */
+function meanWithError(xs, minBins = 16) {
+  const n = xs.length;
+  const mean = xs.reduce((s, v) => s + v, 0) / n;
+  if (n < minBins) {
+    const v = n > 1 ? xs.reduce((s, x) => s + (x - mean) ** 2, 0) / (n - 1) : NaN;
+    return { mean, error: Math.sqrt(v / n), naive: true };
+  }
+  let best = 0;
+  for (let size = 1; n / size >= minBins; size *= 2) {
+    const nb = Math.floor(n / size), means = [];
+    for (let b = 0; b < nb; b++) { let s = 0; for (let i = 0; i < size; i++) s += xs[b * size + i]; means.push(s / size); }
+    const m = means.reduce((s, v) => s + v, 0) / nb;
+    const v = means.reduce((s, x) => s + (x - m) ** 2, 0) / (nb - 1);
+    best = Math.max(best, Math.sqrt(v / nb));
+  }
+  return { mean, error: best };
+}
+
+return { rng, fft, fftFreq, rk4Step, DORMAND_PRINCE, dopri5, gaussLegendreNodes, gaussLegendre, adaptiveSimpson, integrateToInfinity, brent, lgamma, gamma, factorial, erf, besselI, besselJ, besselJZeros, ellipticK, laguerre, legendreP, normalizedLegendre, realYlm, complexYlm, hydrogenRadial, solveTridiagonal, eigenTridiagonal, linearFit, meanWithError };
+})();
+
+// ---- psim:core/lattice-gauge.mjs
+__psim["core/lattice-gauge.mjs"] = (() => {
+// Lattice gauge theory: pure SU(2) Yang–Mills on a periodic hypercubic lattice in
+// d = 2, 3 or 4 dimensions, Wilson action S = β Σ_P (1 − ½ Tr U_P).
+//
+// This is a first-principles non-abelian gauge theory, the same framework as lattice QCD
+// (with SU(2) instead of SU(3), no dynamical quarks, small volumes). Confinement shows up
+// as an area law for Wilson loops, W(R,T) ~ e^{−σ R T}, with string tension σ measured
+// from Creutz ratios. Updates: Creutz heat bath (Kennedy–Pendleton) + over-relaxation.
+//
+// SU(2) elements are unit quaternions [a0, a1, a2, a3] ↔ a0·1 + i a·σ.
+const { rng: makeRng } = __psim["core/numerics.mjs"];
+// ---------------------------------------------------------------- SU(2) algebra (quaternions)
+
+/** out = p·q */
+function qmul(p, q, out = new Float64Array(4)) {
+  const [a0, a1, a2, a3] = p, [b0, b1, b2, b3] = q;
+  out[0] = a0 * b0 - a1 * b1 - a2 * b2 - a3 * b3;
+  out[1] = a0 * b1 + a1 * b0 - a2 * b3 + a3 * b2;
+  out[2] = a0 * b2 + a2 * b0 - a3 * b1 + a1 * b3;
+  out[3] = a0 * b3 + a3 * b0 - a1 * b2 + a2 * b1;
+  return out;
+}
+const qdag = (p, out = new Float64Array(4)) => { out[0] = p[0]; out[1] = -p[1]; out[2] = -p[2]; out[3] = -p[3]; return out; };
+/** ½ Tr of a quaternion matrix = its scalar part. */
+const halfTr = p => p[0];
+
+// ---------------------------------------------------------------- lattice
+
+function createLattice({ L = 6, d = 4, beta = 2.3, seed = 1, start = 'cold' } = {}) {
+  if (!(Number.isFinite(beta) && beta >= 0)) throw new Error('createLattice: beta must be finite and non-negative');
+  const dims = Array.isArray(L) ? L : Array(d).fill(L);
+  const D = dims.length;
+  const V = dims.reduce((a, b) => a * b, 1);
+  const U = new Float64Array(V * D * 4);
+  const rand = makeRng(seed);
+  for (let i = 0; i < V * D; i++) {
+    if (start === 'hot') {
+      const q = randomSU2(rand);
+      U.set(q, 4 * i);
+    } else U[4 * i] = 1;
+  }
+  // neighbour tables: up[site*D+mu], dn[site*D+mu]
+  const up = new Int32Array(V * D), dn = new Int32Array(V * D);
+  const stride = dims.map((_, mu) => dims.slice(0, mu).reduce((a, b) => a * b, 1));
+  for (let s = 0; s < V; s++) {
+    for (let mu = 0; mu < D; mu++) {
+      const x = Math.floor(s / stride[mu]) % dims[mu];
+      up[s * D + mu] = s + ((x + 1) % dims[mu] - x) * stride[mu];
+      dn[s * D + mu] = s + ((x - 1 + dims[mu]) % dims[mu] - x) * stride[mu];
+    }
+  }
+  return { dims, D, V, U, up, dn, beta, rand, sweeps: 0 };
+}
+
+function randomSU2(rand) {
+  let a, n;
+  do { a = [rand() * 2 - 1, rand() * 2 - 1, rand() * 2 - 1, rand() * 2 - 1]; n = Math.hypot(...a); } while (n > 1 || n === 0);
+  return a.map(v => v / n);
+}
+
+const link = (lat, s, mu) => lat.U.subarray(4 * (s * lat.D + mu), 4 * (s * lat.D + mu) + 4);
+
+/** Sum of the 2(D−1) staples around link (s, μ), so that the local action is −(β/2) Tr(U·A). */
+function staple(lat, s, mu, A = new Float64Array(4)) {
+  A.fill(0);
+  const { D, up, dn } = lat;
+  const t1 = new Float64Array(4), t2 = new Float64Array(4), t3 = new Float64Array(4);
+  const sp = up[s * D + mu];
+  for (let nu = 0; nu < D; nu++) {
+    if (nu === mu) continue;
+    // forward: U_ν(s+μ) U_μ(s+ν)† U_ν(s)†
+    qmul(link(lat, sp, nu), qdag(link(lat, up[s * D + nu], mu), t1), t2);
+    qmul(t2, qdag(link(lat, s, nu), t1), t3);
+    for (let k = 0; k < 4; k++) A[k] += t3[k];
+    // backward: U_ν(s+μ−ν)† U_μ(s−ν)† U_ν(s−ν)
+    const sm = dn[s * D + nu], spm = dn[sp * D + nu];
+    qmul(qdag(link(lat, spm, nu), t1), qdag(link(lat, sm, mu), t3), t2);
+    qmul(t2, link(lat, sm, nu), t3);
+    for (let k = 0; k < 4; k++) A[k] += t3[k];
+  }
+  return A;
+}
+
+/** Kennedy–Pendleton heat-bath sample of a0 with density ∝ √(1−a0²) e^{k a0}. */
+function samplea0(k, rand) {
+  if (!(Number.isFinite(k) && k >= 0)) throw new Error('heat bath: coupling must be finite and non-negative');
+  // Kennedy–Pendleton rejection becomes inefficient as k → 0. Propose from
+  // Haar measure instead: accept with exp(k(a0−1)), including the exact k = 0 limit.
+  if (k < 1) {
+    for (;;) {
+      const a0 = randomSU2(rand)[0];
+      if (rand() < Math.exp(k * (a0 - 1))) return a0;
+    }
+  }
+  for (;;) {
+    const r1 = 1 - rand(), r2 = 1 - rand(), r3 = 1 - rand();
+    const lambda2 = -(Math.log(r1) + Math.cos(2 * Math.PI * r2) ** 2 * Math.log(r3)) / (2 * k);
+    if (rand() ** 2 <= 1 - lambda2) return 1 - 2 * lambda2;
+  }
+}
+
+/** One heat-bath update of every link, then `overrelax` over-relaxation sweeps. */
+function sweep(lat, { overrelax = 2, heatbath = true } = {}) {
+  const { V, D, beta, rand } = lat;
+  if (!(Number.isFinite(beta) && beta >= 0)) throw new Error('sweep: beta must be finite and non-negative');
+  const A = new Float64Array(4), Vn = new Float64Array(4), X = new Float64Array(4), tmp = new Float64Array(4);
+  if (heatbath) {for (let s = 0; s < V; s++) {for (let mu = 0; mu < D; mu++) {
+    staple(lat, s, mu, A);
+    const k = Math.hypot(A[0], A[1], A[2], A[3]);
+    if (k < 1e-12) { link(lat, s, mu).set(randomSU2(rand)); continue; }
+    for (let i = 0; i < 4; i++) Vn[i] = A[i] / k;            // A = k·V with V ∈ SU(2)
+    // sample X with weight e^{β k ½Tr X}, then U = X V†
+    const a0 = samplea0(beta * k, rand);
+    const r = Math.sqrt(Math.max(0, 1 - a0 * a0));
+    const ct = 2 * rand() - 1, st = Math.sqrt(1 - ct * ct), ph = 2 * Math.PI * rand();
+    X[0] = a0; X[1] = r * st * Math.cos(ph); X[2] = r * st * Math.sin(ph); X[3] = r * ct;
+    qmul(X, qdag(Vn, tmp), link(lat, s, mu));
+  }}}
+  for (let o = 0; o < overrelax; o++) {
+    for (let s = 0; s < V; s++) {for (let mu = 0; mu < D; mu++) {
+      staple(lat, s, mu, A);
+      const k = Math.hypot(A[0], A[1], A[2], A[3]);
+      if (k < 1e-12) continue;
+      for (let i = 0; i < 4; i++) Vn[i] = A[i] / k;
+      // U → V† U† V† : leaves the local action unchanged (microcanonical), decorrelates fast
+      const U = link(lat, s, mu);
+      qmul(qdag(Vn, tmp), qdag(U, X), A);
+      qmul(A, qdag(Vn, tmp), U);
+    }}
+  }
+  // re-unitarise against round-off
+  for (let i = 0; i < V * D; i++) {
+    const o = 4 * i, n = Math.hypot(lat.U[o], lat.U[o + 1], lat.U[o + 2], lat.U[o + 3]);
+    for (let k = 0; k < 4; k++) lat.U[o + k] /= n;
+  }
+  lat.sweeps++;
+}
+
+/** Random local gauge transformation U_μ(s) → g(s) U_μ(s) g(s+μ)†: physics must not change. */
+function gaugeTransform(lat, rand = lat.rand) {
+  const g = Array.from({ length: lat.V }, () => randomSU2(rand));
+  const t = new Float64Array(4), d = new Float64Array(4);
+  for (let s = 0; s < lat.V; s++) {for (let mu = 0; mu < lat.D; mu++) {
+    const U = link(lat, s, mu);
+    qmul(g[s], U, t);
+    qmul(t, qdag(g[lat.up[s * lat.D + mu]], d), U);
+  }}
+}
+
+/** Total Wilson action S/β = Σ_P (1 − ½ Tr U_P). */
+function action(lat) {
+  const nP = lat.V * lat.D * (lat.D - 1) / 2;
+  return nP * (1 - plaquette(lat));
+}
+
+/** Average plaquette ⟨½ Tr U_P⟩. */
+function plaquette(lat) {
+  const { V, D, up } = lat;
+  const t1 = new Float64Array(4), t2 = new Float64Array(4), t3 = new Float64Array(4);
+  let sum = 0, n = 0;
+  for (let s = 0; s < V; s++) {for (let mu = 0; mu < D; mu++) {for (let nu = mu + 1; nu < D; nu++) {
+    qmul(link(lat, s, mu), link(lat, up[s * D + mu], nu), t1);
+    qmul(t1, qdag(link(lat, up[s * D + nu], mu), t2), t3);
+    qmul(t3, qdag(link(lat, s, nu), t2), t1);
+    sum += t1[0]; n++;
+  }}}
+  return sum / n;
+}
+
+/**
+ * Average R×T Wilson loop ⟨½ Tr W⟩ over all sites and all planes μ < ν, with R along μ
+ * (the lower index) and T along ν. On an anisotropic lattice W(R,T) ≠ W(T,R) in general.
+ * Loops must fit in the lattice without wrapping: R, T < extent of every direction.
+ */
+function wilsonLoop(lat, R, T) {
+  if (R >= Math.min(...lat.dims) || T >= Math.min(...lat.dims)) throw new Error(`wilsonLoop: R, T must be < lattice extent ${Math.min(...lat.dims)}`);
+  const { V, D, up } = lat;
+  let sum = 0, n = 0;
+  const P = new Float64Array(4), t = new Float64Array(4), d = new Float64Array(4);
+  for (let mu = 0; mu < D; mu++) {for (let nu = 0; nu < D; nu++) {
+    if (mu >= nu) continue;                                  // each plane once
+    for (let s0 = 0; s0 < V; s0++) {
+      P.fill(0); P[0] = 1;
+      let s = s0;
+      const go = (dir, steps, back) => {
+        for (let i = 0; i < steps; i++) {
+          if (!back) { qmul(P, link(lat, s, dir), t); P.set(t); s = up[s * D + dir]; }
+          else { s = lat.dn[s * D + dir]; qmul(P, qdag(link(lat, s, dir), d), t); P.set(t); }
+        }
+      };
+      go(mu, R, false); go(nu, T, false); go(mu, R, true); go(nu, T, true);
+      sum += P[0]; n++;
+    }
+  }}
+  return sum / n;
+}
+
+/** Creutz ratio χ(R,T) = −ln[ W(R,T) W(R−1,T−1) / (W(R,T−1) W(R−1,T)) ] → σa² for large loops. */
+const creutzRatio = (W, R, T) => -Math.log(W(R, T) * W(R - 1, T - 1) / (W(R, T - 1) * W(R - 1, T)));
+
+return { qmul, qdag, halfTr, createLattice, staple, sweep, gaugeTransform, action, plaquette, wilsonLoop, creutzRatio };
+})();
+
+// ---- local:physics.mjs
+__psim["local:physics.mjs"] = (() => {
+// Asymptotic freedom and the strong force: two separate, labelled calculations.
+//
+// A. QCD running coupling α_s(Q) (real QCD: SU(3), n_f active quark flavours).
+//    State: α_s at renormalisation scale μ = Q (MS-bar scheme). Law: the renormalisation-group
+//    equation da/d ln μ² = −Σ_{i<loops} β_i a^{i+2}, a = α_s/(4π), with the published MS-bar
+//    coefficients β_0…β_3. Input: the PDG world average α_s(M_Z). Method: Dormand–Prince
+//    (core/numerics dopri5) in ln μ², n_f changed at the quark-mass thresholds with continuous
+//    matching. Perturbative only: it says nothing reliable once α_s approaches 1.
+//
+// B. The strong force at long distance: pure SU(2) Yang–Mills lattice gauge theory (reduced
+//    model: gauge group SU(2) instead of SU(3), no dynamical quarks), Wilson action, periodic
+//    L⁴ Euclidean lattice, heat bath + over-relaxation (core/lattice-gauge.mjs). Observables:
+//    Wilson loops W(R,T), the static potential aV(R) = −ln[W(R,T)/W(R,T−1)], Creutz ratios
+//    χ(R,R) ≈ σa² (string tension), Polyakov loop. Progress axis: Monte Carlo sweeps (not time).
+//    Everything is in lattice units: no conversion to fm or MeV is attempted.
+//
+// Calculation, observation and representation are kept apart: this module computes the state
+// and the observables; page.html only maps them to pixels.
+const { dopri5, brent, besselI, meanWithError } = __psim["core/numerics.mjs"];
+const { createLattice, sweep, plaquette, wilsonLoop, gaugeTransform, action, qmul, qdag } = __psim["core/lattice-gauge.mjs"];
+// ------------------------------------------------------------------ A. QCD running coupling
+
+/** Imported inputs, Review of Particle Physics 2024 (S. Navas et al., PRD 110, 030001). GeV. */
+const PDG = {
+  alphaMZ: 0.1180, alphaMZerr: 0.0009,     // world average α_s(M_Z²), MS-bar, QCD review §9.4
+  MZ: 91.1880,                              // ± 0.0020 GeV
+  mc: 1.2730,                               // MS-bar m_c(m_c) ± 0.0046 GeV
+  mb: 4.183,                                // MS-bar m_b(m_b) ± 0.007 GeV
+  mt: 172.57,                               // direct-measurement top mass ± 0.29 GeV (threshold location only)
+};
+const ZETA3 = 1.2020569031595942;
+
+/** MS-bar β coefficients for SU(3) with n_f flavours (normalisation da/dlnμ² = −Σβ_i a^{i+2}, a = α/4π). */
+function betaSU3(nf) {
+  return [
+    11 - 2 * nf / 3,
+    102 - 38 * nf / 3,
+    2857 / 2 - 5033 * nf / 18 + 325 * nf * nf / 54,
+    149753 / 6 + 3564 * ZETA3 - (1078361 / 162 + 6508 * ZETA3 / 27) * nf + (50065 / 162 + 6472 * ZETA3 / 81) * nf ** 2 + 1093 * nf ** 3 / 729,
+  ];
+}
+
+/** β_0…β_2 from the group invariants (C_A, C_F, T_F): an independent route used in verify(). */
+function betaFromCasimirs(CA, CF, TF, nf) {
+  return [
+    11 / 3 * CA - 4 / 3 * TF * nf,
+    34 / 3 * CA ** 2 - 4 * CF * TF * nf - 20 / 3 * CA * TF * nf,
+    2857 / 54 * CA ** 3 + 2 * CF ** 2 * TF * nf - 205 / 9 * CF * CA * TF * nf - 1415 / 27 * CA ** 2 * TF * nf
+      + 44 / 9 * CF * TF ** 2 * nf ** 2 + 158 / 27 * CA * TF ** 2 * nf ** 2,
+  ];
+}
+
+const nfAt = (mu, th) => 3 + (mu > th.mc) + (mu > th.mb) + (mu > th.mt);
+
+/** dα/d ln μ² at fixed n_f and loop order. */
+function dAlpha(alpha, nf, loops) {
+  const b = betaSU3(nf), a = alpha / (4 * Math.PI);
+  let s = 0;
+  for (let i = 0; i < loops; i++) s += b[i] * a ** (i + 2);
+  return -4 * Math.PI * s;
+}
+
+const ALPHA_CAP = 1.2;   // stop integrating: the truncated series is meaningless well before this
+
+/**
+ * Run α_s from (mu0, alpha0) to mu1 through the flavour thresholds (continuous matching).
+ * Returns NaN if the coupling exceeds ALPHA_CAP on the way down (approach to the Landau pole).
+ */
+function runAlpha(alpha0, mu0, mu1, { loops = 4, th = PDG, rtol = 1e-12 } = {}) {
+  if (mu1 === mu0) return alpha0;
+  const marks = [th.mc, th.mb, th.mt].filter(m => (m - mu0) * (m - mu1) < 0).sort((x, y) => (mu1 > mu0 ? x - y : y - x));
+  let alpha = alpha0, mu = mu0;
+  for (const target of [...marks, mu1]) {
+    const nf = nfAt(Math.sqrt(mu * target), th);
+    let blown = false;
+    const r = dopri5((L, y) => [dAlpha(y[0], nf, loops)], 2 * Math.log(mu), [alpha], 2 * Math.log(target), {
+      rtol, atol: 1e-15, onStep: (L, y) => { if (!(y[0] < ALPHA_CAP && y[0] > 0)) { blown = true; return false; } return true; },
+    });
+    if (blown || r.stopped) return NaN;
+    alpha = r.y[0]; mu = target;
+  }
+  return alpha;
+}
+
+/** α_s(Q) on a log grid Q ∈ [Qmin, Qmax] GeV, integrated outward from M_Z. */
+function runningCurve({ alphaMZ = PDG.alphaMZ, loops = 4, Qmin = 0.5, Qmax = 1e4, n = 240 } = {}) {
+  const Q = Array.from({ length: n }, (_, i) => Qmin * (Qmax / Qmin) ** (i / (n - 1)));
+  const alpha = new Array(n).fill(NaN);
+  const iz = Q.findIndex(q => q >= PDG.MZ);
+  let a = alphaMZ, mu = PDG.MZ;
+  for (let i = iz; i < n; i++) { a = runAlpha(a, mu, Q[i], { loops }); mu = Q[i]; alpha[i] = a; }
+  a = alphaMZ; mu = PDG.MZ;
+  for (let i = iz - 1; i >= 0; i--) {
+    a = runAlpha(a, mu, Q[i], { loops }); mu = Q[i];
+    if (!Number.isFinite(a)) break;
+    alpha[i] = a;
+  }
+  return { Q, alpha, loops, alphaMZ };
+}
+
+/** Closed form at one loop, fixed n_f. */
+const alphaOneLoop = (alpha0, mu0, mu, nf) => alpha0 / (1 + alpha0 * betaSU3(nf)[0] / (4 * Math.PI) * Math.log(mu * mu / (mu0 * mu0)));
+
+/** Exact two-loop solution at fixed n_f: G(a) − G(a0) = ln(μ²/μ0²), solved by Brent's method. */
+function alphaTwoLoopExact(alpha0, mu0, mu, nf) {
+  const [b0, b1] = betaSU3(nf);
+  const G = a => 1 / (b0 * a) - b1 / b0 ** 2 * Math.log((b0 + b1 * a) / a);
+  const a0 = alpha0 / (4 * Math.PI), rhs = G(a0) + Math.log(mu * mu / (mu0 * mu0));
+  const a = brent(x => G(x) - rhs, 1e-5, 0.2, 1e-18);
+  return 4 * Math.PI * a;
+}
+
+// ------------------------------------------------------------------ B. SU(2) lattice observables
+
+/** u(β) = I₂(β)/I₁(β): exact 2D plaquette; leading strong-coupling value in 4D. */
+const strongU = beta => besselI(2, beta) / besselI(1, beta);
+
+/**
+ * All R×T Wilson loops (1 ≤ R, T ≤ n) from one configuration, averaged over every site and over
+ * the planes (μ, ν). orientations: 'both' uses every ordered pair μ ≠ ν (R along μ, T along ν),
+ * 'lower' only μ < ν (the convention of core wilsonLoop, used to cross-check this routine).
+ * Line products are built once, so each loop costs three SU(2) multiplications per site.
+ */
+function allWilsonLoops(lat, n, orientations = 'both') {
+  const { V, D, U, up } = lat;
+  if (n >= Math.min(...lat.dims)) throw new Error('allWilsonLoops: n must be smaller than the lattice extent');
+  // lines[mu][len-1] : Float64Array(4V), product of len links starting at s along mu
+  const lines = [];
+  const t = new Float64Array(4);
+  for (let mu = 0; mu < D; mu++) {
+    const perMu = [];
+    const first = new Float64Array(4 * V);
+    for (let s = 0; s < V; s++) for (let k = 0; k < 4; k++) first[4 * s + k] = U[4 * (s * D + mu) + k];
+    perMu.push(first);
+    for (let len = 2; len <= n; len++) {
+      const prev = perMu[len - 2], cur = new Float64Array(4 * V);
+      for (let s = 0; s < V; s++) {
+        // line(s, len) = line(s, len−1) · U_mu(s + (len−1)mu)
+        let e = s;
+        for (let i = 0; i < len - 1; i++) e = up[e * D + mu];
+        qmul(prev.subarray(4 * s, 4 * s + 4), U.subarray(4 * (e * D + mu), 4 * (e * D + mu) + 4), t);
+        cur.set(t, 4 * s);
+      }
+      perMu.push(cur);
+    }
+    lines.push(perMu);
+  }
+  // shifted-site tables: sh[mu][k][s] = s + k·mu
+  const sh = Array.from({ length: D }, (_, mu) => {
+    const tabs = [Int32Array.from({ length: V }, (_, s) => s)];
+    for (let k = 1; k <= n; k++) tabs.push(Int32Array.from(tabs[k - 1], s => up[s * D + mu]));
+    return tabs;
+  });
+  const W = new Float64Array(n * n);
+  let planes = 0;
+  for (let mu = 0; mu < D; mu++) for (let nu = 0; nu < D; nu++) {
+    if (mu === nu || (orientations === 'lower' && mu > nu)) continue;
+    planes++;
+    for (let R = 1; R <= n; R++) for (let T = 1; T <= n; T++) {
+      const A = lines[mu][R - 1], B = lines[nu][T - 1], shR = sh[mu][R], shT = sh[nu][T];
+      let sum = 0;
+      for (let s = 0; s < V; s++) {
+        // ½Tr[ A(s) B(s+Rμ) A(s+Tν)† B(s)† ] = scalar part of (A·B)·(B'·A')† with B' = B(s), A' = A(s+Tν)
+        const i = 4 * s, j = 4 * shR[s], k = 4 * shT[s];
+        const a0 = A[i], a1 = A[i + 1], a2 = A[i + 2], a3 = A[i + 3];
+        const b0 = B[j], b1 = B[j + 1], b2 = B[j + 2], b3 = B[j + 3];
+        const p0 = a0 * b0 - a1 * b1 - a2 * b2 - a3 * b3, p1 = a0 * b1 + a1 * b0 - a2 * b3 + a3 * b2;
+        const p2 = a0 * b2 + a2 * b0 - a3 * b1 + a1 * b3, p3 = a0 * b3 + a3 * b0 - a1 * b2 + a2 * b1;
+        const c0 = B[i], c1 = B[i + 1], c2 = B[i + 2], c3 = B[i + 3];
+        const d0 = A[k], d1 = A[k + 1], d2 = A[k + 2], d3 = A[k + 3];
+        const q0 = c0 * d0 - c1 * d1 - c2 * d2 - c3 * d3, q1 = c0 * d1 + c1 * d0 - c2 * d3 + c3 * d2;
+        const q2 = c0 * d2 + c2 * d0 - c3 * d1 + c1 * d3, q3 = c0 * d3 + c3 * d0 - c1 * d2 + c2 * d1;
+        sum += p0 * q0 + p1 * q1 + p2 * q2 + p3 * q3;   // Re part of p·q† for unit quaternions
+      }
+      W[(R - 1) * n + (T - 1)] += sum / V;
+    }
+  }
+  for (let i = 0; i < W.length; i++) W[i] /= planes;
+  return W;
+}
+
+/** Spatially averaged Polyakov loop ½Tr Π_τ U_τ along direction D−1 (centre-symmetry order parameter). */
+function polyakovLoop(lat) {
+  const { V, D, U, up, dims } = lat, mu = D - 1, Nt = dims[mu];
+  const P = new Float64Array(4), t = new Float64Array(4);
+  const stride = V / Nt;   // sites with x_mu = 0 are s < stride (axis 0 fastest, mu last)
+  let sum = 0;
+  for (let s0 = 0; s0 < stride; s0++) {
+    P.fill(0); P[0] = 1;
+    let s = s0;
+    for (let i = 0; i < Nt; i++) { qmul(P, U.subarray(4 * (s * D + mu), 4 * (s * D + mu) + 4), t); P.set(t); s = up[s * D + mu]; }
+    sum += P[0];
+  }
+  return sum / stride;
+}
+
+/**
+ * Plaquette action density 1 − ½Tr U_P for every plaquette in the 3D sub-lattice (x, y, τ) at
+ * z = 0 (directions 0, 1, 3). Returns centres in lattice units and values in [0, 2].
+ */
+function sliceAction(lat) {
+  const { D, dims, up, U } = lat;
+  if (D !== 4) throw new Error('sliceAction: 4D lattice required');
+  const [Lx, Ly, , Lt] = dims;
+  const dirs = [0, 1, 3], pos = [], val = [];
+  const t1 = new Float64Array(4), t2 = new Float64Array(4), t3 = new Float64Array(4);
+  const L = (s, m) => U.subarray(4 * (s * D + m), 4 * (s * D + m) + 4);
+  const coord = [0, 0, 0];
+  for (let tt = 0; tt < Lt; tt++) for (let y = 0; y < Ly; y++) for (let x = 0; x < Lx; x++) {
+    const s = x + Lx * (y + Ly * dims[2] * tt);
+    coord[0] = x; coord[1] = y; coord[2] = tt;
+    for (let i = 0; i < 3; i++) for (let j = i + 1; j < 3; j++) {
+      const mu = dirs[i], nu = dirs[j];
+      qmul(L(s, mu), L(up[s * D + mu], nu), t1);
+      qmul(t1, qdag(L(up[s * D + nu], mu), t2), t3);
+      qmul(t3, qdag(L(s, nu), t2), t1);
+      const c = [...coord]; c[i] += 0.5; c[j] += 0.5;
+      pos.push(...c); val.push(1 - t1[0]);
+    }
+  }
+  return { pos: Float32Array.from(pos), val: Float32Array.from(val) };
+}
+
+/**
+ * Jackknife over blocks of measurement vectors. est(meanVector) → number or array of numbers.
+ * Returns { value, error } (arrays when est returns arrays); NaN where the estimator is undefined
+ * (e.g. a non-positive loop average under a logarithm): such values are reported, not clamped.
+ */
+function blockJackknife(samples, est, nBlocks = 20) {
+  const n = samples.length;
+  const nb = Math.min(nBlocks, n);
+  if (nb < 2) return null;
+  const size = Math.floor(n / nb), m = samples[0].length;
+  const blockSums = Array.from({ length: nb }, (_, b) => {
+    const s = new Float64Array(m);
+    for (let i = b * size; i < (b + 1) * size; i++) for (let k = 0; k < m; k++) s[k] += samples[i][k];
+    return s;
+  });
+  const total = new Float64Array(m);
+  for (const s of blockSums) for (let k = 0; k < m; k++) total[k] += s[k];
+  const used = nb * size;
+  const full = [].concat(est(total.map(v => v / used)));
+  const reps = blockSums.map(s => [].concat(est(total.map((v, k) => (v - s[k]) / (used - size)))));
+  const error = full.map((_, j) => {
+    const mean = reps.reduce((a, r) => a + r[j], 0) / nb;
+    return Math.sqrt((nb - 1) / nb * reps.reduce((a, r) => a + (r[j] - mean) ** 2, 0));
+  });
+  return { value: full, error, blocks: nb, used };
+}
+
+/** Observables from the mean loop vector (n × n, index (R−1)n + T−1). */
+function loopObservables(n) {
+  const w = (Wm, R, T) => (R === 0 || T === 0 ? 1 : Wm[(R - 1) * n + (T - 1)]);
+  return {
+    // Creutz ratios χ(R,R), R = 2..n
+    creutz: Wm => Array.from({ length: n - 1 }, (_, i) => { const R = i + 2; return -Math.log(w(Wm, R, R) * w(Wm, R - 1, R - 1) / (w(Wm, R, R - 1) * w(Wm, R - 1, R))); }),
+    // aV(R; T) = −ln[W(R,T)/W(R,T−1)], R = 1..n, at the given T
+    potential: T => Wm => Array.from({ length: n }, (_, i) => -Math.log(w(Wm, i + 1, T) / w(Wm, i + 1, T - 1))),
+    // −ln W(R,T) for every loop
+    minusLog: Wm => Array.from(Wm, v => -Math.log(v)),
+  };
+}
+
+// ------------------------------------------------------------------ simulation contract
+
+const PARAMS = [
+  { key: 'beta', label: 'Lattice coupling β = 4/g²', min: 0.5, max: 2.6, value: 2.3, digits: 3,
+    hint: 'Larger β = weaker bare coupling = finer lattice spacing (asymptotic freedom). Above β ≈ 2.4 a 6⁴ box becomes too small to confine (watch the Polyakov loop).' },
+  { key: 'L', label: 'Lattice size', value: 6, options: [{ value: 4, label: '4⁴ (fast)' }, { value: 6, label: '6⁴' }, { value: 8, label: '8⁴ (slow: ≈ 70 ms per sweep)' }] },
+  { key: 'warmup', label: 'Warm-up sweeps (discarded)', min: 10, max: 400, value: 40, integer: true, digits: 3 },
+  { key: 'start', label: 'Start configuration', value: 'cold', options: [{ value: 'cold', label: 'cold (all links = 1)' }, { value: 'hot', label: 'hot (random links)' }] },
+  { key: 'seed', label: 'Random seed', min: 1, max: 9999, value: 1, integer: true, digits: 4 },
+];
+
+function createSim(params) {
+  const L = +params.L, beta = params.beta, warmup = Math.round(params.warmup);
+  const lat = createLattice({ L, d: 4, beta, seed: Math.round(params.seed), start: params.start });
+  const n = L / 2;   // loops up to half the box (larger loops feel the periodic images)
+  const obs = loopObservables(n);
+  const plaqHist = [plaquette(lat)];
+  const meas = [], poly = [];
+  let slice = null, sliceAt = -1, cache = null, cacheAt = -1;
+
+  function estimates() {
+    if (cacheAt === meas.length) return cache;
+    cacheAt = meas.length;
+    if (meas.length < 20) return (cache = null);
+    const Wj = blockJackknife(meas, Wm => Array.from(Wm));
+    const chi = blockJackknife(meas, obs.creutz);
+    const Vt = blockJackknife(meas, obs.potential(n));
+    const Vt1 = n >= 2 ? blockJackknife(meas, obs.potential(n - 1)) : null;
+    const plaq = meanWithError(plaqHist.slice(warmup + 1));
+    const P = meanWithError(poly.map(Math.abs));
+    return (cache = { n, W: Wj, chi, V: Vt, V1: Vt1, T: n, plaq, polyAbs: P, count: meas.length, blocks: Wj.blocks });
+  }
+
+  const sim = {
+    params, lat, n, L, beta, warmup,
+    get t() { return lat.sweeps; },
+    step() {
+      sweep(lat);
+      plaqHist.push(plaquette(lat));
+      if (lat.sweeps > warmup) { meas.push(allWilsonLoops(lat, n)); poly.push(polyakovLoop(lat)); }
+    },
+    get plaqHist() { return plaqHist; },
+    get measured() { return meas.length; },
+    estimates,
+    slice() { if (sliceAt !== lat.sweeps) { slice = sliceAction(lat); sliceAt = lat.sweeps; } return slice; },
+    strongU: strongU(beta),
+    diagnostics() {
+      const e = estimates();
+      const out = [];
+      const chi2 = e?.chi?.value[0], chi2e = e?.chi?.error[0];
+      if (e && Number.isFinite(chi2) && chi2 !== 0) out.push({ key: 'rel', label: 'stat. error of χ(2,2)', kind: 'error', value: Math.abs(chi2e / chi2), good: 0.05, warn: 0.3 });
+      out.push({ key: 'phase', label: 'stage', kind: 'value', value: 0, text: lat.sweeps <= warmup ? `warm-up ${lat.sweeps}/${warmup}` : `measuring (${meas.length} configs)` });
+      out.push({ key: 'plaq', label: '⟨½Tr U_P⟩', kind: 'value', value: plaqHist.at(-1), text: e ? `${e.plaq.mean.toFixed(5)} ± ${e.plaq.error.toFixed(5)}` : plaqHist.at(-1).toFixed(5) });
+      out.push({ key: 'chi', label: 'σa² ≈ χ(2,2)', kind: 'value', value: chi2 ?? 0, text: e ? (Number.isFinite(chi2) ? `${chi2.toFixed(4)} ± ${chi2e.toFixed(4)}` : 'unresolved (W ≤ 0)') : 'needs ≥ 20 configs' });
+      out.push({ key: 'poly', label: '⟨|Polyakov loop|⟩', kind: 'value', value: e?.polyAbs.mean ?? 0, text: e ? `${e.polyAbs.mean.toFixed(4)} ± ${e.polyAbs.error.toFixed(4)}` : 'needs ≥ 20 configs' });
+      return out;
+    },
+    state() {
+      const e = estimates();
+      return { sweeps: lat.sweeps, beta, L, plaquette: plaqHist.at(-1), measured: meas.length, W: e ? e.W.value : null, chi: e ? e.chi.value : null };
+    },
+    record() {
+      const header = ['sweep', 'plaquette', 'polyakov', ...Array.from({ length: n * n }, (_, i) => `W_${Math.floor(i / n) + 1}x${i % n + 1}`)];
+      const rows = meas.map((w, i) => [warmup + 1 + i, plaqHist[warmup + 1 + i], poly[i], ...w]);
+      return { header, rows };
+    },
+  };
+  return sim;
+}
+
+// ------------------------------------------------------------------ verification
+
+function verify() {
+  const checks = [];
+  const add = (label, value, pass, state) => checks.push({ label, value, pass, ...(state ? { state } : {}) });
+  const rel = (a, b) => Math.abs(a - b) / Math.abs(b);
+
+  // A1. β coefficients: closed SU(3) forms vs the colour-factor formulas (C_A = 3, C_F = 4/3, T_F = 1/2)
+  let worst = 0;
+  for (let nf = 0; nf <= 6; nf++) {
+    const a = betaSU3(nf), b = betaFromCasimirs(3, 4 / 3, 1 / 2, nf);
+    for (let i = 0; i < 3; i++) worst = Math.max(worst, Math.abs(a[i] - b[i]) / Math.max(1, Math.abs(b[i])));
+  }
+  add('β₀, β₁, β₂ (SU(3), n_f = 0…6) equal the Casimir formulas', `max rel. diff ${worst.toExponential(1)}`, worst < 1e-13);
+  // A2. β₃ against the published decimal form 29243.0 − 6946.29 n_f + 405.089 n_f² + 1.49931 n_f³
+  let w3 = 0;
+  for (let nf = 0; nf <= 6; nf++) w3 = Math.max(w3, rel(betaSU3(nf)[3], 29243.0 - 6946.29 * nf + 405.089 * nf ** 2 + 1.49931 * nf ** 3));
+  add('β₃ matches van Ritbergen–Vermaseren–Larin decimals', `max rel. diff ${w3.toExponential(1)}`, w3 < 2e-5);
+  // A3. one loop, fixed n_f = 5: numerical RG vs closed form
+  const th5 = { mc: 0, mb: 0, mt: 1e9 };
+  let e1 = 0;
+  for (const mu of [5, 20, 1000]) e1 = Math.max(e1, rel(runAlpha(0.118, 91.188, mu, { loops: 1, th: th5 }), alphaOneLoop(0.118, 91.188, mu, 5)));
+  add('1-loop RG integration vs closed form (n_f = 5, μ = 5…1000 GeV)', `max rel. err ${e1.toExponential(1)}`, e1 < 1e-10);
+  // A4. two loops vs the exact implicit solution
+  let e2 = 0;
+  for (const mu of [5, 20, 1000]) e2 = Math.max(e2, rel(runAlpha(0.118, 91.188, mu, { loops: 2, th: th5 }), alphaTwoLoopExact(0.118, 91.188, mu, 5)));
+  add('2-loop RG integration vs exact implicit solution (Brent)', `max rel. err ${e2.toExponential(1)}`, e2 < 1e-10);
+  // A5. asymptotic freedom: dα/dlnμ² < 0 for every n_f ≤ 16 at one loop (β₀ > 0 ⇔ n_f < 16.5)
+  const b0_16 = betaSU3(16)[0], b0_17 = betaSU3(17)[0];
+  add('β₀ > 0 up to n_f = 16, < 0 at 17 (asymptotic freedom condition)', `β₀(16) = ${b0_16.toFixed(3)}, β₀(17) = ${b0_17.toFixed(3)}`, b0_16 > 0 && b0_17 < 0);
+  // A6. round trip through all thresholds
+  const down = runAlpha(PDG.alphaMZ, PDG.MZ, 1.5), back = runAlpha(down, 1.5, PDG.MZ);
+  add('Round trip M_Z → 1.5 GeV → M_Z (4 loops, thresholds)', `α_s(1.5 GeV) = ${down.toFixed(4)}, rel. err ${rel(back, PDG.alphaMZ).toExponential(1)}`, rel(back, PDG.alphaMZ) < 1e-9);
+  // A7. truncation: 3-loop vs 4-loop at m_b and at 2 GeV, compared with the input uncertainty
+  const d3 = rel(runAlpha(PDG.alphaMZ, PDG.MZ, 2, { loops: 3 }), runAlpha(PDG.alphaMZ, PDG.MZ, 2, { loops: 4 }));
+  const dIn = rel(runAlpha(PDG.alphaMZ + PDG.alphaMZerr, PDG.MZ, 2), runAlpha(PDG.alphaMZ, PDG.MZ, 2));
+  add('At 2 GeV: 3- vs 4-loop difference below the PDG input uncertainty', `${(100 * d3).toFixed(2)} % vs ${(100 * dIn).toFixed(2)} %`, d3 < dIn);
+
+  // B1. cross-check of the fast loop routine against core wilsonLoop, and gauge invariance
+  const lt = createLattice({ L: 4, d: 4, beta: 2.2, seed: 7 });
+  for (let i = 0; i < 10; i++) sweep(lt);
+  const fast = allWilsonLoops(lt, 2, 'lower');
+  let dc = 0;
+  for (let R = 1; R <= 2; R++) for (let T = 1; T <= 2; T++) dc = Math.max(dc, Math.abs(fast[(R - 1) * 2 + T - 1] - wilsonLoop(lt, R, T)));
+  add('Fast all-loops routine = core wilsonLoop (4⁴, R,T ≤ 2)', `max |Δ| ${dc.toExponential(1)}`, dc < 1e-13);
+  const before = allWilsonLoops(lt, 2), pb = polyakovLoop(lt);
+  gaugeTransform(lt);
+  const after = allWilsonLoops(lt, 2);
+  let dg = Math.abs(polyakovLoop(lt) - pb);
+  for (let i = 0; i < before.length; i++) dg = Math.max(dg, Math.abs(after[i] - before[i]));
+  add('Wilson & Polyakov loops gauge invariant (random local transformation)', `max |Δ| ${dg.toExponential(1)}`, dg < 1e-12);
+  // B2. over-relaxation is microcanonical
+  const s0 = action(lt);
+  sweep(lt, { heatbath: false, overrelax: 3 });
+  const dS = Math.abs(action(lt) - s0) / s0;
+  add('Over-relaxation preserves the Wilson action', `|ΔS/S| ${dS.toExponential(1)}`, dS < 1e-10);
+
+  // B3. 2D: exact infinite-volume ⟨P⟩ = I₂/I₁ and W(2,2) = ⟨P⟩⁴
+  {
+    const beta = 2.0, u = strongU(beta), lat = createLattice({ L: 16, d: 2, beta, seed: 3 });
+    for (let i = 0; i < 50; i++) sweep(lat);
+    const ps = [], ws = [];
+    for (let i = 0; i < 600; i++) { sweep(lat); ps.push(plaquette(lat)); ws.push(allWilsonLoops(lat, 2)[3]); }
+    const P = meanWithError(ps), Wm = meanWithError(ws);
+    const zP = Math.abs(P.mean - u) / P.error, zW = Math.abs(Wm.mean - u ** 4) / Wm.error;
+    add('2D SU(2) exact: ⟨P⟩ = I₂(β)/I₁(β), β = 2, 16², 600 sweeps', `${P.mean.toFixed(4)} ± ${P.error.toFixed(4)} vs ${u.toFixed(4)} (${zP.toFixed(1)}σ)`, zP < 3);
+    add('2D SU(2) exact: W(2,2) = u⁴', `${Wm.mean.toFixed(4)} ± ${Wm.error.toFixed(4)} vs ${(u ** 4).toFixed(4)} (${zW.toFixed(1)}σ)`, zW < 3);
+  }
+  // B4. 4D strong coupling ⟨P⟩ = u + 4u⁵ + … and area law χ(2,2) = −ln u + O(u⁴)
+  {
+    const beta = 0.5, u = strongU(beta), lat = createLattice({ L: 4, d: 4, beta, seed: 5 });
+    for (let i = 0; i < 30; i++) sweep(lat);
+    const ps = [];
+    for (let i = 0; i < 300; i++) { sweep(lat); ps.push(plaquette(lat)); }
+    const P = meanWithError(ps), ref = u + 4 * u ** 5, z = Math.abs(P.mean - ref) / P.error;
+    add('4D strong coupling: ⟨P⟩ = u + 4u⁵ (β = 0.5, 4⁴, 300 sweeps)', `${P.mean.toFixed(4)} ± ${P.error.toFixed(4)} vs ${ref.toFixed(4)} (${z.toFixed(1)}σ)`, z < 3);
+  }
+  {
+    const beta = 1.0, u = strongU(beta), lat = createLattice({ L: 6, d: 4, beta, seed: 11 });
+    for (let i = 0; i < 30; i++) sweep(lat);
+    const ms = [];
+    for (let i = 0; i < 240; i++) { sweep(lat); ms.push(allWilsonLoops(lat, 2)); }
+    const c = blockJackknife(ms, loopObservables(2).creutz);
+    const chi = c.value[0], err = c.error[0], ref = -Math.log(u), dev = Math.abs(chi - ref);
+    add('4D strong-coupling area law: χ(2,2) = −ln u (β = 1, 6⁴, 240 configs)', `${chi.toFixed(3)} ± ${err.toFixed(3)} vs ${ref.toFixed(3)} (allowance 3σ + 4u⁴)`, dev < 3 * err + 4 * u ** 4);
+  }
+  // B5. default regime (β = 2.3, 6⁴): equilibration from hot and cold starts, seed dependence,
+  //     and a resolved, positive string tension
+  {
+    const runs = [['cold', 1], ['hot', 2]].map(([start, seed]) => {
+      const sim = createSim({ beta: 2.3, L: 6, warmup: 40, start, seed });
+      for (let i = 0; i < 40 + 240; i++) sim.step();
+      return sim.estimates();
+    });
+    const [a, b] = runs;
+    const zp = Math.abs(a.plaq.mean - b.plaq.mean) / Math.hypot(a.plaq.error, b.plaq.error);
+    add('β = 2.3, 6⁴: cold start (seed 1) and hot start (seed 2) plaquettes agree', `${a.plaq.mean.toFixed(4)} ± ${a.plaq.error.toFixed(4)} vs ${b.plaq.mean.toFixed(4)} ± ${b.plaq.error.toFixed(4)} (${zp.toFixed(1)}σ)`, zp < 3);
+    const zc = Math.abs(a.chi.value[0] - b.chi.value[0]) / Math.hypot(a.chi.error[0], b.chi.error[0]);
+    add('β = 2.3: χ(2,2) independent of seed/start', `${a.chi.value[0].toFixed(4)} ± ${a.chi.error[0].toFixed(4)} vs ${b.chi.value[0].toFixed(4)} ± ${b.chi.error[0].toFixed(4)} (${zc.toFixed(1)}σ)`, zc < 3);
+    const sig = a.chi.value[0] / a.chi.error[0];
+    add('β = 2.3: string tension resolved, χ(2,2) > 0', `${sig.toFixed(1)}σ from zero (240 configs)`, sig > 5);
+    const c3 = a.chi.value[1], c3e = a.chi.error[1];
+    add('β = 2.3: χ(3,3) (larger loop; noisier)', Number.isFinite(c3) ? `${c3.toFixed(3)} ± ${c3e.toFixed(3)}` : 'unresolved', true, Number.isFinite(c3) && c3 > 2 * c3e ? undefined : 'warn');
+  }
+
+  return {
+    summary: 'QCD running coupling checked against closed-form and exact 2-loop solutions; SU(2) lattice checked against exact 2D results, strong-coupling expansions, gauge invariance and run-to-run agreement.',
+    checks,
+    notes: [
+      'Running coupling: perturbative MS-bar RG with PDG 2024 inputs; continuous matching at m_c, m_b, m_t neglects the O(α_s³) decoupling constant (≈ 0.1 % at m_b, below the 0.8 % input uncertainty). Not trustworthy where α_s approaches 1 (Q ≲ 1 GeV).',
+      'Lattice: pure SU(2), no dynamical quarks, one lattice spacing, small periodic volume; results are in lattice units and are not extrapolated to the continuum or converted to physical units.',
+    ],
+  };
+}
+
+return { PDG, betaSU3, betaFromCasimirs, dAlpha, runAlpha, runningCurve, alphaOneLoop, alphaTwoLoopExact, strongU, allWilsonLoops, polyakovLoop, sliceAction, blockJackknife, loopObservables, PARAMS, createSim, verify };
+})();
+
+// ---- page
+const { createInstrument } = __psim["ui/instrument-app.mjs"];
+const { el, select, slider } = __psim["ui/instrument.mjs"];
+const { orbitCamera, createPointRenderer, createLineRenderer, colormap } = __psim["ui/gl.mjs"];
+const { PARAMS, createSim, PDG, betaSU3, runningCurve, runAlpha, strongU } = __psim["local:physics.mjs"];
+const HBARC_GEV_FM = 0.1973269804;   // ħc in GeV fm (CODATA 2018)
+const ACTION_RANGE = [0, 1];          // colour range of the plaquette action density 1 − ½Tr U_P
+
+// ------------------------------------------------------------------ stage: one sampled lattice configuration (GPU)
+const cam = orbitCamera({ distance: 15, yaw: 0.75, pitch: 0.32 });
+const view3 = { loopR: 2 };
+let pts = null, grid = null, loopLine = null, wl = null, gridFor = null, camFor = null, uploadedAt = -1, uploadedSim = null;
+
+function centre(sim) { return (sim.L - 1) / 2; }
+function loopGeometry(sim) {
+  const c = centre(sim), R = Math.min(view3.loopR, sim.n), T = sim.n, x0 = Math.floor((sim.L - R) / 2), t0 = Math.floor((sim.L - 1 - T) / 2), y = Math.floor(sim.L / 2);
+  const P = (x, t) => [x - c, y - c, t - c];
+  return { R, T, a: P(x0, t0), b: P(x0 + R, t0), cc: P(x0 + R, t0 + T), d: P(x0, t0 + T) };
+}
+
+function drawGL(gl, sim, view) {
+  if (!pts) { pts = createPointRenderer(gl); grid = createLineRenderer(gl); loopLine = createLineRenderer(gl); wl = createLineRenderer(gl); }
+  const L = sim.L, c = centre(sim);
+  const narrow = view.W < 600, want = (narrow ? 3.6 : 2.6) * L;
+  if (camFor !== `${L}:${narrow}`) { cam.distance = want; camFor = `${L}:${narrow}`; }
+  if (gridFor !== L) {
+    const lines = [];
+    for (let i = 0; i < L; i++) for (let j = 0; j < L; j++) {
+      lines.push([0 - c, i - c, j - c, L - 1 - c, i - c, j - c]);
+      lines.push([i - c, 0 - c, j - c, i - c, L - 1 - c, j - c]);
+      lines.push([i - c, j - c, 0 - c, i - c, j - c, L - 1 - c]);
+    }
+    grid.update(lines); gridFor = L;
+  }
+  if (uploadedSim !== sim || uploadedAt !== sim.t) {
+    const s = sim.slice(), p = new Float32Array(s.pos.length);
+    for (let i = 0; i < p.length; i++) p[i] = s.pos[i] - c;
+    pts.update(p, { values: s.val });
+    uploadedAt = sim.t; uploadedSim = sim;
+  }
+  const dark = +view.color('--glow') === 1, aspect = view.W / view.H;
+  grid.draw(cam, { aspect, width: 1, color: view.color('--grid-strong'), opacity: 0.8, depthTest: false });
+  pts.draw(cam, { aspect, size: dark ? 0.55 : 0.3, sizeUnit: 'world', colormap: 'inferno', range: ACTION_RANGE, blend: dark ? 'additive' : 'alpha', opacity: dark ? 0.9 : 0.8 });
+  const g = loopGeometry(sim);
+  loopLine.update([[...g.a, ...g.b], [...g.cc, ...g.d]]);
+  loopLine.draw(cam, { aspect, width: 2.5, color: view.color('--body-1'), depthTest: false });
+  wl.update([[...g.a, ...g.d], [...g.b, ...g.cc]]);
+  wl.draw(cam, { aspect, width: 3.5, color: view.color('--body-0'), depthTest: false });
+}
+
+function draw(ctx, sim, view) {
+  const { W, H } = view, C = view.color, L = sim.L, c = centre(sim);
+  ctx.font = '11px ui-monospace, Menlo, monospace';
+  // axis labels at the ends of the drawn lattice
+  const lab = (p, text, col = '--muted') => { const q = cam.project(p, W, H); if (q.visible) { ctx.fillStyle = C(col); ctx.fillText(text, q.x + 6, q.y); } };
+  lab([L - 1 - c + 0.6, -c, -c], 'x');
+  lab([-c, L - 1 - c + 0.6, -c], 'y');
+  lab([-c, -c, L - 1 - c + 0.6], 'τ (Euclidean time)');
+  const g = loopGeometry(sim);
+  const mid = [(g.a[0] + g.d[0]) / 2, g.a[1], (g.a[2] + g.d[2]) / 2];
+  const q = cam.project(mid, W, H);
+  if (q.visible) {
+    const text = `static sources · W(${g.R},${g.T})`, tw = ctx.measureText(text).width;
+    ctx.fillStyle = C('--panel'); ctx.globalAlpha = 0.8; ctx.fillRect(q.x - 12 - tw - 4, q.y - 11, tw + 8, 16); ctx.globalAlpha = 1;
+    ctx.fillStyle = C('--body-0'); ctx.textAlign = 'right';
+    ctx.fillText(text, q.x - 12, q.y);
+    ctx.textAlign = 'start';
+  }
+  // colour bar (bottom-right), same map and range as the GPU points
+  const narrow = W < 600, bw = Math.min(160, W * 0.4), bx = narrow ? 16 : W - bw - 16, by = narrow ? H - 150 : H - 74;
+  for (let i = 0; i < bw; i++) { const [r, gg, b] = colormap('inferno', i / (bw - 1)); ctx.fillStyle = `rgb(${r * 255},${gg * 255},${b * 255})`; ctx.fillRect(bx + i, by, 1, 8); }
+  ctx.strokeStyle = C('--line-strong'); ctx.strokeRect(bx + 0.5, by + 0.5, bw - 1, 8);
+  ctx.fillStyle = C('--muted'); ctx.font = '10.5px ui-monospace, Menlo, monospace';
+  ctx.fillText('0', bx, by + 20); ctx.textAlign = 'right'; ctx.fillText('≥ 1', bx + bw, by + 20); ctx.textAlign = 'start';
+  ctx.fillText('plaquette action 1 − ½Tr U_P', bx, by - 6);
+  ctx.fillText(`z = 0 slice of a ${L}⁴ lattice · sweep ${sim.t}`, 16, narrow ? by + 36 : H - 62);
+}
+
+// ------------------------------------------------------------------ workbench: equations and figures
+function bench({ eqs, figs, createPlot, createEquation, M, getSim }) {
+  // --- A. QCD running coupling (independent of the lattice calculation)
+  const run = { loops: 4, alphaMZ: PDG.alphaMZ, Q: 10, curve: null, lo: null, hi: null };
+  const fRun = createPlot({
+    title: 'A · QCD running coupling α_s(Q): perturbative RG (SU(3), MS-bar), input PDG 2024; shaded Q < 1 GeV: series unreliable', height: 300,
+    x: { label: 'momentum transfer Q', unit: 'GeV', min: 0.5, max: 1e4, log: true },
+    y: { label: 'α_s(Q)', min: 0, max: 0.8 },
+    onCursor: q => { run.Q = q; fRun.cursor(q); fRun.invalidate(); eqRun.update(); },
+  });
+  const interp = (cv, q) => {
+    const { Q, alpha } = cv;
+    if (q < Q[0] || q > Q.at(-1)) return NaN;
+    let i = 1; while (i < Q.length - 1 && Q[i] < q) i++;
+    const f = Math.log(q / Q[i - 1]) / Math.log(Q[i] / Q[i - 1]);
+    return alpha[i - 1] + f * (alpha[i] - alpha[i - 1]);
+  };
+  function recompute() {
+    run.curve = runningCurve({ alphaMZ: run.alphaMZ, loops: run.loops });
+    run.lo = runningCurve({ alphaMZ: run.alphaMZ - PDG.alphaMZerr, loops: run.loops });
+    run.hi = runningCurve({ alphaMZ: run.alphaMZ + PDG.alphaMZerr, loops: run.loops });
+    run.one = runningCurve({ alphaMZ: run.alphaMZ, loops: 1 });
+    fRun.band('np', 0.5, 1.0, { color: '--grid-strong', alpha: 0.6 });
+    fRun.fn('hi', q => interp(run.hi, q), { color: '--body-0', dot: true, width: 1.2, label: `±${PDG.alphaMZerr} input uncertainty` });
+    fRun.fn('lo', q => interp(run.lo, q), { color: '--body-0', dot: true, width: 1.2 });
+    if (run.loops !== 1) fRun.fn('one', q => interp(run.one, q), { color: '--muted', dash: true, width: 1.2, label: '1-loop, for comparison' });
+    else fRun.remove('one');
+    fRun.fn('alpha', q => interp(run.curve, q), { color: '--body-0', width: 2.4, label: `${run.loops}-loop running` });
+    fRun.vline('mc', PDG.mc, { label: 'm_c' }); fRun.vline('mb', PDG.mb, { label: 'm_b' }); fRun.vline('mt', PDG.mt, { label: 'm_t' });
+    fRun.marker('mz', PDG.MZ, run.alphaMZ, { color: '--body-1', label: 'input α_s(M_Z)' });
+    fRun.cursor(run.Q); fRun.invalidate(); fRun.draw();
+    eqRun.update();
+  }
+  const ctlRow = el('div', { class: 'psim-btns', style: 'align-items:center;gap:10px;flex-wrap:wrap' },
+    el('span', { class: 'psim-hint', style: 'margin:0' }, 'Running-coupling inputs (recompute panel A only):'),
+    select([1, 2, 3, 4].map(v => ({ value: String(v), label: `${v}-loop β function` })), '4', v => { run.loops = +v; recompute(); }),
+  );
+  const aSlider = slider({ label: 'α_s(M_Z) input', min: 0.110, max: 0.126, value: PDG.alphaMZ, digits: 4, onInput: v => { run.alphaMZ = v; recompute(); } });
+
+  const a = (q = run.Q) => interp(run.curve, q);
+  const nfQ = q => 3 + (q > PDG.mc) + (q > PDG.mb) + (q > PDG.mt);
+  const term = i => () => { const al = a(); const b = betaSU3(nfQ(run.Q)); return -4 * Math.PI * b[i] * (al / (4 * Math.PI)) ** (i + 2); };
+  const al = M.sub(M.i('α'), M.i('s')), fpi = `${M.n(4)}<mi>π</mi>`;
+  const eqRun = createEquation({
+    title: 'Renormalisation-group equation at the cursor scale Q (drag the cursor in panel A)',
+    lhs: { mathml: `${M.frac('<mi>d</mi>' + al, '<mi>d</mi><mi>ln</mi>' + M.sup(M.i('Q'), M.n(2)))}`, label: 'rate of change of α_s with ln Q²', value: () => [0, 1, 2, 3].slice(0, run.loops).reduce((s, i) => s + term(i)(), 0), digits: 4 },
+    terms: [
+      { id: 'alpha', mathml: `<mo>−</mo>${M.sub(M.i('β'), M.n(0))}${M.sup(al, M.n(2))}<mo>/</mo>${fpi}`, label: 'one loop: gluon self-interaction beats quark screening (β₀ = 11 − 2n_f/3 > 0)', color: '--body-0', value: term(0), digits: 4 },
+      { id: 'b1', sign: '', mathml: `<mo>−</mo>${M.sub(M.i('β'), M.n(1))}${M.sup(al, M.n(3))}<mo>/</mo>${M.sup(`<mo>(</mo>${fpi}<mo>)</mo>`, M.n(2))}`, label: 'two loops', color: '--muted', value: () => (run.loops > 1 ? term(1)() : 0), digits: 3 },
+      { id: 'b23', sign: '', mathml: '<mo>−</mo><mo>…</mo>', label: 'three and four loops (β₂, β₃)', color: '--muted', value: () => (run.loops > 2 ? term(2)() : 0) + (run.loops > 3 ? term(3)() : 0), digits: 3 },
+    ],
+    where: [
+      { mathml: M.i('Q'), meaning: 'cursor scale', value: () => run.Q, unit: 'GeV', digits: 4 },
+      { mathml: `${al}<mo>(</mo>${M.i('Q')}<mo>)</mo>`, meaning: 'coupling at the cursor', value: () => a(), digits: 4 },
+      { mathml: `<mi>ħ</mi><mi>c</mi><mo>/</mo>${M.i('Q')}`, meaning: 'distance probed at this scale', value: () => HBARC_GEV_FM / run.Q, unit: 'fm', digits: 3 },
+      { mathml: M.sub(M.i('n'), M.i('f')), meaning: 'active quark flavours', value: () => nfQ(run.Q), digits: 1 },
+    ],
+    link: fRun,
+  });
+
+  // --- B. SU(2) lattice observables (from the running Monte Carlo)
+  const fArea = createPlot({
+    title: 'B1 · Area law: −ln⟨W(R,T)⟩ against loop area R·T (SU(2) lattice units)', height: 260,
+    x: { label: 'area R·T', unit: 'a²', min: 0, max: 10 }, y: { label: '−ln⟨W⟩', min: 0, max: 4 },
+  });
+  const fPot = createPlot({
+    title: 'B2 · Static potential aV(R) = −ln[⟨W(R,T)⟩/⟨W(R,T−1)⟩]', height: 260,
+    x: { label: 'separation R', unit: 'a', min: 0.5, max: 4.5 }, y: { label: 'aV(R)', min: 0, max: 2 },
+  });
+  const fChi = createPlot({
+    title: 'B3 · Creutz ratios χ(R,R): finite-loop estimates of σa²', height: 240,
+    x: { label: 'loop size R', unit: 'a', min: 1.5, max: 4.5 }, y: { label: 'χ(R,R)', min: 0, max: 1 },
+  });
+  const fPl = createPlot({
+    title: 'B4 · Plaquette history (Monte Carlo sweeps, not time)', height: 200,
+    x: { label: 'sweep', min: 0, max: 100 }, y: { label: '⟨½Tr U_P⟩', min: 0, max: 1 },
+  });
+  figs.append(fRun.el, fArea.el, fPot.el, fChi.el, fPl.el);
+
+  const lw = (R, T) => M.row(M.i('W'), M.paren(`${M.i(R)}<mo>,</mo>${M.i(T)}`));
+  let cur = null;
+  const lnW = (R, T) => (cur && R >= 1 && T >= 1 && R <= cur.n && T <= cur.n ? Math.log(cur.W.value[(R - 1) * cur.n + T - 1]) : R === 0 || T === 0 ? 0 : NaN);
+  const eqChi = createEquation({
+    title: 'Creutz ratio: perimeter and corner terms cancel, the area term survives (R = 2, live)',
+    lhs: { mathml: `${M.i('χ')}<mo>(</mo><mn>2</mn><mo>,</mo><mn>2</mn><mo>)</mo>`, label: '≈ σa², string tension in lattice units', value: () => -(lnW(2, 2) + lnW(1, 1) - lnW(2, 1) - lnW(1, 2)), digits: 4 },
+    terms: [
+      { id: 'w22', mathml: `<mo>−</mo><mi>ln</mi>${lw(2, 2)}`, label: 'largest loop', color: '--body-0', value: () => -lnW(2, 2), digits: 4 },
+      { id: 'w11', sign: '', mathml: `<mo>−</mo><mi>ln</mi>${lw(1, 1)}`, label: 'plaquette', color: '--body-1', value: () => -lnW(1, 1), digits: 4 },
+      { id: 'w21', sign: '+', mathml: `<mi>ln</mi>${lw(2, 1)}<mo>+</mo><mi>ln</mi>${lw(1, 2)}`, label: 'the two 2×1 loops', color: '--body-2', value: () => lnW(2, 1) + lnW(1, 2), digits: 4 },
+    ],
+    note: 'If −ln W = σ·RT + μ·2(R+T) + c, this combination equals σ exactly; Coulomb-like short-distance parts make small loops overestimate σ.',
+    link: fChi,
+  });
+
+  const loopSel = select([1, 2, 3, 4].map(v => ({ value: String(v), label: `R = ${v}` })), String(view3.loopR), v => { view3.loopR = +v; });
+  const loopRow = el('div', { class: 'psim-btns', style: 'align-items:center;gap:10px;flex-wrap:wrap' }, el('span', { class: 'psim-hint', style: 'margin:0' }, 'Loop drawn in the 3D view (display only):'), loopSel);
+  eqs.append(loopRow, ctlRow, aSlider, eqRun.el, eqChi.el);
+  recompute();
+
+  let lastCount = -1, lastSim = null;
+  return {
+    update(sim) {
+      const e = sim.estimates();
+      cur = e;
+      eqChi.update();
+      // plaquette history: every sweep (warm-up shaded)
+      const h = sim.plaqHist;
+      if (sim !== lastSim || h.length % 4 === 0) {
+        fPl.setX({ min: 0, max: Math.max(100, h.length) });
+        fPl.band('warm', 0, sim.warmup, { color: '--grid-strong', alpha: 0.5, label: 'warm-up (discarded)' });
+        fPl.data('p', h.map((v, i) => [i, v]), { color: '--body-1', width: 1.2, label: sim.params.start === 'cold' ? 'cold start' : 'hot start' });
+        fPl.invalidate(); fPl.draw();
+      }
+      if (sim === lastSim && e?.count === lastCount) return;
+      lastSim = sim; lastCount = e?.count ?? -1;
+      const n = sim.n, u = strongU(sim.beta);
+      fArea.setX({ min: 0, max: n * n + 0.5 });
+      fPot.setX({ min: 0.5, max: n + 0.5 });
+      fChi.setX({ min: 1.5, max: n + 0.5 });
+      // leading strong-coupling reference: −ln W = −RT ln u (exact in 2D; leading order in 4D)
+      fArea.fn('sc', A => -A * Math.log(u), { color: '--muted', dash: true, width: 1.2, label: 'leading strong coupling −RT·ln u(β)', ignoreScale: true });
+      fChi.hline('sc', -Math.log(u), { label: `strong coupling −ln u(β) = ${(-Math.log(u)).toFixed(3)}` });
+      for (const id of ['w1', 'w2', 'w3', 'w4', 'v', 'v1', 'chi']) { fArea.remove(id); fPot.remove(id); fChi.remove(id); }
+      if (e) {
+        const cols = ['--body-0', '--body-1', '--body-2', '--body-3'];
+        for (let R = 1; R <= n; R++) {
+          const pts = [], err = [];
+          for (let T = 1; T <= n; T++) {
+            const i = (R - 1) * n + T - 1, W = e.W.value[i], dW = e.W.error[i];
+            if (W > 0) { pts.push([R * T, -Math.log(W)]); err.push(dW / W); }
+          }
+          fArea.data(`w${R}`, pts, { dots: true, errors: err, color: cols[R - 1], r: 3, label: `R = ${R}, T = 1…${n}` });
+        }
+        const ok = (arr, err) => arr.map((v, i) => [i, v, err[i]]).filter(([, v, d]) => Number.isFinite(v) && Number.isFinite(d));
+        const V = ok(e.V.value, e.V.error), V1 = e.V1 ? ok(e.V1.value, e.V1.error) : [];
+        fPot.data('v', V.map(([i, v]) => [i + 1, v]), { dots: true, errors: V.map(x => x[2]), color: '--body-0', r: 3.2, label: `T = ${e.T}` });
+        if (V1.length) fPot.data('v1', V1.map(([i, v]) => [i + 1.06, v]), { dots: true, errors: V1.map(x => x[2]), color: '--body-1', r: 2.6, label: `T = ${e.T - 1} (T-dependence check)` });
+        const X = ok(e.chi.value, e.chi.error);
+        fChi.data('chi', X.map(([i, v]) => [i + 2, v]), { dots: true, errors: X.map(x => x[2]), color: '--body-0', r: 3.2, label: `measured, ${e.count} configurations` });
+      }
+      const ymaxA = e ? Math.max(1, ...e.W.value.filter(w => w > 0).map(w => -Math.log(w))) * 1.15 : 4;
+      fArea.setY({ min: 0, max: ymaxA });
+      const vv = e ? [...e.V.value, ...(e.V1?.value ?? [])].filter(Number.isFinite) : [];
+      fPot.setY({ min: 0, max: vv.length ? Math.max(...vv) * 1.25 : 2 });
+      const cc = e ? e.chi.value.filter(Number.isFinite) : [];
+      fChi.setY({ min: 0, max: Math.max(0.2, ...cc, Math.min(2, -Math.log(u))) * 1.3 });
+      for (const f of [fArea, fPot, fChi]) { f.invalidate(); f.draw(); }
+    },
+  };
+}
+
+createInstrument({
+  title: 'Asymptotic freedom and the strong force',
+  subtitle: 'A: QCD running coupling from the renormalisation group · B: confinement in pure SU(2) lattice gauge theory (reduced model, Monte Carlo)',
+  tier: 'approximate',
+  tierReason: 'Two separate calculations, labelled A and B. A (analytical/perturbative): the MS-bar renormalisation-group equation for real QCD integrated numerically from the imported PDG 2024 value of α_s(M_Z); checked against closed-form and exact 2-loop solutions; reliable only where α_s is small. B (approximate, reduced model): pure SU(2) Yang–Mills on a small periodic Euclidean lattice, sampled by heat bath + over-relaxation; checked against exact 2D results, strong-coupling expansions, gauge invariance and seed/start independence. B is not QCD (SU(3), quarks) and is not converted to physical units.',
+  layout: 'workbench',
+  gl: true, drawGL,
+  params: PARAMS, create: createSim,
+  draw, bench,
+  timeUnit: 'sweeps', timeLabel: 'Monte Carlo sweeps (not time)', speed: 4, duration: 600,
+  onPointer(canvas) { cam.attach(canvas); },
+  onFit() { cam.yaw = 0.75; cam.pitch = 0.32; camFor = null; },
+  hudLine: sim => { const e = sim.estimates(); return `β = ${sim.beta.toFixed(3)} · ${sim.L}⁴ · ${e ? `χ(2,2) = ${e.chi.value[0].toFixed(3)} ± ${e.chi.error[0].toFixed(3)}` : `warm-up / collecting (${sim.measured} configs)`}`; },
+  model: {
+    legend: [
+      'colour: plaquette action of one sampled SU(2) configuration',
+      'orange: static-source worldlines · blue: closes the Wilson loop',
+      'playback: Monte Carlo sweeps, not time',
+    ],
+    equations: [
+      { caption: 'A · MS-bar renormalisation-group equation (a = α_s/4π, n_f active flavours):', mathml: '<math display="block"><mfrac><mrow><mi>d</mi><mi>a</mi></mrow><mrow><mi>d</mi><mi>ln</mi><msup><mi>μ</mi><mn>2</mn></msup></mrow></mfrac><mo>=</mo><mo>−</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>0</mn></mrow><mn>3</mn></munderover><msub><mi>β</mi><mi>i</mi></msub><msup><mi>a</mi><mrow><mi>i</mi><mo>+</mo><mn>2</mn></mrow></msup><mo>,</mo><mspace width="0.6em"/><msub><mi>β</mi><mn>0</mn></msub><mo>=</mo><mn>11</mn><mo>−</mo><mfrac><mn>2</mn><mn>3</mn></mfrac><msub><mi>n</mi><mi>f</mi></msub></math>' },
+      { caption: 'B · Wilson action of pure SU(2) gauge theory (β = 4/g²) and the static potential from Wilson loops:', mathml: '<math display="block"><mi>S</mi><mo>=</mo><mi>β</mi><munder><mo>∑</mo><mi>P</mi></munder><mo>(</mo><mn>1</mn><mo>−</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><mi>Tr</mi><msub><mi>U</mi><mi>P</mi></msub><mo>)</mo><mo>,</mo><mspace width="0.6em"/><mo>⟨</mo><mi>W</mi><mo>(</mo><mi>R</mi><mo>,</mo><mi>T</mi><mo>)</mo><mo>⟩</mo><mo>∼</mo><msup><mi>e</mi><mrow><mo>−</mo><mi>V</mi><mo>(</mo><mi>R</mi><mo>)</mo><mi>T</mi></mrow></msup><mo>,</mo><mspace width="0.6em"/><mi>V</mi><mo>(</mo><mi>R</mi><mo>)</mo><mo>≈</mo><mi>σ</mi><mi>R</mi><mtext> (confinement)</mtext></math>' },
+    ],
+    assumptions: [
+      'A is perturbation theory for real QCD (SU(3) with quarks), MS-bar scheme, truncated at 1–4 loops. Inputs (imported, PDG 2024): α_s(M_Z) = 0.1180 ± 0.0009, M_Z = 91.1880 GeV, m_c(m_c) = 1.2730 GeV, m_b(m_b) = 4.183 GeV, m_t = 172.57 GeV.',
+      'A: the number of active flavours changes at the quark masses with continuous matching; the neglected O(α_s³) decoupling constant is ≈ 0.1 % at m_b, below the 0.8 % input uncertainty.',
+      'A: below about 1 GeV α_s becomes large and the truncated series is unreliable (shaded); the curve stops where α_s would exceed 1.2. This breakdown is where the non-perturbative strong force (B) takes over; the divergence itself (Landau pole) is an artefact of perturbation theory, not a prediction.',
+      'A shows no measured data points; the PDG QCD review compiles the measurements that the world average summarises.',
+      'B is a reduced model: gauge group SU(2) instead of SU(3), no dynamical quarks (so no string breaking), one lattice spacing, a small periodic volume (L⁴ with L = 4, 6 or 8). Results are in lattice units a; no continuum extrapolation or physical scale setting is attempted.',
+      'B: configurations are Euclidean Monte Carlo samples, not a real-time movie of gluons. Only averages over many configurations are physical; a single slice in the 3D view is one random sample.',
+      'B: Creutz ratios from loops of size 2–4 are finite-size estimators; they decrease with loop size because the short-distance (Coulomb-like) part of the force drops out. They are not an extrapolated string tension.',
+      'B: on a 6⁴ box, β above ≈ 2.4 makes the box too small compared with the confinement scale: the Polyakov loop grows and the area law fades (a finite-volume effect, not the physical deconfinement transition).',
+      'Errors: block jackknife (20 blocks) over successive configurations for loop ratios; blocking analysis for the plaquette. Autocorrelation longer than a block would make these errors too small.',
+    ],
+    conventions: [
+      'Panel A and panel B are different theories; they are not drawn on the same axes and their numbers must not be compared directly.',
+      '3D view: points sit at the centres of the plaquettes of the (x, y, τ) sub-lattice at z = 0; their colour shows 1 − ½Tr U_P on a linear inferno scale from 0 to 1 (values above 1 saturate). Point size is fixed (display choice).',
+      'The drawn R×T rectangle is one of the many loops averaged at every site and in every plane; its R is chosen below the view (display only) and T is the largest loop time used for the potential.',
+      'Red/green/blue colour charge is not drawn: the SU(2) links act on two-component colour space; colours on screen encode numbers only.',
+    ],
+    references: [
+      'D. J. Gross, F. Wilczek, PRL 30, 1343 (1973); H. D. Politzer, PRL 30, 1346 (1973): asymptotic freedom.',
+      'S. Navas et al. (Particle Data Group), Phys. Rev. D 110, 030001 (2024): QCD review, α_s(M_Z), quark and Z masses.',
+      'T. van Ritbergen, J. A. M. Vermaseren, S. A. Larin, Phys. Lett. B 400, 379 (1997): four-loop β function.',
+      'K. G. Wilson, PRD 10, 2445 (1974): lattice gauge theory and confinement.',
+      'M. Creutz, PRD 21, 2308 (1980): Monte Carlo SU(2), Creutz ratios.',
+      'A. D. Kennedy, B. J. Pendleton, PLB 156, 393 (1985): heat bath; M. Creutz, PRD 36, 515 (1987): over-relaxation.',
+    ],
+  },
+});
+
+</script>
+</body>
+</html>
