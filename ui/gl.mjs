@@ -928,10 +928,12 @@ export const polylines = {
  * horizontal. Ticks at nice values (decades when log). Returns the bar's rectangle.
  */
 export function drawColorBar(ctx, { x, y, width = 12, height = 120, colormap: map = 'viridis', range = [0, 1], log = false, label = '', ticks = 5, horizontal = false, color, format } = {}) {
-  const css = name => (typeof getComputedStyle === 'function' ? getComputedStyle(document.documentElement).getPropertyValue(name).trim() : '');
+  // tokens of the element the bar is drawn in (the view is dark in both page themes)
+  const css = name => (typeof getComputedStyle === 'function' ? getComputedStyle(ctx.canvas?.closest?.('.psim-view') ?? document.documentElement).getPropertyValue(name).trim() : '');
   const text = color ?? (css('--muted') || '#8a94a6');
   const [lo, hi] = log ? range.map(Math.log10) : range;
   const steps = Math.max(2, Math.round(horizontal ? width : height));
+  ctx.save();   // leaves the caller's fill, stroke, font and text alignment unchanged
   for (let i = 0; i < steps; i++) {
     const c = colormap(map, (i + 0.5) / steps).map(v => Math.round(255 * v));
     ctx.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`;
@@ -954,8 +956,10 @@ export function drawColorBar(ctx, { x, y, width = 12, height = 120, colormap: ma
   }
   if (label) {
     ctx.textAlign = horizontal ? 'center' : 'left'; ctx.textBaseline = 'bottom';
-    ctx.fillText(label, horizontal ? x + width / 2 : x, y - 4);
+    // vertical: clear of the top tick's label, which is centred on the bar's top edge
+    ctx.fillText(label, horizontal ? x + width / 2 : x, y - (horizontal ? 4 : 10));
   }
+  ctx.restore();
   return { x, y, width, height };
 }
 

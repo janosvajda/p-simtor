@@ -34,5 +34,6 @@ Geometric units G = c = 1, lengths in M (r_s = 2M). These are exact general-rela
 **Extensions:**
 - *Orbits with Einstein's correction (Mercury, stars near Sgr A\*, binary pulsars as test-mass approximations):* use `relativisticOrbit(p, e, { orbits, newtonian })` for the rosette and the motion: it returns points [φ, r, t] and `at(t)` for the position at any time (times in GM/c³), plus a Newtonian twin with `newtonian: true`. Don't write your own orbit integrator for this. Use and `precessionPerOrbit(p, e)` or `precessionSI({ GM, a, e })` for the exact numbers (Cutler, Kennefick & Poisson 1994). Mercury: 42.98″ per century. The real effect is tiny: offer a clearly labelled exaggeration, and quote the real value.
 - *Rotating (Kerr) black holes:* separable geodesics with Carter's constant. Doable, but needs a new solver and new checks.
+- *Gravitational waves, inspiralling binaries, colliding black holes:* see [gravitational-waves.md](gravitational-waves.md) (`core/gravitational-waves.mjs`).
 - *Gravitational time dilation:* dτ/dt = √(1−2M/r). GPS clocks run fast by ≈ +38.5 µs/day net.
 - *Event Horizon Telescope:* the shadow diameter 2√27 GM/(c²D) gives about 40 µas for M87* (M = 6.5×10⁹ M☉, D = 16.8 Mpc). The measured ring is 42 ± 3 µas.

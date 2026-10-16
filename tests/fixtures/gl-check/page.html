@@ -12,9 +12,13 @@ import { PARAMS, createSim } from './physics.mjs';
 const cam = orbitCamera({ distance: 4, yaw: 0.5, pitch: 0.6 });
 let pts, field, vol, uploaded = null, pointSize = 3;
 createInstrument({
+  intro: {"text": "A test page for the GPU drawing tools: points, fields, volumes, lines and meshes are drawn and then read back to check that every pixel lands where the computation says it should.", "watch": []},
   title: 'GPU renderer check', subtitle: 'Test fixture for ui/gl.mjs', tier: 'conceptual', tierReason: 'Test fixture only.',
   params: PARAMS, create: createSim, gl: true, timeUnit: 's',
   presets: [{ label: 'Few points, viridis', values: { n: 12, map: 'viridis' } }],
+  speed: 0.3,
+  glResolution: 1,   // pixel tests need the exact device ratio (no adaptive lowering)
+  actions: [{ label: 'Run from the start', hint: 'restart and play', onClick: ({ restart, play }) => { restart(); play(); } }],
   timeline: { duration: 20, markers: [{ t: 5, label: 'computed event', kind: 'computed' }, { t: 12, label: 'requested time', kind: 'requested' }], note: 'test fixture timeline' },
   model: { legend: ['ring: points coloured by index (inferno)', 'blob: Gaussian density, emission'] },
   onPointer(canvas) { cam.attach(canvas); },
@@ -28,7 +32,7 @@ createInstrument({
     pts.draw(cam, { aspect: view.W / view.H, size: pointSize, colormap: sim.map, range: [0, 1] });
   },
   draw(ctx, sim, view) {
-    const p = cam.project([1, 0, 0], view.W, view.H);
+    const q = cam.project([1, 0, 0], view.W, view.H), p = view.steady('x1', q.x, q.y);
     ctx.fillStyle = view.color('--muted'); ctx.font = '12px ui-monospace, monospace'; ctx.fillText('x = 1', p.x + 6, p.y);
   },
 });
@@ -36,7 +40,7 @@ createInstrument({
 // Pixel checks against the geometry the renderers must reproduce.
 window.psim.selfTest = async () => {
   // full screen without a user gesture: the API refuses, so the CSS fallback must fill the window
-  const sceneEl = document.querySelector('.psim-stage');
+  const sceneEl = document.querySelector('.psim-scene');   // the view, player bar and key
   window.psim.toggleFullscreen();
   await new Promise(r => setTimeout(r, 300));
   const rFs = sceneEl.getBoundingClientRect(), barInside = sceneEl.contains(document.querySelector('.psim-transport'));

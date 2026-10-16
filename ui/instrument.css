@@ -135,35 +135,10 @@ body {
   background:
     radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 92%, var(--accent) 8%) 0%, var(--stage) 60%);
 }
-.psim-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
-.psim-stage canvas.grab { cursor: grab; }
-.psim-stage canvas.grabbing { cursor: grabbing; }
-.psim-stage canvas.move { cursor: move; }
+.psim-view canvas.grab { cursor: grab; }
+.psim-view canvas.grabbing { cursor: grabbing; }
+.psim-view canvas.move { cursor: move; }
 
-.psim-hud {
-  position: absolute; left: 16px; top: 14px;
-  display: grid; gap: 2px; pointer-events: none;
-  font: 12px/1.35 var(--mono); color: var(--ink-2);
-}
-.psim-hud b { font-weight: 500; color: var(--ink); font-size: 20px; letter-spacing: -.01em; }
-.psim-hud .dim { color: var(--muted); }
-.psim-hud .flag { color: var(--warn); }
-
-.psim-legend {
-  position: absolute; right: 16px; top: 14px; display: grid; gap: 4px; justify-items: end;
-  font: 11px/1.3 var(--sans); color: var(--muted); pointer-events: none; text-align: right;
-}
-
-.psim-transport {
-  position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
-  display: flex; align-items: center; gap: 4px;
-  padding: 5px; border-radius: 12px;
-  background: color-mix(in srgb, var(--panel) 86%, transparent);
-  border: 1px solid var(--line);
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 10px 30px rgba(0,0,0,.25);
-  max-width: calc(100% - 32px);
-}
 .psim-transport button {
   height: 32px; min-width: 32px; padding: 0 9px; border-radius: 8px;
   border: 0; background: transparent; color: var(--ink-2); cursor: pointer;
@@ -308,7 +283,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 @media (max-width: 860px) {
-  .psim-app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 64vh auto; height: auto; }
+  .psim-app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto; height: auto; }
   .psim-head { gap: 10px; }
   .psim-title { flex: 1; }
   .psim-tier { padding: 6px; }
@@ -316,7 +291,6 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
   .psim-side { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
   .psim-head { padding: 10px 16px; }
   .psim-title p { display: none; }
-  .psim-transport label.speed { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -370,28 +344,17 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 
 /* ---------- workbench layout: stage + figures + equations (instrument-app layout: 'workbench') ---------- */
 .psim-app.workbench .psim-stage { overflow: auto; background: var(--stage); }
-.psim-bench { position: relative; display: grid; gap: 18px; padding: 18px 18px 84px; min-height: 100%; }
-.psim-bench .psim-canvaswrap { position: relative; height: clamp(300px, 52vh, 620px); border-radius: 12px; overflow: hidden; border: 1px solid var(--line);
-  background: radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 90%, var(--accent) 10%) 0%, var(--stage) 65%); }
-.psim-bench .psim-canvaswrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+.psim-bench { position: relative; display: grid; gap: 18px; padding: 18px; min-height: 100%; }
 .psim-bench .psim-figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
 .psim-bench .psim-eqs { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
-.psim-app.workbench .psim-transport { position: fixed; left: calc((100vw - 372px) / 2); }
-.psim-app.workbench .psim-hud { left: 30px; top: 30px; }
-.psim-app.workbench .psim-legend { right: 30px; top: 30px; }
 @media (max-width: 860px) {
-  .psim-app.workbench .psim-transport { left: 50%; }
-  .psim-bench { padding: 12px 12px 84px; }
+  .psim-bench { padding: 12px; }
 }
 
 @media (max-width: 860px) {
   /* phones: legend bottom-right, clear of HUD (top-left), scale bars (bottom-left) and transport */
-  .psim-legend { top: auto; bottom: 70px; left: auto; right: 14px; max-width: 58%; justify-items: end; text-align: right; font-size: 10.5px; }
   .psim-app.workbench { grid-template-rows: auto auto auto; }
   .psim-app.workbench .psim-stage { overflow: visible; }
-  .psim-app.workbench .psim-transport { position: absolute; }
-  .psim-app.workbench .psim-legend { top: auto; bottom: 14px; left: auto; right: 26px; }
-  .psim-bench .psim-canvaswrap { height: 70vh; }
 }
 
 /* GPU layer (ui/gl.mjs): under the 2D canvas, which keeps labels and pointer events */
@@ -402,45 +365,133 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 .psim-presets .psim-hint { width: 100%; margin: 0; }
 
 /* Over a GPU scene the HUD and legend get a soft backing so they stay readable on bright content */
-.psim-app.has-gl .psim-hud, .psim-app.has-gl .psim-legend {
-  padding: 6px 9px; border-radius: 8px;
-  background: color-mix(in srgb, var(--stage) 72%, transparent);
-  backdrop-filter: blur(3px);
-}
 
 /* ---------- full screen (scene + HUD + legend + playback bar) ---------- */
 .psim-fs { background: var(--stage, var(--bg)); border-radius: 0 !important; border: 0 !important; }
-.psim-app .psim-fs .psim-transport { position: absolute; left: 50%; right: auto; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 5; }
 .psim-pseudo-fs { position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100dvh !important; max-height: none !important; z-index: 1000; margin: 0 !important; }
 .psim-fsbtn { position: absolute; right: 12px; bottom: 12px; z-index: 4; width: 34px; height: 34px; display: grid; place-items: center;
   border-radius: 9px; border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); cursor: pointer; }
 .psim-fsbtn:hover { background: var(--raise); color: var(--ink); }
 .psim-fsbtn svg { width: 15px; height: 15px; }
 
-/* ---------- timeline: the run's span and its key times (spec.timeline) ---------- */
-.psim-timeline { position: absolute; left: 50%; transform: translateX(-50%); bottom: 78px; width: min(560px, 62%); z-index: 3;
-  font: 10.5px var(--mono); color: var(--muted); pointer-events: auto; }
-.psim-canvaswrap > .psim-timeline { bottom: 14px; }
-.psim-app .psim-fs > .psim-timeline { bottom: 86px; }
+
+
+/* The animation view is a dark screen in BOTH page themes: scenes (glows, density maps, space) are
+   designed for it, and every page looks the same. Panels, text and figures follow the page theme. */
+.psim-view, :root[data-theme="light"] .psim-view {
+  --bg: #07090d;
+  --stage: #0a0d13;
+  --panel: #0e1219;
+  --raise: #141923;
+  --line: rgba(196, 214, 255, 0.09);
+  --line-strong: rgba(196, 214, 255, 0.18);
+  --ink: #e6e9ef;
+  --ink-2: #b6bdcb;
+  --muted: #7b8396;
+  --faint: #4a5163;
+  --accent: #8cc8ff;
+  --accent-ink: #06121f;
+  --good: #7fd8a4;
+  --warn: #f2c46d;
+  --bad: #ff7a85;
+  --grid: rgba(150, 175, 230, 0.06);
+  --grid-strong: rgba(150, 175, 230, 0.13);
+  --glow: 1;
+  --body-0: #ffb35c;
+  --body-1: #68c3ff;
+  --body-2: #ff6f9a;
+  --body-3: #9be08a;
+  --body-4: #c49bff;
+  --body-5: #ffe07a;
+  color-scheme: dark;
+}
+
+/* ---------- the scene: plain intro, clean view, player bar, key ---------- */
+/* Everything about the animation lives in one card: what it shows (in plain words), the view with
+   nothing written over it, a video-player bar right under it, and the key to its colours below. */
+.psim-scene { display: flex; flex-direction: column; min-height: 0; background: var(--stage); }
+.psim-stage > .psim-scene { position: absolute; inset: 0; }
+.psim-scene.psim-canvaswrap { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
+.psim-view { position: relative; flex: 1 1 auto; min-height: 0;
+  background: radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 90%, var(--accent) 10%) 0%, var(--stage) 65%); }
+.psim-canvaswrap > .psim-view { flex: none; height: clamp(320px, 58vh, 660px); }
+.psim-view canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+.psim-intro { padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); font: 14px/1.55 var(--sans); color: var(--ink-2); }
+.psim-side > .psim-intro { margin: 14px 16px 4px; }
+.psim-intro b { display: block; font: 600 11px/1.4 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.psim-intro p { margin: 0; color: var(--ink); max-width: 80ch; }
+.psim-intro ul { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 3px; font-size: 13px; color: var(--ink-2); }
+.psim-intro li::before { content: '→ '; color: var(--accent); }
+.psim-intro.collapsed p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.psim-intro.collapsed ul { display: none; }
+.psim-more { margin-top: 4px; padding: 0; border: 0; background: none; color: var(--accent); font: 500 12.5px var(--sans); cursor: pointer; }
+.psim-more:hover { text-decoration: underline; }
+.psim-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 92%, var(--stage)); }
+.psim-action { padding: 9px 16px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--line)); background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--ink); font: 600 13.5px var(--sans); cursor: pointer; }
+.psim-action:hover { background: color-mix(in srgb, var(--accent) 26%, transparent); }
+
+.psim-transport { display: flex; align-items: center; gap: 4px; padding: 6px 10px; flex-wrap: nowrap;
+  border-top: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 92%, var(--stage)); }
+.psim-clock[hidden] { display: none; }
+.psim-clock { display: grid; line-height: 1.15; padding: 0 8px; min-width: 0; max-width: 220px; }
+.psim-clock .dim { font: 10.5px var(--sans); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.psim-clock b { font: 500 15px var(--mono); color: var(--ink); white-space: nowrap; }
+
+.psim-timeline { flex: 1 1 200px; min-width: 120px; padding: 0 10px; font: 10.5px var(--mono); color: var(--muted); position: relative; }
+.psim-timeline .ticks { position: relative; height: 17px; }
 .psim-timeline .bar { position: relative; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--ink) 16%, transparent); cursor: pointer; }
+.psim-timeline .bar::before { content: ''; position: absolute; inset: -8px 0; }   /* a taller hit area */
 .psim-timeline .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 3px; background: var(--accent); }
 .psim-timeline .m { position: absolute; top: -4px; width: 2px; height: 14px; margin-left: -1px; background: var(--ink); }
-.psim-timeline .ticks { position: relative; height: 30px; }
 .psim-timeline .lab { position: absolute; bottom: 2px; transform: translateX(-50%); white-space: nowrap; color: var(--ink-2); }
-.psim-timeline .lab.r1 { bottom: 16px; }
 .psim-timeline .ends { display: flex; justify-content: space-between; margin-top: 3px; }
 .psim-timeline .m.measured, .psim-tlrow i.measured { background: var(--good, #4cc38a); }
 .psim-timeline .lab.measured { color: var(--good, #4cc38a); }
 .psim-timeline .m.requested, .psim-tlrow i.requested { background: var(--warn, #e0a030); }
 .psim-timeline .lab.requested { color: var(--warn, #e0a030); }
-.psim-timeline { background: color-mix(in srgb, var(--stage) 78%, transparent); padding: 4px 12px 6px; border-radius: 10px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 .psim-tlrow { display: grid; grid-template-columns: 10px 1fr auto; gap: 2px 8px; align-items: baseline; margin: 6px 0; font-size: 12px; }
 .psim-tlrow i { width: 8px; height: 8px; border-radius: 2px; background: var(--ink); }
 .psim-tlrow code { font: 12px var(--mono); color: var(--ink); }
 .psim-tlrow small { grid-column: 2 / 4; color: var(--muted); font-size: 11px; }
+
+.psim-key { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 18px; padding: 8px 14px 10px;
+  border-top: 1px solid var(--line); font: 12px/1.45 var(--sans); color: var(--ink-2); }
+.psim-key:has(.psim-legend:empty):has(.psim-hud span:empty + span:empty + span:empty) { display: none; }
+.psim-legend { display: flex; flex-wrap: wrap; gap: 2px 16px; min-width: 0; }
+.psim-legend span { min-width: 0; }
+.psim-hud { display: flex; flex-wrap: wrap; gap: 2px 14px; font: 11.5px/1.45 var(--mono); color: var(--muted); }
+.psim-hud span:empty { display: none; }
+.psim-hud .flag { color: var(--warn); }
+
+.psim-endcard { position: absolute; right: 12px; bottom: 12px; z-index: 4; display: flex; align-items: center; gap: 10px;
+  padding: 6px 6px 6px 12px; border-radius: 10px; border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 90%, transparent);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); font: 12.5px var(--sans); color: var(--ink-2); }
+.psim-endcard .psim-btn { padding: 5px 10px; }
+.psim-endcard[hidden] { display: none; }
+
+/* full screen: the view grows, the intro steps aside, player and key stay */
+.psim-fs > .psim-view, .psim-fs.psim-canvaswrap > .psim-view { flex: 1 1 auto; height: auto; }
+.psim-fs .psim-transport { padding-bottom: max(6px, env(safe-area-inset-bottom)); }
+
 @media (max-width: 860px) {
-  .psim-timeline { left: 10px; transform: none; width: calc(50% - 16px); bottom: 70px; }
-  .psim-app .psim-legend { max-width: calc(50% - 16px); }
-  .psim-canvaswrap > .psim-timeline { bottom: 12px; }
+  .psim-stage { overflow: visible; }
+  .psim-stage > .psim-scene { position: relative; inset: auto; }
+  /* the first screen holds the view and the whole player bar: header ≈ 64 px, player ≈ 104 px */
+  .psim-stage > .psim-scene > .psim-view, .psim-canvaswrap > .psim-view { flex: none; height: max(280px, calc(100svh - 64px - 132px - 26px)); }
+  .psim-scene:has(.psim-actions) > .psim-view { height: max(260px, calc(100svh - 64px - 132px - 26px - 62px)); }   /* the action row fits too */
+  .psim-intro { padding: 12px 14px; font-size: 13.5px; }
+  .psim-side > .psim-intro { margin: 12px 12px 4px; }
+  .psim-transport { flex-wrap: wrap; row-gap: 2px; padding: 6px 8px; }
+  .psim-transport .psim-timeline { order: -1; flex: 1 1 100%; padding: 0 4px 4px; }
+  .psim-transport .psim-clock { flex: 1 1 auto; }
+  .psim-transport label.speed { padding: 0 4px; }
+  .psim-transport label.speed { font-size: 0; }
+  .psim-transport input[type=range] { width: 80px; }
+  .psim-transport output { min-width: 0; font-size: 11px; }
+  .psim-transport .sep { display: none; }
   .psim-timeline .lab { font-size: 9.5px; }
+  .psim-key { padding: 8px 12px; font-size: 11.5px; }
+  .psim-fs > .psim-view { height: auto; }
 }

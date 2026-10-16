@@ -159,7 +159,7 @@
       "kind": "compose",
       "dir": "examples/galaxy",
       "adapt": "Other galaxies: change the normalisation in core/galaxy.mjs normalise({ v, R, fBulge, fDisk, fHalo }) or the component scales; the rotation-curve plot and equation update automatically.",
-      "summary": "Thousands of stars in a Milky-Way model. Switch dark matter off and watch the galaxy fly apart.",
+      "summary": "The evidence for dark matter: the same galaxy with and without its halo, side by side, and the live rotation curve against the measured Milky Way (Eilers et al. 2019).",
       "checked": "Bovy (2015) model, measured rotation curve (Eilers et al. 2019)",
       "page": "examples/galaxy/galaxy.html",
       "prompt": "show why galaxies need dark matter",

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="generator" content="p-simtor">
-<title>Hydrogen tunnelling in enzymes</title>
+<title>Hydrogen tunnelling in an enzyme</title>
 <style>/* psim:ui/instrument.css */
 /* p-simtor instrument shell.
    A simulation page is a scientific instrument: a large stage for the physics,
@@ -143,35 +143,10 @@ body {
   background:
     radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 92%, var(--accent) 8%) 0%, var(--stage) 60%);
 }
-.psim-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
-.psim-stage canvas.grab { cursor: grab; }
-.psim-stage canvas.grabbing { cursor: grabbing; }
-.psim-stage canvas.move { cursor: move; }
+.psim-view canvas.grab { cursor: grab; }
+.psim-view canvas.grabbing { cursor: grabbing; }
+.psim-view canvas.move { cursor: move; }
 
-.psim-hud {
-  position: absolute; left: 16px; top: 14px;
-  display: grid; gap: 2px; pointer-events: none;
-  font: 12px/1.35 var(--mono); color: var(--ink-2);
-}
-.psim-hud b { font-weight: 500; color: var(--ink); font-size: 20px; letter-spacing: -.01em; }
-.psim-hud .dim { color: var(--muted); }
-.psim-hud .flag { color: var(--warn); }
-
-.psim-legend {
-  position: absolute; right: 16px; top: 14px; display: grid; gap: 4px; justify-items: end;
-  font: 11px/1.3 var(--sans); color: var(--muted); pointer-events: none; text-align: right;
-}
-
-.psim-transport {
-  position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
-  display: flex; align-items: center; gap: 4px;
-  padding: 5px; border-radius: 12px;
-  background: color-mix(in srgb, var(--panel) 86%, transparent);
-  border: 1px solid var(--line);
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 10px 30px rgba(0,0,0,.25);
-  max-width: calc(100% - 32px);
-}
 .psim-transport button {
   height: 32px; min-width: 32px; padding: 0 9px; border-radius: 8px;
   border: 0; background: transparent; color: var(--ink-2); cursor: pointer;
@@ -316,7 +291,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 @media (max-width: 860px) {
-  .psim-app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 64vh auto; height: auto; }
+  .psim-app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto; height: auto; }
   .psim-head { gap: 10px; }
   .psim-title { flex: 1; }
   .psim-tier { padding: 6px; }
@@ -324,7 +299,6 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
   .psim-side { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
   .psim-head { padding: 10px 16px; }
   .psim-title p { display: none; }
-  .psim-transport label.speed { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -378,28 +352,17 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 
 /* ---------- workbench layout: stage + figures + equations (instrument-app layout: 'workbench') ---------- */
 .psim-app.workbench .psim-stage { overflow: auto; background: var(--stage); }
-.psim-bench { position: relative; display: grid; gap: 18px; padding: 18px 18px 84px; min-height: 100%; }
-.psim-bench .psim-canvaswrap { position: relative; height: clamp(300px, 52vh, 620px); border-radius: 12px; overflow: hidden; border: 1px solid var(--line);
-  background: radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 90%, var(--accent) 10%) 0%, var(--stage) 65%); }
-.psim-bench .psim-canvaswrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+.psim-bench { position: relative; display: grid; gap: 18px; padding: 18px; min-height: 100%; }
 .psim-bench .psim-figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
 .psim-bench .psim-eqs { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
-.psim-app.workbench .psim-transport { position: fixed; left: calc((100vw - 372px) / 2); }
-.psim-app.workbench .psim-hud { left: 30px; top: 30px; }
-.psim-app.workbench .psim-legend { right: 30px; top: 30px; }
 @media (max-width: 860px) {
-  .psim-app.workbench .psim-transport { left: 50%; }
-  .psim-bench { padding: 12px 12px 84px; }
+  .psim-bench { padding: 12px; }
 }
 
 @media (max-width: 860px) {
   /* phones: legend bottom-right, clear of HUD (top-left), scale bars (bottom-left) and transport */
-  .psim-legend { top: auto; bottom: 70px; left: auto; right: 14px; max-width: 58%; justify-items: end; text-align: right; font-size: 10.5px; }
   .psim-app.workbench { grid-template-rows: auto auto auto; }
   .psim-app.workbench .psim-stage { overflow: visible; }
-  .psim-app.workbench .psim-transport { position: absolute; }
-  .psim-app.workbench .psim-legend { top: auto; bottom: 14px; left: auto; right: 26px; }
-  .psim-bench .psim-canvaswrap { height: 70vh; }
 }
 
 /* GPU layer (ui/gl.mjs): under the 2D canvas, which keeps labels and pointer events */
@@ -410,136 +373,226 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 .psim-presets .psim-hint { width: 100%; margin: 0; }
 
 /* Over a GPU scene the HUD and legend get a soft backing so they stay readable on bright content */
-.psim-app.has-gl .psim-hud, .psim-app.has-gl .psim-legend {
-  padding: 6px 9px; border-radius: 8px;
-  background: color-mix(in srgb, var(--stage) 72%, transparent);
-  backdrop-filter: blur(3px);
-}
 
 /* ---------- full screen (scene + HUD + legend + playback bar) ---------- */
 .psim-fs { background: var(--stage, var(--bg)); border-radius: 0 !important; border: 0 !important; }
-.psim-app .psim-fs .psim-transport { position: absolute; left: 50%; right: auto; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 5; }
 .psim-pseudo-fs { position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100dvh !important; max-height: none !important; z-index: 1000; margin: 0 !important; }
 .psim-fsbtn { position: absolute; right: 12px; bottom: 12px; z-index: 4; width: 34px; height: 34px; display: grid; place-items: center;
   border-radius: 9px; border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); cursor: pointer; }
 .psim-fsbtn:hover { background: var(--raise); color: var(--ink); }
 .psim-fsbtn svg { width: 15px; height: 15px; }
 
-/* ---------- timeline: the run's span and its key times (spec.timeline) ---------- */
-.psim-timeline { position: absolute; left: 50%; transform: translateX(-50%); bottom: 78px; width: min(560px, 62%); z-index: 3;
-  font: 10.5px var(--mono); color: var(--muted); pointer-events: auto; }
-.psim-canvaswrap > .psim-timeline { bottom: 14px; }
-.psim-app .psim-fs > .psim-timeline { bottom: 86px; }
+
+
+/* The animation view is a dark screen in BOTH page themes: scenes (glows, density maps, space) are
+   designed for it, and every page looks the same. Panels, text and figures follow the page theme. */
+.psim-view, :root[data-theme="light"] .psim-view {
+  --bg: #07090d;
+  --stage: #0a0d13;
+  --panel: #0e1219;
+  --raise: #141923;
+  --line: rgba(196, 214, 255, 0.09);
+  --line-strong: rgba(196, 214, 255, 0.18);
+  --ink: #e6e9ef;
+  --ink-2: #b6bdcb;
+  --muted: #7b8396;
+  --faint: #4a5163;
+  --accent: #8cc8ff;
+  --accent-ink: #06121f;
+  --good: #7fd8a4;
+  --warn: #f2c46d;
+  --bad: #ff7a85;
+  --grid: rgba(150, 175, 230, 0.06);
+  --grid-strong: rgba(150, 175, 230, 0.13);
+  --glow: 1;
+  --body-0: #ffb35c;
+  --body-1: #68c3ff;
+  --body-2: #ff6f9a;
+  --body-3: #9be08a;
+  --body-4: #c49bff;
+  --body-5: #ffe07a;
+  color-scheme: dark;
+}
+
+/* ---------- the scene: plain intro, clean view, player bar, key ---------- */
+/* Everything about the animation lives in one card: what it shows (in plain words), the view with
+   nothing written over it, a video-player bar right under it, and the key to its colours below. */
+.psim-scene { display: flex; flex-direction: column; min-height: 0; background: var(--stage); }
+.psim-stage > .psim-scene { position: absolute; inset: 0; }
+.psim-scene.psim-canvaswrap { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
+.psim-view { position: relative; flex: 1 1 auto; min-height: 0;
+  background: radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 90%, var(--accent) 10%) 0%, var(--stage) 65%); }
+.psim-canvaswrap > .psim-view { flex: none; height: clamp(320px, 58vh, 660px); }
+.psim-view canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+.psim-intro { padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); font: 14px/1.55 var(--sans); color: var(--ink-2); }
+.psim-side > .psim-intro { margin: 14px 16px 4px; }
+.psim-intro b { display: block; font: 600 11px/1.4 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.psim-intro p { margin: 0; color: var(--ink); max-width: 80ch; }
+.psim-intro ul { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 3px; font-size: 13px; color: var(--ink-2); }
+.psim-intro li::before { content: '→ '; color: var(--accent); }
+.psim-intro.collapsed p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.psim-intro.collapsed ul { display: none; }
+.psim-more { margin-top: 4px; padding: 0; border: 0; background: none; color: var(--accent); font: 500 12.5px var(--sans); cursor: pointer; }
+.psim-more:hover { text-decoration: underline; }
+.psim-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 92%, var(--stage)); }
+.psim-action { padding: 9px 16px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--line)); background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--ink); font: 600 13.5px var(--sans); cursor: pointer; }
+.psim-action:hover { background: color-mix(in srgb, var(--accent) 26%, transparent); }
+
+.psim-transport { display: flex; align-items: center; gap: 4px; padding: 6px 10px; flex-wrap: nowrap;
+  border-top: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 92%, var(--stage)); }
+.psim-clock[hidden] { display: none; }
+.psim-clock { display: grid; line-height: 1.15; padding: 0 8px; min-width: 0; max-width: 220px; }
+.psim-clock .dim { font: 10.5px var(--sans); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.psim-clock b { font: 500 15px var(--mono); color: var(--ink); white-space: nowrap; }
+
+.psim-timeline { flex: 1 1 200px; min-width: 120px; padding: 0 10px; font: 10.5px var(--mono); color: var(--muted); position: relative; }
+.psim-timeline .ticks { position: relative; height: 17px; }
 .psim-timeline .bar { position: relative; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--ink) 16%, transparent); cursor: pointer; }
+.psim-timeline .bar::before { content: ''; position: absolute; inset: -8px 0; }   /* a taller hit area */
 .psim-timeline .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 3px; background: var(--accent); }
 .psim-timeline .m { position: absolute; top: -4px; width: 2px; height: 14px; margin-left: -1px; background: var(--ink); }
-.psim-timeline .ticks { position: relative; height: 30px; }
 .psim-timeline .lab { position: absolute; bottom: 2px; transform: translateX(-50%); white-space: nowrap; color: var(--ink-2); }
-.psim-timeline .lab.r1 { bottom: 16px; }
 .psim-timeline .ends { display: flex; justify-content: space-between; margin-top: 3px; }
 .psim-timeline .m.measured, .psim-tlrow i.measured { background: var(--good, #4cc38a); }
 .psim-timeline .lab.measured { color: var(--good, #4cc38a); }
 .psim-timeline .m.requested, .psim-tlrow i.requested { background: var(--warn, #e0a030); }
 .psim-timeline .lab.requested { color: var(--warn, #e0a030); }
-.psim-timeline { background: color-mix(in srgb, var(--stage) 78%, transparent); padding: 4px 12px 6px; border-radius: 10px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 .psim-tlrow { display: grid; grid-template-columns: 10px 1fr auto; gap: 2px 8px; align-items: baseline; margin: 6px 0; font-size: 12px; }
 .psim-tlrow i { width: 8px; height: 8px; border-radius: 2px; background: var(--ink); }
 .psim-tlrow code { font: 12px var(--mono); color: var(--ink); }
 .psim-tlrow small { grid-column: 2 / 4; color: var(--muted); font-size: 11px; }
+
+.psim-key { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 18px; padding: 8px 14px 10px;
+  border-top: 1px solid var(--line); font: 12px/1.45 var(--sans); color: var(--ink-2); }
+.psim-key:has(.psim-legend:empty):has(.psim-hud span:empty + span:empty + span:empty) { display: none; }
+.psim-legend { display: flex; flex-wrap: wrap; gap: 2px 16px; min-width: 0; }
+.psim-legend span { min-width: 0; }
+.psim-hud { display: flex; flex-wrap: wrap; gap: 2px 14px; font: 11.5px/1.45 var(--mono); color: var(--muted); }
+.psim-hud span:empty { display: none; }
+.psim-hud .flag { color: var(--warn); }
+
+.psim-endcard { position: absolute; right: 12px; bottom: 12px; z-index: 4; display: flex; align-items: center; gap: 10px;
+  padding: 6px 6px 6px 12px; border-radius: 10px; border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 90%, transparent);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); font: 12.5px var(--sans); color: var(--ink-2); }
+.psim-endcard .psim-btn { padding: 5px 10px; }
+.psim-endcard[hidden] { display: none; }
+
+/* full screen: the view grows, the intro steps aside, player and key stay */
+.psim-fs > .psim-view, .psim-fs.psim-canvaswrap > .psim-view { flex: 1 1 auto; height: auto; }
+.psim-fs .psim-transport { padding-bottom: max(6px, env(safe-area-inset-bottom)); }
+
 @media (max-width: 860px) {
-  .psim-timeline { left: 10px; transform: none; width: calc(50% - 16px); bottom: 70px; }
-  .psim-app .psim-legend { max-width: calc(50% - 16px); }
-  .psim-canvaswrap > .psim-timeline { bottom: 12px; }
+  .psim-stage { overflow: visible; }
+  .psim-stage > .psim-scene { position: relative; inset: auto; }
+  /* the first screen holds the view and the whole player bar: header ≈ 64 px, player ≈ 104 px */
+  .psim-stage > .psim-scene > .psim-view, .psim-canvaswrap > .psim-view { flex: none; height: max(280px, calc(100svh - 64px - 132px - 26px)); }
+  .psim-scene:has(.psim-actions) > .psim-view { height: max(260px, calc(100svh - 64px - 132px - 26px - 62px)); }   /* the action row fits too */
+  .psim-intro { padding: 12px 14px; font-size: 13.5px; }
+  .psim-side > .psim-intro { margin: 12px 12px 4px; }
+  .psim-transport { flex-wrap: wrap; row-gap: 2px; padding: 6px 8px; }
+  .psim-transport .psim-timeline { order: -1; flex: 1 1 100%; padding: 0 4px 4px; }
+  .psim-transport .psim-clock { flex: 1 1 auto; }
+  .psim-transport label.speed { padding: 0 4px; }
+  .psim-transport label.speed { font-size: 0; }
+  .psim-transport input[type=range] { width: 80px; }
+  .psim-transport output { min-width: 0; font-size: 11px; }
+  .psim-transport .sep { display: none; }
   .psim-timeline .lab { font-size: 9.5px; }
+  .psim-key { padding: 8px 12px; font-size: 11.5px; }
+  .psim-fs > .psim-view { height: auto; }
 }
 </style>
 </head>
 <body>
 <script type="application/json" id="psim-verification">{
- "summary": "Exact Eckart/rectangular transmission vs numerical Schrödinger integration and transfer matrices; flux conservation; mass scaling and the classical (TST) limit; Bell/Wigner corrections; time-dependent wave packets vs the exact packet-averaged transmission with norm, flux and refinement checks.",
+ "summary": "Double-well tunnelling of H and D (1D): splittings converge at order 2.0/2.0, match the instanton formula deep in the barrier and an independent split-operator TDSE to 4.5e-5; KIE = 101 at 0.60 Å vs 8.0 without tunnelling",
  "checks": [
   {
-   "label": "Eckart T(E) exact formula vs numerical Schrödinger integration (H, D; E = 0.3–1.2 V)",
-   "value": "max rel. dev. 6.83e-11",
+   "label": "Splitting Δ_H: grid order (dx = 0.01, 0.005, 0.0025 Å; expected 2)",
+   "value": "2.00",
    "pass": true
   },
   {
-   "label": "Flux conservation R + T = 1 (numerical scattering solution)",
-   "value": "max |R+T−1| = 6.70e-11",
+   "label": "Splitting Δ_D: grid order (same ladder; expected 2)",
+   "value": "1.99",
    "pass": true
   },
   {
-   "label": "Rectangular T(E) formula vs transfer matrix (incl. E = V and E > V)",
-   "value": "max rel. dev. 2.22e-16",
+   "label": "Δ_H, Δ_D estimated discretisation error at the page grid (Richardson)",
+   "value": "5.4e-5, 4.7e-5",
    "pass": true
   },
   {
-   "label": "Transfer-matrix staircase → exact Eckart T (400/800/1600 slices)",
-   "value": "errors 9.85e-4, 2.46e-4, 6.14e-5; order 2.00",
+   "label": "KIE at 0.60 Å: page grid vs Richardson-extrapolated grid",
+   "value": "100.53 vs 100.55 (0.02 %)",
    "pass": true
   },
   {
-   "label": "Mass scaling: ln T_D / ln T_H → √(m_D/m_H) at E = 0.2 V (same barrier)",
-   "value": "1.4224 vs 1.4137",
+   "label": "Δ_D with twice the box margin (0.55 → 1.1 Å beyond the wells)",
+   "value": "0.0e+0",
    "pass": true
   },
   {
-   "label": "Classical limit m = 2000 u: exact κ → Wigner → 1 (TST)",
-   "value": "κ = 1.00133, Wigner 1.00125",
+   "label": "φ₀, φ₁ normalised and orthogonal (max deviation)",
+   "value": "2.2e-13",
    "pass": true
   },
   {
-   "label": "Thermal average quadrature refinement (96 → 192 panels)",
-   "value": "rel. change 3.33e-16",
+   "label": "Δ_D vs instanton formula with first correction (Zinn-Justin), action S₀/ħ = 5.3, 7.6, 10.4, 13.5: residual shrinks as the wall grows",
+   "value": "5.15 %, 1.77 %, 0.77 %, 0.35 %",
    "pass": true
   },
   {
-   "label": "Bell parabolic κ: quadrature vs closed-form series (u = 3.84 < 2π)",
-   "value": "2.033754592 vs 2.033754592",
+   "label": "Split-operator TDSE vs closed form: P(across) for H at τ_H/2, τ_H and D at τ_H",
+   "value": "50.00 vs 50.00 %; 99.48 vs 99.48 %; 2.48 vs 2.48 %",
    "pass": true
   },
   {
-   "label": "Gated Franck–Condon average: closed form vs quadrature",
-   "value": "rel. dev. 5.55e-16",
+   "label": "TDSE norm drift (unitary split-operator)",
+   "value": "1.4e-13",
    "pass": true
   },
   {
-   "label": "Rigid limit σ → 0: KIE → exp(r₀²(α_D − α_H))",
-   "value": "416.40646 vs 416.40646",
+   "label": "TDSE time-step refinement (4000 → 8000 steps): change of P(across)",
+   "value": "1.2e-5",
    "pass": true
   },
   {
-   "label": "Wave packets (split-operator FFT, N = 4096, dx = 0.03 Å, dt = 0.05 fs) vs exact ∫|φ(k)|²T(E)dk: H, D, T",
-   "value": "H 2.232e-2/2.232e-2; D 4.696e-4/4.696e-4; T 2.636e-5/2.636e-5 (max rel. dev 2.7e-5)",
+   "label": "H crossing time: first maximum of P(across) vs πħ/Δ_H",
+   "value": "241.8 vs 241.8 fs; max 99.48 %",
    "pass": true
   },
   {
-   "label": "Unitarity: norm drift over the run (all isotopes)",
-   "value": "max 2.53e-13",
+   "label": "Default (0.60 Å): Δ_H, Δ_D; crossing times τ_H, τ_D",
+   "value": "68.97, 6.879 cm⁻¹; 242 fs, 2.42 ps",
    "pass": true
   },
   {
-   "label": "Transmitted probability = time-integrated flux j(x = 5 Å) (H)",
-   "value": "2.2320e-2 vs ∫j dt 2.2320e-2",
+   "label": "Semiclassical limit without tunnelling, 30 °C: exp(ΔZPE/kT) (textbook ≈ 7 for C–H)",
+   "value": "8.03",
    "pass": true
   },
   {
-   "label": "Refinement (H): dt/2, and dx/2 with dt/2",
-   "value": "rel. change 2.03e-5, 1.12e-13",
-   "pass": true
+   "label": "Model isotope effect at 0.60 Å vs measured SLO-1 (81 ± 5, 30 °C)",
+   "value": "101; the model gives 81 at a 0.586 Å jump",
+   "pass": true,
+   "state": "warn"
   },
   {
-   "label": "Rectangular mode (H): wave packet vs exact for the gridded width; dt/4; dx/2 with dt/4 (sharp walls)",
-   "value": "1.75 %, 1.69 %, 0.41 %",
+   "label": "KIE rises steadily with jump distance (0.50–0.80 Å)",
+   "value": "23 → 3575",
    "pass": true
   }
  ],
  "notes": [
-  "Default model at 298.15 K: KIE(H/D) = 24.0 with tunnelling (κ_H = 19.8, κ_D = 5.28), 6.42 from zero-point energy alone; Arrhenius 5–45 °C: Ea(H) = 6.32 kcal/mol, ΔEa = 2.88 kcal/mol, A_H/A_D = 0.19.",
-  "Model is a one-coordinate (Bell) picture with illustrative parameters; it is not fitted to any enzyme. Effective-mass, multidimensional (corner-cutting) and protein-dynamics effects are omitted from part A; part B adds distance sampling in a Marcus-like model."
+  "At the default 0.60 Å the barrier is shallow for hydrogen (action S₀/ħ = 5.38, D 7.61): the instanton formula is only indicative there (H: 5 % off), so the page uses the grid eigenvalues, which converge at order 2.",
+  "KIE = (Δ_H/Δ_D)² assumes the non-adiabatic (golden-rule) limit with an environmental factor equal for H and D, at one fixed donor–acceptor geometry. The measured SLO-1 value is an average over protein motions; agreement at one jump distance is not a fit-free prediction (the jump distance is a free parameter).",
+  "Not modelled: gating motions, asymmetry and relaxation of the acceptor well (which make the real hop one-way), coupling to other vibrations, temperature dependence. The back-and-forth after τ_H that the closed form would give is not shown: the run stops when hydrogen is across."
  ],
- "generated": "2026-10-15T08:26:47.122Z",
- "runtimeMs": 83373
+ "generated": "2026-10-16T06:48:19.663Z",
+ "runtimeMs": 2175
 }</script>
 <script type="module">
 const __psim = {};
@@ -631,6 +684,17 @@ function cssVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
+/**
+ * A colour token as it applies INSIDE the animation view: the view is dark in both page themes
+ * (like a screen), so scene drawing (canvas labels, grids, glows) reads its tokens here, while
+ * figures and panels use cssVar and follow the page theme.
+ */
+function sceneVar(name) {
+  if (typeof name !== 'string' || !name.startsWith('--')) return name;
+  const host = typeof document !== 'undefined' ? document.querySelector('.psim-view') ?? document.documentElement : null;
+  return host ? getComputedStyle(host).getPropertyValue(name).trim() : '';
+}
+
 // ---------- layout pieces ----------
 
 function section(title, { open = true, aside } = {}) {
@@ -652,7 +716,8 @@ function row(label, value = '—', cls = '') {
 /** Value for a numeric input: short, exact enough, scientific notation for small or huge numbers. */
 const inputValue = v => {
   const a = Math.abs(v);
-  return a !== 0 && (a < 1e-3 || a >= 1e7) ? v.toExponential(4) : String(+Number(v).toPrecision(6));
+  // large or tiny values in scientific form without padded zeros (3e+10, not 3.0000e+10)
+  return a !== 0 && (a < 1e-3 || a >= 1e7) ? v.toExponential(4).replace(/\.?0+e/, 'e') : String(+Number(v).toPrecision(6));
 };
 
 /**
@@ -740,6 +805,13 @@ function transport({ onToggle, onStep, onRestart, onFit, onFullscreen, speed, sp
     el('button', { title: 'Fit the view', 'aria-label': 'Fit view', html: ICONS.fit, onclick: onFit }),
     onFullscreen ? el('button', { class: 'fs', title: 'Full screen (F)', 'aria-label': 'Full screen', html: ICONS.fullscreen, onclick: onFullscreen }) : null);
   bar.setPlaying = p => { play.innerHTML = p ? ICONS.pause : ICONS.play; };
+  /** Show a speed set by the shell (e.g. a timeline's play time); widens the slider range if needed. */
+  bar.setSpeed = s => {
+    const v = Math.log10(s);
+    if (v < +range.min) range.min = v - 1;
+    if (v > +range.max) range.max = v + 1;
+    range.value = v; out.textContent = speedLabel(s);
+  };
   bar.setFullscreen = on => {
     const b = bar.querySelector('button.fs');
     if (b) { b.innerHTML = on ? ICONS.exitFullscreen : ICONS.fullscreen; b.title = on ? 'Leave full screen (F or Esc)' : 'Full screen (F)'; }
@@ -875,7 +947,7 @@ function beacon() {
   };
 }
 
-return { el, ICONS, sci, fix, grade, initTheme, cssVar, section, row, inputValue, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon };
+return { el, ICONS, sci, fix, grade, initTheme, cssVar, sceneVar, section, row, inputValue, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon };
 })();
 
 // ---- psim:ui/plot.mjs
@@ -2064,10 +2136,12 @@ const polylines = {
  * horizontal. Ticks at nice values (decades when log). Returns the bar's rectangle.
  */
 function drawColorBar(ctx, { x, y, width = 12, height = 120, colormap: map = 'viridis', range = [0, 1], log = false, label = '', ticks = 5, horizontal = false, color, format } = {}) {
-  const css = name => (typeof getComputedStyle === 'function' ? getComputedStyle(document.documentElement).getPropertyValue(name).trim() : '');
+  // tokens of the element the bar is drawn in (the view is dark in both page themes)
+  const css = name => (typeof getComputedStyle === 'function' ? getComputedStyle(ctx.canvas?.closest?.('.psim-view') ?? document.documentElement).getPropertyValue(name).trim() : '');
   const text = color ?? (css('--muted') || '#8a94a6');
   const [lo, hi] = log ? range.map(Math.log10) : range;
   const steps = Math.max(2, Math.round(horizontal ? width : height));
+  ctx.save();   // leaves the caller's fill, stroke, font and text alignment unchanged
   for (let i = 0; i < steps; i++) {
     const c = colormap(map, (i + 0.5) / steps).map(v => Math.round(255 * v));
     ctx.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`;
@@ -2090,8 +2164,10 @@ function drawColorBar(ctx, { x, y, width = 12, height = 120, colormap: map = 'vi
   }
   if (label) {
     ctx.textAlign = horizontal ? 'center' : 'left'; ctx.textBaseline = 'bottom';
-    ctx.fillText(label, horizontal ? x + width / 2 : x, y - 4);
+    // vertical: clear of the top tick's label, which is centred on the bar's top edge
+    ctx.fillText(label, horizontal ? x + width / 2 : x, y - (horizontal ? 4 : 10));
   }
+  ctx.restore();
   return { x, y, width, height };
 }
 
@@ -2436,12 +2512,12 @@ __psim["ui/instrument-app.mjs"] = (() => {
 // Simulation contract (returned by create(params)):
 //   sim.t                    physical time of the latest computed state
 //   sim.step()               advance by one integrator step (or one analytic tick)
-//   sim.sample?(t)           state at t between steps, for drawing (default: current state)
+//   sim.sample?(t)           state at t between steps: the shell passes t to draw/drawGL; call it there (not called by the shell)
 //   sim.diagnostics()        [{ key, label, value, kind: 'error'|'value', unit?, good?, warn? }]
 //   sim.state()              JSON-serialisable state (export, tests)
 //   sim.record?()            { header: [...], rows: [[...], ...] } for CSV export
 //   sim.timeDependent        false for static analytic visualisations (no transport)
-const { el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast, ICONS, transport, createClock, logPlot, download, readJsonScript, beacon, cssVar } = __psim["ui/instrument.mjs"];
+const { el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast, ICONS, transport, createClock, logPlot, download, readJsonScript, beacon, sceneVar } = __psim["ui/instrument.mjs"];
 const { createPlot } = __psim["ui/plot.mjs"];
 const { createGLLayer } = __psim["ui/gl.mjs"];
 const { createEquation, createDerivation, M } = __psim["ui/equation.mjs"];
@@ -2457,7 +2533,7 @@ function createInstrument(spec) {
   const {
     title, subtitle = '', tier, tierReason, create, draw, params = [], model = {},
     timeUnit = 'T', timeLabel = 'simulated time', speed: speed0 = 1, gl: wantGL = false, drawGL, controls, onPointer, layout = 'stage', bench,
-    presets = [], texts = {}, hudError = true, formatTime, timeDigits: digitsGiven, frameBudget = 9, speedRange, viewControls, testSteps = 300,
+    presets = [], texts = {}, hudError = false, formatTime, timeDigits: digitsGiven, frameBudget = 9, speedRange, viewControls, testSteps = 300,
     glResolution = 'auto', timeline: timelineSpec,
   } = spec;
   // counted progress (sweeps, steps, generations, events) shows whole numbers unless told otherwise
@@ -2480,10 +2556,15 @@ function createInstrument(spec) {
       <button class="psim-tier" type="button"><i></i><span></span></button>
       <button class="psim-iconbtn" type="button" aria-label="Toggle theme"></button>
     </header>
-    <main class="psim-stage"><canvas></canvas>
-      <div class="psim-hud"><span class="dim"></span><b>0</b><span class="h1"></span><span class="dim h2"></span><span class="flag"></span></div>
-      <div class="psim-timeline" hidden><div class="ticks"></div><div class="bar"><i class="fill"></i></div><div class="ends"><span></span><span></span></div></div>
-      <div class="psim-legend"></div>
+    <main class="psim-stage">
+      <section class="psim-scene">
+        <div class="psim-view"><canvas></canvas>
+          <div class="psim-endcard" hidden><span></span><button type="button" class="psim-btn">↺ Replay</button></div>
+        </div>
+        <div class="psim-clock" hidden><span class="dim"></span><b>0</b></div>
+        <div class="psim-timeline" hidden><div class="ticks"></div><div class="bar"><i class="fill"></i></div><div class="ends"><span></span><span></span></div></div>
+        <div class="psim-key"><div class="psim-legend"></div><div class="psim-hud"><span class="h1"></span><span class="h2"></span><span class="flag"></span></div></div>
+      </section>
     </main>
     <aside class="psim-side"></aside>
   </div>`;
@@ -2494,43 +2575,113 @@ function createInstrument(spec) {
   tierBtn.dataset.tier = verified ? tier : 'unverified';
   tierBtn.querySelector('span').textContent = trustLabel;
   initTheme($('.psim-iconbtn'));
-  const stage = $('.psim-stage'), side = $('.psim-side');
+  const stage = $('.psim-stage'), side = $('.psim-side'), sceneEl = $('.psim-scene'), viewEl = $('.psim-view');
+  // a plain-language introduction above the scene: what is shown and what to look for
+  const intro = typeof spec.intro === 'string' ? { text: spec.intro } : spec.intro;
+  // it goes BELOW the animation and its controls (like a video's description): after the scene card
+  // when equations follow, otherwise first in the side panel (which follows the player on phones)
+  // shown as two lines with "more", so the settings below it stay in reach
+  const introEl = intro?.text ? el('section', { class: 'psim-intro collapsed' }, el('b', {}, texts.intro ?? 'What you are seeing'), el('p', {}, intro.text),
+    (intro.watch ?? []).length ? el('ul', {}, ...intro.watch.map(w => el('li', {}, w))) : null) : null;
+  if (introEl) {
+    const more = el('button', { type: 'button', class: 'psim-more', 'aria-expanded': 'false' }, texts.more ?? 'more');
+    more.addEventListener('click', () => {
+      const open = introEl.classList.toggle('collapsed') === false;
+      more.textContent = open ? (texts.less ?? 'less') : (texts.more ?? 'more');
+      more.setAttribute('aria-expanded', String(open));
+    });
+    introEl.append(more);
+  }
   // Workbench layout: the live canvas on top, then term-split equations and figures that
   // update with the model (spec.bench builds them; see references/compose.md).
   let benchParts = null;
   if (layout === 'workbench') {
-    const wrap = el('div', { class: 'psim-canvaswrap' }, stage.querySelector('canvas'), stage.querySelector('.psim-hud'), stage.querySelector('.psim-legend'));
+    const wrap = sceneEl;
+    wrap.classList.add('psim-canvaswrap');
     const eqs = el('div', { class: 'psim-eqs' }), figs = el('div', { class: 'psim-figs' });
     stage.prepend(el('div', { class: 'psim-bench' }, wrap, eqs, figs));
     benchParts = { wrap, eqs, figs };
+  }
+  // the same place on every page: first in the side panel on wide screens; on phones (one column)
+  // right under the scene card, so it follows the player bar instead of the equations
+  if (introEl) {
+    const narrow = matchMedia('(max-width: 860px)');
+    const place = () => { if (narrow.matches && benchParts) sceneEl.after(introEl); else side.prepend(introEl); };
+    place();
+    narrow.addEventListener('change', place);
   }
   const canvas = stage.querySelector('canvas');
   const ctx = canvas.getContext('2d');
   // optional GPU layer under the 2D canvas (ui/gl.mjs): drawGL renders the scene, draw adds labels
   const glLayer = wantGL ? createGLLayer(canvas) : null;
   if (glLayer) $('.psim-app').classList.add('has-gl');      // HUD and legend get a backing over bright GPU scenes
-  $('.psim-hud .dim').textContent = timeLabel;
-  const hud = { t: $('.psim-hud b'), a: $('.psim-hud .h1'), b: $('.psim-hud .h2'), flag: $('.psim-hud .flag') };
+  $('.psim-clock .dim').textContent = timeLabel;
+  $('.psim-clock').title = timeLabel;
+  const hud = { t: $('.psim-clock b'), a: $('.psim-hud .h1'), b: $('.psim-hud .h2'), flag: $('.psim-hud .flag') };
   // the legend beside the view; view.setLegend(items) replaces it when the representation changes
   const setLegend = items => $('.psim-legend').replaceChildren(...(items ?? []).map(t => el('span', {}, t)));
   setLegend(model.legend);
 
   // ------------------------------------------------------------ state
   const values = Object.fromEntries(params.map(p => [p.key, p.value]));
-  let sim, tDisplay = 0, limited = false;
+  let sim, tDisplay = 0, limited = false, defaultSpeedNow = speed0;
+  const steadyLabels = new Map();
   const clock = createClock({ speed: speed0 });
   const view = {
-    W: 0, H: 0, dpr: 1, color: cssVar, opts: {}, pointer: null, gl: glLayer?.gl ?? null, glError: glLayer && !glLayer.ok ? glLayer.reason : '',
+    W: 0, H: 0, dpr: 1, color: sceneVar, opts: {}, pointer: null, gl: glLayer?.gl ?? null, glError: glLayer && !glLayer.ok ? glLayer.reason : '',
     /** Current playback speed (simulated time per second) and state, e.g. to disclose time compression. */
     get speed() { return clock.speed; }, get playing() { return clock.playing; },
     /** GL layer resolution as a fraction of the device pixel ratio (adaptive unless glResolution is a number). */
     get glScale() { return glLayer?.scale ?? 1; },
-    /** 'dark' or 'light': the theme now shown (e.g. additive vs alpha blending, mesh colours). */
-    get theme() { return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'; },
+    /** The scene's theme: always 'dark' (the view is a dark screen in both page themes); use it for blending and mesh colours. */
+    get theme() { return 'dark'; },
+    /** The page theme around the view ('dark' or 'light'), for anything drawn outside it. */
+    get pageTheme() { return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'; },
     setLegend,
     /** The embedded build-time report (verify()'s return value, including any extra data fields), or null. */
     report,
+    /**
+     * Shell overlays drawn over the canvas, in canvas CSS pixels: `overlays` lists each visible one
+     * ({ name: 'hud' | 'legend' | 'timeline' | 'transport', x, y, w, h }); `insets` gives how far the
+     * bottom ones (timeline, playback bar, a phone legend) reach up from the bottom edge and the top
+     * ones (HUD, legend) down from the top. Lay the scene out inside them. Cached for 200 ms.
+     */
+    get overlays() { return overlayInfo().list; },
+    /**
+     * A steady position for a label attached to something that moves or flickers (a wave's peak,
+     * a cloud's centre): returns { x, y } that follows (x, y) smoothly and ignores sub-`deadband`
+     * jitter, so the text does not jump from frame to frame. One state per id; reset on rebuild.
+     */
+    steady(id, x, y, { deadband = 6, ease = 0.15 } = {}) {
+      const p = steadyLabels.get(id);
+      if (!p || !Number.isFinite(p.x)) { const q = { x, y }; steadyLabels.set(id, q); return q; }
+      const dx = x - p.x, dy = y - p.y, d = Math.hypot(dx, dy);
+      if (d > 120) { p.x = x; p.y = y; }                       // a jump (new run, reframing): follow at once
+      else if (d > deadband) { const k = ease * (1 - deadband / d); p.x += k * dx; p.y += k * dy; }
+      return p;
+    },
+    get insets() { return overlayInfo().insets; },
   };
+  let overlayCache = null;
+  function overlayInfo() {
+    const now = performance.now();
+    if (overlayCache && now - overlayCache.at < 200) return overlayCache;
+    const c = canvas.getBoundingClientRect(), list = [];
+    const add = (name, node) => {
+      if (!node || node.hidden || !node.getClientRects().length) return;
+      const r = node.getBoundingClientRect();
+      const x = Math.max(r.left, c.left), y = Math.max(r.top, c.top), x1 = Math.min(r.right, c.right), y1 = Math.min(r.bottom, c.bottom);
+      if (x1 > x && y1 > y && (r.width > 0 && r.height > 0)) list.push({ name, x: x - c.left, y: y - c.top, w: x1 - x, h: y1 - y });
+    };
+    for (const node of viewEl.children) if (node.tagName !== 'CANVAS') add(node.className.split(' ')[0].replace('psim-', ''), node);
+    const insets = { top: 0, bottom: 0 };
+    for (const o of list) {
+      if (o.y + o.h / 2 < c.height / 2) insets.top = Math.max(insets.top, o.y + o.h);
+      else insets.bottom = Math.max(insets.bottom, c.height - o.y);
+    }
+    overlayCache = { at: now, list, insets };
+    return overlayCache;
+  }
 
   let benchApi = null;
   // ------------------------------------------------------------ timeline: the run's span and its key times
@@ -2539,7 +2690,6 @@ function createInstrument(spec) {
   // on a bar under the time readout; clicking the bar jumps to that time (recomputing if earlier).
   let tl = null;
   const tlEl = $('.psim-timeline');
-  if (benchParts) benchParts.wrap.append(tlEl);              // inside the scene card in the workbench layout
   const secTimeline = timelineSpec ? section(texts.timeline ?? 'Timeline', { aside: 'key times' }) : null;
   const shortLabel = m => m.short ?? m.label.replace(/\s*\(.*$/, '').slice(0, 28);
   function resolveTimeline() {
@@ -2551,35 +2701,71 @@ function createInstrument(spec) {
     const duration = +val(timelineSpec.duration);
     if (!(duration > start)) throw new Error(`timeline.duration (the end time) must be later than the start ${start}`);
     const span = duration - start, tol = 1e-9 * Math.max(Math.abs(duration), span);
-    const markers = (val(timelineSpec.markers) ?? []).filter(m => Number.isFinite(m.t));
-    for (const m of markers) if (m.t < start - tol || m.t > duration + tol) throw new Error(`timeline marker "${m.label}" at ${m.t} lies outside the run ${start}…${duration}`);
-    tl = { start, duration, markers, note: val(timelineSpec.note) ?? '' };
+    const all = (val(timelineSpec.markers) ?? []).filter(m => Number.isFinite(m.t));
+    // a key time outside the run (a measured event after the point where the model stops being valid,
+    // e.g. the impacts after a computed break-up) is listed in the side panel as "beyond this run",
+    // never stretched onto the bar: the run still ends where the model ends
+    const markers = all.filter(m => m.t >= start - tol && m.t <= duration + tol);
+    const beyond = all.filter(m => !markers.includes(m));
+    tl = { start, duration, markers, beyond, note: val(timelineSpec.note) ?? '' };
+    // a watchable run in every mode: `seconds` (or a function of sim and params) sets the default
+    // speed so that the whole run plays in that many seconds, whatever its length in this mode
+    const secs = +val(timelineSpec.seconds);
+    // (only when the run's length changed, so a speed the viewer chose survives a restart)
+    if (secs > 0 && (duration - start) / secs !== defaultSpeedNow) { clock.speed = (duration - start) / secs; tp?.setSpeed?.(clock.speed); defaultSpeedNow = clock.speed; }
     tlEl.hidden = false;
     const fmt = t => (formatTime ? formatTime(t) : `${+t.toPrecision(4)} ${timeUnit}`);
     // the bar: one tick per key time, short labels above (staggered when close), full text as a tooltip
     const bar = tlEl.querySelector('.bar'), ticks = tlEl.querySelector('.ticks');
     bar.querySelectorAll('.m').forEach(e => e.remove());
-    let lastX = -1, level = 0;
     ticks.replaceChildren(...markers.slice().sort((a, b) => a.t - b.t).map(m => {
       const x = 100 * (m.t - start) / span;
-      level = x - lastX < 22 ? 1 - level : 0; lastX = x;
       bar.append(el('span', { class: `m ${m.kind ?? 'computed'}`, style: `left:${x.toFixed(3)}%`, title: `${m.label}: ${fmt(m.t)}` }));
       const sl = shortLabel(m), withTime = /\d/.test(sl) ? sl : `${sl} · ${fmt(m.t)}`;   // no repeated time
       // near the ends, anchor the label at its tick instead of centring it (never clipped by the bar's edges)
       const anchor = x < 15 ? 'translateX(0)' : x > 85 ? 'translateX(-100%)' : 'translateX(-50%)';
-      return el('span', { class: `lab ${m.kind ?? 'computed'} r${level}`, style: `left:${x.toFixed(3)}%;transform:${anchor}`, title: `${m.label}: ${fmt(m.t)}` }, withTime);
+      return el('span', { class: `lab ${m.kind ?? 'computed'}`, style: `left:${x.toFixed(3)}%;transform:${anchor}`, title: `${m.label}: ${fmt(m.t)}` }, withTime);
     }));
     const [a, b] = tlEl.querySelectorAll('.ends span');
     a.textContent = fmt(start); b.textContent = `${fmt(duration)} (end)`;
+    layoutTimelineLabels();
     // the side panel lists every key time in full, with its kind, and the note
     if (secTimeline) {
       const kinds = { computed: 'computed in this model', measured: 'measured (literature)', requested: 'named in the request' };
       secTimeline.body.replaceChildren(
         row('run', `${fmt(start)} – ${fmt(duration)}`),
         ...markers.map(m => el('div', { class: 'psim-tlrow' }, el('i', { class: m.kind ?? 'computed' }), el('span', {}, m.label), el('code', {}, fmt(m.t)), el('small', {}, kinds[m.kind ?? 'computed']))),
+        ...beyond.map(m => el('div', { class: 'psim-tlrow' }, el('i', { class: m.kind ?? 'measured' }), el('span', {}, m.label), el('code', {}, fmt(m.t)), el('small', {}, `${kinds[m.kind ?? 'measured']}; ${m.t > duration ? 'after' : 'before'} this run, which ends where the model stops`))),
         tl.note ? el('p', { class: 'psim-hint' }, tl.note) : null);
     }
   }
+  // Labels are placed by their measured widths: each goes in the lowest of three rows where it does
+  // not touch another label; one that fits nowhere is hidden (its tick keeps the tooltip, and the
+  // side panel lists every key time). Rerun when the bar changes size (phone, full screen).
+  const TL_ROWS = 3, TL_ROW_H = 13, TL_GAP = 6;
+  function layoutTimelineLabels() {
+    if (!tl || tlEl.hidden) return;
+    const labs = [...tlEl.querySelectorAll('.ticks .lab')];
+    labs.forEach(l => { l.style.bottom = '2px'; l.style.visibility = ''; l.classList.remove('hid'); });
+    const box = tlEl.querySelector('.ticks').getBoundingClientRect();
+    if (!(box.width > 0)) return;
+    const rows = Array.from({ length: TL_ROWS }, () => []);
+    let used = labs.length ? 1 : 0;
+    for (const l of labs) {
+      const r = l.getBoundingClientRect(), lo = Math.max(r.left, box.left), hi = Math.min(r.right, box.right);
+      const k = rows.findIndex(slots => slots.every(([a, b]) => hi + TL_GAP <= a || lo >= b + TL_GAP));
+      if (k < 0) { l.style.visibility = 'hidden'; l.classList.add('hid'); continue; }
+      rows[k].push([lo, hi]); used = Math.max(used, k + 1);
+      l.style.bottom = `${2 + k * TL_ROW_H}px`;
+    }
+    tlEl.querySelector('.ticks').style.height = `${4 + used * TL_ROW_H}px`;
+    // the two end labels: drop the start when they would touch
+    const [a, b] = tlEl.querySelectorAll('.ends span');
+    a.style.visibility = '';
+    if (a.getBoundingClientRect().right + TL_GAP > b.getBoundingClientRect().left) a.style.visibility = 'hidden';
+  }
+  new ResizeObserver(() => layoutTimelineLabels()).observe(tlEl);
+
   tlEl.querySelector('.bar').addEventListener('click', e => {
     if (!tl) return;
     const r = e.currentTarget.getBoundingClientRect(), T = tl.start + Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * (tl.duration - tl.start);
@@ -2588,6 +2774,7 @@ function createInstrument(spec) {
   });
 
   function rebuild() {
+    steadyLabels.clear();
     sim = create({ ...values });
     tDisplay = sim.t ?? 0;
     resolveTimeline();
@@ -2600,14 +2787,14 @@ function createInstrument(spec) {
   // ------------------------------------------------------------ full screen
   // The scene (canvas, HUD, legend) and the playback bar fill the screen. Falls back to filling the
   // window with CSS where the Fullscreen API is missing or refused (iPhone Safari, sandboxed frames).
-  const scene = benchParts?.wrap ?? stage;
+  const scene = sceneEl;
   let pseudoFs = false, fsBtn = null;
   const fsElement = () => document.fullscreenElement ?? document.webkitFullscreenElement ?? null;
   const isFullscreen = () => pseudoFs || fsElement() === scene;
   function afterFullscreen() {
     const on = isFullscreen();
     scene.classList.toggle('psim-fs', on);
-    if (tp) { if (on && tp.parentNode !== scene) scene.append(tp); else if (!on && tp.parentNode !== stage) stage.append(tp); tp.setFullscreen(on); }
+    tp?.setFullscreen(on);
     if (fsBtn) fsBtn.innerHTML = on ? ICONS.exitFullscreen : ICONS.fullscreen;
     requestAnimationFrame(() => spec.onFit?.(view));
   }
@@ -2638,13 +2825,41 @@ function createInstrument(spec) {
       onFullscreen: () => toggleFullscreen(),
       onSpeed: s => { clock.speed = s; },
     });
-    stage.append(tp);
+    // the player bar sits directly under the view, like a video player: buttons, the clock and
+    // the timeline with its key moments, speed, full screen
+    const firstSep = tp.querySelector('.sep');
+    const clockEl = $('.psim-clock');
+    clockEl.hidden = false;
+    tp.insertBefore(clockEl, firstSep);
+    tp.insertBefore(tlEl, firstSep);
+    viewEl.after(tp);
   } else {
     fsBtn = el('button', { class: 'psim-fsbtn', title: 'Full screen (F)', 'aria-label': 'Full screen', html: ICONS.fullscreen, onclick: () => toggleFullscreen() });
-    scene.append(fsBtn);
-    stage.querySelector('.psim-hud').querySelector('.dim').textContent = '';
+    viewEl.append(fsBtn);
   }
-  function setPlaying(p) { clock.playing = p; tp?.setPlaying(p); }
+  // the page's main actions ("Heat it up", "Fire one electron"): large buttons directly under the
+  // view, where the eye already is; settings stay in the side panel
+  if ((spec.actions ?? []).length) {
+    const api = () => ({ setParams, setParam, getSim: () => sim, values, play: () => setPlaying(true), pause: () => setPlaying(false), restart: () => rebuild(),
+      // jump to time t of the run (from the start: restart first to go back), e.g. to just before the moment the action is about
+      seek: t => window.psim.advanceTo(t) });
+    const bar = el('div', { class: 'psim-actions' }, ...spec.actions.map(a => {
+      const b = el('button', { type: 'button', class: 'psim-action', title: a.hint ?? '' }, a.label);
+      b.addEventListener('click', () => a.onClick?.(api()));
+      return b;
+    }));
+    viewEl.after(bar);
+  }
+  // at the end of a run: the final state stays on screen with a replay button over it
+  const endcard = $('.psim-endcard');
+  endcard.querySelector('button').addEventListener('click', () => { rebuild(); setPlaying(true); });
+  function showEndcard() {
+    const on = timeDependent && !clock.playing && isDone();
+    if (endcard.hidden === !on) return;
+    endcard.hidden = !on;
+    if (on) endcard.querySelector('span').textContent = texts.finishedCard ?? `Finished at ${formatTime ? formatTime(endTime()) : `${fix(endTime(), timeDigits)} ${timeUnit}`}`;
+  }
+  function setPlaying(p) { clock.playing = p; tp?.setPlaying(p); showEndcard(); }
   // A model that ends (a merger, everything decayed, the last particle left) sets sim.done (or
   // sim.ended): the clock stops there instead of counting time in which nothing is computed,
   // and play starts the run again from the beginning.
@@ -2713,7 +2928,7 @@ function createInstrument(spec) {
       nextPlot = 0;
       const firstErr = d.find(x => x.kind === 'error');
       diagPlot.el.style.display = firstErr ? '' : 'none';
-      diagPlot.el.querySelector('.cap').textContent = firstErr ? `${firstErr.label}   vs   t` : '';
+      diagPlot.el.querySelector('.cap').textContent = firstErr ? `${firstErr.label}   vs   ${timeLabel}` : '';   // the real progress axis (time, temperature, sweeps)
       if (spec.duration) diagPlot.setXMax(spec.duration);
     }
     for (const x of d) {
@@ -2740,7 +2955,7 @@ function createInstrument(spec) {
         el('i', { class: c.pass !== true ? 'bad' : c.state === 'warn' ? 'warn' : '' }),
         el('span', {}, c.label), el('code', {}, c.value)));
     }
-    if (report.notes) for (const n of report.notes) secVerify.body.append(el('p', { class: 'psim-hint' }, n));
+    if (report.notes) for (const n of [].concat(report.notes)) secVerify.body.append(el('p', { class: 'psim-hint' }, n));
   } else {
     secVerify.body.append(el('p', { class: 'psim-hint' }, 'No build-time verification report is embedded in this page.'));
   }
@@ -2819,6 +3034,7 @@ function createInstrument(spec) {
   }
 
   let frames = 0, lastUi = 0;
+  const frameWaiters = [];   // resolved right after a frame has been drawn (GPU self-tests read pixels then)
   function frame(now) {
     const frameStart = performance.now();
     if (timeDependent) {
@@ -2839,7 +3055,7 @@ function createInstrument(spec) {
     if (glLayer?.ok) { glLayer.sync(view.dpr); drawGL?.(glLayer.gl, sim, view, tDisplay); }
     ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
     ctx.clearRect(0, 0, view.W, view.H);
-    if (glLayer && !glLayer.ok) { ctx.fillStyle = cssVar('--muted'); ctx.font = '13px system-ui, sans-serif'; ctx.fillText(`${glLayer.reason}: the 3D view cannot be shown.`, 16, view.H - 20); }
+    if (glLayer && !glLayer.ok) { ctx.fillStyle = sceneVar('--muted'); ctx.font = '13px system-ui, sans-serif'; ctx.fillText(`${glLayer.reason}: the 3D view cannot be shown.`, 16, view.H - 20); }
     draw(ctx, sim, view, tDisplay);
     if (now - lastUi > 100) {
       lastUi = now;
@@ -2848,8 +3064,9 @@ function createInstrument(spec) {
       if (tl) tlEl.querySelector('.fill').style.width = `${(100 * Math.max(0, Math.min(1, (tDisplay - tl.start) / (tl.duration - tl.start)))).toFixed(2)}%`;
       const firstErr = d.find(x => x.kind === 'error' && !x.pending);
       hud.a.textContent = firstErr && hudError ? `${firstErr.label} ${sci(firstErr.value)}` : '';
-      hud.b.textContent = spec.hudLine?.(sim) ?? '';
-      hud.flag.textContent = isDone() ? (texts.finished ?? 'finished · play restarts')
+      hud.b.textContent = spec.hudLine?.(sim, tDisplay) ?? '';   // same moment as draw()
+      showEndcard();
+      hud.flag.textContent = isDone() ? (texts.finished ?? 'finished')
         : limited ? 'compute-limited: playback slowed to keep the calculation exact' : '';
       benchApi?.update?.(sim, tDisplay, { rebuilt: false });
       status.set('t', timeDependent ? tDisplay : 1);
@@ -2857,6 +3074,7 @@ function createInstrument(spec) {
     }
     if (++frames === 1 || frames % 30 === 0) status.set('frames', frames);   // first frame at once: slow pages count as live
     adaptResolution(now, performance.now() - frameStart);
+    if (frameWaiters.length) { const w = frameWaiters.splice(0); w.forEach(f => f()); }
     requestAnimationFrame(frame);
   }
 
@@ -2872,13 +3090,20 @@ function createInstrument(spec) {
       return window.psim.state();
     },
     /** The run's declared span and key times ({ duration, markers, note }), or null. */
-    get timeline() { return tl ? { start: tl.start, duration: tl.duration, markers: tl.markers.map(m => ({ ...m })), note: tl.note } : null; },
+    get timeline() { return tl ? { start: tl.start, duration: tl.duration, markers: tl.markers.map(m => ({ ...m })), beyond: tl.beyond.map(m => ({ ...m })), note: tl.note } : null; },
     get done() { return isDone(); },
+    /** The main actions, for checks: label and the seconds of playback until the result shows. */
+    actions: (spec.actions ?? []).map(a => ({ label: a.label, reveal: a.reveal ?? 8 })),
+    /** The default playback speed (simulated time per second) and the plain-language intro, for checks. */
+    get defaultSpeed() { return defaultSpeedNow; },
+    get intro() { return intro?.text ? { text: intro.text, watch: [...(intro.watch ?? [])] } : null; },
     restart: () => rebuild(),
     setParams: (next, opts) => setParams(next, opts),
     setParam: (k, v) => setParam(k, v),
     getSim: () => sim,
     toggleFullscreen: () => toggleFullscreen(),
+    /** Resolves after the next frame has been drawn: await it in a self-test before reading GPU pixels. */
+    nextFrame: () => new Promise(res => frameWaiters.push(res)),
     report,
     get fullscreen() { return isFullscreen(); },
     testSteps,
@@ -2886,14 +3111,15 @@ function createInstrument(spec) {
     steps: n => { if (typeof sim.step === "function") for (let i = 0; i < n; i++) sim.step(); tDisplay = sim.t ?? 0; return window.psim.state(); },
   };
 
+  rebuild();   // the first sim exists before bench() runs, so bench may call getSim() at once
   if (bench && benchParts) {
     benchApi = bench({
       ...benchParts, createPlot, createEquation, createDerivation, M, values, report,
       setParam, setParams, play: () => setPlaying(true), pause: () => setPlaying(false),
       getSim: () => sim,
     }) ?? null;
+    benchApi?.update?.(sim, tDisplay, { rebuilt: true });
   }
-  rebuild();
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   setPlaying(timeDependent && (query.get('autoplay') ? query.get('autoplay') !== '0' : !reduced));
   addEventListener('keydown', e => {
@@ -4210,766 +4436,679 @@ function coupledSchrodinger2({ psi0, V11, V22, V12, shape, spacing = 1, dt, mass
 return { laplacianND, gradientND, divergenceND, fftND, solvePoissonPeriodic, diffusionPeriodic, schrodingerND, fftAxis, phaseWinding, probabilityCurrent, contourLines, densityLevel, coupledSchrodinger2 };
 })();
 
-// ---- local:physics.mjs
-__psim["local:physics.mjs"] = (() => {
-// Hydrogen tunnelling in an enzyme active site and the kinetic isotope effect (KIE).
+// ---- psim:core/pde.mjs
+__psim["core/pde.mjs"] = (() => {
+// Grid evolution that complements core/fields.mjs (same storage and boundary conventions):
+//   diffusion1D        ∂u/∂t = D ∂²u/∂x² (+ source)  Crank–Nicolson: walls or periodic, sources, 2nd order
+//   waveND             ∂²u/∂t² = c² ∇²u               leapfrog in any dimension, CFL-checked, exact discrete energy
+//   stationaryStates1D Hψ = Eψ                        finite differences + symmetric tridiagonal eigensolver
+//   transmission1D     scattering T(E), R(E) through any 1D barrier (stationary, integrated from the far side)
+//   thermalAverage     (1/kT)∫ f(E) e^{−E/kT} dE  (Bell's tunnelling rate factor, thermionic emission)
+//   packetTransmission ∫ |φ(k)|² T(k) dk for a Gaussian packet: the exact benchmark for wave-packet runs
+// Source-free periodic diffusion and time-dependent Schrödinger in any dimension: fields.mjs.
 //
-// Scientific aim: show how much faster H crosses a transfer barrier than D and T, how much of
-// that is quantum tunnelling, and how the two textbook pictures of enzymatic H transfer differ:
-//   (A) Bell picture: one reaction coordinate x (the transferring H's position) over an Eckart
-//       (or rectangular) barrier; exact transmission T(E); thermal rate by Boltzmann averaging,
-//       k = (1/h)∫ T(E) e^{−E/kT} dE  (= TST × tunnelling correction κ). Compared with classical
-//       TST (κ = 1), Wigner's correction and Bell's parabolic-barrier correction.
-//   (B) Marcus-like "gated" tunnelling (Kuznetsov & Ulstrup; Knapp, Rickert & Klinman 2002;
-//       Klinman & Kohen 2013): H tunnels between donor and acceptor ground vibrational states;
-//       the rate ∝ Franck–Condon overlap exp(−α r²), averaged over the thermal distribution of
-//       the donor–acceptor distance r set by a protein "gating" vibration.
-//
-// State (A, time-dependent part): one complex wavefunction ψ_i(x, t) per isotope (H, D, T) on a
-// periodic 1D grid, evolved by the split-operator FFT solver schrodingerND (core/fields.mjs).
-// The progress axis is physical time in femtoseconds: a single wave packet of mean energy E
-// meets the barrier; the run ends when transmitted and reflected parts have separated.
-//
-// Units: length Å, energy kcal/mol (per molecule × N_A), time fs, mass u (Da).
-// Barrier per isotope: V_eff,i = V‡ − ½hν_i, i.e. measured from that isotope's reactant zero-point
-// level of the C–H stretch that is lost in the transition state (ν_D, ν_T from the C–X reduced
-// mass). The barrier shape (same potential-energy surface for all isotopes) is isotope-free.
-// Parameters are illustrative (typical magnitudes for enzymatic C–H activation), not a fit.
-const { hbar, h: hPlanck, kB, NA, u: amu, c: cLight } = __psim["core/constants.mjs"];
-const { gaussLegendre, dopri5, linearFit } = __psim["core/numerics.mjs"];
-const { schrodingerND, probabilityCurrent } = __psim["core/fields.mjs"];
-// ------------------------------------------------------------------ units and constants
-const KCAL = 4184 / NA;                               // J per molecule for 1 kcal/mol
-const H2M = hbar * hbar / (2 * amu) / KCAL * 1e20;    // ħ²/(2·1 u) in kcal/mol Å² (0.04821)
-const HBAR = hbar / KCAL * 1e15;                      // ħ in kcal/mol fs (15.18)
-const HBAR_M = hbar / amu * 1e5;                      // ħ/(1 u) in Å²/fs (0.6351): v = HBAR_M k / m
-const KB = kB / KCAL;                                 // k_B in kcal/mol/K
-const HPL = hPlanck / KCAL;                           // h in kcal/mol s (rates in s⁻¹)
-const CM = hPlanck * cLight * 100 / KCAL;             // kcal/mol per cm⁻¹ (2.859e-3)
-// Nuclide masses (u), AME2020: Wang et al., Chin. Phys. C 45, 030003 (2021)
-const ISOTOPES = [
-  { key: 'H', label: 'H (¹H)', m: 1.00782503223, color: '#5cc8ff' },
-  { key: 'D', label: 'D (²H)', m: 2.01410177812, color: '#ffb347' },
-  { key: 'T', label: 'T (³H)', m: 3.01604928, color: '#ff6b9a' },
-];
-const M_C = 12;                                              // carbon donor, for the C–X stretch reduced mass
+// Boundary conditions as in laplacianND: 'dirichlet' (zero ghost values), 'neumann' (copied
+// edge-cell ghosts: zero face flux, cell-centred) or 'periodic'.
+const { solveTridiagonal, lowestTridiagonal, dopri5, gaussLegendre } = __psim["core/numerics.mjs"];
+const { laplacianND } = __psim["core/fields.mjs"];
+const BCS = ['dirichlet', 'neumann', 'periodic'];
+const checkGrid = (u, dx, who) => {
+  if (!(u.length >= 3) || !Array.from(u).every(Number.isFinite)) throw new Error(`${who}: need at least 3 finite grid values`);
+  if (!(Number.isFinite(dx) && dx > 0)) throw new Error(`${who}: dx must be positive and finite`);
+};
 
-const PARAMS = [
-  { key: 'Vb', label: 'Barrier height V‡ (from reactant minimum)', min: 8, max: 25, value: 14, unit: 'kcal/mol', digits: 3,
-    hint: 'Electronic barrier along the H coordinate. Each isotope sees V‡ minus its own C–X stretch zero-point energy.' },
-  { key: 'a', label: 'Barrier width a (Eckart V‡ sech²(x/a))', min: 0.2, max: 0.6, value: 0.3, unit: 'Å', digits: 3,
-    hint: 'Narrower barriers tunnel far more. Sets the barrier frequency ω‡ = √(2V/ma²).' },
-  { key: 'nu', label: 'C–H stretch frequency (zero-point energy)', min: 2000, max: 3400, value: 2900, unit: 'cm⁻¹', digits: 4,
-    hint: 'Its zero-point energy ½hν is lost at the transition state; ν_D ≈ ν_H/1.36 gives the semiclassical KIE ≈ 7.' },
-  { key: 'T', label: 'Temperature', min: 250, max: 350, value: 298.15, unit: 'K', digits: 4 },
-  { key: 'E', label: 'Wave-packet energy (above zero-point level)', min: 2, max: 16, value: 7, unit: 'kcal/mol', digits: 3,
-    hint: 'Mean energy of the wave packets in the 3D view (same for H, D, T). Thermal rates use all energies.' },
-  { key: 'shape', label: 'Barrier shape', value: 'eckart', options: [
-    { value: 'eckart', label: 'Eckart  V‡ sech²(x/a) (smooth)' },
-    { value: 'rect', label: 'Rectangular, same area (width 2a)' },
-  ] },
-];
-
-// ------------------------------------------------------------------ barrier and transmission
-/** Stretch zero-point energy ½hν of C–X for nuclide mass m (kcal/mol). */
-function stretchZPE(nuH, m) {
-  const mu = M_C * m / (M_C + m), muH = M_C * ISOTOPES[0].m / (M_C + ISOTOPES[0].m);
-  return 0.5 * nuH * Math.sqrt(muH / mu) * CM;
+/** Solve a cyclic tridiagonal system (periodic boundaries) by Sherman–Morrison. */
+function solveCyclic(a, b, c, alpha, beta, d) {
+  const n = b.length, gamma = -b[0];
+  const bb = Float64Array.from(b);
+  bb[0] = b[0] - gamma; bb[n - 1] = b[n - 1] - alpha * beta / gamma;
+  const x = solveTridiagonal(a, bb, c, d);
+  const uvec = new Float64Array(n); uvec[0] = gamma; uvec[n - 1] = alpha;
+  const z = solveTridiagonal(a, bb, c, uvec);
+  const fact = (x[0] + beta * x[n - 1] / gamma) / (1 + z[0] + beta * z[n - 1] / gamma);
+  for (let i = 0; i < n; i++) x[i] -= fact * z[i];
+  return x;
 }
 
-/** Exact transmission of the symmetric Eckart barrier V sech²(x/a) (Landau & Lifshitz QM §25). */
-function transEckart(E, V, a, m) {
-  if (!(E > 0)) return 0;
-  const A = Math.PI * a * Math.sqrt(E * m / H2M);            // π k a
-  const g4 = 4 * V * m * a * a / H2M;                        // 8mVa²/ħ²
-  // T = 1/(1 + cosh²B / sinh²A), evaluated with logarithms so very heavy masses do not overflow
-  const lnSinhA = A > 20 ? A - Math.LN2 + Math.log1p(-Math.exp(-2 * A)) : Math.log(Math.sinh(A));
-  let lnCB;
-  if (g4 > 1) { const B = Math.PI / 2 * Math.sqrt(g4 - 1); lnCB = B - Math.LN2 + Math.log1p(Math.exp(-2 * B)); }
-  else lnCB = Math.log(Math.abs(Math.cos(Math.PI / 2 * Math.sqrt(1 - g4))) + 1e-300);
-  return 1 / (1 + Math.exp(2 * (lnCB - lnSinhA)));
-}
-
-/** Exact transmission of a rectangular barrier of height V and width w. */
-function transRect(E, V, w, m) {
-  if (!(E > 0)) return 0;
-  const d = E - V;
-  if (Math.abs(d) < 1e-12 * V) return 1 / (1 + V * w * w * m / (4 * H2M));
-  if (d < 0) {
-    const kap = Math.sqrt(-d * m / H2M), s = Math.sinh(kap * w);
-    return 1 / (1 + V * V * s * s / (4 * E * -d));
+/** Normalise a wall: legacy strings, or { type: 'value' | 'flux', value: number | (t => number) }. */
+function wall(spec, who) {
+  if (spec === 'neumann') return { type: 'flux', value: () => 0 };
+  if (spec === 'dirichlet') return { type: 'ghost' };                 // zero ghost value (laplacianND convention)
+  if (spec?.type === 'value' || spec?.type === 'flux') {
+    const v = spec.value ?? 0, f = typeof v === 'function' ? v : () => v;
+    if (!Number.isFinite(f(0))) throw new Error(`${who}: boundary value must be finite`);
+    return { type: spec.type, value: f };
   }
-  const q = Math.sqrt(d * m / H2M), s = Math.sin(q * w);
-  return 1 / (1 + V * V * s * s / (4 * E * d));
+  throw new Error(`${who}: a wall is 'dirichlet', 'neumann', { type: 'value', value } or { type: 'flux', value }`);
 }
 
-/** Parabolic-barrier transmission (Kemble/Bell): 1/(1 + exp(2π(V − E)/ħω‡)). */
-const transParabolic = (E, V, hw) => (E > 0 ? 1 / (1 + Math.exp(2 * Math.PI * (V - E) / hw)) : 0);
-
-/** Barrier seen by each isotope: effective height, ħω‡ and the transmission function. */
-function barriers(p) {
-  return ISOTOPES.map(iso => {
-    const zpe = stretchZPE(p.nu, iso.m), V = p.Vb - zpe;
-    const hw = Math.sqrt(4 * V * H2M / (iso.m * p.a * p.a));  // ħω‡, curvature of V sech²(x/a) at the top
-    const w = 2 * p.a;
-    const T = p.shape === 'rect' ? E => transRect(E, V, w, iso.m) : E => transEckart(E, V, p.a, iso.m);
-    return { ...iso, zpe, V, hw, w, T, nuCm: 2 * zpe / CM };
-  });
-}
-
-// ------------------------------------------------------------------ thermal rates
 /**
- * κ = (1/kT) ∫₀^∞ T(E) e^{−(E−V)/kT} dE: ratio of the Boltzmann-averaged quantum flux to the
- * classical over-the-barrier flux. Composite Gauss–Legendre on [0, V + 40kT]; beyond that T ≈ 1
- * and the remaining tail e^{−40} is added in closed form.
+ * Diffusion ∂u/∂t = D ∂²u/∂x² + s(i, t) by Crank–Nicolson on cells x_i = x₀ + (i + ½)dx.
+ * Walls: bc 'dirichlet' | 'neumann' | 'periodic' for both, or left/right separately:
+ *   { type: 'value', value }  u = value at the wall face (second order; value may be a function of t)
+ *   { type: 'flux', value }   inward flux −D∂u/∂n = value at the wall (0 = insulated)
+ * setBoundary('left' | 'right', wall) switches a wall mid-run (e.g. a dissolving solid used up).
+ * inflow is the amount that entered through the walls since t0 (discrete, consistent with the
+ * scheme), so total() − total₀ − ∫source = inflow to round-off.
+ * Returns { t, u, step(), advanceTo(t), total(), inflow, setBoundary() }.
  */
-function kappa(Tfun, V, kT, panels = 96, n = 20) {
-  const Emax = V + 40 * kT, h = Emax / panels;
-  let s = 0;
-  for (let j = 0; j < panels; j++) s += gaussLegendre(E => Tfun(E) * Math.exp(-(E - V) / kT), j * h, (j + 1) * h, n);
-  return s / kT + Math.exp(-40);
-}
-/** Wigner (1932) leading correction for a parabolic barrier top. */
-const kappaWigner = (hw, kT) => 1 + (hw / kT) ** 2 / 24;
-/** Bell (1959) closed form for the parabolic barrier truncated at E = 0 (series, valid for u ≠ 2π). */
-function kappaBellSeries(hw, V, kT, terms = 40) {
-  const u = hw / kT, cc = 2 * Math.PI / u, alpha = V / kT;
-  let s = (u / 2) / Math.sin(u / 2);
-  for (let n = 0; n < terms; n++) s -= (n % 2 ? -1 : 1) * Math.exp(-alpha * (cc * (n + 1) - 1)) / (cc * (n + 1) - 1);
+function diffusion1D({ u0, D, dx, dt, bc = 'neumann', left, right, source, t0 = 0 }) {
+  checkGrid(u0, dx, 'diffusion1D');
+  if (!(D > 0) || !(dt > 0)) throw new Error('diffusion1D: D and dt must be positive');
+  if (!BCS.includes(bc)) throw new Error(`diffusion1D: bc must be one of ${BCS.join(', ')}`);
+  const periodic = bc === 'periodic';
+  if (periodic && (left || right)) throw new Error('diffusion1D: periodic boundaries have no walls');
+  const n = u0.length, r = D * dt / (dx * dx);
+  const walls = periodic ? null : [wall(left ?? bc, 'diffusion1D'), wall(right ?? bc, 'diffusion1D')];
+  const a = new Float64Array(n).fill(-r / 2), b = new Float64Array(n).fill(1 + r), c = new Float64Array(n).fill(-r / 2);
+  // diagonal of the discrete Laplacian (×dx²) in the edge cell for each wall type
+  const edge = { ghost: -2, value: -3, flux: -1 };
+  const setDiag = () => { if (walls) { b[0] = 1 - (r / 2) * edge[walls[0].type]; b[n - 1] = 1 - (r / 2) * edge[walls[1].type]; } };
+  setDiag();
+  const u = Float64Array.from(u0), rhs = new Float64Array(n), next = new Float64Array(n);
+  const lapEdge = (w, inner, own, t) => {                           // ∂²u/∂x² in an edge cell, × dx²
+    if (w.type === 'ghost') return inner - 2 * own;
+    if (w.type === 'value') return inner - 3 * own + 2 * w.value(t);
+    return inner - own + w.value(t) * dx / D;
+  };
+  // amount entering through a wall during the step, from the same discrete fluxes the scheme uses
+  const wallIn = (w, ownOld, ownNew, t) => {
+    if (w.type === 'flux') return 0.5 * dt * (w.value(t) + w.value(t + dt));
+    const face = (own, tt) => (w.type === 'value' ? 2 * (w.value(tt) - own) : -own) * D / dx;
+    return 0.5 * dt * (face(ownOld, t) + face(ownNew, t + dt));
+  };
+  const s = {
+    t: t0, u, steps: 0, inflow: 0,
+    step() {
+      const t = s.t;
+      for (let i = 1; i < n - 1; i++) rhs[i] = u[i] + (r / 2) * (u[i - 1] - 2 * u[i] + u[i + 1]);
+      if (periodic) {
+        rhs[0] = u[0] + (r / 2) * (u[n - 1] - 2 * u[0] + u[1]);
+        rhs[n - 1] = u[n - 1] + (r / 2) * (u[n - 2] - 2 * u[n - 1] + u[0]);
+      } else {
+        const [L, R] = walls;
+        rhs[0] = u[0] + (r / 2) * lapEdge(L, u[1], u[0], t);
+        rhs[n - 1] = u[n - 1] + (r / 2) * lapEdge(R, u[n - 2], u[n - 1], t);
+        // implicit half: constant parts of the boundary terms at t + dt
+        if (L.type === 'value') rhs[0] += r * L.value(t + dt);
+        if (L.type === 'flux') rhs[0] += (dt / (2 * dx)) * L.value(t + dt);
+        if (R.type === 'value') rhs[n - 1] += r * R.value(t + dt);
+        if (R.type === 'flux') rhs[n - 1] += (dt / (2 * dx)) * R.value(t + dt);
+      }
+      if (source) for (let i = 0; i < n; i++) rhs[i] += dt * 0.5 * (source(i, t) + source(i, t + dt));
+      next.set(periodic ? solveCyclic(a, b, c, -r / 2, -r / 2, rhs) : solveTridiagonal(a, b, c, rhs));
+      if (walls) s.inflow += wallIn(walls[0], u[0], next[0], t) + wallIn(walls[1], u[n - 1], next[n - 1], t);
+      u.set(next); s.t += dt; s.steps++;
+    },
+    advanceTo(target) { while (s.t < target - 1e-12 * dt) s.step(); },
+    /** Σ u dx. Changes only by inflow through the walls and by the source. */
+    total() { let sum = 0; for (let i = 0; i < n; i++) sum += u[i]; return sum * dx; },
+    setBoundary(side, spec) {
+      if (periodic) throw new Error('diffusion1D: periodic boundaries have no walls');
+      if (side !== 'left' && side !== 'right') throw new Error("diffusion1D: side must be 'left' or 'right'");
+      walls[side === 'left' ? 0 : 1] = wall(spec, 'diffusion1D');
+      setDiag();
+    },
+  };
   return s;
 }
 
-/** Rates (s⁻¹, per reacting configuration) for every isotope at temperature T. */
-function ratesAt(p, Temp, bs = barriers(p)) {
-  const kT = KB * Temp, pre = kT / HPL;
-  return bs.map(b => {
-    const boltz = Math.exp(-b.V / kT);
-    const kq = kappa(b.T, b.V, kT);
-    const kw = p.shape === 'rect' ? NaN : kappaWigner(b.hw, kT);
-    const kb = p.shape === 'rect' ? NaN : kappa(E => transParabolic(E, b.V, b.hw), b.V, kT);
-    return { key: b.key, kappa: kq, kappaW: kw, kappaB: kb, kTST: pre * boltz, k: pre * boltz * kq, kW: pre * boltz * kw, kB: pre * boltz * kb };
-  });
-}
-
-/** Energy distribution of the reactive flux T(E) e^{−E/kT} (normalised) and its peak (tunnelling energy). */
-function fluxPeak(b, kT) {
-  let best = 0, Eb = 0;
-  for (let i = 1; i <= 2000; i++) { const E = (b.V + 6 * kT) * i / 2000, f = Math.log(Math.max(b.T(E), 1e-300)) - E / kT; if (i === 1 || f > best) { best = f; Eb = E; } }
-  return Eb;
-}
-
-/** Arrhenius fit ln k = ln A − Ea/(R T) over [T0, T1] K: { Ea (kcal/mol), lnA }. */
-function arrheniusFit(kOf, T0 = 278.15, T1 = 318.15, n = 9) {
-  const xs = [], ys = [];
-  for (let i = 0; i < n; i++) { const T = T0 + (T1 - T0) * i / (n - 1); xs.push(1 / (KB * T)); ys.push(Math.log(kOf(T))); }
-  const f = linearFit(xs, ys);
-  return { Ea: -f.b, lnA: f.a };
-}
-
-// ------------------------------------------------------------------ Marcus-like gated tunnelling
 /**
- * Franck–Condon factor between donor and acceptor H ground states (harmonic, frequency ω_i,
- * displaced by r): |⟨χ₀|χ₀(r)⟩|² = exp(−α_i r²), α_i = m_i ω_i /(2ħ) = √(m_i k_f)/(2ħ).
- * Averaged over r ~ Normal(r₀, σ²) with σ² = (ħ/2MΩ) coth(ħΩ/2kT) (thermal harmonic gating mode):
- * ⟨e^{−α r²}⟩ = (1 + 2ασ²)^{-1/2} exp(−α r₀² /(1 + 2ασ²)).
+ * Wave equation ∂²u/∂t² = c²∇²u on an any-dimensional grid (fields.mjs storage: axis 0 fastest),
+ * leapfrog in time with the compact laplacianND. Requires c·dt·√(Σ 1/dxₐ²) ≤ 1 (CFL).
+ * Optional mask/maskBc restrict it to an irregular domain (see fields.mjs; values outside stay 0).
+ * v0 is the initial ∂u/∂t. energy() is the discrete energy that leapfrog conserves exactly
+ * (to round-off); it is positive whenever the CFL condition holds.
+ * Returns { t, u, step(), advanceTo(t), energy(), courant }.
  */
-function gatingAlpha(nuH, m) {
-  const omegaH = 2 * Math.PI * cLight * nuH * 100;          // rad/s
-  const kf = ISOTOPES[0].m * amu * omegaH * omegaH;          // force constant, same for all isotopes
-  return Math.sqrt(m * amu * kf) / (2 * hbar) * 1e-20;       // Å⁻²
-}
-function gatingSigma2(OmegaCm, Mg, Temp) {
-  const Om = 2 * Math.PI * cLight * OmegaCm * 100, x = hbar * Om / (2 * kB * Temp);
-  return hbar / (2 * Mg * amu * Om) / Math.tanh(x) * 1e20;  // Å²
-}
-const fcAverage = (alpha, r0, s2) => Math.exp(-alpha * r0 * r0 / (1 + 2 * alpha * s2)) / Math.sqrt(1 + 2 * alpha * s2);
-const GATING_DEFAULT = { r0: 0.58, Omega: 400, Mg: 30, lambda: 19, dG: -5, nu: 2900 };
-/** Gated rates (arbitrary common prefactor) for H, D, T at temperature T. */
-function gatedRates(g, Temp) {
-  const kT = KB * Temp, s2 = gatingSigma2(g.Omega, g.Mg, Temp);
-  const marcus = Math.exp(-((g.dG + g.lambda) ** 2) / (4 * g.lambda * kT)) / Math.sqrt(g.lambda * kT);
-  return ISOTOPES.map(iso => ({ key: iso.key, k: 1e13 * marcus * fcAverage(gatingAlpha(g.nu, iso.m), g.r0, s2), s2 }));
-}
-
-// ------------------------------------------------------------------ time-dependent wave packets
-const GRID = { N: 4096, dx: 0.03, x0: -9, sigma: 1.2, dt: 0.05, view: 14 };
-
-/** Exact transmitted probability of the Gaussian packet: ∫ |φ(k)|² T(E(k)) dk (k > 0). */
-function packetTransmission(Tfun, k0, sigma, m) {
-  const sk = 1 / (2 * sigma), lo = Math.max(1e-9, k0 - 12 * sk), hi = k0 + 12 * sk, P = 48;
-  let s = 0;
-  for (let j = 0; j < P; j++) {
-    s += gaussLegendre(k => Math.exp(-((k - k0) ** 2) / (2 * sk * sk)) * Tfun(k * k * H2M / m), lo + (hi - lo) * j / P, lo + (hi - lo) * (j + 1) / P, 16);
-  }
-  return s / (Math.sqrt(2 * Math.PI) * sk);
-}
-
-/** Potential on the grid. The rectangular barrier covers an odd number of whole cells. */
-function gridPotential(b, p, xs, dx) {
-  if (p.shape === 'rect') {
-    const n = Math.max(1, 2 * Math.round((b.w / dx - 1) / 2) + 1), half = (n - 1) / 2;
-    return { V: Float64Array.from(xs, x => (Math.abs(Math.round(x / dx)) <= half ? b.V : 0)), wGrid: n * dx };
-  }
-  return { V: Float64Array.from(xs, x => b.V / Math.cosh(x / p.a) ** 2), wGrid: b.w };
-}
-
-/** One isotope's wave packet; returns the solver plus exact reference values. */
-function packetRun(b, p, { N = GRID.N, dx = GRID.dx, dt = GRID.dt } = {}) {
-  const xs = Float64Array.from({ length: N }, (_, i) => (i - N / 2) * dx);
-  const { V, wGrid } = gridPotential(b, p, xs, dx);
-  const k0 = Math.sqrt(p.E * b.m / H2M), s = GRID.sigma, norm = (2 * Math.PI * s * s) ** -0.25;
-  const re0 = new Float64Array(N), im0 = new Float64Array(N);
-  for (let i = 0; i < N; i++) {
-    const g = norm * Math.exp(-((xs[i] - GRID.x0) ** 2) / (4 * s * s));
-    re0[i] = g * Math.cos(k0 * xs[i]); im0[i] = g * Math.sin(k0 * xs[i]);
-  }
-  const mass = HBAR * HBAR * b.m / (2 * H2M);                // so that ħ²/2m = H2M/m in kcal/mol Å²
-  const solver = schrodingerND({ re0, im0, V, shape: [N], spacing: dx, dt, mass, hbar: HBAR });
-  const Tf = p.shape === 'rect' ? E => transRect(E, b.V, wGrid, b.m) : b.T;
-  return { solver, xs, V, k0, v: HBAR_M * k0 / b.m, mass, exact: packetTransmission(Tf, k0, s, b.m), wGrid };
-}
-/** Probability beyond x > xc. */
-function probBeyond(solver, xs, dx, xc = 0) {
-  let s = 0; const { re, im } = solver;
-  for (let i = 0; i < xs.length; i++) if (xs[i] > xc) s += re[i] * re[i] + im[i] * im[i];
-  return s * dx;
-}
-/** Time when the slowest packet's transmitted and reflected parts are well separated from the barrier. */
-function endTime(p, bs) {
-  const vmin = Math.min(...bs.map(b => HBAR_M * Math.sqrt(p.E * b.m / H2M) / b.m));
-  return (Math.abs(GRID.x0) + 3 * p.a + 7 * GRID.sigma) / vmin;
-}
-
-// ------------------------------------------------------------------ the simulation
-function createSim(p) {
-  const bs = barriers(p);
-  const { N, dx, dt, view } = GRID;
-  const runs = bs.map(b => packetRun(b, p));
-  const xs = runs[0].xs;
-  const tEnd = endTime(p, bs);
-  const i0 = xs.findIndex(x => x >= -view), i1 = xs.findIndex(x => x > view), stride = 2;
-  const viewX = []; for (let i = i0; i < i1; i += stride) viewX.push(xs[i]);
-  const nSlices = 64, slices = bs.map(() => []);
-  let t = 0, nextSnap = 0, steps = 0, maxNormDev = 0;
-  const kT = KB * p.T;
-  const rates = ratesAt(p, p.T, bs);
-  const kie = { HD: rates[0].k / rates[1].k, HT: rates[0].k / rates[2].k, HDclassical: rates[0].kTST / rates[1].kTST };
-  const swainSchaad = Math.log(rates[0].k / rates[2].k) / Math.log(rates[1].k / rates[2].k);
-  const fluxE = bs.map(b => fluxPeak(b, kT));
-  const snap = () => {
-    runs.forEach((r, k) => {
-      const d = new Float32Array(viewX.length), { re, im } = r.solver;
-      for (let j = 0, i = i0; j < d.length; j++, i += stride) d[j] = re[i] * re[i] + im[i] * im[i];
-      slices[k].push({ t, d });
-    });
-    nextSnap += tEnd / nSlices;
-  };
-  snap();
-  const current = () => runs.map(r => {
-    const d = new Float32Array(viewX.length), { re, im } = r.solver;
-    for (let j = 0, i = i0; j < d.length; j++, i += stride) d[j] = re[i] * re[i] + im[i] * im[i];
-    return d;
-  });
-  const pTrans = () => runs.map(r => probBeyond(r.solver, xs, dx, 0));
-  const norms = () => runs.map(r => r.solver.norm());
-  const sim = {
-    params: p, barriers: bs, runs, viewX, slices, tEnd, nSlices, rates, kie, swainSchaad, fluxE, kT,
-    get t() { return t; },
-    get done() { return t >= tEnd; },
+function waveND({ u0, v0, shape, spacing = 1, bc = 'dirichlet', mask, maskBc, c, dt, t0 = 0 }) {
+  const grid = { shape, spacing, bc, mask, maskBc }, n = u0.length;
+  const dxs = typeof spacing === 'number' ? Array.from(shape, () => spacing) : Array.from(spacing);
+  const courant = c * dt * Math.sqrt(dxs.reduce((sum, d) => sum + 1 / (d * d), 0));
+  if (!(courant > 0 && courant <= 1)) throw new Error(`waveND: Courant number c·dt·√(Σ1/dx²) = ${courant} must be in (0, 1]`);
+  if (v0 && v0.length !== n) throw new Error('waveND: v0 must match u0');
+  const cellVolume = dxs.reduce((p, d) => p * d, 1);
+  const u = Float64Array.from(u0, (value, i) => (mask && !mask[i] ? 0 : value)), prev = new Float64Array(n), next = new Float64Array(n), lap = new Float64Array(n);
+  laplacianND(u, grid, lap);
+  // u(−dt) from a Taylor expansion: u − dt·v + ½dt²c²∇²u
+  for (let i = 0; i < n; i++) prev[i] = u[i] - dt * (mask && !mask[i] ? 0 : v0?.[i] ?? 0) + 0.5 * dt * dt * c * c * lap[i];
+  const s = {
+    t: t0, u, steps: 0, courant,
     step() {
-      if (t >= tEnd) return;
-      for (const r of runs) r.solver.step();
-      t += dt; steps++;
-      if (steps % 50 === 0) for (const n of norms()) maxNormDev = Math.max(maxNormDev, Math.abs(n - 1));
-      if (t >= nextSnap - 1e-12) snap();
+      laplacianND(u, grid, lap);
+      for (let i = 0; i < n; i++) next[i] = 2 * u[i] - prev[i] + dt * dt * c * c * lap[i];
+      prev.set(u); u.set(next); s.t += dt; s.steps++;
     },
-    current, pTrans,
-    diagnostics() {
-      const P = pTrans(), nd = Math.max(maxNormDev, ...norms().map(n => Math.abs(n - 1)));
-      const fin = t >= tEnd;
-      return [
-        { key: 'norm', label: 'Norm drift max|∫|ψ|²dx − 1|', value: Math.max(nd, 1e-16), kind: 'error', good: 1e-10, warn: 1e-7 },
-        { key: 'pH', label: 'H transmitted P(x>0)', value: P[0], kind: 'value', text: `${P[0].toExponential(3)}  (exact ${runs[0].exact.toExponential(3)})` },
-        { key: 'pD', label: 'D transmitted P(x>0)', value: P[1], kind: 'value', text: `${P[1].toExponential(3)}  (exact ${runs[1].exact.toExponential(3)})` },
-        { key: 'pT', label: 'T transmitted P(x>0)', value: P[2], kind: 'value', text: `${P[2].toExponential(3)}  (exact ${runs[2].exact.toExponential(3)})` },
-        fin ? { key: 'devH', label: 'H packet vs exact ∫|φ(k)|²T dk', value: Math.abs(P[0] / runs[0].exact - 1), kind: 'error', good: 0.01, warn: 0.03 }
-          : { key: 'devH', label: 'H packet vs exact ∫|φ(k)|²T dk', value: 0, kind: 'error', pending: true },
-        { key: 'kieHD', label: `KIE k_H/k_D at ${p.T.toFixed(1)} K (Eckart, exact κ)`, value: kie.HD, kind: 'value', text: kie.HD.toPrecision(3) },
-        { key: 'kieCl', label: 'KIE without tunnelling (ZPE only, TST)', value: kie.HDclassical, kind: 'value', text: kie.HDclassical.toPrecision(3) },
-        { key: 'kappaH', label: 'Tunnelling factor κ_H / κ_D', value: rates[0].kappa, kind: 'value', text: `${rates[0].kappa.toPrecision(3)} / ${rates[1].kappa.toPrecision(3)}` },
-        { key: 'ss', label: 'Swain–Schaad ln(k_H/k_T)/ln(k_D/k_T)', value: swainSchaad, kind: 'value', text: `${swainSchaad.toFixed(2)} (semiclassical 3.26)` },
-      ];
+    advanceTo(target) { while (s.t < target - 1e-12 * dt) s.step(); },
+    /** ½Σ[((uⁿ − uⁿ⁻¹)/dt)² − c²uⁿ·∇²uⁿ⁻¹]dV: exactly conserved by leapfrog because ∇² is symmetric. */
+    energy() {
+      laplacianND(prev, grid, lap);
+      let E = 0;
+      for (let i = 0; i < n; i++) { const vt = (u[i] - prev[i]) / dt; E += vt * vt - c * c * u[i] * lap[i]; }
+      return 0.5 * E * cellVolume;
     },
-    state() {
-      return { t, pTrans: pTrans(), norms: norms(), Veff: bs.map(b => b.V), kappa: rates.map(r => r.kappa), kie, done: t >= tEnd };
-    },
-    record() {
-      const header = ['t_fs', 'P_H(x>0)', 'P_D(x>0)', 'P_T(x>0)'];
-      return { header, rows: slices[0].map((s, j) => [s.t, ...slices.map(sl => { const d = sl[j]?.d; let q = 0; if (d) for (let i = 0; i < d.length; i++) if (viewX[i] > 0) q += d[i]; return q * dx * stride; })]) };
+  };
+  return s;
+}
+
+/**
+ * Lowest stationary states of H = −ħ²/2m d²/dx² + V(x) on a grid with ψ = 0 beyond both ends
+ * (second-order finite differences). Returns { energies, states } with states normalised so that
+ * Σ|ψ|²dx = 1. Accuracy O(dx²); confine the domain so ψ is negligible at the walls.
+ * The `count` lowest energies by Sturm bisection and their states by shifted inverse iteration
+ * (both O(n) per level), orthogonalised within near-degenerate groups (tunnelling doublets):
+ * 10⁴ grid points take milliseconds.
+ */
+function stationaryStates1D({ V, dx, count = 5, mass = 1, hbar = 1 }) {
+  const n = V.length;
+  if (!(n >= 3) || !(dx > 0)) throw new Error('stationaryStates1D: need ≥ 3 grid points and dx > 0');
+  const t = hbar * hbar / (2 * mass * dx * dx);
+  const diag = Float64Array.from(V, v => v + 2 * t), off = new Float64Array(n - 1).fill(-t);
+  const energies = lowestTridiagonal(diag, off, count);
+  const scale = Math.max(...energies.map(Math.abs), t);
+  const states = [];
+  energies.forEach((E, k) => {
+    // shifted inverse iteration: (H − (E + δ)) x = b converges to the eigenvector of E
+    const shift = E + 1e-10 * scale * (1 + k * 1e-3);
+    const a = new Float64Array(n).fill(-t), c = new Float64Array(n).fill(-t), b = Float64Array.from(diag, v => v - shift);
+    let x = Float64Array.from({ length: n }, (_, i) => Math.sin((k + 1) * Math.PI * (i + 1) / (n + 1)) + 1e-3 * Math.cos(7.3 * i));
+    for (let it = 0; it < 4; it++) {
+      x = solveTridiagonal(a, b, c, x);
+      // remove components along already-found states of nearly equal energy (degenerate or doublet pairs)
+      states.forEach((v, j) => {
+        if (Math.abs(energies[j] - E) > 1e-6 * scale) return;
+        let d = 0; for (let i = 0; i < n; i++) d += v[i] * x[i] * dx;
+        for (let i = 0; i < n; i++) x[i] -= d * v[i];
+      });
+      let s2 = 0; for (const v of x) s2 += v * v;
+      const f = 1 / Math.sqrt(s2 * dx);
+      for (let i = 0; i < n; i++) x[i] *= f;
+    }
+    let peak = 0; for (const v of x) peak = Math.max(peak, Math.abs(v));
+    const sign = x.find(v => Math.abs(v) > 1e-6 * peak) > 0 ? 1 : -1;   // first lobe positive
+    states.push(Float64Array.from(x, v => sign * v));
+  });
+  return { energies, states };
+}
+
+/**
+ * Stationary scattering through a 1D potential V(x) (a function; constant outside [x0, x1]).
+ * Integrates −(ħ²/2m)ψ'' + Vψ = Eψ from x1 leftwards, starting from the purely transmitted wave
+ * e^{ik_R x}, and decomposes ψ at x0 into incoming and reflected waves, so tunnelling probabilities
+ * down to ~1e−12 stay accurate (no exponentially growing transfer matrices). E must exceed V at
+ * both ends. Returns { T, R } with T + R = 1 to the integration tolerance (a check in itself).
+ */
+function transmission1D({ V, E, x0, x1, mass = 1, hbar = 1, rtol = 1e-11, atol = 1e-14 }) {
+  if (typeof V !== 'function') throw new Error('transmission1D: V must be a function of x');
+  const VL = V(x0), VR = V(x1);
+  if (!(E > VL && E > VR)) throw new Error('transmission1D: E must lie above the potential at both ends');
+  const c = 2 * mass / (hbar * hbar), kL = Math.sqrt(c * (E - VL)), kR = Math.sqrt(c * (E - VR));
+  // state [Re ψ, Im ψ, Re ψ', Im ψ'] at x; integrate in s = x1 − x (forward in s)
+  const f = (sv, y) => { const x = x1 - sv, q = c * (V(x) - E); return [-y[2], -y[3], -q * y[0], -q * y[1]]; };
+  const y1 = [Math.cos(kR * x1), Math.sin(kR * x1), -kR * Math.sin(kR * x1), kR * Math.cos(kR * x1)];
+  const { y } = dopri5(f, 0, y1, x1 - x0, { rtol, atol, h0: Math.min(1e-3, 0.01 / kR), hmax: Math.PI / (4 * Math.max(kL, kR)) });
+  // ψ = A e^{ik x} + B e^{−ik x}: A = ½ e^{−ikx}(ψ + ψ'/(ik)), B = ½ e^{ikx}(ψ − ψ'/(ik))
+  const [pr, pi, dr, di] = y, cx = Math.cos(kL * x0), sx = Math.sin(kL * x0);
+  const qr = di / kL, qi = -dr / kL;                       // ψ'/(ik)
+  const Ar = 0.5 * ((pr + qr) * cx + (pi + qi) * sx), Ai = 0.5 * ((pi + qi) * cx - (pr + qr) * sx);
+  const Br = 0.5 * ((pr - qr) * cx - (pi - qi) * sx), Bi = 0.5 * ((pi - qi) * cx + (pr - qr) * sx);
+  const A2 = Ar * Ar + Ai * Ai;
+  return { T: (kR / kL) / A2, R: (Br * Br + Bi * Bi) / A2 };
+}
+
+/** (1/kT) ∫_{from}^{∞} f(E) e^{−(E − from)/kT} dE by Gauss–Legendre panels (f bounded, e.g. a transmission). */
+function thermalAverage(f, kT, { from = 0, panels = 40, n = 16, upto = 50 } = {}) {
+  if (!(kT > 0)) throw new Error('thermalAverage: kT must be positive');
+  let sum = 0;
+  const w = upto * kT / panels;
+  for (let p = 0; p < panels; p++) sum += gaussLegendre(E => f(E) * Math.exp(-(E - from) / kT), from + p * w, from + (p + 1) * w, n);
+  return sum / kT;
+}
+
+/** ∫ |φ(k)|² T(k) dk for a Gaussian packet with |φ(k)|² ∝ exp(−(k − k0)²/(2σ_k²)) (σ_k = 1/(2σ_x)). */
+function packetTransmission(T, k0, sigmaK, { width = 8, n = 400 } = {}) {
+  const a = k0 - width * sigmaK, b = k0 + width * sigmaK, norm = 1 / (Math.sqrt(2 * Math.PI) * sigmaK);
+  let sum = 0;
+  const panels = Math.ceil(n / 16), w = (b - a) / panels;
+  for (let p = 0; p < panels; p++) sum += gaussLegendre(k => (k > 0 ? T(k) : 0) * norm * Math.exp(-((k - k0) ** 2) / (2 * sigmaK * sigmaK)), a + p * w, a + (p + 1) * w, 16);
+  return sum;
+}
+
+
+return { diffusion1D, waveND, stationaryStates1D, transmission1D, thermalAverage, packetTransmission };
+})();
+
+// ---- local:physics.mjs
+__psim["local:physics.mjs"] = (() => {
+// Hydrogen tunnelling in an enzyme: why deuterium is so much slower.
+//
+// ONE IDEA (SKILL.md step 5)
+//   Learn:   a hydrogen nucleus is so light that it behaves like a wave and seeps through the energy
+//            wall between two atoms; deuterium, twice as heavy, seeps through about ten times more
+//            slowly, so the reaction with deuterium is dozens of times slower.
+//   Picture: two copies of the same enzyme pocket, one above the other: a donor carbon on the left,
+//            an acceptor oxygen on the right, the energy wall between them, and the particle itself as
+//            a glowing cloud (its computed probability) that drains from the donor through the wall;
+//            hydrogen above, deuterium below, at the same moment.
+//   Action:  "Release H and D together": both start on the donor at once; within seconds most of the
+//            hydrogen cloud is across while the deuterium cloud has hardly moved.
+//
+// SCOPE (decided without asking; disclosed on the page and in the reply): a reduced 1D model of the
+// tunnelling step only. Real enzymes (e.g. soybean lipoxygenase-1) spend milliseconds waiting for the
+// protein to reach a "tunnelling-ready" pose (donor and acceptor level and close); this page shows what
+// happens in that pose. Not modelled: the protein motions that create the pose (gating), the asymmetry and
+// relaxation that make the hop one-way, other vibrations, temperature dependence. Alternatives not built:
+// a full Kuznetsov–Ulstrup / Marcus-like rate with a gating-distance average (Knapp, Rickert & Klinman
+// 2002), a Bell-corrected transition-state rate over an Eckart barrier, a QM/MM path-integral simulation.
+//
+// MODEL
+//   State: the transferred nucleus' wavefunction ψ(x, t) along the donor→acceptor line, x in Å, x = 0 at
+//   the midpoint. Potential (Born–Oppenheimer, the same for H and D):
+//       V(x) = V_b (x² − d²)² / d⁴,   V_b = m_H ω_H² d² / 8,
+//   a symmetric double well with minima at ±d (jump distance 2d) whose curvature at each minimum gives
+//   hydrogen the C–H stretch frequency ω_H = 3000 cm⁻¹ (typical C–H stretch, ~2900–3000 cm⁻¹). The
+//   barrier height therefore follows from d (a shorter jump also has a lower wall).
+//   Eigenstates: −ħ²/2m ψ'' + Vψ = Eψ on a fine grid (core/pde.mjs stationaryStates1D, O(dx²)); the
+//   lowest pair φ₀ (even), φ₁ (odd) differ by the tunnelling splitting Δ = E₁ − E₀.
+//   Start: the donor-localised state ψ(0) = (φ₀ + φ₁)/√2. Then exactly
+//       ψ(x, t) = (φ₀ e^{−iE₀t/ħ} + φ₁ e^{−iE₁t/ħ})/√2,  P_across(t) = ½ + c cos(Δt/ħ),  c = ∫_{x>0} φ₀φ₁ dx,
+//   so the nucleus is across after τ = πħ/Δ. The page evaluates this closed form at every t ("evaluated
+//   exactly" from the computed eigenstates); verify() checks it against an independent split-operator
+//   solution of the time-dependent Schrödinger equation.
+//   Rate and isotope effect: in the non-adiabatic (golden-rule) limit the transfer rate is ∝ (Δ/2)² times
+//   an environmental factor taken to be the same for H and D (Kuznetsov & Ulstrup 1999), so
+//       KIE = k_H / k_D = (Δ_H / Δ_D)².
+//   For comparison, the semiclassical limit without tunnelling (zero-point energy lost at the top):
+//       KIE_ZPE = exp[(ħω_H − ħω_D) / 2kT],  ω_D = ω_H √(m_H/m_D),  at 30 °C.
+// UNITS: x in Å, energies in cm⁻¹, time in fs; ħ = 5308.8 cm⁻¹ fs, ħ²/2u = 16.858 cm⁻¹ Å² (CODATA 2018
+// via core/constants.mjs). Masses: AME2020 nuclide masses (NUCLIDE_MASS), atomic masses of ¹H and ²H.
+// PROGRESS AXIS: physical time of the tunnelling step in fs; the run ends when hydrogen is across (τ_H).
+// REPRESENTATION: horizontal position = x (physical space, Å, to scale); cloud height and brightness =
+// |ψ(x,t)|² (probability density, normalised per lane); the wall curve = V(x) (energy, drawn to scale
+// within the lane, vertical axis is energy, not space); atoms = donor C and acceptor O drawn at a typical
+// 1.09 Å bond length from each well (scenery, not computed).
+const { hbar: HBAR_SI, u: U_SI, kB, invCm, NUCLIDE_MASS } = __psim["core/constants.mjs"];
+const { stationaryStates1D } = __psim["core/pde.mjs"];
+const { schrodingerND } = __psim["core/fields.mjs"];
+const { brent } = __psim["core/numerics.mjs"];
+const HBAR = HBAR_SI / invCm * 1e15;            // ħ in cm⁻¹ fs (≈ 5308.8)
+const K = HBAR_SI ** 2 / (2 * U_SI) / invCm * 1e20;   // ħ²/(2 u) in cm⁻¹ Å² (≈ 16.858)
+const OMEGA_H = 3000;                           // cm⁻¹, C–H stretch (typical, 2900–3000 cm⁻¹)
+const M_H = NUCLIDE_MASS.H1, M_D = NUCLIDE_MASS.H2;
+const T_KELVIN = 303.15;                        // 30 °C, the temperature of the SLO-1 measurement
+const KT = kB * T_KELVIN / invCm;               // cm⁻¹ (≈ 210.7)
+const KIE_SLO = 81, KIE_SLO_ERR = 5;            // soybean lipoxygenase-1, 30 °C (Knapp, Rickert & Klinman 2002)
+const BOND = 1.09;                              // Å, drawn C–H / O–H distance (scenery)
+const DX = 0.0025;                                     // Å, grid step for the eigenstates
+
+const PARAMS = [
+  { key: 'jump', label: 'Jump distance (well to well)', min: 0.5, max: 0.8, value: 0.6, unit: 'Å',
+    hint: 'How far the nucleus must move from the donor to the acceptor. The enzyme can squeeze this shorter; a shorter jump also has a lower wall.' },
+];
+
+/** Potential of the symmetric double well for half-distance d (Å): V in cm⁻¹. */
+function wallHeight(d) { return OMEGA_H ** 2 * M_H / (2 * K) * d * d / 8; }   // m ω² d²/8 with m/ħ² = u/2K
+function potential(d) { const Vb = wallHeight(d); return x => Vb * ((x * x - d * d) / (d * d)) ** 2; }
+
+/** Lowest doublet of isotope mass m (u) at half-distance d (Å), on grid step dx (Å). */
+function doublet(m, d, dx = DX, L = d + 0.55) {
+  const n = 2 * Math.round(L / dx) + 1, x0 = -(n - 1) / 2 * dx;
+  const xs = Float64Array.from({ length: n }, (_, i) => x0 + i * dx);
+  const Vf = potential(d), V = Float64Array.from(xs, Vf);
+  const { energies, states } = stationaryStates1D({ V, dx, count: 2, mass: m / (2 * K), hbar: 1 });
+  const [phi0, phi1] = states;
+  let c = 0;
+  for (let i = 0; i < n; i++) {
+    if (Math.abs(xs[i]) < dx / 2) c += 0.5 * phi0[i] * phi1[i] * dx;
+    else if (xs[i] > 0) c += phi0[i] * phi1[i] * dx;
+  }
+  const delta = energies[1] - energies[0];
+  return { m, d, xs, V, dx, phi0, phi1, E0: energies[0], E1: energies[1], delta, c, tau: Math.PI * HBAR / delta };
+}
+
+/** Exact P(across) and density of the two-state superposition at time t (fs). */
+const across = (s, t) => 0.5 + s.c * Math.cos(s.delta * t / HBAR);
+function density(s, t, out = new Float64Array(s.xs.length)) {
+  const k = Math.cos(s.delta * t / HBAR);
+  for (let i = 0; i < out.length; i++) { const a = s.phi0[i], b = s.phi1[i]; out[i] = 0.5 * (a * a + b * b) + k * a * b; }
+  return out;
+}
+
+const kieZPE = (() => { const wD = OMEGA_H * Math.sqrt(M_H / M_D); return Math.exp((OMEGA_H - wD) / 2 / KT); })();
+function kieAt(jump) { const d = jump / 2; return (doublet(M_H, d).delta / doublet(M_D, d).delta) ** 2; }
+
+/** Instanton (WKB) splitting for the quartic double well, leading order × first correction (Zinn-Justin). */
+function instanton(m, d) {
+  const w = OMEGA_H * Math.sqrt(M_H / m);                // ħω of isotope m, cm⁻¹
+  const S0 = (2 / 3) * w * m / (2 * K) * d * d;           // tunnelling action / ħ = (2/3) m ω d² / ħ
+  const lead = 2 * w * Math.sqrt(6 * S0 / Math.PI) * Math.exp(-S0);
+  return { S0, lead, corrected: lead * (1 - 71 / (72 * S0)) };
+}
+
+let curveCache = null;
+/** KIE against jump distance (computed once): [[jump Å, KIE], …] and the jump where the model gives 81. */
+function kieCurve() {
+  if (curveCache) return curveCache;
+  const pts = [];
+  for (let i = 0; i <= 30; i++) { const j = 0.5 + 0.01 * i; pts.push([j, kieAt(j)]); }
+  const jump81 = brent(j => Math.log(kieAt(j) / KIE_SLO), 0.5, 0.8, 1e-5);
+  curveCache = { pts, jump81 };
+  return curveCache;
+}
+
+function fmtTime(fs) {
+  if (fs < 1000) return `${fs.toPrecision(3)} fs`;
+  if (fs < 1e6) return `${(fs / 1000).toPrecision(3)} ps`;
+  return `${(fs / 1e6).toPrecision(3)} ns`;
+}
+
+function createSim({ jump }) {
+  const d = jump / 2, H = doublet(M_H, d), D = doublet(M_D, d);
+  const end = H.tau, dt = end / 1500;
+  const rhoH = new Float64Array(H.xs.length), rhoD = new Float64Array(D.xs.length);
+  let t = 0;
+  const sim = {
+    jump, d, H, D, end, Vb: wallHeight(d),
+    kie: (H.delta / D.delta) ** 2,
+    get t() { return t; },
+    get done() { return t >= end * (1 - 1e-9); },
+    step() { t = Math.min(end, t + dt); },
+    acrossH: (tt = t) => across(H, Math.min(tt, end)),
+    acrossD: (tt = t) => across(D, Math.min(tt, end)),
+    densityH: (tt = t) => density(H, Math.min(tt, end), rhoH),
+    densityD: (tt = t) => density(D, Math.min(tt, end), rhoD),
+    diagnostics: () => [
+      { key: 'pH', label: 'Hydrogen across the wall', value: sim.acrossH(), kind: 'value', text: `${(100 * sim.acrossH()).toFixed(1)} %` },
+      { key: 'pD', label: 'Deuterium across the wall', value: sim.acrossD(), kind: 'value', text: `${(100 * sim.acrossD()).toFixed(1)} %` },
+      { key: 'tauH', label: 'Hydrogen crossing time πħ/Δ_H', value: H.tau, kind: 'value', unit: 'fs', text: fmtTime(H.tau) },
+      { key: 'tauD', label: 'Deuterium crossing time πħ/Δ_D', value: D.tau, kind: 'value', unit: 'fs', text: fmtTime(D.tau) },
+      { key: 'kie', label: 'Isotope effect k_H/k_D = (Δ_H/Δ_D)²', value: sim.kie, kind: 'value', text: sim.kie.toFixed(0) },
+      { key: 'wall', label: 'Wall height', value: sim.Vb, kind: 'value', text: `${sim.Vb.toFixed(0)} cm⁻¹ (${(sim.Vb * invCm * 6.02214076e23 / 4184).toFixed(1)} kcal/mol)` },
+    ],
+    state: () => ({ t, jump, acrossH: sim.acrossH(), acrossD: sim.acrossD(), deltaH: H.delta, deltaD: D.delta, kie: sim.kie }),
+    record: () => {
+      const rows = [];
+      for (let i = 0; i <= 200; i++) { const s = end * i / 200; rows.push([s, across(H, s), across(D, s)]); }
+      return { header: ['t (fs)', 'P_across hydrogen', 'P_across deuterium'], rows };
     },
   };
   return sim;
 }
 
-// ------------------------------------------------------------------ verification
-/** Numerical T(E) by integrating ψ'' = (2m/ħ²)(V − E)ψ from the transmitted side (dopri5). */
-function transODE(Vfun, E, m, L) {
-  const k = Math.sqrt(E * m / H2M), c2 = m / H2M;
-  // y = [Re ψ, Im ψ, Re ψ', Im ψ'], start ψ = e^{ikL} at x = L, integrate to −L
-  const y0 = [Math.cos(k * L), Math.sin(k * L), -k * Math.sin(k * L), k * Math.cos(k * L)];
-  const f = (x, y) => { const q = c2 * (Vfun(x) - E); return [y[2], y[3], q * y[0], q * y[1]]; };
-  const { y } = dopri5(f, L, y0, -L, { rtol: 1e-12, atol: 1e-14, hmax: 0.01 });
-  // ψ = A e^{ikx} + B e^{−ikx}: A = (ψ' + ikψ)/(2ik) e^{−ikx}
-  const x = -L, pr = y[0], pi = y[1], dr = y[2], di = y[3];
-  const Ar = (di + k * pr) / (2 * k), Ai = (-dr + k * pi) / (2 * k);       // (ψ' + ikψ)/(2ik), before the phase
-  const Br = (k * pr - di) / (2 * k), Bi = (k * pi + dr) / (2 * k);         // (ikψ − ψ')/(2ik)
-  void x;
-  const A2 = Ar * Ar + Ai * Ai, B2 = Br * Br + Bi * Bi;
-  return { T: 1 / A2, R: B2 / A2 };
-}
-/** Transfer through piecewise-constant layers (exact for a staircase), propagated from the right. */
-function transStaircase(layers, E, m) {
-  // layers: [{ V, d }] left to right; free (V = 0) on both sides
-  const k = Math.sqrt(E * m / H2M);
-  let pr = 1, pi = 0, dr = 0, di = k;                        // ψ = e^{ikx} at the right edge (x = 0 locally)
-  for (let j = layers.length - 1; j >= 0; j--) {
-    const { V, d } = layers[j], q2 = (V - E) * m / H2M;       // ψ'' = q2 ψ; propagate by −d
-    let c, sOverQ, qS;
-    if (q2 > 0) { const q = Math.sqrt(q2); c = Math.cosh(q * d); sOverQ = -Math.sinh(q * d) / q; qS = -q * Math.sinh(q * d); }
-    else if (q2 < 0) { const q = Math.sqrt(-q2); c = Math.cos(q * d); sOverQ = -Math.sin(q * d) / q; qS = q * Math.sin(q * d); }
-    else { c = 1; sOverQ = -d; qS = 0; }
-    const npr = c * pr + sOverQ * dr, npi = c * pi + sOverQ * di;
-    const ndr = qS * pr + c * dr, ndi = qS * pi + c * di;
-    pr = npr; pi = npi; dr = ndr; di = ndi;
-  }
-  const Ar = (di + k * pr) / (2 * k), Ai = (-dr + k * pi) / (2 * k);
-  return 1 / (Ar * Ar + Ai * Ai);
+/** Independent check: split-operator TDSE (spectral, periodic box) from ψ(0) = (φ₀+φ₁)/√2 to time T. */
+function tdseAcross(s, T, nSteps, N = 1024) {
+  const L = 2 * (s.d + 0.55), dxs = L / N;
+  const xs = Float64Array.from({ length: N }, (_, i) => -L / 2 + (i + 0.5) * dxs);
+  // interpolate the start state onto the spectral grid (linear; the grids differ, so this is independent)
+  const at = (arr, x) => { const f = (x - s.xs[0]) / s.dx, i = Math.floor(f); if (i < 0 || i >= arr.length - 1) return 0; const w = f - i; return arr[i] * (1 - w) + arr[i + 1] * w; };
+  const re0 = Float64Array.from(xs, x => (at(s.phi0, x) + at(s.phi1, x)) / Math.SQRT2);
+  let n2 = 0; for (const v of re0) n2 += v * v * dxs;
+  for (let i = 0; i < N; i++) re0[i] /= Math.sqrt(n2);
+  const V = Float64Array.from(xs, potential(s.d));
+  const q = schrodingerND({ re0, V, shape: [N], spacing: dxs, dt: T / nSteps, mass: HBAR * HBAR * s.m / (2 * K), hbar: HBAR });
+  for (let k = 0; k < nSteps; k++) q.step();
+  const p = q.probability();
+  let right = 0, tot = 0;
+  for (let i = 0; i < N; i++) { tot += p[i]; if (xs[i] > 0) right += p[i]; }
+  return { across: right / tot, norm: q.norm() };
 }
 
 function verify({ log } = {}) {
   const checks = [], notes = [];
-  const p = Object.fromEntries(PARAMS.map(q => [q.key, q.value]));
-  const bs = barriers(p), H = bs[0], D = bs[1];
-  const rel = (x, y) => Math.abs(x / y - 1);
+  const d = 0.3;
+  // 1. grid refinement of the splittings (finite differences, expected order 2)
+  log?.('grid refinement of Δ_H, Δ_D');
+  const ladder = iso => [0.01, 0.005, 0.0025].map(h => doublet(iso, d, h).delta);
+  const ord = ([a, b, c]) => Math.log2(Math.abs(a - b) / Math.abs(b - c));
+  const lh = ladder(M_H), ld = ladder(M_D);
+  const pH = ord(lh), pD = ord(ld);
+  const relH = Math.abs(lh[2] - lh[1]) / lh[2] / 3, relD = Math.abs(ld[2] - ld[1]) / ld[2] / 3;   // Richardson error estimate at dx = 0.0025
+  checks.push({ label: 'Splitting Δ_H: grid order (dx = 0.01, 0.005, 0.0025 Å; expected 2)', value: pH.toFixed(2), pass: Math.abs(pH - 2) < 0.3 });
+  checks.push({ label: 'Splitting Δ_D: grid order (same ladder; expected 2)', value: pD.toFixed(2), pass: Math.abs(pD - 2) < 0.3 });
+  checks.push({ label: 'Δ_H, Δ_D estimated discretisation error at the page grid (Richardson)', value: `${relH.toExponential(1)}, ${relD.toExponential(1)}`, pass: relH < 2e-3 && relD < 2e-3 });
+  const kieFine = (lh[2] / ld[2]) ** 2, kieRich = (((4 * lh[2] - lh[1]) / 3) / ((4 * ld[2] - ld[1]) / 3)) ** 2;
+  const kieErr = Math.abs(kieFine / kieRich - 1);
+  checks.push({ label: 'KIE at 0.60 Å: page grid vs Richardson-extrapolated grid', value: `${kieFine.toFixed(2)} vs ${kieRich.toFixed(2)} (${(100 * kieErr).toFixed(2)} %)`, pass: kieErr < 5e-3 });
+  // box size: doubling the margin beyond the wells must not change Δ
+  const wide = doublet(M_D, d, 0.0025, d + 1.1).delta, boxErr = Math.abs(wide / ld[2] - 1);
+  checks.push({ label: 'Δ_D with twice the box margin (0.55 → 1.1 Å beyond the wells)', value: boxErr.toExponential(1), pass: boxErr < 1e-8 });
 
-  // 1. Eckart: exact formula vs numerical integration of the Schrödinger equation (dopri5)
-  log?.('Eckart T(E): analytic vs ODE');
-  let worst = 0, worstFlux = 0;
-  for (const b of [H, D]) for (const f of [0.3, 0.6, 0.9, 1.2]) {
-    const E = f * b.V, num = transODE(x => b.V / Math.cosh(x / p.a) ** 2, E, b.m, 30 * p.a);
-    worst = Math.max(worst, rel(num.T, b.T(E))); worstFlux = Math.max(worstFlux, Math.abs(num.T + num.R - 1));
+  // 2. normalisation and orthogonality of the computed states
+  const s = doublet(M_H, d);
+  let n0 = 0, n1 = 0, o = 0;
+  for (let i = 0; i < s.xs.length; i++) { n0 += s.phi0[i] ** 2 * s.dx; n1 += s.phi1[i] ** 2 * s.dx; o += s.phi0[i] * s.phi1[i] * s.dx; }
+  const normErr = Math.max(Math.abs(n0 - 1), Math.abs(n1 - 1), Math.abs(o));
+  checks.push({ label: 'φ₀, φ₁ normalised and orthogonal (max deviation)', value: normErr.toExponential(1), pass: normErr < 1e-8 });
+
+  // 3. independent benchmark: instanton formula, residual must shrink as the barrier grows (deep tunnelling)
+  log?.('instanton comparison');
+  // (deeper barriers make Δ_D so small, < 10⁻³ cm⁻¹ on a ~10⁶ cm⁻¹ spectral range, that the grid error dominates: not used)
+  const deep = [0.25, 0.3, 0.35, 0.4].map(dd => { const ex = doublet(M_D, dd).delta, ins = instanton(M_D, dd); return { S0: ins.S0, r: Math.abs(ins.corrected / ex - 1), rl: Math.abs(ins.lead / ex - 1) }; });
+  const shrinks = deep.every((q, i) => i === 0 || (q.r < deep[i - 1].r && q.rl < deep[i - 1].rl));
+  checks.push({ label: 'Δ_D vs instanton formula with first correction (Zinn-Justin), action S₀/ħ = ' + deep.map(q => q.S0.toFixed(1)).join(', ') + ': residual shrinks as the wall grows', value: deep.map(q => `${(100 * q.r).toFixed(2)} %`).join(', '), pass: shrinks && deep.at(-1).r < 0.01 });
+  const insH = instanton(M_H, d), insD = instanton(M_D, d);
+  notes.push(`At the default 0.60 Å the barrier is shallow for hydrogen (action S₀/ħ = ${insH.S0.toFixed(2)}, D ${insD.S0.toFixed(2)}): the instanton formula is only indicative there (H: ${(100 * Math.abs(insH.corrected / s.delta - 1)).toFixed(0)} % off), so the page uses the grid eigenvalues, which converge at order 2.`);
+
+  // 4. independent dynamics: split-operator TDSE reproduces the closed-form crossing (H and D)
+  log?.('split-operator TDSE vs closed form');
+  const sD = doublet(M_D, d);
+  const res = [];
+  for (const [iso, T] of [[s, s.tau / 2], [s, s.tau], [sD, s.tau]]) {
+    const a = tdseAcross(iso, T, 4000), b = tdseAcross(iso, T, 8000), exact = across(iso, T);
+    res.push({ a: a.across, b: b.across, exact, norm: Math.abs(b.norm - 1) });
   }
-  checks.push({ label: 'Eckart T(E) exact formula vs numerical Schrödinger integration (H, D; E = 0.3–1.2 V)', value: `max rel. dev. ${worst.toExponential(2)}`, pass: worst < 1e-6 });
-  checks.push({ label: 'Flux conservation R + T = 1 (numerical scattering solution)', value: `max |R+T−1| = ${worstFlux.toExponential(2)}`, pass: worstFlux < 1e-8 });
+  const tdErr = Math.max(...res.map(r => Math.abs(r.b - r.exact)));
+  checks.push({ label: 'Split-operator TDSE vs closed form: P(across) for H at τ_H/2, τ_H and D at τ_H', value: res.map(r => `${(100 * r.b).toFixed(2)} vs ${(100 * r.exact).toFixed(2)} %`).join('; '), pass: tdErr < 3e-3 });
+  const normDrift = Math.max(...res.map(r => r.norm));
+  checks.push({ label: 'TDSE norm drift (unitary split-operator)', value: normDrift.toExponential(1), pass: normDrift < 1e-9 });
+  const dtChange = Math.max(...res.map(r => Math.abs(r.a - r.b)));
+  checks.push({ label: 'TDSE time-step refinement (4000 → 8000 steps): change of P(across)', value: dtChange.toExponential(1), pass: dtChange < 1e-3 });
 
-  // 2. Rectangular barrier: analytic vs exact transfer matrix
-  let worstR = 0;
-  for (const f of [0.2, 0.5, 0.95, 1.0, 1.5, 3]) { const E = f * H.V; worstR = Math.max(worstR, rel(transStaircase([{ V: H.V, d: H.w }], E, H.m), transRect(E, H.V, H.w, H.m))); }
-  checks.push({ label: 'Rectangular T(E) formula vs transfer matrix (incl. E = V and E > V)', value: `max rel. dev. ${worstR.toExponential(2)}`, pass: worstR < 1e-9 });
+  // 5. timeline key times: measured from the time evolution, compared with πħ/Δ
+  let best = 0, tBest = 0;
+  for (let i = 0; i <= 4000; i++) { const tt = 1.2 * s.tau * i / 4000, p = across(s, tt); if (p > best) { best = p; tBest = tt; } }
+  const tErr = Math.abs(tBest / s.tau - 1);
+  checks.push({ label: 'H crossing time: first maximum of P(across) vs πħ/Δ_H', value: `${tBest.toFixed(1)} vs ${s.tau.toFixed(1)} fs; max ${(100 * best).toFixed(2)} %`, pass: tErr < 1e-3 && best > 0.99 });
 
-  // 3. Staircase refinement of the Eckart barrier converges to the exact T at second order
-  const E3 = 0.5 * H.V, Tex = H.T(E3), L3 = 12 * p.a;
-  const stair = n => { const d = 2 * L3 / n; return transStaircase(Array.from({ length: n }, (_, j) => ({ V: H.V / Math.cosh((-L3 + (j + 0.5) * d) / p.a) ** 2, d })), E3, H.m); };
-  const e1 = rel(stair(400), Tex), e2 = rel(stair(800), Tex), e3 = rel(stair(1600), Tex), order = Math.log2(e2 / e3);
-  checks.push({ label: 'Transfer-matrix staircase → exact Eckart T (400/800/1600 slices)', value: `errors ${e1.toExponential(2)}, ${e2.toExponential(2)}, ${e3.toExponential(2)}; order ${order.toFixed(2)}`, pass: e3 < 1e-4 && Math.abs(order - 2) < 0.3 });
+  // 6. isotope effect and the comparisons it is read against
+  const kie = (s.delta / sD.delta) ** 2;
+  checks.push({ label: 'Default (0.60 Å): Δ_H, Δ_D; crossing times τ_H, τ_D', value: `${s.delta.toFixed(2)}, ${sD.delta.toFixed(3)} cm⁻¹; ${fmtTime(s.tau)}, ${fmtTime(sD.tau)}`, pass: Number.isFinite(kie) });
+  checks.push({ label: 'Semiclassical limit without tunnelling, 30 °C: exp(ΔZPE/kT) (textbook ≈ 7 for C–H)', value: kieZPE.toFixed(2), pass: kieZPE > 5 && kieZPE < 10 });
+  const { jump81, pts } = kieCurve();
+  checks.push({ label: `Model isotope effect at 0.60 Å vs measured SLO-1 (${KIE_SLO} ± ${KIE_SLO_ERR}, 30 °C)`, value: `${kie.toFixed(0)}; the model gives ${KIE_SLO} at a ${jump81.toFixed(3)} Å jump`, pass: kie > kieZPE, state: 'warn' });
+  const monotone = pts.every((p, i) => i === 0 || p[1] > pts[i - 1][1]);
+  checks.push({ label: 'KIE rises steadily with jump distance (0.50–0.80 Å)', value: `${pts[0][1].toFixed(0)} → ${pts.at(-1)[1].toFixed(0)}`, pass: monotone });
+  notes.push('KIE = (Δ_H/Δ_D)² assumes the non-adiabatic (golden-rule) limit with an environmental factor equal for H and D, at one fixed donor–acceptor geometry. The measured SLO-1 value is an average over protein motions; agreement at one jump distance is not a fit-free prediction (the jump distance is a free parameter).');
+  notes.push('Not modelled: gating motions, asymmetry and relaxation of the acceptor well (which make the real hop one-way), coupling to other vibrations, temperature dependence. The back-and-forth after τ_H that the closed form would give is not shown: the run stops when hydrogen is across.');
 
-  // 4. Isotope mass scaling: deep tunnelling −ln T ∝ √m at fixed energy
-  const Emass = 0.2 * H.V, rat = Math.log(transEckart(Emass, H.V, p.a, D.m)) / Math.log(transEckart(Emass, H.V, p.a, H.m)), want = Math.sqrt(D.m / H.m);
-  checks.push({ label: 'Mass scaling: ln T_D / ln T_H → √(m_D/m_H) at E = 0.2 V (same barrier)', value: `${rat.toFixed(4)} vs ${want.toFixed(4)}`, pass: rel(rat, want) < 0.03 });
-
-  // 5. Classical limit: heavy particle → κ → Wigner → 1 (TST)
-  const kT = KB * p.T, mHeavy = 2000, hwHeavy = Math.sqrt(4 * H.V * H2M / (mHeavy * p.a * p.a));
-  const kHeavy = kappa(E => transEckart(E, H.V, p.a, mHeavy), H.V, kT), kWh = kappaWigner(hwHeavy, kT);
-  checks.push({ label: 'Classical limit m = 2000 u: exact κ → Wigner → 1 (TST)', value: `κ = ${kHeavy.toFixed(5)}, Wigner ${kWh.toFixed(5)}`, pass: Math.abs(kHeavy - kWh) < 2e-3 && Math.abs(kHeavy - 1) < 0.05 });
-
-  // 6. Quadrature refinement of κ
-  const kq1 = kappa(H.T, H.V, kT, 96), kq2 = kappa(H.T, H.V, kT, 192, 24);
-  checks.push({ label: 'Thermal average quadrature refinement (96 → 192 panels)', value: `rel. change ${rel(kq1, kq2).toExponential(2)}`, pass: rel(kq1, kq2) < 1e-9 });
-
-  // 7. Bell parabolic κ: numerical average vs Bell's closed-form series (where u < 2π)
-  const Thot = 600, kThot = KB * Thot, kbNum = kappa(E => transParabolic(E, H.V, H.hw), H.V, kThot), kbSer = kappaBellSeries(H.hw, H.V, kThot);
-  checks.push({ label: `Bell parabolic κ: quadrature vs closed-form series (u = ${(H.hw / kThot).toFixed(2)} < 2π)`, value: `${kbNum.toPrecision(10)} vs ${kbSer.toPrecision(10)}`, pass: rel(kbNum, kbSer) < 1e-8 });
-
-  // 8. Gating model: closed form vs quadrature; fixed-distance limit
-  const g = GATING_DEFAULT, aH = gatingAlpha(g.nu, H.m), s2 = gatingSigma2(g.Omega, g.Mg, p.T), sd = Math.sqrt(s2);
-  const quad = gaussLegendre(r => Math.exp(-aH * r * r) * Math.exp(-((r - g.r0) ** 2) / (2 * s2)) / Math.sqrt(2 * Math.PI * s2), g.r0 - 12 * sd, g.r0 + 12 * sd, 200);
-  checks.push({ label: 'Gated Franck–Condon average: closed form vs quadrature', value: `rel. dev. ${rel(fcAverage(aH, g.r0, s2), quad).toExponential(2)}`, pass: rel(fcAverage(aH, g.r0, s2), quad) < 1e-10 });
-  const aD = gatingAlpha(g.nu, D.m), lim = fcAverage(aH, g.r0, 0) / fcAverage(aD, g.r0, 0);
-  checks.push({ label: 'Rigid limit σ → 0: KIE → exp(r₀²(α_D − α_H))', value: `${lim.toPrecision(8)} vs ${Math.exp(g.r0 ** 2 * (aD - aH)).toPrecision(8)}`, pass: rel(lim, Math.exp(g.r0 ** 2 * (aD - aH))) < 1e-9 });
-
-  // 9. Time-dependent wave packets (split-operator FFT) vs exact packet-averaged transmission
-  const tdse = (b, pp, opts = {}, flux = false) => {
-    const r = packetRun(b, pp, opts), dt = opts.dt ?? GRID.dt, dx = opts.dx ?? GRID.dx;
-    const tEnd = endTime(pp, barriers(pp)), xc = 5, ic = r.xs.findIndex(x => x >= xc);
-    let fluxInt = 0, normDev = 0, steps = 0;
-    const jAt = () => probabilityCurrent(r.solver.re, r.solver.im, { shape: [r.xs.length], spacing: dx, mass: r.mass, hbar: HBAR })[0][ic];
-    let jPrev = flux ? jAt() : 0;
-    while (r.solver.t < tEnd) {
-      r.solver.step(); steps++;
-      if (flux) { const j = jAt(); fluxInt += 0.5 * (j + jPrev) * dt; jPrev = j; }
-      if (steps % 100 === 0) normDev = Math.max(normDev, Math.abs(r.solver.norm() - 1));
-    }
-    normDev = Math.max(normDev, Math.abs(r.solver.norm() - 1));
-    return { P: probBeyond(r.solver, r.xs, dx, 0), Pc: probBeyond(r.solver, r.xs, dx, xc), fluxInt, exact: r.exact, normDev, steps };
-  };
-  log?.('wave packets H, D, T');
-  const runs = bs.map((b, i) => tdse(b, p, {}, i === 0));
-  const devs = runs.map(r => rel(r.P, r.exact));
-  checks.push({ label: 'Wave packets (split-operator FFT, N = 4096, dx = 0.03 Å, dt = 0.05 fs) vs exact ∫|φ(k)|²T(E)dk: H, D, T', value: runs.map((r, i) => `${bs[i].key} ${r.P.toExponential(3)}/${r.exact.toExponential(3)}`).join('; ') + ` (max rel. dev ${Math.max(...devs).toExponential(1)})`, pass: Math.max(...devs) < 0.01 });
-  checks.push({ label: 'Unitarity: norm drift over the run (all isotopes)', value: `max ${Math.max(...runs.map(r => r.normDev)).toExponential(2)}`, pass: Math.max(...runs.map(r => r.normDev)) < 1e-11 });
-  checks.push({ label: 'Transmitted probability = time-integrated flux j(x = 5 Å) (H)', value: `${runs[0].Pc.toExponential(4)} vs ∫j dt ${runs[0].fluxInt.toExponential(4)}`, pass: rel(runs[0].Pc, runs[0].fluxInt) < 0.01 });
-  log?.('refinement');
-  const rdt = tdse(H, p, { dt: GRID.dt / 2 }), rdx = tdse(H, p, { N: 8192, dx: GRID.dx / 2, dt: GRID.dt / 2 });
-  checks.push({ label: 'Refinement (H): dt/2, and dx/2 with dt/2', value: `rel. change ${rel(rdt.P, runs[0].P).toExponential(2)}, ${rel(rdx.P, rdt.P).toExponential(2)}`, pass: rel(rdt.P, runs[0].P) < 2e-3 && rel(rdx.P, rdt.P) < 2e-3 });
-  log?.('rectangular barrier packet');
-  const pr = { ...p, shape: 'rect' }, rb = barriers(pr)[0], rr = tdse(rb, pr), rrt = tdse(rb, pr, { dt: GRID.dt / 4 }), rr2 = tdse(rb, pr, { N: 8192, dx: GRID.dx / 2, dt: GRID.dt / 4 });
-  const d1 = rel(rr.P, rr.exact), dt4 = rel(rrt.P, rrt.exact), d2 = rel(rr2.P, rr2.exact);
-  checks.push({ label: 'Rectangular mode (H): wave packet vs exact for the gridded width; dt/4; dx/2 with dt/4 (sharp walls)', value: `${(100 * d1).toFixed(2)} %, ${(100 * dt4).toFixed(2)} %, ${(100 * d2).toFixed(2)} %`, pass: d1 < 0.03 && d2 < 0.03 });
-
-  // Model numbers at the default settings (reported, not pass/fail against measurement)
-  const rates = ratesAt(p, p.T, bs);
-  const kie = rates[0].k / rates[1].k, kieCl = rates[0].kTST / rates[1].kTST;
-  const fitH = arrheniusFit(T => ratesAt(p, T, bs)[0].k), fitD = arrheniusFit(T => ratesAt(p, T, bs)[1].k);
-  notes.push(`Default model at ${p.T} K: KIE(H/D) = ${kie.toFixed(1)} with tunnelling (κ_H = ${rates[0].kappa.toFixed(1)}, κ_D = ${rates[1].kappa.toFixed(2)}), ${kieCl.toFixed(2)} from zero-point energy alone; Arrhenius 5–45 °C: Ea(H) = ${fitH.Ea.toFixed(2)} kcal/mol, ΔEa = ${(fitD.Ea - fitH.Ea).toFixed(2)} kcal/mol, A_H/A_D = ${Math.exp(fitH.lnA - fitD.lnA).toFixed(2)}.`);
-  notes.push('Model is a one-coordinate (Bell) picture with illustrative parameters; it is not fitted to any enzyme. Effective-mass, multidimensional (corner-cutting) and protein-dynamics effects are omitted from part A; part B adds distance sampling in a Marcus-like model.');
   return {
-    summary: 'Exact Eckart/rectangular transmission vs numerical Schrödinger integration and transfer matrices; flux conservation; mass scaling and the classical (TST) limit; Bell/Wigner corrections; time-dependent wave packets vs the exact packet-averaged transmission with norm, flux and refinement checks.',
+    summary: `Double-well tunnelling of H and D (1D): splittings converge at order ${pH.toFixed(1)}/${pD.toFixed(1)}, match the instanton formula deep in the barrier and an independent split-operator TDSE to ${tdErr.toExponential(1)}; KIE = ${kie.toFixed(0)} at 0.60 Å vs ${kieZPE.toFixed(1)} without tunnelling`,
     checks, notes,
   };
 }
 
-return { KCAL, H2M, HBAR, HBAR_M, KB, HPL, CM, ISOTOPES, PARAMS, stretchZPE, transEckart, transRect, transParabolic, barriers, kappa, kappaWigner, kappaBellSeries, ratesAt, fluxPeak, arrheniusFit, gatingAlpha, gatingSigma2, fcAverage, GATING_DEFAULT, gatedRates, GRID, packetTransmission, gridPotential, packetRun, probBeyond, endTime, createSim, transODE, transStaircase, verify };
+return { HBAR, K, OMEGA_H, M_H, T_KELVIN, KT, KIE_SLO, BOND, PARAMS, wallHeight, potential, doublet, across, density, kieZPE, kieAt, instanton, kieCurve, fmtTime, createSim, verify, M_D, KIE_SLO_ERR };
 })();
 
 // ---- page
 const { createInstrument } = __psim["ui/instrument-app.mjs"];
-const { sci, el, slider, button } = __psim["ui/instrument.mjs"];
-const { orbitCamera, createLineRenderer, createMeshRenderer } = __psim["ui/gl.mjs"];
-const { PARAMS, createSim, ISOTOPES, KB, ratesAt, arrheniusFit, transParabolic, gatedRates, gatingAlpha, gatingSigma2, GATING_DEFAULT, HPL, CM, GRID } = __psim["local:physics.mjs"];
-const GATE = '#9b7bff';                                       // gated-tunnelling model (purple, both themes)
-const ISO_COLOR = ['--body-1', '--body-0', '--body-2'];       // H blue, D orange, T pink (categorical)
-// ------------------------------------------------------------------ 3D scene geometry (world units)
-const SX = 0.25;                                               // world units per Å along x
-const LANE = [[-3.4, -1.3], [-1.05, 1.05], [1.3, 3.4]];        // y-range of each isotope's lane: time runs front → back
-const ZE = 2.0;                                                // world height of 25 kcal/mol
-const HMAX = 1.25;                                             // world height of the density scale
-const LOG_DECADES = 10;                                        // log view: 10⁻¹⁰ … 1 Å⁻¹
-let heightMode = 'log10', showHistory = true;
-const cam = orbitCamera({ distance: 11, yaw: -0.95, pitch: 0.55, minDistance: 3, maxDistance: 40 });
-const BOX = [[-14 * SX, -3.4, 0], [14 * SX, 3.4, 2.4]];
-// wide screens: a little more margin and the scene raised, so the timeline bar under it stays clear
-const fitScene = aspect => { const wide = aspect > 1.3; cam.fit(BOX, aspect, wide ? 1.25 : 0.9); if (wide) cam.target[2] -= 0.5; };
-const zOfE = E => E / 25 * ZE;
-const laneY = (k, t, tEnd) => LANE[k][0] + (LANE[k][1] - LANE[k][0]) * Math.min(1, t / tEnd);
-function height(rho) {
-  if (heightMode === 'log10') return Math.max(0, (Math.log10(Math.max(rho, 1e-30)) + LOG_DECADES) / LOG_DECADES) * HMAX;
-  return Math.min(1.5, rho / 0.3325) * HMAX;                   // ρ_max of the initial packet = 1/(σ√(2π))
-}
-function slicePoints(sim, k, d, t) {
-  const pts = new Float32Array(sim.viewX.length * 3), y = laneY(k, t, sim.tEnd), z0 = zOfE(sim.params.E);
-  for (let j = 0; j < sim.viewX.length; j++) { pts[3 * j] = sim.viewX[j] * SX; pts[3 * j + 1] = y; pts[3 * j + 2] = z0 + height(d[j]); }
-  return pts;
-}
-// Barrier: a translucent surface V_eff(x) extruded along the lane's time axis (time-independent potential).
-function barrierGeometry(sim, k) {
-  const b = sim.barriers[k], p = sim.params, xs = [];
-  for (let x = -14; x <= 14.0001; x += 0.05) xs.push(x);
-  const half = b.w / 2;
-  const V = x => (p.shape === 'rect' ? (Math.abs(x) <= half ? b.V : 0) : b.V / Math.cosh(x / p.a) ** 2);
-  const P = [], N = [], I = [], [y0, y1] = LANE[k];
-  for (let i = 0; i < xs.length; i++) {
-    const x = xs[i], z = zOfE(V(x)), dz = (zOfE(V(x + 0.01)) - zOfE(V(x - 0.01))) / (0.02 * SX), l = Math.hypot(dz, 1);
-    P.push(x * SX, y0, z, x * SX, y1, z); N.push(-dz / l, 0, 1 / l, -dz / l, 0, 1 / l);
-    if (i) { const a = 2 * (i - 1); I.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
+const { PARAMS, createSim, kieCurve, kieZPE, fmtTime, across, HBAR, BOND, KIE_SLO, KIE_SLO_ERR, OMEGA_H } = __psim["local:physics.mjs"];
+// The view: the enzyme pocket itself, twice (hydrogen above, deuterium below), same moment.
+// x is physical position along the donor→acceptor line (to scale); the wall curve is energy (vertical = energy).
+function drawLane(ctx, view, sim, iso, rho, frac, top, h, name, color, showAtoms) {
+  const { W } = view, C = view.color, small = W < 560;
+  const d = sim.d, xr = d + BOND + 0.32;
+  const pad = small ? 14 : 36, sx = (W - 2 * pad) / (2 * xr), X = x => W / 2 + x * sx;
+  const base = top + h - (small ? 20 : 26), eH = h * 0.62, Emax = 1.45 * sim.Vb, Y = E => base - Math.min(E, Emax) / Emax * eH;
+  // energy wall V(x) (to scale within the lane)
+  ctx.beginPath();
+  const xs = iso.xs, V = iso.V;
+  let started = false;
+  for (let i = 0; i < xs.length; i += 4) { if (V[i] > Emax) { started = false; continue; } const px = X(xs[i]), py = Y(V[i]); if (!started) { ctx.moveTo(px, py); started = true; } else ctx.lineTo(px, py); }
+  ctx.strokeStyle = C('--muted'); ctx.lineWidth = 1.6; ctx.stroke();
+  // the particle's level (its energy) and its cloud |ψ|² drawn on that level
+  const level = Y(0.5 * (iso.E0 + iso.E1));
+  ctx.setLineDash([3, 4]); ctx.strokeStyle = C('--grid-strong'); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(X(-d - 0.3), level); ctx.lineTo(X(d + 0.3), level); ctx.stroke(); ctx.setLineDash([]);
+  // the cloud: |ψ(x,t)|² as a glowing band centred on the nucleus' energy level (thickness ∝ density)
+  let peak0 = 0; for (let i = 0; i < xs.length; i++) { const a = iso.phi0[i] + iso.phi1[i]; peak0 = Math.max(peak0, 0.5 * a * a); }
+  const amp = h * 0.17 / peak0;
+  ctx.save(); ctx.beginPath(); ctx.rect(0, top, W, h); ctx.clip(); ctx.globalCompositeOperation = 'lighter';
+  for (const [w, alpha] of [[1.6, 0.12], [1.25, 0.22], [1, 0.75]]) {
+    ctx.beginPath(); ctx.moveTo(X(xs[0]), level);
+    for (let i = 0; i < xs.length; i += 2) ctx.lineTo(X(xs[i]), level - w * rho[i] * amp);
+    for (let i = xs.length - 1; i >= 0; i -= 2) ctx.lineTo(X(xs[i]), level + w * rho[i] * amp);
+    ctx.closePath(); ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.fill();
   }
-  return { positions: Float32Array.from(P), normals: Float32Array.from(N), indices: Uint32Array.from(I), profile: xs.map(x => [x * SX, zOfE(V(x))]) };
+  ctx.restore();
+  // donor and acceptor atoms (scenery at a typical 1.09 Å bond length)
+  const r = Math.max(8, Math.min(0.15 * sx, 30));
+  for (const [x, col] of [[-d - BOND, '#8a93a6'], [d + BOND, '#e0605a']]) {
+    const g = ctx.createRadialGradient(X(x) - r / 3, level - r / 3, r / 6, X(x), level, r);
+    g.addColorStop(0, '#ffffff'); g.addColorStop(0.35, col); g.addColorStop(1, 'rgba(20,20,30,0.9)');
+    ctx.beginPath(); ctx.arc(X(x), level, r, 0, 2 * Math.PI); ctx.fillStyle = g; ctx.fill();
+  }
+  ctx.font = `${small ? 11 : 13}px system-ui, sans-serif`; ctx.fillStyle = C('--muted'); ctx.textAlign = 'center';
+  if (showAtoms) {
+    ctx.fillText('donor carbon', X(-d - BOND), level + r + 15);
+    ctx.fillText('acceptor oxygen', X(d + BOND), level + r + 15);
+  }
+  // the lane's label: what it is and how much has crossed (true at every moment)
+  ctx.font = `600 ${small ? 13 : 16}px system-ui, sans-serif`; ctx.fillStyle = color; ctx.textAlign = 'center';
+  const lab = view.steady(name, W / 2, top + (small ? 18 : 24));
+  ctx.fillText(`${name}: ${Math.round(100 * frac)} % across`, lab.x, lab.y);
 }
 
-let lastAspect = 0, lines, cur, frame, mesh, meshFor = null, meshes = [], uploaded = { sim: null, n: -1, mode: '', theme: '', hist: true };
-function drawGL(gl, sim, view) {
-  if (!lines) { lines = createLineRenderer(gl); cur = createLineRenderer(gl); frame = createLineRenderer(gl); mesh = createMeshRenderer(gl); }
-  const aspect = view.W / view.H;
-  if (Math.abs(aspect - lastAspect) > 0.01) { fitScene(aspect); lastAspect = aspect; }
-  if (meshFor !== sim) {                                      // barrier meshes and lane frames for this model
-    meshes = sim.barriers.map((_, k) => mesh.add(barrierGeometry(sim, k)));
-    const fr = [];
-    sim.barriers.forEach((b, k) => {
-      const [y0, y1] = LANE[k], zE = zOfE(sim.params.E);
-      fr.push({ points: [-14 * SX, y0, 0, 14 * SX, y0, 0, 14 * SX, y1, 0, -14 * SX, y1, 0, -14 * SX, y0, 0], color: '--grid-strong', opacity: 1 });
-      for (const x of [-10, -5, 0, 5, 10]) fr.push({ points: [x * SX, y0, 0, x * SX, y1, 0], color: '--grid', opacity: 1 });
-      fr.push({ points: [-14 * SX, y0, zE, 14 * SX, y0, zE, 14 * SX, y1, zE], color: ISO_COLOR[k], opacity: 0.45 });
-      const prof = barrierGeometry(sim, k).profile;
-      fr.push({ points: prof.flatMap(([x, z]) => [x, y0, z]), color: ISO_COLOR[k], opacity: 0.9 });
-    });
-    frame.update(fr);
-    meshFor = sim;
-  }
-  const theme = view.theme;
-  const n = sim.slices[0].length;
-  if (uploaded.sim !== sim || uploaded.n !== n || uploaded.mode !== heightMode || uploaded.theme !== theme || uploaded.hist !== showHistory) {
-    const hist = [];
-    if (showHistory) sim.slices.forEach((sl, k) => sl.forEach((s, j) => hist.push({ points: slicePoints(sim, k, s.d, s.t), color: ISO_COLOR[k], opacity: 0.18 + 0.5 * (j + 1) / sl.length })));
-    lines.update(hist.length ? hist : [[0, 0, -100, 0, 0, -100]]);
-    uploaded = { sim, n, mode: heightMode, theme, hist: showHistory };
-  }
-  const now = sim.current();
-  cur.update(now.map((d, k) => ({ points: slicePoints(sim, k, d, sim.t), color: ISO_COLOR[k] })));
-  frame.draw(cam, { aspect, width: 1.2 });
-  mesh.draw(cam, meshes.map((m, k) => ({ mesh: m, matrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], color: theme === 'dark' ? '#8a93a8' : '#9aa1ae', opacity: 0.28 })), { aspect, light: { direction: [-0.4, -0.6, 1] }, ambient: 0.55 });
-  lines.draw(cam, { aspect, width: 1.1 });
-  cur.draw(cam, { aspect, width: 2.6 });
+function draw(ctx, sim, view, t) {
+  const { W, H } = view, gap = 8, h = (H - gap) / 2;
+  drawLane(ctx, view, sim, sim.H, sim.densityH(t), sim.acrossH(t), 0, h, 'hydrogen', '#7cc8ff', true);
+  ctx.strokeStyle = view.color('--grid'); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(12, h + gap / 2); ctx.lineTo(W - 12, h + gap / 2); ctx.stroke();
+  drawLane(ctx, view, sim, sim.D, sim.densityD(t), sim.acrossD(t), h + gap, h, 'deuterium', '#ffb86b', false);
 }
 
-function draw(ctx, sim, view) {
-  const { W, H } = view, C = view.color;
-  const P = sim.pTrans();
-  ctx.font = '12px ui-sans-serif, system-ui';
-  sim.barriers.forEach((b, k) => {
-    const a = cam.project([14 * SX + 0.15, (LANE[k][0] + LANE[k][1]) / 2, 0], W, H);
-    if (!a.visible) return;
-    ctx.fillStyle = C(ISO_COLOR[k]); ctx.font = '600 13px ui-sans-serif, system-ui';
-    ctx.fillText(W < 520 ? b.key : `${b.key}  (${b.m.toFixed(3)} u)`, a.x + 4, a.y);
-    if (W < 520) return;
-    ctx.font = '11px ui-monospace, Menlo, monospace'; ctx.fillStyle = C('--ink-2');
-    ctx.fillText(`V_eff ${b.V.toFixed(2)} kcal/mol`, a.x + 4, a.y + 14);
-    ctx.fillText(`P(x>0) ${P[k].toExponential(2)}`, a.x + 4, a.y + 28);
-  });
-  // x ticks along the front edge of the first lane
-  ctx.fillStyle = C('--muted'); ctx.font = '10.5px ui-monospace, Menlo, monospace'; ctx.textAlign = 'center';
-  for (const x of [-10, -5, 0, 5, 10]) { const q = cam.project([x * SX, LANE[0][0] - 0.15, 0], W, H); if (q.visible) ctx.fillText(`${x}`, q.x, q.y + 12); }
-  const qx = cam.project([0, LANE[0][0] - 1.5, 0], W, H); if (qx.visible && W >= 520) ctx.fillText('proton coordinate x (Å), barrier at 0', qx.x, qx.y + 16);
-  const t0 = cam.project([-14 * SX - 0.3, LANE[0][0], 0], W, H), t1 = cam.project([-14 * SX - 0.3, LANE[0][1], 0], W, H);
-  if (t0.visible && t1.visible) {
-    ctx.strokeStyle = C('--muted'); ctx.beginPath(); ctx.moveTo(t0.x, t0.y); ctx.lineTo(t1.x, t1.y); ctx.stroke();
-    ctx.textAlign = 'right'; ctx.fillText(`time 0 → ${sim.tEnd.toFixed(0)} fs`, t1.x - 4, t1.y);
-  }
-  ctx.textAlign = 'start';
-  // compact caption, bottom right (above the transport)
-  ctx.font = '11px ui-sans-serif, system-ui'; ctx.fillStyle = C('--muted');
-  const lines2 = [
-    heightMode === 'log10' ? `height above the energy line: log₁₀ |ψ|² (10⁻¹⁰ … 1 Å⁻¹)` : 'height above the energy line: |ψ|² (linear)',
-    `packet energy E = ${sim.params.E} kcal/mol; grey surface: barrier V_eff(x)`,
-  ];
-  if (W > 900) lines2.forEach((s, i) => ctx.fillText(s, 16, H - 152 + 15 * i));   // above the timeline bar
-}
-
-// ------------------------------------------------------------------ workbench
-function bench({ eqs, figs, createPlot, createEquation, M, getSim }) {
-  const fig = (plot, caption) => { const w = el('div', {}, plot.el, el('p', { class: 'psim-hint' }, caption)); figs.append(w); return plot; };
-  const pT = fig(createPlot({ title: 'Transmission probability T(E) through the barrier', height: 280,
-    x: { label: 'energy above zero-point level E', unit: 'kcal/mol', min: 0, max: 16 }, y: { label: 'T', log: true, min: 1e-14, max: 2 } }),
-  'Exact (analytical) transmission per isotope, solid; Bell’s parabolic-barrier formula for H, dashed; classical (no tunnelling) for H, dotted. Dots: transmitted probability of each computed wave packet in the 3D view, plotted at its mean energy.');
-  const pF = fig(createPlot({ title: 'Where the reactive flux comes from: T(E) e^(−E/kT)', height: 280,
-    x: { label: 'energy above zero-point level E', unit: 'kcal/mol', min: 0, max: 16 }, y: { label: 'flux density (each normalised to 1)', min: 0, max: 1.05 } }),
-  'Boltzmann-weighted transmission, analytical. Vertical lines: each isotope’s barrier top V_eff. A peak well below its line means most H crosses by tunnelling; D and T cross closer to the top.');
-  const pA = fig(createPlot({ title: 'Arrhenius plot: k(T) for H and D', height: 280,
-    x: { label: '1000 / T', unit: 'K⁻¹', min: 2.85, max: 4.0 }, y: { label: 'k', unit: 's⁻¹', log: true, min: 1e2, max: 1e9 } }),
-  'Bell model, k = (1/h)∫T(E)e^(−E/kT)dE (solid) vs classical TST (dashed), analytical quadrature. Curvature of the solid lines is the tunnelling signature; shaded: 5–45 °C, where enzymes are measured.');
-  const pK = fig(createPlot({ title: 'Kinetic isotope effect k_H / k_D vs temperature', height: 280,
-    x: { label: 'temperature T', unit: 'K', min: 250, max: 350 }, y: { label: 'k_H / k_D', log: true, min: 1, max: 1000 } }),
-  'Bell model with exact κ of the chosen barrier (solid), Wigner and Bell-parabolic corrections, and zero-point energy only (TST). Purple: Marcus-like gated tunnelling with the sliders below (illustrative parameters). Marker: soybean lipoxygenase-1, 81 ± 5 at 25 °C (measured).');
-  const pG = fig(createPlot({ title: 'Gated tunnelling: overlap e^(−αr²) and distance distribution P(r)', height: 280,
-    x: { label: 'H transfer distance r', unit: 'Å', min: 0, max: 1.2 }, y: { label: 'overlap, P(r)', log: true, min: 1e-10, max: 2 } }),
-  'Franck–Condon overlap of donor and acceptor H (and D) ground states vs transfer distance, and the thermal distribution of r from the gating mode at T (peak normalised to 1). D needs a shorter distance: the protein’s distance sampling sets the KIE.');
-
-  const g = { ...GATING_DEFAULT };
-  const gateBox = el('div', { class: 'psim-hint' });
-  const sR = slider({ label: 'Equilibrium transfer distance r₀', min: 0.3, max: 0.9, value: g.r0, unit: 'Å', onInput: v => { g.r0 = v; refresh(true); } });
-  const sO = slider({ label: 'Gating frequency Ω', min: 50, max: 600, value: g.Omega, log: true, unit: 'cm⁻¹', onInput: v => { g.Omega = v; refresh(true); } });
-  const gateSl = el('div', {},
-    el('h3', {}, 'Gated (Marcus-like) tunnelling: bench controls, illustrative'),
-    sR, sO,
-    el('div', { class: 'psim-btns' },
-      button('Stiff, well-tuned site', () => { g.r0 = 0.58; g.Omega = 400; syncSliders(); refresh(true); }),
-      button('Floppy site (mutant-like)', () => { g.r0 = 0.75; g.Omega = 80; syncSliders(); refresh(true); })),
-    gateBox);
-  const syncSliders = () => { sR.setValue(g.r0); sO.setValue(g.Omega); };
-  figs.append(gateSl);
-
-  const cur = { sim: null };
-  const lnK = (sim, T) => ratesAt(sim.params, T, sim.barriers);
-  const Ee = createEquation({
-    title: 'Bell rate: transition-state theory × tunnelling factor (H, at the set temperature)',
-    lhs: { mathml: M.sub(M.i('k'), M.i('H')), label: 'rate per reacting configuration', unit: 's⁻¹', value: () => cur.sim.rates[0].k },
+function bench({ eqs, figs, createPlot, createEquation, M }) {
+  const wrap = (plot, cap) => { const w = document.createElement('div'); const p = document.createElement('p'); p.className = 'caption'; p.textContent = cap; w.append(plot.el, p); return w; };
+  const pt = createPlot({ title: 'Share of the nucleus across the wall', height: 230, x: { label: 'time', unit: 'fs', min: 0, max: 1 }, y: { label: 'across', unit: '%', min: 0, max: 100 } });
+  const pk = createPlot({ title: 'Isotope effect k_H / k_D against jump distance', height: 230, x: { label: 'jump distance', unit: 'Å', min: 0.5, max: 0.8 }, y: { label: 'k_H / k_D', min: 1, max: 1e4, log: true } });
+  figs.append(
+    wrap(pt, 'Computed: exact two-state evolution from the grid eigenstates (checked against a split-operator solution). The run ends when hydrogen is across.'),
+    wrap(pk, `Computed (1D model, ground-state tunnelling, golden-rule rate ∝ Δ²). Dashed: ${kieZPE.toFixed(1)}, the limit without tunnelling (zero-point energy only, 30 °C). Dotted: measured ${KIE_SLO} ± ${KIE_SLO_ERR} for soybean lipoxygenase-1 at 30 °C (Knapp, Rickert & Klinman 2002).`),
+  );
+  const { pts, jump81 } = kieCurve();
+  pk.data('model', pts, { color: '--body-1', width: 2.2, label: 'this model' })
+    .hline('zpe', kieZPE, { label: `no tunnelling ${kieZPE.toFixed(1)}` })
+    .hline('slo', KIE_SLO, { label: `measured SLO-1 ${KIE_SLO}` });
+  let cur = null;
+  const kieEq = createEquation({
+    title: 'Why deuterium is slower: the isotope effect from the two splittings',
+    lhs: { mathml: `${M.sub(M.i('k'), M.i('H'))}<mo>/</mo>${M.sub(M.i('k'), M.i('D'))}`, label: 'kinetic isotope effect', value: () => cur ? cur.kie : 1, digits: 3 },
+    op: '=',
     terms: [
-      { id: 'pre', mathml: M.frac(`${M.sub(M.i('k'), M.i('B'))}${M.i('T')}`, M.i('h')), label: 'attempt frequency', unit: 's⁻¹', color: '--muted', value: () => KB * cur.sim.params.T / HPL },
-      { id: 'boltz', sign: '×', mathml: M.sup(M.i('e'), `<mo>−</mo>${M.frac(M.sub(M.i('V'), M.i('eff')), `${M.sub(M.i('k'), M.i('B'))}${M.i('T')}`)}`), label: 'classical Boltzmann factor', color: '--body-1', value: () => Math.exp(-cur.sim.barriers[0].V / cur.sim.kT) },
-      { id: 'kap', sign: '×', mathml: `${M.i('κ')}<mo>=</mo>${M.frac(M.n(1), `${M.sub(M.i('k'), M.i('B'))}${M.i('T')}`)}<mo>∫</mo>${M.i('T')}<mo>(</mo>${M.i('E')}<mo>)</mo>${M.sup(M.i('e'), `<mo>−</mo><mo>(</mo>${M.i('E')}<mo>−</mo>${M.i('V')}<mo>)</mo><mo>/</mo>${M.i('k')}${M.i('T')}`)}<mi>d</mi>${M.i('E')}`, label: 'tunnelling factor (exact T(E), chosen barrier)', color: '--body-2', digits: 4, value: () => cur.sim.rates[0].kappa },
+      { id: 'model', mathml: M.sup(M.paren(`${M.sub(M.i('Δ'), M.i('H'))}<mo>/</mo>${M.sub(M.i('Δ'), M.i('D'))}`), M.n(2)), label: 'squared ratio of the tunnelling splittings (golden-rule rate ∝ Δ²)', color: '--body-1', digits: 3, value: () => cur ? cur.kie : 1 },
     ],
     where: [
-      { mathml: M.sub(M.i('V'), M.i('eff')), meaning: 'V‡ minus the C–H stretch zero-point energy ½hν', value: () => cur.sim.barriers[0].V, unit: 'kcal/mol' },
-      { mathml: `${M.i('ħ')}${M.sub(M.i('ω'), M.i('‡'))}`, meaning: 'barrier frequency √(2V/ma²) for H (imaginary mode)', value: () => cur.sim.barriers[0].hw / CM, unit: 'cm⁻¹' },
+      { mathml: M.sub(M.i('Δ'), M.i('H')), meaning: 'hydrogen splitting E₁ − E₀ (computed)', value: () => cur ? cur.H.delta : 0, unit: 'cm⁻¹' },
+      { mathml: M.sub(M.i('Δ'), M.i('D')), meaning: 'deuterium splitting E₁ − E₀ (computed)', value: () => cur ? cur.D.delta : 0, unit: 'cm⁻¹' },
+      { mathml: M.sub(M.i('V'), M.i('b')), meaning: 'height of the wall', value: () => cur ? cur.Vb : 0, unit: 'cm⁻¹' },
     ],
-    link: pA,
+    link: pk,
   });
-  const Ek = createEquation({
-    title: 'Kinetic isotope effect = zero-point-energy part × tunnelling part',
-    lhs: { mathml: M.frac(M.sub(M.i('k'), M.i('H')), M.sub(M.i('k'), M.i('D'))), label: 'KIE (Bell, exact κ)', value: () => cur.sim.kie.HD },
-    terms: [
-      { id: 'zpe', mathml: M.sup(M.i('e'), M.frac(`<mo>Δ</mo>${M.i('ZPE')}`, `${M.i('k')}${M.i('T')}`)), label: 'semiclassical (TST with ZPE)', color: '--muted', value: () => cur.sim.kie.HDclassical },
-      { id: 'kr', sign: '×', mathml: M.frac(M.sub(M.i('κ'), M.i('H')), M.sub(M.i('κ'), M.i('D'))), label: 'tunnelling ratio', color: '--body-2', value: () => cur.sim.rates[0].kappa / cur.sim.rates[1].kappa },
-    ],
-    link: pK,
+  const tauEq = createEquation({
+    title: 'Crossing time of the nucleus',
+    lhs: { mathml: M.sub(M.i('τ'), M.i('H')), label: 'hydrogen crossing time', unit: 'fs', value: () => cur ? cur.H.tau : 0, digits: 4 },
+    op: '=',
+    terms: [{ id: 'tH', mathml: M.frac(`<mi>π</mi>${M.i('ħ')}`, M.sub(M.i('Δ'), M.i('H'))), label: 'half a period of the left–right beat', color: '--body-0', unit: 'fs', digits: 4, value: () => cur ? Math.PI * HBAR / cur.H.delta : 0 }],
+    where: [{ mathml: M.i('ħ'), meaning: 'reduced Planck constant', value: () => HBAR, unit: 'cm⁻¹ fs' }],
+    link: pt,
   });
-  const Ew = createEquation({
-    title: 'Wigner’s small-tunnelling correction (fails in deep tunnelling)',
-    lhs: { mathml: M.sub(M.i('κ'), M.i('W')), label: 'Wigner κ for H', value: () => cur.sim.rates[0].kappaW },
-    terms: [{ id: 'w', mathml: `${M.n(1)}<mo>+</mo>${M.frac(M.n(1), M.n(24))}${M.sup(M.paren(M.frac(`${M.i('ħ')}${M.sub(M.i('ω'), M.i('‡'))}`, `${M.i('k')}${M.i('T')}`)), M.n(2))}`, label: 'vs exact κ_H shown above', color: '--body-1', value: () => cur.sim.rates[0].kappa }],
-    link: pK,
-  });
-  const Eg = createEquation({
-    title: 'Marcus-like gated tunnelling (Kuznetsov–Ulstrup form used by Klinman and co-workers)',
-    lhs: { mathml: M.sub(M.i('k'), M.i('i')), label: 'rate for isotope i (relative)' },
-    op: '∝',
-    terms: [
-      { id: 'marcus', mathml: M.sup(M.i('e'), `<mo>−</mo>${M.frac(M.sup(M.paren(`<mo>Δ</mo>${M.sup(M.i('G'), '<mo>∘</mo>')}<mo>+</mo>${M.i('λ')}`), M.n(2)), `${M.n(4)}${M.i('λ')}${M.i('k')}${M.i('T')}`)}`), label: 'heavy-atom reorganisation (isotope-free)', color: '--muted' },
-      { id: 'fc', sign: '×', mathml: `<mo>⟨</mo>${M.sup(M.i('e'), `<mo>−</mo>${M.sub(M.i('α'), M.i('i'))}${M.sup(M.i('r'), M.n(2))}`)}${M.sub('<mo>⟩</mo>', M.i('r'))}`, label: 'H overlap averaged over distance sampling; α_i = m_iω_i/2ħ', color: GATE, value: () => { const s2 = gatingSigma2(g.Omega, g.Mg, cur.sim.params.T), a = gatingAlpha(g.nu, ISOTOPES[0].m); return Math.exp(-a * g.r0 ** 2 / (1 + 2 * a * s2)) / Math.sqrt(1 + 2 * a * s2); } },
-    ],
-    where: [
-      { mathml: M.sub(M.i('α'), M.i('H')), meaning: 'from the 2900 cm⁻¹ H vibration', value: () => gatingAlpha(g.nu, ISOTOPES[0].m), unit: 'Å⁻²' },
-      { mathml: M.sup(M.i('σ'), M.n(2)), meaning: '(ħ/2MΩ) coth(ħΩ/2kT), gating mass M = 30 u', value: () => gatingSigma2(g.Omega, g.Mg, cur.sim.params.T), unit: 'Å²' },
-    ],
-    link: pG,
-  });
-  eqs.append(Ee.el, Ek.el, Ew.el, Eg.el);
-
-  function refresh(gateOnly = false) {
-    const sim = cur.sim; if (!sim) return;
-    const p = sim.params, kT = sim.kT, Ts = [];
-    for (let T = 250; T <= 350; T += 5) Ts.push(T);
-    if (!gateOnly) {
-      const Emax = Math.max(16, p.Vb + 2);
-      pT.setX({ min: 0, max: Emax }); pF.setX({ min: 0, max: Emax });
-      sim.barriers.forEach((b, k) => {
-        pT.fn(`T${b.key}`, E => Math.max(b.T(E), 1e-300), { color: ISO_COLOR[k], label: `${b.key} exact`, width: 2 });
-        let peak = 0; for (let E = 0.01; E < Emax; E += 0.01) peak = Math.max(peak, b.T(E) * Math.exp(-(E - b.V) / kT));
-        pF.fn(`F${b.key}`, E => b.T(E) * Math.exp(-(E - b.V) / kT) / peak, { color: ISO_COLOR[k], label: b.key, width: 2 });
-        pF.vline(`V${b.key}`, b.V, { color: ISO_COLOR[k], label: `V_eff,${b.key}` });
-        pT.data(`pk${b.key}`, [[p.E, Math.max(sim.runs[k].exact, 1e-300)]], { color: ISO_COLOR[k], dots: true, r: 4 });
-      });
-      const H = sim.barriers[0];
-      if (p.shape !== 'rect') pT.fn('par', E => transParabolic(E, H.V, H.hw), { color: '--body-1', dash: true, label: 'H parabolic (Bell)' }); else pT.remove('par');
-      pT.data('cl', [[0, 1e-14], [H.V, 1e-14], [H.V, 1], [Emax, 1]], { color: '--muted', label: 'H classical', dash: true });
-      pT.vline('E', p.E, { color: '--muted', label: `packet E = ${p.E}` });
-      const rs = Ts.map(T => lnK(sim, T));
-      for (const k of [0, 1]) {
-        pA.data(`q${k}`, Ts.map((T, i) => [1000 / T, rs[i][k].k]), { color: ISO_COLOR[k], label: `${ISOTOPES[k].key} quantum (Bell)` });
-        pA.data(`c${k}`, Ts.map((T, i) => [1000 / T, rs[i][k].kTST]), { color: ISO_COLOR[k], dash: true, label: `${ISOTOPES[k].key} classical TST` });
-      }
-      pA.band('phys', 1000 / 318.15, 1000 / 278.15, { label: '5–45 °C' });
-      pA.vline('T', 1000 / p.T, { color: '--muted', label: `${p.T} K` });
-      pK.data('kq', Ts.map((T, i) => [T, rs[i][0].k / rs[i][1].k]), { color: '--body-2', label: 'Bell, exact κ' });
-      if (p.shape !== 'rect') {
-        pK.data('kw', Ts.map((T, i) => [T, rs[i][0].kW / rs[i][1].kW]), { color: '--body-1', dash: true, label: 'Wigner' });
-        pK.data('kb', Ts.map((T, i) => [T, rs[i][0].kB / rs[i][1].kB]), { color: '--body-0', dash: true, label: 'Bell parabolic' });
-      } else { pK.remove('kw'); pK.remove('kb'); }
-      pK.data('kc', Ts.map((T, i) => [T, rs[i][0].kTST / rs[i][1].kTST]), { color: '--muted', label: 'ZPE only (no tunnelling)' });
-      pK.data('slo', [[298.15, 81]], { color: '--ink', dots: true, r: 4, errors: [5], label: 'SLO-1 measured' });
-      pK.vline('T', p.T, { color: '--muted' });
-    }
-    const gr = Ts.map(T => gatedRates(g, T));
-    pK.data('kg', Ts.map((T, i) => [T, gr[i][0].k / gr[i][1].k]), { color: GATE, label: 'gated tunnelling (Marcus-like)', width: 2.2 });
-    const aH = gatingAlpha(g.nu, ISOTOPES[0].m), aD = gatingAlpha(g.nu, ISOTOPES[1].m), s2 = gatingSigma2(g.Omega, g.Mg, p.T);
-    pG.fn('fH', r => Math.exp(-aH * r * r), { color: '--body-1', label: 'overlap H' });
-    pG.fn('fD', r => Math.exp(-aD * r * r), { color: '--body-0', label: 'overlap D' });
-    pG.fn('P', r => Math.exp(-((r - g.r0) ** 2) / (2 * s2)), { color: GATE, label: `P(r), σ = ${Math.sqrt(s2).toFixed(3)} Å` });
-    const bH = arrheniusFit(T => ratesAt(p, T, sim.barriers)[0].k), bD = arrheniusFit(T => ratesAt(p, T, sim.barriers)[1].k);
-    const gH = arrheniusFit(T => gatedRates(g, T)[0].k), gD = arrheniusFit(T => gatedRates(g, T)[1].k);
-    const g298 = gatedRates(g, 298.15);
-    gateBox.innerHTML = `Arrhenius fits over 5–45 °C (computed):<br>`
-      + `Bell model: KIE(298 K) = ${(lnK(sim, 298.15)[0].k / lnK(sim, 298.15)[1].k).toFixed(1)}, ΔE<sub>a</sub> = ${(bD.Ea - bH.Ea).toFixed(2)} kcal/mol, A<sub>H</sub>/A<sub>D</sub> = ${Math.exp(bH.lnA - bD.lnA).toFixed(2)}<br>`
-      + `Gated model: KIE(298 K) = ${(g298[0].k / g298[1].k).toFixed(1)}, ΔE<sub>a</sub> = ${(gD.Ea - gH.Ea).toFixed(2)} kcal/mol, A<sub>H</sub>/A<sub>D</sub> = ${Math.exp(gH.lnA - gD.lnA).toFixed(1)}<br>`
-      + `Measured, SLO-1 wild type: KIE 81 ± 5 at 25 °C, ΔE<sub>a</sub> ≈ 0.9 kcal/mol (nearly temperature-independent KIE).`;
-    for (const q of [pT, pF, pA, pK, pG]) { q.invalidate?.(); q.draw(); }
-    Eg.update();
-  }
+  eqs.append(kieEq.el, tauEq.el);
   return {
     update(sim, t, { rebuilt } = {}) {
-      if (rebuilt || cur.sim !== sim) { cur.sim = sim; refresh(); }
-      Ee.update(); Ek.update(); Ew.update(); Eg.update();
+      if (rebuilt || cur !== sim) {
+        cur = sim;
+        const H = [], D = [];
+        for (let i = 0; i <= 300; i++) { const s = sim.end * i / 300; H.push([s, 100 * across(sim.H, s)]); D.push([s, 100 * across(sim.D, s)]); }
+        pt.setX({ min: 0, max: sim.end }).data('H', H, { color: '#7cc8ff', width: 2.2, label: 'hydrogen' }).data('D', D, { color: '#ffb86b', width: 2.2, label: 'deuterium' });
+        pk.vline('now', sim.jump, { label: `${sim.jump.toFixed(2)} Å` }).marker('cur', sim.jump, sim.kie, { label: `${sim.kie.toFixed(0)}` });
+        pk.draw();
+      }
+      pt.vline('t', Math.min(t, sim.end), { label: 'now' });
+      pt.draw();
+      kieEq.update?.(); tauEq.update?.();
     },
   };
 }
 
+const { jump81 } = kieCurve();
+
 createInstrument({
-  title: 'Hydrogen tunnelling in enzymes',
-  subtitle: 'H, D and T wave packets meeting the same transfer barrier (time-dependent Schrödinger equation), and the kinetic isotope effect from Bell and gated-tunnelling models',
+  title: 'Hydrogen tunnelling in an enzyme',
+  subtitle: 'Reduced 1D model of the tunnelling step: H and D in the same double well, evaluated exactly from computed eigenstates; not the whole enzyme reaction',
   tier: 'approximate',
-  tierReason: 'A one-coordinate (Bell/Eckart) model with illustrative parameters, solved exactly and verified numerically (exact T(E) vs ODE and transfer matrix, wave packets vs exact packet transmission to 3×10⁻⁵, unitarity 3×10⁻¹³). Real enzymes are multidimensional; the gated (Marcus-like) model is a further reduced, illustrative calculation. Measured SLO-1 values are shown for comparison, not fitted.',
-  layout: 'workbench', gl: true, drawGL, draw, bench,
-  params: PARAMS, create: createSim,
-  // Run span = the model's own end (sim.tEnd): the slowest packet (T) has split into transmitted and reflected
-  // parts well clear of the barrier, so P(x>0) is final. Markers: each packet centre reaches the barrier top
-  // (x = 0) at |x₀|/v, with v = ħk₀/m the group velocity at the chosen energy.
+  tierReason: 'A reduced one-dimensional double-well model of the moment of transfer (protein motions, asymmetry and relaxation omitted); within that model the motion is evaluated exactly from grid eigenstates, checked by refinement, an instanton formula and an independent split-operator solution (Verification).',
+  layout: 'workbench',
+  intro: {
+    text: 'Enzymes move hydrogen from one atom to another. Up close, a hydrogen nucleus is not a tiny ball but a fuzzy wave, and it can seep straight through the energy wall between the two atoms instead of climbing over it. Deuterium is hydrogen with an extra neutron: twice as heavy, its wave seeps through far more slowly, so the reaction with deuterium runs dozens of times slower or more.',
+    watch: ['the blue hydrogen cloud drains through the wall to the right', 'when hydrogen is across, the orange deuterium cloud has moved far less', 'a shorter jump (Try this) makes both faster and the gap between them smaller'],
+  },
+  actions: [{
+    label: 'Race hydrogen against deuterium', reveal: 8,
+    hint: 'both start on the donor; skips to halfway through hydrogen’s crossing',
+    onClick: ({ restart, seek, play, getSim }) => { restart(); seek(0.5 * getSim().end); play(); },
+  }],
+  params: PARAMS,
+  create: createSim,
+  draw, bench,
+  timeUnit: 'fs', timeLabel: 'time since both started on the donor',
+  formatTime: t => fmtTime(t),
   timeline: {
-    duration: sim => sim.tEnd,
-    markers: sim => sim.runs.map((r, k) => {
-      const iso = ISOTOPES[k].key, t = Math.abs(GRID.x0) / r.v;
-      return { t, label: `${iso} packet centre reaches the barrier top (|x₀|/v, v = ħk₀/m)`, short: `${iso}${t.toFixed(0)}`, kind: 'computed' };
-    }),
-    note: sim => `The run ends at ${sim.tEnd.toFixed(0)} fs, when the slowest packet (T) has separated into transmitted and reflected parts clear of the barrier (centre at ${(Math.abs(GRID.x0) + 3 * sim.params.a + 7 * GRID.sigma).toFixed(1)} Å travelled), so the transmitted fractions are final. Arrival times scale as √m.`,
+    duration: sim => sim.end,
+    markers: sim => [
+      { t: sim.end / 2, label: `hydrogen half across, ${fmtTime(sim.end / 2)} (computed)`, short: 'H half', kind: 'computed' },
+      { t: sim.end, label: `hydrogen across, πħ/Δ_H = ${fmtTime(sim.end)} (computed)`, short: 'H across', kind: 'computed' },
+      { t: sim.D.tau / 2, label: `deuterium half across, ${fmtTime(sim.D.tau / 2)} (computed)`, short: 'D half', kind: 'computed' },
+      { t: sim.D.tau, label: `deuterium across, πħ/Δ_D = ${fmtTime(sim.D.tau)} (computed)`, short: 'D across', kind: 'computed' },
+    ],
+    seconds: 60,
+    note: 'The run ends when hydrogen is across: in the enzyme the acceptor then relaxes and keeps it, which this model does not include. Deuterium would need √(k_H/k_D) times longer: about 5× (0.50 Å) to 60× (0.80 Å).',
   },
-  timeUnit: 'fs', timeLabel: 'time since packet launch', speed: 24, speedRange: [2, 120], timeDigits: 1,
-  hudLine: sim => { const P = sim.pTrans(); return `transmitted P(x>0): H ${sci(P[0], 2)} · D ${sci(P[1], 2)} · T ${sci(P[2], 2)} · KIE(Bell, ${sim.params.T} K) ${sim.kie.HD.toFixed(1)}`; },
+  hudLine: (sim, t) => `H ${(100 * sim.acrossH(t)).toFixed(0)} % across · D ${(100 * sim.acrossD(t)).toFixed(1)} % across · isotope effect ${sim.kie.toFixed(0)}`,
+  hudError: false,
+  texts: { parameters: 'The enzyme pocket', paramsNote: 'In the enzyme, protein motions set this distance; shorter means a thinner, lower wall.' },
   presets: [
-    { label: 'Default: deep tunnelling', values: { Vb: 14, a: 0.3, E: 7, shape: 'eckart', T: 298.15 }, play: true },
-    { label: 'Narrow barrier', values: { a: 0.22, E: 6 }, play: true },
-    { label: 'Wide barrier (nearly classical)', values: { a: 0.55, E: 9 }, play: true },
-    { label: 'Above the barrier', values: { E: 13 }, play: true },
-    { label: 'Rectangular barrier', values: { shape: 'rect' }, play: true },
+    { label: 'Squeezed close (0.50 Å)', values: { jump: 0.5 } },
+    { label: `Gives the measured 81 (${jump81.toFixed(2)} Å)`, values: { jump: +jump81.toFixed(2) } },
+    { label: 'Pulled apart (0.75 Å)', values: { jump: 0.75 } },
   ],
-  onPointer(canvas) { cam.attach(canvas); },
-  onFit(view) { fitScene(view.W / view.H); },
-  viewControls(body, { select, toggle, el: mk }) {
-    body.append(mk('label', {}, 'Height of the wave packets ', select([{ value: 'log10', label: 'log₁₀ |ψ|² (shows tunnelled part)' }, { value: 'linear', label: '|ψ|² linear' }], 'log10', v => { heightMode = v; })));
-    body.append(toggle('Show earlier times (space–time surface)', true, v => { showHistory = v; }));
-  },
   model: {
     legend: [
-      'Each lane: one isotope, x across, time front → back, line height ∝ log₁₀|ψ(x,t)|² above its energy E',
-      'Grey surface: barrier V_eff(x) on the same energy axis; coloured line: barrier profile',
+      'blue cloud (top): where the hydrogen nucleus may be found (probability |ψ|², computed; thicker = more likely), drawn at its energy; orange (bottom): the same for deuterium',
+      'grey curve: the energy wall between donor and acceptor (height is energy, to scale in each lane); the cloud sits at the nucleus’ energy, below the top of the wall: it goes through, not over',
+      'balls: donor carbon and acceptor oxygen, drawn at a typical bond length (scenery)',
     ],
     equations: [],
     assumptions: [
-      'One reaction coordinate: the transferring hydrogen nucleus (mass of ¹H, ²H, ³H; AME2020). H⁺, H• and H⁻ transfers move the same nucleus; in this model they differ only through the barrier.',
-      'Barrier: symmetric Eckart V‡ sech²(x/a) (or a rectangular barrier of equal area), the same potential-energy surface for all isotopes (Born–Oppenheimer). Values are illustrative, typical of enzymatic C–H activation; not fitted to an enzyme.',
-      'Each isotope’s barrier is measured from its reactant zero-point level: V_eff = V‡ − ½hν, with ν the C–H (C–D, C–T) stretch lost at the transition state (C–X reduced mass). Other modes, corner-cutting and heavy-atom motion are omitted.',
-      'Thermal rate (Bell): k = (1/h)∫T(E)e^(−E/kT)dE = (kT/h)·κ·e^(−V_eff/kT), a one-dimensional transition-state rate per reacting configuration, not an enzyme turnover number.',
-      'Gated model: Franck–Condon overlap of donor and acceptor H ground states (harmonic, 2900 cm⁻¹), averaged over a harmonic gating mode (M = 30 u) at thermal equilibrium; only the ground vibrational channel; λ = 19, ΔG° = −5 kcal/mol (illustrative; isotope-independent).',
-      'Wave packets: Gaussian, σ = 1.2 Å, launched at x = −9 Å with mean energy E, evolved by the split-operator FFT method on a 4096-point periodic grid (dx = 0.03 Å, dt = 0.05 fs); the run ends when transmitted and reflected parts have left the barrier.',
+      'One dimension: the nucleus moves along the straight donor–acceptor line; all other atoms are frozen in a "tunnelling-ready" pose where donor and acceptor wells are level.',
+      `Symmetric double well V(x) = V_b (x² − d²)²/d⁴ whose wells give hydrogen the C–H stretch frequency ${OMEGA_H} cm⁻¹; the same wall for H and D (Born–Oppenheimer). Jump distance 2d is the free parameter.`,
+      'Start: the donor-localised state (φ₀ + φ₁)/√2; the evolution is the exact two-state beat, evaluated at each time. In a real enzyme the surroundings make the hop one-way, so the back-and-forth after τ_H is not shown.',
+      'Isotope effect k_H/k_D = (Δ_H/Δ_D)²: golden-rule (non-adiabatic) rate with an environmental factor equal for H and D (Kuznetsov & Ulstrup 1999). Not modelled: the protein motions that bring donor and acceptor together (gating), temperature dependence, other vibrations.',
+      'Whether enzymes evolved to exploit tunnelling, and how much it speeds them up, is debated; the measured large isotope effects show tunnelling happens. This page is an estimate within a reduced model, not a proof.',
     ],
     conventions: [
-      'Vertical axis of the 3D view: energy (kcal/mol, 25 kcal/mol = full height) for the barrier and the dashed energy line; the wave packet is drawn on its energy line with height ∝ log₁₀|ψ|² (default, 10 decades) or |ψ|² (linear). This is the textbook “packet on the potential” convention, not a second energy.',
-      'Isotope colours are categorical labels (H blue, D orange, T pink).',
-      'Playback compresses femtoseconds into seconds; earlier time slices stay drawn behind the current one to form the space–time surface |ψ(x,t)|².',
-      'Energies in kcal/mol per molecule × N_A (1 kcal/mol = 0.04336 eV).',
+      'Horizontal: position along the donor–acceptor line, to scale (Å). Vertical in each lane: energy for the wall and the level; the cloud’s thickness is probability density (each lane scaled to its own peak at the start), centred on the nucleus’ energy.',
+      'Time: real time of the tunnelling step in femtoseconds, slowed so the crossing plays in about a minute.',
+      'Colours of H and D are labels, not optical colours.',
     ],
     references: [
-      'C. Eckart, Phys. Rev. 35, 1303 (1930); L. D. Landau & E. M. Lifshitz, Quantum Mechanics §25 (Eckart transmission).',
-      'R. P. Bell, The Tunnel Effect in Chemistry (Chapman & Hall, 1980); Trans. Faraday Soc. 55, 1 (1959).',
-      'E. Wigner, Z. Phys. Chem. B 19, 203 (1932).',
-      'J. P. Klinman & A. Kohen, Annu. Rev. Biochem. 82, 471 (2013): hydrogen tunnelling and protein dynamics.',
-      'M. J. Knapp, K. Rickert & J. P. Klinman, J. Am. Chem. Soc. 124, 3865 (2002): temperature-dependent KIEs in soybean lipoxygenase-1.',
-      'M. P. Meyer & J. P. Klinman (2005): SLO-1 D-KIE on k_cat 81 ± 5 at 25 °C; Klinman group (2014): ΔEa ≈ 0.9 kcal/mol for wild type.',
-      'A. M. Kuznetsov & J. Ulstrup, Can. J. Chem. 77, 1085 (1999): vibrationally assisted (gated) proton tunnelling.',
-      'Debate on dynamics “promoting” catalysis: e.g. S. C. L. Kamerlin & A. Warshel, Proteins 78, 1339 (2010); D. R. Glowacki, J. N. Harvey & A. J. Mulholland, Nat. Chem. 4, 169 (2012).',
-      'M. Wang et al. (AME2020), Chin. Phys. C 45, 030003 (2021): nuclide masses.',
+      'M. J. Knapp, K. Rickert & J. P. Klinman, J. Am. Chem. Soc. 124, 3865 (2002): soybean lipoxygenase-1, k_H/k_D ≈ 81 at 30 °C (value quoted from memory, not re-checked here).',
+      'A. M. Kuznetsov & J. Ulstrup, Can. J. Chem. 77, 1085 (1999): proton and hydrogen-atom tunnelling in condensed media.',
+      'J. Zinn-Justin, Quantum Field Theory and Critical Phenomena (Oxford): instanton splitting of the quartic double well, with first correction 1 − 71g/12.',
+      'R. P. Bell, The Tunnel Effect in Chemistry (Chapman & Hall, 1980): semiclassical isotope-effect limit ≈ 7 at room temperature.',
+      'J. P. Klinman & A. Kohen, Annu. Rev. Biochem. 82, 471 (2013); A. Warshel and co-workers for the opposing view on a catalytic role of tunnelling.',
     ],
   },
 });
-
-window.psim.fit = () => { lastAspect = 0; };
-window.psim.selfTest = () => {
-  const sim = window.psim.getSim();
-  window.psim.advanceTo(sim.tEnd + 1);
-  const s = window.psim.getSim(), P = s.pTrans(), dev = Math.abs(P[0] / s.runs[0].exact - 1);
-  return [
-    { label: 'Browser run ends (done) after the packets separate', t: s.t, tEnd: s.tEnd, pass: s.done === true },
-    // the rectangular barrier's sharp walls carry a verified first-order grid error (1.75 % → 0.41 % at dx/2): judge that mode by it
-    { label: 'Browser wave packet (H) matches the exact packet transmission', P: P[0], exact: s.runs[0].exact, dev, tolerance: window.psim.params().shape === 'rect' ? 0.025 : 1e-3, pass: dev < (window.psim.params().shape === 'rect' ? 0.025 : 1e-3) },
-    { label: 'Space–time surface holds every recorded slice', slices: s.slices[0].length, pass: s.slices.every(sl => sl.length >= s.nSlices) },
-  ];
-};
 
 </script>
 </body>

@@ -1,5 +1,7 @@
-// Disk galaxy with and without a dark-matter halo: thousands of stars integrated in a
-// Milky-Way mass model (core/galaxy.mjs), plus the rotation curve that reveals dark matter.
+// Disk galaxy with and without a dark-matter halo: two copies of the same star disk integrated
+// side by side in a Milky-Way mass model (core/galaxy.mjs), one with the halo and one with the
+// visible matter only, plus their live rotation curves (the evidence for dark matter).
+// Stars are test particles (no star–star gravity), so this model cannot form spiral arms.
 
 import {
   createDisk, stepDisk, energies, angularMomenta, circularSpeed, potential, acceleration,
@@ -10,21 +12,18 @@ import { rng, gaussLegendre } from 'psim:core/numerics.mjs';
 export const DT = 2.5e-4;                          // time units (0.244 Myr): ~900 steps per solar orbit
 
 export const PARAMS = [
-  { key: 'halo', label: 'Dark-matter halo', value: 'on', options: [
-    { value: 'on', label: 'On: bulge + disk + dark halo' },
-    { value: 'off', label: 'Off: only visible matter (bulge + disk)' },
-  ] },
-  { key: 'velocities', label: 'Initial star velocities', value: 'observed', options: [
-    { value: 'observed', label: 'Full-model circular speeds' },
-    { value: 'equilibrium', label: 'Circular for the chosen potential' },
-  ], hint: 'With the halo off and full-model starting velocities, the disk expands and some outer stars escape; most stars remain bound.' },
-  { key: 'n', label: 'Number of stars', min: 500, max: 8000, value: 3000, log: true, digits: 2, integer: true },
+  { key: 'n', label: 'Stars in each galaxy', min: 500, max: 8000, value: 3000, log: true, digits: 2, integer: true },
+  { key: 'twin', label: 'Starting speeds of the galaxy without the halo', value: 'observed', options: [
+    { value: 'observed', label: 'Measured speeds (same as the left galaxy)' },
+    { value: 'equilibrium', label: 'Slow enough for visible matter to hold' },
+  ], hint: 'With measured speeds and no halo, the disk expands and some outer stars escape. The slow option stays together but orbits far below the measured speeds.' },
   { key: 'seed', label: 'Random seed', min: 1, max: 99, value: 7, digits: 2, integer: true },
 ];
 
 const comps = p => ({ bulge: true, disk: true, halo: p.halo === 'on' });
 
-export function createSim(p) {
+/** One galaxy, params { halo: 'on' | 'off', velocities: 'observed' | 'equilibrium', n, seed }. */
+export function createRun(p) {
   const n = Math.round(p.n);
   const c = comps(p);
   const disk = createDisk({ n, comps: c, velocityModel: p.velocities, rand: rng(Math.round(p.seed)) });
@@ -84,6 +83,36 @@ export function createSim(p) {
   return sim;
 }
 
+/**
+ * The page's model: two copies of the same disk (same seed, so the same stars), stepped together.
+ * `halo` feels bulge + disk + dark-matter halo with the full-model (measured-like) speeds; `none`
+ * feels the visible matter only and starts with params.twin speeds.
+ */
+export function createSim(p) {
+  const n = Math.round(p.n), seed = Math.round(p.seed);
+  const A = createRun({ halo: 'on', velocities: 'observed', n, seed });
+  const B = createRun({ halo: 'off', velocities: p.twin ?? 'observed', n, seed });
+  return {
+    params: p, runs: [A, B], halo: A, none: B,
+    get t() { return A.t; },
+    step() { A.step(); B.step(); },
+    diagnostics() {
+      const a = A.diagnostics(), b = B.diagnostics(), get = (d, k) => d.find(q => q.key === k);
+      return [
+        { key: 'dE', label: 'Worst star |ΔE| / max(|E₀|, ½V₀²), both galaxies', value: Math.max(get(a, 'dE').value, get(b, 'dE').value), kind: 'error', good: 1e-4, warn: 1e-2 },
+        { key: 'dL', label: 'Worst star |ΔL_z/L_z|, both galaxies', value: Math.max(get(a, 'dL').value, get(b, 'dL').value), kind: 'error', good: 1e-10, warn: 1e-6 },
+        { key: 'escA', label: 'With halo: stars beyond 40 kpc', value: 0, kind: 'value', text: get(a, 'esc').text },
+        { key: 'escB', label: 'Without halo: stars beyond 40 kpc', value: 0, kind: 'value', text: get(b, 'esc').text },
+        { key: 'unbB', label: 'Without halo: unbound stars', value: get(b, 'unbound').value, kind: 'value', unit: '%' },
+        { key: 'vc', label: 'v_c at R₀ = 8 kpc with / without halo', value: 0, kind: 'value', text: `${get(a, 'vc').value.toFixed(1)} / ${get(b, 'vc').value.toFixed(1)} km/s` },
+        { key: 'orb', label: 'Orbital period at R₀ (with halo)', value: get(a, 'orb').value, kind: 'value', unit: 'Myr' },
+      ];
+    },
+    state: () => ({ t: A.disk.t, halo: A.state(), none: B.state() }),
+    record: () => A.record(),
+  };
+}
+
 export function verify() {
   const checks = [];
   const v8 = circularSpeed(R0);
@@ -122,6 +151,15 @@ export function verify() {
   const L = angularMomenta(e2.d); let dl = 0;
   for (let i = 0; i < e2.d.n; i++) dl = Math.max(dl, Math.abs(L[i] - e2.d.L0[i]) / Math.abs(e2.d.L0[i]));
   checks.push({ label: 'L_z conserved (axisymmetric potential, 245 Myr)', value: dl.toExponential(1), pass: dl < 1e-12 });
+  // the page's evidence: the stars' own rotation curves with and without the halo, after 500 Myr
+  const tw = createSim({ n: 1500, twin: 'observed', seed: 5 });
+  const steps500 = Math.round(500 / (DT * TIME_UNIT_MYR));
+  for (let k = 0; k < steps500; k++) tw.step();
+  const band = (run, ref) => { const c = run.measuredCurve(24, 24).filter(([R]) => R >= 8 && R <= 16); return Math.max(...c.map(([R, v]) => Math.abs(v / ref(R) - 1))); };
+  const devHalo = band(tw.halo, R => circularSpeed(R).total);
+  const lowNone = Math.max(...tw.none.measuredCurve(24, 24).filter(([R]) => R >= 12 && R <= 20).map(([R, v]) => v / eilers2019(R)));
+  checks.push({ label: 'With halo after 500 Myr: stars’ mean v_φ at 8–16 kpc vs circular speed (1500 stars)', value: `max deviation ${(100 * devHalo).toFixed(1)} %`, pass: devHalo < 0.06 });
+  checks.push({ label: 'Without halo after 500 Myr: stars’ mean v_φ at 12–20 kpc vs measured (Eilers et al. 2019)', value: `at most ${(100 * lowNone).toFixed(0)} % of the measured speed`, pass: lowNone < 0.8 });
   return {
     summary: 'Mass model, forces and integrator checked against exact identities, Bovy (2015) and the measured Milky Way:',
     checks,

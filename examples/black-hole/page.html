@@ -185,6 +185,7 @@ const eqShadow = `<math display="block"><mi>sin</mi><msub><mi>α</mi><mtext>sh</
 const eqG = `<math display="block"><mi>g</mi><mo>=</mo><mfrac><msub><mi>E</mi><mtext>obs</mtext></msub><msub><mi>E</mi><mtext>em</mtext></msub></mfrac><mo>=</mo><mfrac><msqrt><mrow><mn>1</mn><mo>−</mo><mn>3</mn><mi>M</mi><mo>/</mo><mi>r</mi></mrow></msqrt><mrow><mo>(</mo><mn>1</mn><mo>−</mo><mi>Ω</mi><mi>λ</mi><mo>)</mo><msqrt><mrow><mn>1</mn><mo>−</mo><mn>2</mn><mi>M</mi><mo>/</mo><msub><mi>r</mi><mn>0</mn></msub></mrow></msqrt></mrow></mfrac><mo>,</mo><mspace width="0.8em"/><msub><mi>T</mi><mtext>obs</mtext></msub><mo>=</mo><mi>g</mi><mi>T</mi><mo>,</mo><mspace width="0.8em"/><msub><mi>I</mi><mtext>obs</mtext></msub><mo>∝</mo><msup><mi>g</mi><mn>4</mn></msup><msup><mi>T</mi><mn>4</mn></msup></math>`;
 
 const app = createInstrument({
+  intro: {"text": "Light passing near a black hole bends so strongly that some of it circles the hole or falls in. This page traces individual light rays and the glowing disk of gas around the hole, which is why black-hole images show a dark shadow ringed by light.", "watch": ["rays that come too close never escape", "the dark shadow is larger than the hole itself"]},
   title: 'Schwarzschild black hole',
   subtitle: 'GPU-traced null geodesics · black-body accretion disk · exact gravitational and Doppler shifts',
   tier: 'validated',

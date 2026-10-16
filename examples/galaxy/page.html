@@ -6,89 +6,173 @@
 <meta name="generator" content="p-simtor">
 <title>Dark matter and galaxy rotation</title>
 <link rel="stylesheet" href="psim:ui/instrument.css">
+<style>
+  /* two galaxies and their rotation curve share the view: give it most of the first screen */
+  @media (min-width: 861px) { .psim-canvaswrap > .psim-view { height: clamp(480px, 74vh, 860px); } }
+</style>
 </head>
 <body>
 <script type="application/json" id="psim-verification">null</script>
 <script type="module">
 import { createInstrument } from 'psim:ui/instrument-app.mjs';
-import { PARAMS, createSim, circularSpeed, eilers2019, haloDensity, R0, NFW_SCALE } from './physics.mjs';
+import { colormap, normalize } from 'psim:ui/gl.mjs';
+import { PARAMS, createSim, circularSpeed, eilers2019, R0, NFW_SCALE } from './physics.mjs';
 import { TIME_UNIT_MYR } from 'psim:core/galaxy.mjs';
 
-// ------------------------------------------------------------------ stage: the stellar disk
-const cam = { tilt: 0.45, spin: 0 };            // tilt 0 = face-on
+const RUN_MYR = 650;                     // ≈ 3 orbits at the Sun's radius, one at 20 kpc (with the halo)
+const VISIBLE = { bulge: true, disk: true, halo: false };
+const RMAX = 30, VMAX = 250, RFIT = 23;  // chart axes (kpc, km/s); radius framed in each galaxy panel
+
+// ------------------------------------------------------------------ layout: two galaxies, the rotation curve below
+function layout({ W, H }) {
+  const narrow = W < 560;
+  if (narrow) {                          // phone: the galaxies stacked, full width
+    const g = Math.round(H * 0.31);
+    return { narrow, panels: [{ x: 0, y: 0, w: W, h: g }, { x: 0, y: g, w: W, h: g }], chart: { x: 0, y: 2 * g, w: W, h: H - 2 * g } };
+  }
+  const top = Math.round(H * 0.6), half = Math.round(W / 2);
+  return { narrow, panels: [{ x: 0, y: 0, w: half, h: top }, { x: half, y: 0, w: W - half, h: top }], chart: { x: 0, y: top, w: W, h: H - top } };
+}
+
+// star colour = orbital speed v_φ (viridis; the view is a dark screen in both page themes)
+const speedRange = () => [0, 260];
+const NB = 48;
+const lut = () => Array.from({ length: NB }, (_, k) => {
+  const [r, g, b] = colormap('viridis', k / (NB - 1));
+  return `rgb(${255 * r | 0},${255 * g | 0},${255 * b | 0})`;
+});
+
+// ------------------------------------------------------------------ the two stellar disks
+const cam = { tilt: 0.85 };              // 0 = face-on
+function panelView(p) {
+  const ct = Math.cos(cam.tilt), st = Math.sin(cam.tilt);
+  const scale = 0.96 * Math.min(p.w / 2 / RFIT, (p.h / 2 - 14) / (RFIT * ct + 1.5));
+  const cx = p.x + p.w / 2, cy = p.y + p.h / 2 + 10;
+  return { scale, cx, cy, P: (x, y, z) => [cx + x * scale, cy - (y * ct - z * st) * scale] };
+}
+
+const buckets = Array.from({ length: NB }, () => []);
+function drawDisk(ctx, run, p, view) {
+  const d = run.disk, { P } = panelView(p), range = speedRange(view), cols = lut(range);
+  const size = view.W < 560 ? 1.6 : 2, half = size / 2;
+  for (const b of buckets) b.length = 0;
+  for (let i = 0; i < d.n; i++) {
+    const X = d.x[3 * i], Y = d.x[3 * i + 1], R = Math.hypot(X, Y) || 1e-9;
+    const [px, py] = P(X, Y, d.x[3 * i + 2]);
+    if (px < p.x - 3 || px > p.x + p.w + 3 || py < p.y - 3 || py > p.y + p.h + 3) continue;
+    const vphi = (X * d.v[3 * i + 1] - Y * d.v[3 * i]) / R;
+    buckets[Math.round(normalize(vphi, range) * (NB - 1))].push(px, py);
+  }
+  ctx.globalAlpha = 0.8;
+  buckets.forEach((b, k) => {
+    if (!b.length) return;
+    ctx.fillStyle = cols[k];
+    for (let j = 0; j < b.length; j += 2) ctx.fillRect(b[j] - half, b[j + 1] - half, size, size);
+  });
+  ctx.globalAlpha = 1;
+}
 
 function draw(ctx, sim, view) {
-  const { W, H } = view, C = view.color, glow = C('--glow') === '1';
-  const d = sim.disk, scale = Math.min(W, H) / 2 / 27;   // fits R ≈ 27 kpc
-  const cx = W / 2, cy = H / 2, ct = Math.cos(cam.tilt), st = Math.sin(cam.tilt);
-  const P = (x, y, z) => [cx + x * scale, cy - (y * ct - z * st) * scale];
-
-  // Dark-matter halo: projected NFW density as a soft glow (invisible in reality).
-  if (sim.comps.halo) {
-    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, 30 * scale);
-    for (const r of [0, 2, 5, 10, 20, 30]) {
-      const rho = haloDensity(Math.max(r, 0.5)) / haloDensity(2);
-      g.addColorStop(r / 30, `rgba(140, 120, 255, ${Math.min(0.22, 0.22 * Math.sqrt(rho))})`);
+  const { W } = view, C = view.color, lay = layout(view);
+  lay.panels.forEach((p, k) => {
+    const { scale, cx, cy } = panelView(p);
+    ctx.save(); ctx.beginPath(); ctx.rect(p.x, p.y, p.w, p.h); ctx.clip();
+    if (k === 0) {                       // the halo, drawn so its extent can be seen (it gives no light)
+      const gr = ctx.createRadialGradient(cx, cy, 0, cx, cy, 30 * scale);
+      gr.addColorStop(0, 'rgba(150,110,255,0.20)');
+      gr.addColorStop(0.45, 'rgba(150,110,255,0.08)');
+      gr.addColorStop(1, 'rgba(150,110,255,0)');
+      ctx.fillStyle = gr; ctx.fillRect(p.x, p.y, p.w, p.h);
     }
-    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  }
-  // Reference rings every 5 kpc and the Sun's radius.
-  ctx.lineWidth = 1;
-  for (let r = 5; r <= 25; r += 5) {
-    ctx.strokeStyle = r === 5 * Math.round(R0 / 5) ? C('--grid-strong') : C('--grid');
-    ctx.beginPath(); ctx.ellipse(cx, cy, r * scale, r * scale * ct, 0, 0, 2 * Math.PI); ctx.stroke();
-  }
-  ctx.setLineDash([3, 4]); ctx.strokeStyle = C('--warn');
-  ctx.beginPath(); ctx.ellipse(cx, cy, R0 * scale, R0 * scale * ct, 0, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle = C('--warn'); ctx.font = '10.5px ui-monospace, Menlo, monospace';
-  ctx.fillText('Sun’s orbit, 8 kpc', cx + R0 * scale * 0.72, cy - R0 * scale * ct * 0.72 - 6);
+    ctx.strokeStyle = C('--grid-strong'); ctx.lineWidth = 1; ctx.globalAlpha = 0.55;
+    for (const r of [10, 20]) { ctx.beginPath(); ctx.ellipse(cx, cy, r * scale, r * scale * Math.cos(cam.tilt), 0, 0, 2 * Math.PI); ctx.stroke(); }
+    ctx.globalAlpha = 1;
+    drawDisk(ctx, sim.runs[k], p, view);
+    ctx.font = `600 ${lay.narrow ? 11.5 : 13}px system-ui, -apple-system, sans-serif`; ctx.textBaseline = 'top';
+    ctx.fillStyle = k === 0 ? C('--ink') : C('--bad');
+    const slow = k === 1 && sim.params.twin === 'equilibrium';
+    ctx.fillText(k === 0 ? '● With dark-matter halo' : (slow ? '○ Visible only, slow start' : '○ Visible matter only'), p.x + 12, p.y + 10);
+    ctx.textBaseline = 'alphabetic';
+    ctx.restore();
+  });
+  const b = lay.panels[1];
+  ctx.strokeStyle = C('--line'); ctx.lineWidth = 1; ctx.beginPath();
+  if (lay.narrow) { ctx.moveTo(0, b.y + 0.5); ctx.lineTo(W, b.y + 0.5); } else { ctx.moveTo(b.x + 0.5, 0); ctx.lineTo(b.x + 0.5, lay.chart.y); }
+  ctx.moveTo(0, lay.chart.y + 0.5); ctx.lineTo(W, lay.chart.y + 0.5); ctx.stroke();
+  drawChart(ctx, sim, view, lay);
+}
 
-  // Stars: one computed test particle each. Colour encodes the radius each star started at.
-  ctx.globalCompositeOperation = glow ? 'lighter' : 'source-over';
-  const n = d.n, size = glow ? 2.1 : 1.7;
-  for (let i = 0; i < n; i++) {
-    const [px, py] = P(d.x[3 * i], d.x[3 * i + 1], d.x[3 * i + 2]);
-    if (px < -5 || px > W + 5 || py < -5 || py > H + 5) continue;
-    const f = Math.min(1, d.R0s[i] / 20);
-    const r = Math.round(255 - 110 * f), g = Math.round(214 - 40 * f), b = Math.round(160 + 95 * f);
-    ctx.fillStyle = `rgba(${r},${g},${b},${glow ? 0.7 : 0.8})`;
-    ctx.fillRect(px - size / 2, py - size / 2, size, size);
+// ------------------------------------------------------------------ the live rotation curve
+function drawChart(ctx, sim, view, lay) {
+  const C = view.color, c = lay.chart, n = lay.narrow;
+  const x0 = c.x + (n ? 40 : 52), x1 = c.x + c.w - (n ? 12 : 22), y0 = c.y + 28, y1 = c.y + c.h - 24;
+  const X = R => x0 + R / RMAX * (x1 - x0), Y = v => y1 - Math.max(0, Math.min(VMAX, v)) / VMAX * (y1 - y0);
+  ctx.font = `${n ? 10 : 11}px ui-monospace, Menlo, monospace`; ctx.textBaseline = 'middle'; ctx.lineWidth = 1;
+  for (let v = 0; v <= VMAX; v += 50) {
+    ctx.strokeStyle = v === 0 ? C('--grid-strong') : C('--grid');
+    ctx.beginPath(); ctx.moveTo(x0, Math.round(Y(v)) + 0.5); ctx.lineTo(x1, Math.round(Y(v)) + 0.5); ctx.stroke();
+    if (n && v % 100) continue;
+    ctx.fillStyle = C('--muted'); ctx.textAlign = 'right'; ctx.fillText(String(v), x0 - 10, Y(v));
   }
-  ctx.globalCompositeOperation = 'source-over';
-  // centre and scale bar
-  ctx.fillStyle = C('--ink'); ctx.beginPath(); ctx.arc(cx, cy, 2, 0, 7); ctx.fill();
-  ctx.strokeStyle = C('--muted');
-  ctx.beginPath(); ctx.moveTo(16, H - 30); ctx.lineTo(16, H - 24); ctx.lineTo(16 + 5 * scale, H - 24); ctx.lineTo(16 + 5 * scale, H - 30); ctx.stroke();
-  ctx.fillStyle = C('--muted'); ctx.fillText('5 kpc', 16, H - 10);
+  ctx.textAlign = 'left'; ctx.fillText('km/s', c.x + 8, y0 - 16);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  for (let R = 0; R <= RMAX; R += 5) {
+    if (n && R % 10) continue;
+    ctx.fillText(R === RMAX ? `${R} kpc` : String(R), Math.min(X(R), x1 - (R === RMAX ? 18 : 0)), y1 + 6);
+  }
+  const range = speedRange(view);        // colour strip: the stars' speed → colour mapping
+  for (let py = Math.floor(y0); py <= y1; py++) {
+    const [r, g, b] = colormap('viridis', normalize((y1 - py) / (y1 - y0) * VMAX, range));
+    ctx.fillStyle = `rgb(${255 * r | 0},${255 * g | 0},${255 * b | 0})`; ctx.fillRect(x0 - 7, py, 5, 1);
+  }
+  ctx.save(); ctx.beginPath(); ctx.rect(x0, y0 - 6, x1 - x0, y1 - y0 + 6); ctx.clip();
+  ctx.strokeStyle = C('--muted'); ctx.lineWidth = 1.6; ctx.setLineDash([5, 4]); ctx.beginPath();
+  for (let R = 0.3; R <= RMAX; R += 0.25) { const y = Y(circularSpeed(R, VISIBLE).total); R === 0.3 ? ctx.moveTo(X(R), y) : ctx.lineTo(X(R), y); }
+  ctx.stroke(); ctx.setLineDash([]);
+  ctx.strokeStyle = C('--warn'); ctx.lineWidth = 4; ctx.globalAlpha = 0.85; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(X(5), Y(eilers2019(5))); ctx.lineTo(X(25), Y(eilers2019(25))); ctx.stroke();
+  ctx.globalAlpha = 1; ctx.lineCap = 'butt';
+  const series = (pts, color, filled) => {
+    ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 1.2; ctx.globalAlpha = 0.6;
+    ctx.beginPath(); pts.forEach(([R, v], j) => (j ? ctx.lineTo(X(R), Y(v)) : ctx.moveTo(X(R), Y(v)))); ctx.stroke();
+    ctx.globalAlpha = 1; ctx.lineWidth = 1.6;
+    for (const [R, v] of pts) { ctx.beginPath(); ctx.arc(X(R), Y(v), n ? 2.6 : 3.2, 0, 2 * Math.PI); filled ? ctx.fill() : ctx.stroke(); }
+  };
+  series(sim.none.measuredCurve(30, 30), C('--bad'), false);
+  series(sim.halo.measuredCurve(30, 30), C('--ink'), true);
+  ctx.restore();
+  ctx.font = `${n ? 10.5 : 12}px system-ui, -apple-system, sans-serif`; ctx.textBaseline = 'bottom'; ctx.textAlign = 'left';
+  ctx.fillStyle = C('--warn'); ctx.fillText('measured, Milky Way', X(5) + 4, Y(eilers2019(5)) - 8);
+  ctx.fillStyle = C('--muted'); ctx.textAlign = 'right';
+  ctx.fillText('visible matter predicts', X(RMAX) - 2, Y(circularSpeed(RMAX, VISIBLE).total) - (n ? 16 : 6));
+  ctx.textAlign = 'start'; ctx.textBaseline = 'alphabetic';
 }
 
 function onPointer(canvas) {
   let drag = null;
   canvas.style.cursor = 'grab';
   canvas.addEventListener('pointerdown', e => { drag = { y: e.clientY, tilt: cam.tilt }; canvas.setPointerCapture(e.pointerId); });
-  canvas.addEventListener('pointermove', e => { if (drag) cam.tilt = Math.max(0, Math.min(1.55, drag.tilt + (e.clientY - drag.y) * 0.006)); });
+  canvas.addEventListener('pointermove', e => { if (drag) cam.tilt = Math.max(0, Math.min(1.45, drag.tilt + (e.clientY - drag.y) * 0.006)); });
   canvas.addEventListener('pointerup', () => { drag = null; });
-  canvas.addEventListener('dblclick', () => { cam.tilt = 0.45; });
+  canvas.addEventListener('dblclick', () => { cam.tilt = 0.85; });
 }
 
-// ------------------------------------------------------------------ workbench
+// ------------------------------------------------------------------ workbench: where the speed comes from
 function bench({ eqs, figs, createPlot, createEquation, M }) {
   const cur = { R: R0 };
   const curve = createPlot({
-    title: 'Rotation curve v_c(R): what holds the stars in orbit', height: 320,
+    title: 'Where the orbital speed comes from: each part’s share', height: 320,
     x: { label: 'radius R', unit: 'kpc', min: 0, max: 28 },
     y: { label: 'circular speed', unit: 'km/s', min: 0, max: 280 },
     onCursor: R => { cur.R = Math.max(0.3, R); },
   });
   figs.append(curve.el);
-  const all = { bulge: true, disk: true, halo: true }, visible = { bulge: true, disk: true, halo: false };
-  curve.band('meas', 5, 25, { color: '--grid', alpha: 0.6, label: 'measured range' });
   curve.fn('bulge', R => circularSpeed(R).bulge, { color: '--body-0', label: 'bulge', width: 1.3 });
   curve.fn('disk', R => circularSpeed(R).disk, { color: '--body-1', label: 'stellar disk', width: 1.3 });
   curve.fn('halo', R => circularSpeed(R).halo, { color: '--body-4', label: 'dark-matter halo', width: 1.3 });
-  curve.fn('visible', R => circularSpeed(R, visible).total, { color: '--muted', dash: true, label: 'visible matter only' });
-  curve.fn('total', R => circularSpeed(R, all).total, { color: '--ink', label: 'model total', width: 2.2 });
-  curve.fn('eilers', R => (R >= 5 && R <= 25 ? eilers2019(R) : NaN), { color: '--warn', dot: true, label: 'measured (Eilers+ 2019)', width: 2 });
+  curve.fn('visible', R => circularSpeed(R, VISIBLE).total, { color: '--muted', dash: true, label: 'visible matter only' });
+  curve.fn('total', R => circularSpeed(R).total, { color: '--ink', label: 'model total', width: 2.2 });
+  curve.fn('eilers', R => (R >= 5 && R <= 25 ? eilers2019(R) : NaN), { color: '--warn', label: 'measured (Eilers et al. 2019)', width: 2.5 });
   curve.cursor(cur.R);
 
   const vsq = (s, sub) => M.sup(M.sub(M.i(s), M.i(sub)), M.n(2));
@@ -110,51 +194,68 @@ function bench({ eqs, figs, createPlot, createEquation, M }) {
     link: curve,
   });
   eqs.append(eq.el);
-
-  return {
-    update(sim) {
-      curve.data('sim', sim.measuredCurve(), { color: '--good', dots: true, label: 'simulated stars (mean v_φ)', r: 2.6, ignoreScale: true });
-      curve.cursor(cur.R);
-      curve.invalidate(); curve.draw();
-      eq.update();
-    },
-  };
+  return { update() { curve.cursor(cur.R); curve.invalidate(); curve.draw(); eq.update(); } };
 }
 
+const orbitMyr = R => 2 * Math.PI * R / circularSpeed(R).total * TIME_UNIT_MYR;
+
 createInstrument({
+  intro: {
+    text: 'Two copies of the same galaxy start with their stars moving as fast as astronomers measure in our Milky Way. The left one also has a halo of invisible dark matter; the right one has only the stars and gas we can see. The chart below shows how fast the stars orbit at each distance. Only the galaxy with dark matter can hold on to such fast stars.',
+    watch: [
+      'right galaxy: the outer stars drift outward, slow down, and some escape',
+      'chart: the left galaxy’s dots stay near the amber measured line',
+      'dashed line: how fast stars could orbit if only visible matter pulled',
+    ],
+  },
   title: 'Dark matter and galaxy rotation',
-  subtitle: 'Thousands of stars in a Milky-Way mass model · bulge, disk and dark-matter halo · leapfrog orbits',
+  subtitle: 'The same star disk with and without a dark-matter halo, and its live rotation curve against the measured Milky Way · leapfrog test-star orbits',
   tier: 'approximate',
-  tierReason: 'Test-star orbits are integrated numerically with symplectic leapfrog in a mass model normalised like MWPotential2014, with a Hernquist bulge replacing its cut-off power-law bulge. Energy error and convergence are measured. The stars do not source the potential, so spiral arms and bars cannot form.',
+  tierReason: 'Test-star orbits are integrated numerically with symplectic leapfrog in a mass model normalised like MWPotential2014, with a Hernquist bulge replacing its cut-off power-law bulge. Energy error and convergence are measured, and the live rotation curves are checked against the potential and the measured Milky Way. The stars do not source the potential, so spiral arms and bars cannot form.',
   layout: 'workbench',
+  hudError: false,
   params: PARAMS,
   create: createSim,
   draw, onPointer, bench,
-  timeUnit: 'Myr', speed: 60, duration: 2000,
-  // ~8 orbits at the Sun's radius: long enough to see whether the disk holds together without dark matter
+  presets: [
+    { label: 'Both start at measured speeds', values: { twin: 'observed' }, play: true },
+    { label: 'Right galaxy starts slow enough to stay', values: { twin: 'equilibrium' }, play: true },
+  ],
+  timeUnit: 'Myr', timeLabel: 'time since start', speed: 10, duration: RUN_MYR,
   timeline: {
-    duration: 2000,
-    markers: sim => { const T = 2 * Math.PI * R0 / circularSpeed(R0, sim.comps).total * TIME_UNIT_MYR; return [{ t: T, label: `one orbit at R₀ = ${R0} kpc (computed)`, short: 'one orbit at R₀', kind: 'computed' }, { t: 4 * T, label: 'four orbits at R₀ (computed)', short: '4 orbits', kind: 'computed' }].filter(m => m.t <= 2000); },
-    note: 'Run length: about 8 orbits at the Sun\'s radius, enough to see whether the disk stays together.',
+    duration: RUN_MYR,
+    markers: () => [[R0, 'the Sun’s distance, 8 kpc', 'Sun orbit'], [20, '20 kpc', '20 kpc orbit']]
+      .map(([R, where, short]) => ({ t: orbitMyr(R), label: `one orbit at ${where} with the halo (computed)`, short, kind: 'computed' }))
+      .filter(m => m.t <= RUN_MYR),
+    note: 'Run: 650 Myr, about three orbits at the Sun’s distance and one at 20 kpc. The galaxy without the halo changes most in the first 250 Myr.',
   },
-  hudLine: sim => `${sim.disk.n.toLocaleString()} stars · halo ${sim.comps.halo ? 'on' : 'off'} · ${(100 * sim.escaped()).toFixed(1)} % beyond 40 kpc`,
+  hudLine: sim => `stars beyond 40 kpc: ${(100 * sim.halo.escaped()).toFixed(1)} % (halo) · ${(100 * sim.none.escaped()).toFixed(1)} % (no halo)`,
   model: {
-    legend: ['kpc · Myr · km/s · purple glow: dark-matter density (invisible in reality)', 'star colour: starting radius (inner warm → outer blue) · drag to tilt'],
+    legend: [
+      'Star colour: orbital speed (strip beside the chart)',
+      '● / ○ chart dots: the stars’ average speed at each distance, with / without the halo (computed live)',
+      'Amber: measured Milky Way, Eilers et al. 2019 · dashed: what visible matter alone can hold',
+      'Violet glow: the dark-matter halo (it gives no light) · rings: 10 and 20 kpc · drag to tilt',
+      'No spiral arms here: these stars do not pull on each other',
+    ],
     assumptions: [
+      'Two copies of the same disk (same seed, so the same stars) are computed side by side: one in bulge + disk + dark-matter halo, one in bulge + disk only.',
       'Static, axisymmetric potential: bulge (Hernquist, a = 0.6 kpc), disk (Miyamoto–Nagai, a = 3 kpc, b = 0.28 kpc), halo (NFW, r_s = 16 kpc), normalised like MWPotential2014: v_c(8 kpc) = 220 km/s with 5/60/35 % force fractions (Bovy 2015).',
-      'Stars are test particles (no self-gravity, no gas, no star formation); collisions between stars are negligible in real galaxies too.',
+      'Stars are test particles (no self-gravity, no gas, no star formation), so spiral arms and bars cannot form; collisions between stars are negligible in real galaxies too.',
       'Initial disk: exponential surface density (scale length 2.6 kpc), 8 km/s velocity dispersion, seeded random numbers.',
-      'Full-model starting velocities come from the analytic potential. Removing the halo expands the disk and can unbind some outer stars; crossing 40 kpc alone does not imply escape.',
+      '“Measured speeds” are the full model’s circular speeds (within 6 % of the measured Milky Way). The slow option gives the right galaxy the circular speeds of its visible matter.',
       'Kick-drift-kick leapfrog, Δt = 0.244 Myr: energy error bounded and second order; L_z conserved exactly.',
+      'Chart dots: mean tangential speed of each galaxy’s stars in 1 kpc bins (at least 8 stars per bin).',
     ],
     conventions: [
-      'Purple glow: projected dark-matter density, shown so it can be seen; dark matter emits no light.',
-      'Star colour marks the radius where each star started, so mixing and escape are visible.',
-      'Rings every 5 kpc; dashed amber ring: the Sun’s orbital radius.',
+      'Star colour: each star’s orbital (tangential) speed on the viridis scale, the same mapping as the strip on the chart’s speed axis. Data colours, not optical colours.',
+      'Violet glow: marks the dark-matter halo so it can be seen; dark matter emits no light.',
+      'Chart: amber = measured Milky Way (linear fit of Eilers et al. 2019, 5–25 kpc); dashed = circular speed of this model’s visible matter.',
+      'Rings at 10 and 20 kpc in each disk plane. Playback: 10 Myr per second at 1×.',
     ],
     references: [
-      'J. Bovy, ApJS 216, 29 (2015): galpy and MWPotential2014.',
       'C. Eilers, D. Hogg, H.-W. Rix, M. Ness, ApJ 871, 120 (2019): Milky Way circular velocity curve 5–25 kpc.',
+      'J. Bovy, ApJS 216, 29 (2015): galpy and MWPotential2014.',
       'J. F. Navarro, C. S. Frenk, S. D. M. White, ApJ 462, 563 (1996).',
       'V. Rubin & W. K. Ford, ApJ 159, 379 (1970): flat rotation curves (M31).',
     ],

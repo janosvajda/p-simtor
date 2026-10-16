@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="p-simtor">
+<title>Radioactive decay</title>
+<link rel="stylesheet" href="psim:ui/instrument.css">
+</head>
+<body>
+<script type="application/json" id="psim-verification">null</script>
+<script type="module">
+// STARTER (psim new --starter): every part of a finished page, already following the layout rules.
+// Replace the content, keep the structure. Delete these STARTER comments when done.
+import { createInstrument } from 'psim:ui/instrument-app.mjs';
+import { PARAMS, SAMPLE, createSim } from './physics.mjs';
+
+// The view shows THE THING ITSELF (here: the atoms), not a chart of it. Nothing of the shell is drawn
+// over it; at most ~4 short labels attached to things. Explanations go in model.legend; charts of
+// computed quantities go below the view (bench), as evidence.
+function draw(ctx, sim, view) {   // (a 4th argument gives the displayed time, for sim.sample?.(t))
+  const { W, H } = view, C = view.color;
+  const cols = 20, rows = SAMPLE / cols;
+  const cell = Math.min((W - 48) / cols, (H - 72) / rows), r = 0.36 * cell;
+  const x0 = (W - cols * cell) / 2, y0 = (H - rows * cell) / 2 + 10;
+  let left = 0;
+  for (let i = 0; i < SAMPLE; i++) {
+    const x = x0 + (i % cols + 0.5) * cell, y = y0 + (Math.floor(i / cols) + 0.5) * cell;
+    const alive = sim.decayAt[i] > sim.t;
+    if (alive) left++;
+    // intact: a bright nucleus; decayed: a dim ring, with a short flash just after it decays
+    const since = sim.t - sim.decayAt[i], flash = !alive && since < 0.04 * sim.halfLife;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI);
+    if (alive) { ctx.fillStyle = C('--body-1'); ctx.fill(); }
+    else { ctx.strokeStyle = flash ? C('--ink') : C('--grid-strong'); ctx.lineWidth = flash ? 2 : 1; ctx.stroke(); }
+  }
+  // one label on a moving quantity: view.steady keeps it from jumping between frames
+  const p = view.steady('count', W / 2, y0 - 18);
+  ctx.fillStyle = C('--ink'); ctx.font = '600 15px system-ui, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(`${left} of ${SAMPLE} atoms still intact`, p.x, p.y);
+}
+
+// Below the view: the evidence. The computed count against the exact law.
+function bench({ figs, createPlot }) {
+  const plot = createPlot({
+    title: 'Atoms left: computed step by step, against the exact half-life law', height: 240,
+    x: { label: 'time', unit: 's', min: 0, max: 1 }, y: { label: 'atoms left', unit: '%', min: 0, max: 100 },
+  });
+  figs.append(plot.el);
+  let built = null;
+  return {
+    update(sim) {
+      if (built !== sim) {
+        built = sim;
+        const T = 5 * sim.halfLife, exact = [];
+        for (let i = 0; i <= 200; i++) { const s = T * i / 200; exact.push([s, 100 * sim.exact(s) / sim.n0]); }
+        plot.setX({ min: 0, max: T }).data('exact', exact, { color: '--muted', dash: true, label: 'exact law' });
+      }
+      plot.data('computed', sim.trace.map(([s, n]) => [s, 100 * n / sim.n0]), { color: '--body-1', width: 2.2, label: 'computed (RK4)' });
+      plot.invalidate(); plot.draw();
+    },
+  };
+}
+
+createInstrument({
+  title: 'Radioactive decay',
+  subtitle: 'dN/dt = −λN integrated with RK4, against the exact half-life law; the atoms are one random sample of the same law',
+  tier: 'validated',
+  tierReason: 'RK4 solution of the decay law, checked against the exact solution and its measured convergence order (Verification).',
+  layout: 'workbench',
+  // two everyday lines are shown, the rest behind "more"; no symbols or error figures here
+  intro: {
+    text: 'Each dot is an unstable atom. Any one of them can break down at any moment, at random, but together they keep a strict rhythm: every half-life, half of those still intact are gone. The chart below shows the count, computed step by step, on the exact law.',
+    watch: ['about half the dots go dark in each half-life', 'press "Halve the half-life": the same pattern, twice as fast'],
+  },
+  // the page's main action, as a large button under the view; `reveal`: seconds until its result shows
+  actions: [{ label: 'Halve the half-life', hint: 'the same fall, twice as fast', reveal: 8, onClick: ({ setParams, values }) => setParams({ halfLife: Math.max(0.5, values.halfLife / 2) }, { play: true }) }],
+  params: PARAMS,
+  create: createSim,
+  draw, bench,
+  timeUnit: 's', timeLabel: 'time since the start',
+  // the run covers the question (five half-lives) and plays in 60 s in every setting
+  timeline: {
+    duration: sim => 5 * sim.halfLife,
+    markers: sim => [{ t: sim.halfLife, label: 'half the atoms gone: one half-life (computed)', short: 'T½', kind: 'computed' }],
+    seconds: 60,
+    note: 'Five half-lives: 97 % of the atoms have decayed.',
+  },
+  hudLine: sim => `${(100 * sim.N / sim.n0).toFixed(1)} % left (computed)`,
+  presets: [
+    { label: 'Short-lived (1 s)', values: { halfLife: 1 } },
+    { label: 'Long-lived (60 s)', values: { halfLife: 60 } },
+  ],
+  model: {
+    legend: ['dots: 400 atoms, one random sample of the decay law (filled: intact; ring: decayed)', 'chart below: computed count (solid) on the exact law (dashed)'],
+    assumptions: ['Each atom decays independently with the same constant rate λ = ln 2 / T½.', 'The chart is the large-sample average; the 400 drawn atoms scatter around it by about √N.'],
+    conventions: ['Dots: one seeded sample (seed chosen as a typical one). Chart solid: integrator states only; dashed: exact solution.'],
+    references: ['E. Rutherford & F. Soddy, Phil. Mag. 4, 370 (1902): the exponential decay law.'],
+  },
+});
+</script>
+</body>
+</html>

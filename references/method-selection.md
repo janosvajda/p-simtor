@@ -88,9 +88,18 @@ Read a note only when it helps the model already selected. If none fits, use the
 - [Gravity](gravity.md)
 - [Electromagnetism](electromagnetism.md)
 - [Radiation and relativity](radiation-relativity.md)
+- [Gravitational waves](gravitational-waves.md): inspiralling binaries, the tidal field around them, chirps, binary pulsars; what of a black-hole collision can and cannot be computed
 - [Particle physics](particle-physics.md)
 - [Weak interaction](weak-interaction.md)
 - [Scalar/Higgs examples](higgs.md)
 - [Molecular dynamics](molecular.md)
 - [Entropy examples](entropy.md)
 - [Quantum mechanics](quantum.md)
+- [Waves and optics](optics.md): diffraction, beams and cavities, ray tracing, thin films, polarisation, FDTD Maxwell
+- [Incompressible fluids](fluids.md): lattice Boltzmann, spectral Navier–Stokes, tracers
+- [Nonlinear waves and conservation laws](nonlinear-waves.md): solitons (KdV, NLS, sine-Gordon), shocks (Euler, Burgers), shallow water
+- [Rigid bodies](rigid-bodies.md): inertia, tops, the intermediate-axis flip
+- [Chaos](chaos.md): maps, bifurcations, Lyapunov spectra, Poincaré sections, fractal dimensions
+- [Spiral galaxies](spiral-galaxies.md): self-gravitating star disks in a dark-matter halo, swing-amplified spiral arms, Toomre Q
+- [Cosmology](cosmology.md): ΛCDM expansion, ages, distances, growth, sound horizon
+- [Stars and nuclei](stars.md): polytropes, white dwarfs, binding energies, Saha ionisation, stellar timescales
