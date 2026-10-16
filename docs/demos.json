@@ -626,7 +626,7 @@
     },
     {
       "id": "geometrodynamics",
-      "title": "Spacetime storm: inspiral",
+      "title": "Spacetime storm: two black holes spiralling in",
       "prompt": "/p-simtor show the nonlinear dynamics of curved spacetime from Kip Thorne's colloquium \"Geometrodynamics: The Nonlinear Dynamics of Curved Spacetime\"",
       "about": "Two black holes spiral together; the stretch and squeeze of space around them streams out as spiral gravitational waves. The inspiral is computed; the merger is not.",
       "group": "space",
