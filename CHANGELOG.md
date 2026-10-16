@@ -1,5 +1,182 @@
 # Changelog
 
+## Unreleased — lessons from a generated black-hole page
+
+- **Fixes for problems three newly generated astrophysics pages ran into:**
+  - **Action results are now shown.** Each action can declare `reveal`: the seconds of playback until its result is plainly visible (default 8). `psim check` saves `-action-N.png` 2 s after the press and `-action-N-result.png` at `reveal`, and the newcomer test looks at both. Actions also get `seek(t)`, to jump to just before the moment they are about; pages had been relying on the undocumented `window.psim.advanceTo`.
+  - **The starter's main view is a picture.** It shows 400 atoms going dark one by one, and the decay curve sits below it as evidence. Before, the starter was a chart, which taught the opposite of the rule. Its unused "atoms at the start" setting is gone.
+  - **Key times outside the run are allowed.** A measured event after the point where the model stops being valid (for example, impacts after a computed break-up) is listed in the side panel as "after this run". Before, it threw an error, which pushed pages to extend the run beyond what the model covers.
+  - **`psim node SCRIPT.mjs [args]`** forwards every argument after `node`, and the script reads them as `process.argv.slice(2)`. This is now documented and tested.
+
+- **Two bugs found by newly generated pages:**
+  - The shell accepts a verification `notes` given as a string. The starter returned one, which would have printed one paragraph per character.
+  - `psim check` treats a page whose clock starts before zero (a negative `timeline.start`) as running once the clock passes its start. Before, such a page was reported as not running, with no reason given; the summary now gives one.
+
+A page generated from Kip Thorne's colloquium "Geometrodynamics: The Nonlinear Dynamics of Curved Spacetime" exposed four gaps in the skill:
+
+- **`psim check` now presses every main action button** (`spec.actions`). For each button it:
+  - starts from 40 % through the run;
+  - plays for 2 s and saves a screenshot (`-action-N.png`);
+  - fails on an error or a frozen page;
+  - flags a press that changes nothing.
+
+  Until now the page's main demonstration was never exercised, and no screenshot showed its effect. The newcomer test now includes these shots.
+- **SKILL.md step 7: what "most representative" means** when the full request cannot be computed and the user cannot be asked, in order:
+  1. The same system and headline phenomenon.
+  2. The largest stage of it that can be computed from the real equations and verified.
+  3. A run that stops where the model stops being valid, with a marker naming what is not computed.
+
+  Any missing stage may be shown only as labelled published data. Evaluating an exact closed-form solution counts as computed; a reduced model solved exactly is still `approximate`.
+- **The convergence-order rule no longer misfires** (references/verification.md):
+  - Orders are measured where errors are well above round-off.
+  - Too low fails.
+  - Higher than theory is accepted when the reason is stated.
+  - Residuals of discretised equations are judged by their order under refinement, not by an absolute threshold.
+- **`core/gravitational-waves.mjs`** ([gravitational-waves.md](references/gravitational-waves.md)):
+  - circular inspiral driven by the radiated energy (exact solution of the leading-order equations);
+  - strain h₊ and h×;
+  - the linearised tidal field E_ij of the binary in the near, transition and wave zones;
+  - the energy flux of that field;
+  - chirp and binary-pulsar formulas.
+
+  The guide says which stages of a black-hole collision a browser can compute (inspiral, field) and which it cannot (merger, ring-down). Tested against:
+  - the Newtonian limit;
+  - the vacuum field equations, with the residual's order under refinement;
+  - the quadrupole formula, to 5e-9;
+  - the Hulse–Taylor period decay;
+  - GW150914's chirp mass.
+
+## Unreleased — one idea per page, designed before the code
+
+These skill changes answer the owner's review of two reworked pages. In one, the main button sat under a long text in the side panel. In the other, a label jumped from frame to frame, and the page as a whole explained nothing a newcomer could follow.
+
+- **SKILL.md step 5 (new): design the page around one idea, before any code.** It names:
+  - the one thing a newcomer should learn;
+  - the one picture that shows it;
+  - the one action that demonstrates it.
+
+  Everything else goes below the view or into the side panel.
+- **Step 8: the newcomer test.** It runs on the agent's own first-screen screenshots, desktop and phone:
+  - Does the first screen show the one idea?
+  - Is the main action visible?
+  - Are the labels steady?
+  - Is anything unexplained?
+
+  Any "no" means the page is not finished.
+- **`psim new --starter <id>`.** A blank page with every required part already in place, which builds and passes every check (`templates/starter/`): the one-idea header, intro, main action, timeline with `seconds`, legend, and a full-view scene with a steady label. The agent replaces the model and the drawing instead of assembling the page from the docs.
+- **`actions`.** The page's main action ("Heat it up") is a large button directly under the view. `psim check` fails a page whose action is below the fold at 1440×900.
+- **`view.steady(id, x, y)`.** A label attached to something moving follows it smoothly and ignores frame-to-frame jitter.
+- **Fixes from the first two fresh generations' audits:**
+  - "As it heats up" questions are scanned over the control parameter; the skill no longer invents a heating time.
+  - Labels must be true at every moment and use everyday words; a symbol appears only with its plain name.
+  - Colour bars use plain words, sit small at an edge of the view, and don't count towards the label limit.
+  - quantum.md gives grid-resolution advice for sharp walls (≥ 15–20 points per wavelength, checked by refinement).
+  - `psim check` saves a `-midrun` screenshot, which the newcomer test also judges.
+  - The phone view leaves room for the player and action rows.
+  - visual-language.md describes the current layout.
+  - `--preset` appears in the help.
+- **Fixes from the third fresh generation's audit:**
+  - The starter's folder option is explained where the starter is introduced, and equations or the workbench layout are clearly optional.
+  - Scans mark characteristic parameter values as their key points.
+  - The newcomer test requires the intro and the "look for" items to be true in every preset.
+  - The diagnostics plot names the real progress axis (not "t").
+  - `hudLine(sim, t)` gets the displayed time, so the readout and the picture show the same moment.
+- **The intro shows two lines with "more".** The settings below it stay in reach.
+
+## Unreleased — the animation first, explained in plain words
+
+The project owner's review found these problems:
+- Playback controls sat far below the animation.
+- Text covered the scenes.
+- There was no explanation a non-physicist could follow.
+- Runs were too short.
+- Some pages were slow.
+
+The shell layout is redesigned for every page:
+
+- **One scene card:**
+  - The view has nothing from the shell drawn over it, apart from a small "Finished · ↺ Replay" pill at the end of a run.
+  - Directly under the view sits a video-player bar: restart, play, step, the clock, the timeline with its key moments, speed, fit and full screen.
+  - Below that, a key row holds the legend and one short live readout.
+  - On a phone, the first screen holds the view and the whole player bar.
+- **`intro: { text, watch }` (required).** "What you are seeing" explains in everyday words what is shown and what to look for. It is the first item in the side panel on wide screens, and comes right under the player on phones. It is the same on every page, including the gravity template.
+- **Error figures** no longer appear under the animation (`hudError` defaults to false); they stay in Diagnostics.
+- **The gravity template** uses the same layout and gains full screen. F now toggles full screen there too, as in the app shell.
+- **New `psim check` rows:**
+  - Plain-language intro: required, 12–90 words.
+  - Playback length at default speed: fails under 30 s; 45–120 s is recommended.
+  - Smooth playback in frames per second at 1440×900: fails under 24 fps.
+- **SKILL.md rules 4 and 7, compose.md and visual-language.md** cover the layout, the intro, watchable run lengths, at most four short labels on the canvas, and a large centred scene.
+- **The animation view is a dark screen in both page themes.** Panels, text and figures follow the light/dark toggle. `view.color` and the gravity view read the view's dark tokens; `view.theme` is always `'dark'`, and `view.pageTheme` gives the page theme. Before this change, pages that painted their own dark scenes showed black boxes in light pages.
+- **`core/disk-nbody.mjs`** ([spiral-galaxies.md](references/spiral-galaxies.md)): a self-gravitating star disk in a rigid halo, using an isolated particle-mesh solver (zero-padded FFT, CIC).
+  - Initial conditions are set by Toomre Q.
+  - Measurements: Fourier arm amplitudes, pitch angle, Q(R) and the rotation curve.
+  - Checked against exact Kuzmin and Freeman forces, momentum and L_z conservation, and a hot disk that stays smooth.
+  - A cool disk (Q = 1.2) grows trailing three-armed spirals, against a swing-amplification estimate of 2.7.
+- **The GL test fixture** pins `glResolution: 1`, so its pixel checks are exact.
+
+## Unreleased — seven new demos and shell fixes they exposed
+
+- **Gallery:** seven demos in a new "Waves, flows and the cosmos" section. They were generated from prompts by the installed skill in the test project, using the new modules:
+  - Kármán vortex street
+  - Dzhanibekov effect
+  - age of the universe
+  - soliton collision
+  - laser cavity
+  - Chandrasekhar limit
+  - dam break
+- **`--advance T` holds at T.** `psim check` and the gallery thumbnail now pause at T. Before, playback continued, and screenshots showed a later time.
+- **Timeline labels are placed by measured width** in up to three rows. A label that fits nowhere is hidden; its tick keeps the tooltip, and the side panel lists every key time. The start label is dropped when it would touch the end label. This fixes label collisions on phones.
+- **`view.insets` and `view.overlays`.** Pages can now see how much of the stage the HUD, legend, timeline and playback bar cover, instead of guessing margins.
+- **`drawColorBar`** restores the canvas state and keeps its label clear of the top tick.
+- **Docs.**
+  - Equation `link` belongs on `createEquation`, and term values may be strings.
+  - Timeline label rules, and how to put run-measured times on the timeline.
+  - The `linearFit` return shape.
+  - Vortex-street lessons in fluids.md: inlet distance, side boundaries, TRT vs BGK, ramped start, browser throughput.
+  - Source terms by operator splitting, and KdV step size for accuracy, in nonlinear-waves.md.
+
+## Unreleased — scientific accuracy review
+
+- Fixed cancelling hypergeometric polynomials using exact rational summation of the input doubles, with a correctly rounded binary64 result. Added scaled Bessel K recurrence, protected exponential tails, a zeta expansion near zero and overflow-safe Student-t tails; unreliable near-integer polylog expansions now reject explicitly.
+- Replaced characteristic-polynomial eigenvalue estimates with the shared scaled Hessenberg/Francis QR solver. Stiff integration now preserves reused callback outputs, forms meaningful finite-difference Jacobians at large state scales and respects fixed-step `hmax`.
+- Corrected Nyquist contributions to wave energies/momentum, real-field odd derivatives, and initial-state projection for quadratic dealiasing.
+- Stabilised opaque-film optics, large grating intensities, Fresnel phases, small robust-fit residuals, and constrained fitting. Corrected Saha underflow and dilute-gas root brackets, small-redshift cosmological integrals, symmetric-top limits and nearly null geometric-algebra inverses.
+- Added independent regression checks and a bundled-calculation comparison. Updated numerical accuracy, uncertainty and stability guidance; physical model approximations remain explicitly identified. See [the review](docs/scientific-audit.md).
+
+## Unreleased — new physics and mathematics
+
+Seven new subject areas in `core/`, each with tests against exact solutions or published values and a reference guide linked from method selection (514 Node tests in total).
+
+- **Waves and optics** (`optics`, [optics.md](references/optics.md)):
+  - Fresnel integrals and closed-form diffraction (slits, gratings, Airy disc, knife edge).
+  - FFT far field and exact angular-spectrum propagation (checked against the Talbot effect and Gaussian beam widths).
+  - Gaussian beams, ABCD matrices and cavity modes.
+  - 3D ray tracing, Fresnel coefficients, Sellmeier glasses and rainbows.
+  - Thin-film stacks, Jones calculus.
+  - A 2D Yee FDTD solver with exact discrete dispersion and energy checks.
+- **Incompressible fluids** (`fluids`, [fluids.md](references/fluids.md)):
+  - D2Q9 lattice Boltzmann with obstacles, inflow/outflow and momentum-exchange forces, and a periodic spectral vorticity solver.
+  - Benchmarks: Poiseuille and Couette exact, Taylor–Green decay, the Ghia lid-driven cavity, and the Kármán street Strouhal number.
+- **Nonlinear waves and conservation laws** (`spectral`, `conservation`, [nonlinear-waves.md](references/nonlinear-waves.md)):
+  - Chebyshev collocation, ETDRK4 and split-step solvers for KdV, NLS, Kuramoto–Sivashinsky, Burgers and sine-Gordon, with exact solitons.
+  - Finite-volume Euler, shallow-water and Burgers solvers, checked against exact Riemann solutions (Toro) and the Ritter/Stoker dam breaks.
+- **Rigid bodies and chaos** (`quaternion`, `rigid`, `chaos`, [rigid-bodies.md](references/rigid-bodies.md), [chaos.md](references/chaos.md)):
+  - Exact torque-free motion, a Lie–Poisson free body and heavy top, and the intermediate-axis flip period.
+  - Feigenbaum δ, Lyapunov spectra (Lorenz sum exact), Poincaré sections, correlation and box dimensions.
+- **Cosmology and stars** (`cosmology`, `stars`, [cosmology.md](references/cosmology.md), [stars.md](references/stars.md)):
+  - Planck 2018 ΛCDM: age 13.786 Gyr, distances matching astropy, growth factor, sound horizon.
+  - Lane–Emden polytropes, Chandrasekhar white dwarfs, the mass formula against AME2020, Saha ionisation, stellar timescales.
+- **Stiff ODEs and special functions** (`stiff`, `special`, [stiff-and-special.md](references/stiff-and-special.md)):
+  - RADAU5, Rodas3 and variable-order BDF with the `odeStepper` interface, checked on Robertson, Van der Pol, HIRES and Oregonator.
+  - Airy, Bessel Y/K and spherical, Hermite, hypergeometric, elliptic, zeta and polylog, incomplete beta and Student t, and exact Wigner 3j/6j and Clebsch–Gordan.
+- **Optimisation and geometry** (`optimize`, `autodiff`, `qmc`, `geometric-algebra`, [optimization.md](references/optimization.md)):
+  - BFGS/L-BFGS, Nelder–Mead, bounded and robust Levenberg–Marquardt, differential evolution.
+  - Forward and reverse automatic differentiation.
+  - Sobol and Halton sequences with scrambling.
+  - Clifford algebras with rotors, boosts and field invariants.
+- `rigid.jacobiElliptic` now re-exports the general `special.jacobiElliptic`, which also covers m > 1.
+
 ## Unreleased — precise timers
 
 - **`timeline` in the shell.** Every evolving page declares its run span and key times (computed, measured, requested). A bar under the time readout shows progress and labelled markers, and clicking it jumps to a time. The run stops exactly at its declared end.

@@ -104,6 +104,27 @@ function cmdRecipes(args) {
 }
 
 function cmdNew(args) {
+  if (args.starter) {
+    // `new --starter ID [DIR]`: the parser reads the id as the flag's value
+    const id = typeof args.starter === 'string' ? args.starter : args._[1];
+    const dirArg = typeof args.starter === 'string' ? args._[1] : args._[2];
+    // a blank page that already follows every layout rule: replace the model and the drawing
+    if (!id || !/^[a-z0-9][a-z0-9-]*$/.test(id)) fail('new --starter needs a page id (lower-case letters, digits, hyphens), e.g. psim new --starter pendulum-chaos');
+    const dest = dirArg ?? join('simulations', id);
+    mkdirSync(dest, { recursive: true });
+    for (const f of ['physics.mjs', 'page.html']) {
+      const to = join(dest, f);
+      if (existsSync(to) && !args.force) fail(`${to} exists (use --force to overwrite)`);
+      copyFileSync(join(SKILL_DIR, 'templates', 'starter', f), to);
+    }
+    const psim = `node "${join(SKILL_DIR, 'scripts', 'psim.mjs')}"`;
+    console.log(`Created ${dest}/ (physics.mjs, page.html) from the starter: a verified decay model with every page part in place`);
+    console.log('(one-idea header, intro, main action, timeline, legend, full-view scene with a steady label). It builds and passes its checks.');
+    console.log('Replace the model, the drawing and the texts; keep the structure. Then:');
+    console.log(`  ${psim} build ${join(dest, 'page.html')} --verify-module ${join(dest, 'physics.mjs')} --out ${dest}.html`);
+    console.log(`  ${psim} check ${dest}.html`);
+    return;
+  }
   const id = args._[1];
   const r = loadCatalog().find(x => x.id === id);
   if (!r) fail(`unknown recipe "${id}". Run: psim recipes`);
@@ -373,7 +394,7 @@ async function cmdCheck(args) {
   for (const r of res.runs) {
     console.log(`  ${r.label.padEnd(18)} ${r.ok ? 'ok ' : 'FAIL'}  ${r.summary}`);
     if (r.screenshot) console.log(`  ${''.padEnd(18)} screenshot: ${r.screenshot}`);
-    for (const f of r.more ?? []) console.log(`  ${''.padEnd(18)} scrolled:   ${f}`);
+    for (const f of r.more ?? []) console.log(`  ${''.padEnd(18)} ${/-result\.png$/.test(f) ? 'result:    ' : 'scrolled:  '} ${f}`);
   }
   if (res.problems.length) { console.log(`Problems:\n  - ${res.problems.join('\n  - ')}`); process.exitCode = 2; }
   else console.log('All runtime checks passed. Now look at every screenshot, including the scrolled ones, before delivering.');
@@ -384,6 +405,7 @@ const HELP = `p-simtor — scientifically verified interactive physics simulatio
 Commands:
   recipes [request words]                  list verified starting points, ranked for a request
   new     RECIPE [DIR]                     copy a verified example into the project to adapt
+  new     --starter ID [DIR]               a blank page with every part in place (no recipe fits)
   presets                                  list built-in gravity presets
   gravity [--preset NAME|--scenario FILE]  verify + build a gravity instrument page
           [--out FILE] [--title T] [--subtitle S] [--with-presets]
@@ -393,9 +415,10 @@ Commands:
                                            the physics files are unchanged; --reverify forces a new run)
           [--config FILE] [--verification FILE]
   verify-module physics.mjs [--out FILE]   run a physics module's own verification checks
-  node    SCRIPT.mjs [args]                run a scratch Node script that imports psim: modules
+  node    SCRIPT.mjs [args]                run a scratch Node script that imports psim: modules;
+                                           the script reads its args as process.argv.slice(2)
   open    PAGE.html                        open a built page in the default browser
-  check   PAGE.html [--shots DIR] [--advance T] [--params k=v,…]   headless Chrome: errors, liveness, overflow,
+  check   PAGE.html [--shots DIR] [--advance T] [--params k=v,…] [--preset LABEL]   headless Chrome: errors, liveness, overflow,
                                            UI→physics tests, extreme inputs, screenshots (default: system temp dir);
                                            --advance T fast-forwards to time T first; --params sets a
                                            non-default mode first (screenshots go to their own folder)
@@ -414,7 +437,8 @@ try {
   else if (cmd === 'open') cmdOpen(args);
   else if (cmd === 'node') {
     // timing or exploration scripts: psim: imports resolve to the skill, as in tests and verify-module
-    const raw = process.argv.slice(process.argv.indexOf('node', 2) + 1);
+    // everything after the word `node` (argv[2]) goes to the script: it reads process.argv.slice(2)
+    const raw = process.argv.slice(3);
     if (!raw[0] || !existsSync(raw[0])) fail('node needs an existing SCRIPT.mjs');
     process.argv = [process.argv[0], resolve(raw[0]), ...raw.slice(1)];
     await import(pathToFileURL(resolve(raw[0])).href);

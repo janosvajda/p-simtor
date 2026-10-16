@@ -6,7 +6,8 @@ p-simtor pages look like **precision instruments**: a dark observatory field (or
 
 - Layout: a large stage (the physics) plus a 372 px control column. On phones it stacks: stage at 64vh, controls below. No horizontal scroll (the `check` command fails on overflow).
 - Header: title, one-line subtitle naming the model and method, **trust-tier badge** (click opens the model panel), theme toggle.
-- HUD (top-left of stage): the labelled progress coordinate (physical time, sampling or scan), the primary diagnostic and resolution. Legend (top-right): units and visual conventions in one or two lines. Scale bar (bottom-left). Transport (bottom-centre).
+- Layout (shell): the view holds only the scene; the player bar under it shows the clock, the timeline and the controls; the key row below shows the legend and one live readout. A scale bar may sit in a corner of the view.
+- **Every label on the view is true at every moment**, not only at the end ("bounced back 100 %" before the wave reaches the wall is false: say "in front of the wall" until it does). Labels use everyday words; a symbol (kT, |ψ|², λ) appears on the view only together with its plain name, and abstract helper shapes (an energy band, a reference region) appear only if a newcomer could say what they are from the label.
 - Colours are CSS tokens (`--ink`, `--muted`, `--accent`, `--body-0…5`, `--grid`, `--glow`). Both themes are first-class: always read colours through `view.color('--token')` so they switch live.
 - Numbers: tabular figures, scientific notation as 2.4×10⁻¹¹ (`sci()`), units always shown.
 
@@ -38,6 +39,7 @@ Label physical time, sample/sweep number, iteration, parameter scans and static 
 
 The standards (computed, verified, disclosed) never change; the wording and emphasis follow who asked. For children, students or the public:
 
+- Every page, for every audience, has the `intro` box (compose.md): what is shown and why it matters in everyday words, and what to look for. Experts skip it in a second; everyone else needs it.
 - Lead with the scene and one plain sentence of what it shows. Short words; name things as people know them ("the swing's rope", not "pendulum length L").
 - Few controls with everyday names, and two or three `presets` ("Try this") that demonstrate the point. Use `texts` for section titles and `hudError: false` so error figures stay in the side panel.
 - Put a short "What is real, what is drawn" note beside the view: computed quantities, exaggerated sizes, slowed or sped-up time, and drawn scenery (a house, a cloud, a child) labelled as scenery. Scenery is allowed when it is disclosed and does not stand for a computed result.
@@ -51,7 +53,7 @@ Choose the renderer from the size and shape of the state, as a cost estimate (se
 - **Points:** up to ~10⁴ moving bodies draw well in 2D canvas; beyond that, or when depth and glow carry meaning (a galaxy, a gas, a sampled probability cloud), use `createPointRenderer` with an `orbitCamera`.
 - **2D fields:** above ~200 × 200 cells updated every frame, use `createFieldRenderer` instead of `putImageData`.
 - **3D densities:** a scalar on a 3D grid (orbital |ψ|², gas density, a temperature field) is shown honestly as a ray-marched volume (`createVolumeRenderer`), not as a cloud of invented particles. Sampled points are a different object: label which one the view shows.
-- Additive glow suits emission on dark backgrounds; in the light theme use `blend: 'alpha', soft: true` (read `view.color('--glow')`). Additive blending of many overlapping points (≳ 10⁴ in a dense region) saturates to white and erases a colour map: when colour encodes a value, use `blend: 'alpha'` or smaller points.
+- The view is a dark screen in both page themes. Additive glow suits emission there. Additive blending of many overlapping points (≳ 10⁴ in a dense region) saturates to white and erases a colour map: when colour encodes a value, use `blend: 'alpha'` or smaller points.
 
 **GPU cost** grows with screen pixels: a Retina or fullscreen view has 8–15 M pixels. The shell lowers the GL layer's resolution automatically when the GPU falls behind, and the volume renderer ray-marches at ≤ ~1.5 M rays and upscales. Keep per-frame CPU work small too: upload only what changed (`append` for new points, `update` when positions move), and keep one physics `step()` well under a frame (~10 ms), splitting large systems across frames if needed (e.g. `sweep(lat, { sites })`).
 
@@ -75,7 +77,7 @@ A screen shows two dimensions and depth hints. To show a 4D lattice, a 3-sphere 
 ## Craft rules
 
 - **Trails**: draw in ~24–28 chunks with alpha ∝ (1 − age)^1.6 and slightly thicker heads. Round joins. Never smooth: the polyline vertices are the integrator's states.
-- **Glow** (dark theme only, `--glow = 1`): additive radial gradient (≈6× marker radius) plus a solid core plus a small specular highlight. In light theme, use a solid core with a soft halo ring and a hairline outline.
+- **Glow** (the view is always dark): additive radial gradient (≈6× marker radius) plus a solid core plus a small specular highlight.
 - **Reference overlays** (analytic solutions) are dashed and muted; computed results are solid and coloured. The eye should see the agreement at once.
 - **Grids**: hairline, two weights (minor / every 5th major), and they fade with zoom. A grid is a measuring device: it must use nice steps (1-2-5).
 - **Motion**: choose readable playback for the computed dynamics or sampling and disclose its meaning and compression. Respect `prefers-reduced-motion` (start paused).
@@ -89,5 +91,20 @@ A screen shows two dimensions and depth hints. To show a 4D lattice, a 3-sphere 
 2. Do computed results visibly agree with any analytic overlay?
 3. Is anything clipped, overlapping, unreadable, or empty in either theme or on the phone?
 4. Is every number labelled with units, and every convention disclosed?
+0. The newcomer test (SKILL.md step 8): does the first screen show the one idea in one picture, with the main action as a button under the view? Would a curious non-scientist understand from the first two lines of the intro and the scene alone what is happening? Do labels on moving things stay steady (`view.steady`)? Is the animation free of text clutter (≤ 4 short labels on the canvas), large and centred in its view, and smooth? Does the run last long enough to watch (45–120 s at the default speed)?
 5. Does the run have an end (a merger, all particles arrived or absorbed, every nucleus decayed)? Then `done` must become true there, so the clock stops instead of counting time in which nothing is computed. Check with `psim check --advance` past the end: the HUD should say "finished".
 6. Does the timeline show the run span and the key times, and does the span match the question (a "200 fs" process is not shown as a 1000 fs run without a labelled reason)?
+
+## The main view is a picture, not a chart
+
+The view under the title shows the physical system as it would look (or a faithful, labelled depiction of it): bodies, particles, fields, light, in their own space and moving with the computed state. A chart of a computed quantity belongs below or beside it, as evidence. Examples:
+
+| Subject | Main view (the thing) | Evidence below (the chart) |
+|---|---|---|
+| Expansion of the universe | a patch of galaxies on a comoving grid; the grid and the distances between galaxies stretch by a(t); light travelling between them reddens; the photon glow fades as T ∝ 1/a; opaque fog before recombination | a(t) on log axes, eras, H(t) |
+| Radioactive decay | a grid of atoms that decay at random (seeded), with the count | N(t) against the exact law |
+| Heating a three-level system | the energy ladder with the occupation of each level (bars or particles) | populations against temperature |
+| Gravitational waves | the holes and the stretch-and-squeeze around them, rings of test particles | separation, frequency, strain against time |
+
+When the real effect is invisible at true scale (a strain of 10⁻²¹, a 0.04 % shift), exaggerate it with a labelled factor and give the true value next to it.
+

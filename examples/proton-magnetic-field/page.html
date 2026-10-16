@@ -147,6 +147,7 @@ function onPointer(canvas) {
 
 const R = s => `<msub><mi>${s}</mi></msub>`;
 createInstrument({
+  intro: {"text": "A proton moving through a magnetic field is pushed sideways at every moment, so it travels in a circle (or a spiral). Stronger fields make tighter, faster circles; faster protons make wider ones. This is how particle accelerators and the Earth's magnetic field steer charged particles.", "watch": ["the circle's size changes with the field", "the proton's speed never changes"]},
   title: 'Proton in a uniform magnetic field',
   subtitle: 'Relativistic Lorentz-force motion · Boris pusher · SI units',
   tier: 'validated',
@@ -161,7 +162,7 @@ createInstrument({
     note: 'Run length: ten gyroperiods.',
   },
   timeUnit: 'ns',
-  speed: 30,
+  speed: 10,
   duration: 1000,
   hudLine: sim => `r = ${sci(sim.analytic.radius, 3)} m · T = ${sci(sim.analytic.period * 1e9, 3)} ns · γ = ${sim.gamma().toFixed(5)}`,
   model: {

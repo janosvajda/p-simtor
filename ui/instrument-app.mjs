@@ -9,7 +9,7 @@
 // Simulation contract (returned by create(params)):
 //   sim.t                    physical time of the latest computed state
 //   sim.step()               advance by one integrator step (or one analytic tick)
-//   sim.sample?(t)           state at t between steps, for drawing (default: current state)
+//   sim.sample?(t)           state at t between steps: the shell passes t to draw/drawGL; call it there (not called by the shell)
 //   sim.diagnostics()        [{ key, label, value, kind: 'error'|'value', unit?, good?, warn? }]
 //   sim.state()              JSON-serialisable state (export, tests)
 //   sim.record?()            { header: [...], rows: [[...], ...] } for CSV export
@@ -17,7 +17,7 @@
 
 import {
   el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast, ICONS,
-  transport, createClock, logPlot, download, readJsonScript, beacon, cssVar,
+  transport, createClock, logPlot, download, readJsonScript, beacon, sceneVar,
 } from './instrument.mjs';
 import { createPlot } from './plot.mjs';
 import { createGLLayer } from './gl.mjs';
@@ -35,7 +35,7 @@ export function createInstrument(spec) {
   const {
     title, subtitle = '', tier, tierReason, create, draw, params = [], model = {},
     timeUnit = 'T', timeLabel = 'simulated time', speed: speed0 = 1, gl: wantGL = false, drawGL, controls, onPointer, layout = 'stage', bench,
-    presets = [], texts = {}, hudError = true, formatTime, timeDigits: digitsGiven, frameBudget = 9, speedRange, viewControls, testSteps = 300,
+    presets = [], texts = {}, hudError = false, formatTime, timeDigits: digitsGiven, frameBudget = 9, speedRange, viewControls, testSteps = 300,
     glResolution = 'auto', timeline: timelineSpec,
   } = spec;
   // counted progress (sweeps, steps, generations, events) shows whole numbers unless told otherwise
@@ -58,10 +58,15 @@ export function createInstrument(spec) {
       <button class="psim-tier" type="button"><i></i><span></span></button>
       <button class="psim-iconbtn" type="button" aria-label="Toggle theme"></button>
     </header>
-    <main class="psim-stage"><canvas></canvas>
-      <div class="psim-hud"><span class="dim"></span><b>0</b><span class="h1"></span><span class="dim h2"></span><span class="flag"></span></div>
-      <div class="psim-timeline" hidden><div class="ticks"></div><div class="bar"><i class="fill"></i></div><div class="ends"><span></span><span></span></div></div>
-      <div class="psim-legend"></div>
+    <main class="psim-stage">
+      <section class="psim-scene">
+        <div class="psim-view"><canvas></canvas>
+          <div class="psim-endcard" hidden><span></span><button type="button" class="psim-btn">↺ Replay</button></div>
+        </div>
+        <div class="psim-clock" hidden><span class="dim"></span><b>0</b></div>
+        <div class="psim-timeline" hidden><div class="ticks"></div><div class="bar"><i class="fill"></i></div><div class="ends"><span></span><span></span></div></div>
+        <div class="psim-key"><div class="psim-legend"></div><div class="psim-hud"><span class="h1"></span><span class="h2"></span><span class="flag"></span></div></div>
+      </section>
     </main>
     <aside class="psim-side"></aside>
   </div>`;
@@ -72,43 +77,113 @@ export function createInstrument(spec) {
   tierBtn.dataset.tier = verified ? tier : 'unverified';
   tierBtn.querySelector('span').textContent = trustLabel;
   initTheme($('.psim-iconbtn'));
-  const stage = $('.psim-stage'), side = $('.psim-side');
+  const stage = $('.psim-stage'), side = $('.psim-side'), sceneEl = $('.psim-scene'), viewEl = $('.psim-view');
+  // a plain-language introduction above the scene: what is shown and what to look for
+  const intro = typeof spec.intro === 'string' ? { text: spec.intro } : spec.intro;
+  // it goes BELOW the animation and its controls (like a video's description): after the scene card
+  // when equations follow, otherwise first in the side panel (which follows the player on phones)
+  // shown as two lines with "more", so the settings below it stay in reach
+  const introEl = intro?.text ? el('section', { class: 'psim-intro collapsed' }, el('b', {}, texts.intro ?? 'What you are seeing'), el('p', {}, intro.text),
+    (intro.watch ?? []).length ? el('ul', {}, ...intro.watch.map(w => el('li', {}, w))) : null) : null;
+  if (introEl) {
+    const more = el('button', { type: 'button', class: 'psim-more', 'aria-expanded': 'false' }, texts.more ?? 'more');
+    more.addEventListener('click', () => {
+      const open = introEl.classList.toggle('collapsed') === false;
+      more.textContent = open ? (texts.less ?? 'less') : (texts.more ?? 'more');
+      more.setAttribute('aria-expanded', String(open));
+    });
+    introEl.append(more);
+  }
   // Workbench layout: the live canvas on top, then term-split equations and figures that
   // update with the model (spec.bench builds them; see references/compose.md).
   let benchParts = null;
   if (layout === 'workbench') {
-    const wrap = el('div', { class: 'psim-canvaswrap' }, stage.querySelector('canvas'), stage.querySelector('.psim-hud'), stage.querySelector('.psim-legend'));
+    const wrap = sceneEl;
+    wrap.classList.add('psim-canvaswrap');
     const eqs = el('div', { class: 'psim-eqs' }), figs = el('div', { class: 'psim-figs' });
     stage.prepend(el('div', { class: 'psim-bench' }, wrap, eqs, figs));
     benchParts = { wrap, eqs, figs };
+  }
+  // the same place on every page: first in the side panel on wide screens; on phones (one column)
+  // right under the scene card, so it follows the player bar instead of the equations
+  if (introEl) {
+    const narrow = matchMedia('(max-width: 860px)');
+    const place = () => { if (narrow.matches && benchParts) sceneEl.after(introEl); else side.prepend(introEl); };
+    place();
+    narrow.addEventListener('change', place);
   }
   const canvas = stage.querySelector('canvas');
   const ctx = canvas.getContext('2d');
   // optional GPU layer under the 2D canvas (ui/gl.mjs): drawGL renders the scene, draw adds labels
   const glLayer = wantGL ? createGLLayer(canvas) : null;
   if (glLayer) $('.psim-app').classList.add('has-gl');      // HUD and legend get a backing over bright GPU scenes
-  $('.psim-hud .dim').textContent = timeLabel;
-  const hud = { t: $('.psim-hud b'), a: $('.psim-hud .h1'), b: $('.psim-hud .h2'), flag: $('.psim-hud .flag') };
+  $('.psim-clock .dim').textContent = timeLabel;
+  $('.psim-clock').title = timeLabel;
+  const hud = { t: $('.psim-clock b'), a: $('.psim-hud .h1'), b: $('.psim-hud .h2'), flag: $('.psim-hud .flag') };
   // the legend beside the view; view.setLegend(items) replaces it when the representation changes
   const setLegend = items => $('.psim-legend').replaceChildren(...(items ?? []).map(t => el('span', {}, t)));
   setLegend(model.legend);
 
   // ------------------------------------------------------------ state
   const values = Object.fromEntries(params.map(p => [p.key, p.value]));
-  let sim, tDisplay = 0, limited = false;
+  let sim, tDisplay = 0, limited = false, defaultSpeedNow = speed0;
+  const steadyLabels = new Map();
   const clock = createClock({ speed: speed0 });
   const view = {
-    W: 0, H: 0, dpr: 1, color: cssVar, opts: {}, pointer: null, gl: glLayer?.gl ?? null, glError: glLayer && !glLayer.ok ? glLayer.reason : '',
+    W: 0, H: 0, dpr: 1, color: sceneVar, opts: {}, pointer: null, gl: glLayer?.gl ?? null, glError: glLayer && !glLayer.ok ? glLayer.reason : '',
     /** Current playback speed (simulated time per second) and state, e.g. to disclose time compression. */
     get speed() { return clock.speed; }, get playing() { return clock.playing; },
     /** GL layer resolution as a fraction of the device pixel ratio (adaptive unless glResolution is a number). */
     get glScale() { return glLayer?.scale ?? 1; },
-    /** 'dark' or 'light': the theme now shown (e.g. additive vs alpha blending, mesh colours). */
-    get theme() { return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'; },
+    /** The scene's theme: always 'dark' (the view is a dark screen in both page themes); use it for blending and mesh colours. */
+    get theme() { return 'dark'; },
+    /** The page theme around the view ('dark' or 'light'), for anything drawn outside it. */
+    get pageTheme() { return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'; },
     setLegend,
     /** The embedded build-time report (verify()'s return value, including any extra data fields), or null. */
     report,
+    /**
+     * Shell overlays drawn over the canvas, in canvas CSS pixels: `overlays` lists each visible one
+     * ({ name: 'hud' | 'legend' | 'timeline' | 'transport', x, y, w, h }); `insets` gives how far the
+     * bottom ones (timeline, playback bar, a phone legend) reach up from the bottom edge and the top
+     * ones (HUD, legend) down from the top. Lay the scene out inside them. Cached for 200 ms.
+     */
+    get overlays() { return overlayInfo().list; },
+    /**
+     * A steady position for a label attached to something that moves or flickers (a wave's peak,
+     * a cloud's centre): returns { x, y } that follows (x, y) smoothly and ignores sub-`deadband`
+     * jitter, so the text does not jump from frame to frame. One state per id; reset on rebuild.
+     */
+    steady(id, x, y, { deadband = 6, ease = 0.15 } = {}) {
+      const p = steadyLabels.get(id);
+      if (!p || !Number.isFinite(p.x)) { const q = { x, y }; steadyLabels.set(id, q); return q; }
+      const dx = x - p.x, dy = y - p.y, d = Math.hypot(dx, dy);
+      if (d > 120) { p.x = x; p.y = y; }                       // a jump (new run, reframing): follow at once
+      else if (d > deadband) { const k = ease * (1 - deadband / d); p.x += k * dx; p.y += k * dy; }
+      return p;
+    },
+    get insets() { return overlayInfo().insets; },
   };
+  let overlayCache = null;
+  function overlayInfo() {
+    const now = performance.now();
+    if (overlayCache && now - overlayCache.at < 200) return overlayCache;
+    const c = canvas.getBoundingClientRect(), list = [];
+    const add = (name, node) => {
+      if (!node || node.hidden || !node.getClientRects().length) return;
+      const r = node.getBoundingClientRect();
+      const x = Math.max(r.left, c.left), y = Math.max(r.top, c.top), x1 = Math.min(r.right, c.right), y1 = Math.min(r.bottom, c.bottom);
+      if (x1 > x && y1 > y && (r.width > 0 && r.height > 0)) list.push({ name, x: x - c.left, y: y - c.top, w: x1 - x, h: y1 - y });
+    };
+    for (const node of viewEl.children) if (node.tagName !== 'CANVAS') add(node.className.split(' ')[0].replace('psim-', ''), node);
+    const insets = { top: 0, bottom: 0 };
+    for (const o of list) {
+      if (o.y + o.h / 2 < c.height / 2) insets.top = Math.max(insets.top, o.y + o.h);
+      else insets.bottom = Math.max(insets.bottom, c.height - o.y);
+    }
+    overlayCache = { at: now, list, insets };
+    return overlayCache;
+  }
 
   let benchApi = null;
   // ------------------------------------------------------------ timeline: the run's span and its key times
@@ -117,7 +192,6 @@ export function createInstrument(spec) {
   // on a bar under the time readout; clicking the bar jumps to that time (recomputing if earlier).
   let tl = null;
   const tlEl = $('.psim-timeline');
-  if (benchParts) benchParts.wrap.append(tlEl);              // inside the scene card in the workbench layout
   const secTimeline = timelineSpec ? section(texts.timeline ?? 'Timeline', { aside: 'key times' }) : null;
   const shortLabel = m => m.short ?? m.label.replace(/\s*\(.*$/, '').slice(0, 28);
   function resolveTimeline() {
@@ -129,35 +203,71 @@ export function createInstrument(spec) {
     const duration = +val(timelineSpec.duration);
     if (!(duration > start)) throw new Error(`timeline.duration (the end time) must be later than the start ${start}`);
     const span = duration - start, tol = 1e-9 * Math.max(Math.abs(duration), span);
-    const markers = (val(timelineSpec.markers) ?? []).filter(m => Number.isFinite(m.t));
-    for (const m of markers) if (m.t < start - tol || m.t > duration + tol) throw new Error(`timeline marker "${m.label}" at ${m.t} lies outside the run ${start}…${duration}`);
-    tl = { start, duration, markers, note: val(timelineSpec.note) ?? '' };
+    const all = (val(timelineSpec.markers) ?? []).filter(m => Number.isFinite(m.t));
+    // a key time outside the run (a measured event after the point where the model stops being valid,
+    // e.g. the impacts after a computed break-up) is listed in the side panel as "beyond this run",
+    // never stretched onto the bar: the run still ends where the model ends
+    const markers = all.filter(m => m.t >= start - tol && m.t <= duration + tol);
+    const beyond = all.filter(m => !markers.includes(m));
+    tl = { start, duration, markers, beyond, note: val(timelineSpec.note) ?? '' };
+    // a watchable run in every mode: `seconds` (or a function of sim and params) sets the default
+    // speed so that the whole run plays in that many seconds, whatever its length in this mode
+    const secs = +val(timelineSpec.seconds);
+    // (only when the run's length changed, so a speed the viewer chose survives a restart)
+    if (secs > 0 && (duration - start) / secs !== defaultSpeedNow) { clock.speed = (duration - start) / secs; tp?.setSpeed?.(clock.speed); defaultSpeedNow = clock.speed; }
     tlEl.hidden = false;
     const fmt = t => (formatTime ? formatTime(t) : `${+t.toPrecision(4)} ${timeUnit}`);
     // the bar: one tick per key time, short labels above (staggered when close), full text as a tooltip
     const bar = tlEl.querySelector('.bar'), ticks = tlEl.querySelector('.ticks');
     bar.querySelectorAll('.m').forEach(e => e.remove());
-    let lastX = -1, level = 0;
     ticks.replaceChildren(...markers.slice().sort((a, b) => a.t - b.t).map(m => {
       const x = 100 * (m.t - start) / span;
-      level = x - lastX < 22 ? 1 - level : 0; lastX = x;
       bar.append(el('span', { class: `m ${m.kind ?? 'computed'}`, style: `left:${x.toFixed(3)}%`, title: `${m.label}: ${fmt(m.t)}` }));
       const sl = shortLabel(m), withTime = /\d/.test(sl) ? sl : `${sl} · ${fmt(m.t)}`;   // no repeated time
       // near the ends, anchor the label at its tick instead of centring it (never clipped by the bar's edges)
       const anchor = x < 15 ? 'translateX(0)' : x > 85 ? 'translateX(-100%)' : 'translateX(-50%)';
-      return el('span', { class: `lab ${m.kind ?? 'computed'} r${level}`, style: `left:${x.toFixed(3)}%;transform:${anchor}`, title: `${m.label}: ${fmt(m.t)}` }, withTime);
+      return el('span', { class: `lab ${m.kind ?? 'computed'}`, style: `left:${x.toFixed(3)}%;transform:${anchor}`, title: `${m.label}: ${fmt(m.t)}` }, withTime);
     }));
     const [a, b] = tlEl.querySelectorAll('.ends span');
     a.textContent = fmt(start); b.textContent = `${fmt(duration)} (end)`;
+    layoutTimelineLabels();
     // the side panel lists every key time in full, with its kind, and the note
     if (secTimeline) {
       const kinds = { computed: 'computed in this model', measured: 'measured (literature)', requested: 'named in the request' };
       secTimeline.body.replaceChildren(
         row('run', `${fmt(start)} – ${fmt(duration)}`),
         ...markers.map(m => el('div', { class: 'psim-tlrow' }, el('i', { class: m.kind ?? 'computed' }), el('span', {}, m.label), el('code', {}, fmt(m.t)), el('small', {}, kinds[m.kind ?? 'computed']))),
+        ...beyond.map(m => el('div', { class: 'psim-tlrow' }, el('i', { class: m.kind ?? 'measured' }), el('span', {}, m.label), el('code', {}, fmt(m.t)), el('small', {}, `${kinds[m.kind ?? 'measured']}; ${m.t > duration ? 'after' : 'before'} this run, which ends where the model stops`))),
         tl.note ? el('p', { class: 'psim-hint' }, tl.note) : null);
     }
   }
+  // Labels are placed by their measured widths: each goes in the lowest of three rows where it does
+  // not touch another label; one that fits nowhere is hidden (its tick keeps the tooltip, and the
+  // side panel lists every key time). Rerun when the bar changes size (phone, full screen).
+  const TL_ROWS = 3, TL_ROW_H = 13, TL_GAP = 6;
+  function layoutTimelineLabels() {
+    if (!tl || tlEl.hidden) return;
+    const labs = [...tlEl.querySelectorAll('.ticks .lab')];
+    labs.forEach(l => { l.style.bottom = '2px'; l.style.visibility = ''; l.classList.remove('hid'); });
+    const box = tlEl.querySelector('.ticks').getBoundingClientRect();
+    if (!(box.width > 0)) return;
+    const rows = Array.from({ length: TL_ROWS }, () => []);
+    let used = labs.length ? 1 : 0;
+    for (const l of labs) {
+      const r = l.getBoundingClientRect(), lo = Math.max(r.left, box.left), hi = Math.min(r.right, box.right);
+      const k = rows.findIndex(slots => slots.every(([a, b]) => hi + TL_GAP <= a || lo >= b + TL_GAP));
+      if (k < 0) { l.style.visibility = 'hidden'; l.classList.add('hid'); continue; }
+      rows[k].push([lo, hi]); used = Math.max(used, k + 1);
+      l.style.bottom = `${2 + k * TL_ROW_H}px`;
+    }
+    tlEl.querySelector('.ticks').style.height = `${4 + used * TL_ROW_H}px`;
+    // the two end labels: drop the start when they would touch
+    const [a, b] = tlEl.querySelectorAll('.ends span');
+    a.style.visibility = '';
+    if (a.getBoundingClientRect().right + TL_GAP > b.getBoundingClientRect().left) a.style.visibility = 'hidden';
+  }
+  new ResizeObserver(() => layoutTimelineLabels()).observe(tlEl);
+
   tlEl.querySelector('.bar').addEventListener('click', e => {
     if (!tl) return;
     const r = e.currentTarget.getBoundingClientRect(), T = tl.start + Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * (tl.duration - tl.start);
@@ -166,6 +276,7 @@ export function createInstrument(spec) {
   });
 
   function rebuild() {
+    steadyLabels.clear();
     sim = create({ ...values });
     tDisplay = sim.t ?? 0;
     resolveTimeline();
@@ -178,14 +289,14 @@ export function createInstrument(spec) {
   // ------------------------------------------------------------ full screen
   // The scene (canvas, HUD, legend) and the playback bar fill the screen. Falls back to filling the
   // window with CSS where the Fullscreen API is missing or refused (iPhone Safari, sandboxed frames).
-  const scene = benchParts?.wrap ?? stage;
+  const scene = sceneEl;
   let pseudoFs = false, fsBtn = null;
   const fsElement = () => document.fullscreenElement ?? document.webkitFullscreenElement ?? null;
   const isFullscreen = () => pseudoFs || fsElement() === scene;
   function afterFullscreen() {
     const on = isFullscreen();
     scene.classList.toggle('psim-fs', on);
-    if (tp) { if (on && tp.parentNode !== scene) scene.append(tp); else if (!on && tp.parentNode !== stage) stage.append(tp); tp.setFullscreen(on); }
+    tp?.setFullscreen(on);
     if (fsBtn) fsBtn.innerHTML = on ? ICONS.exitFullscreen : ICONS.fullscreen;
     requestAnimationFrame(() => spec.onFit?.(view));
   }
@@ -216,13 +327,41 @@ export function createInstrument(spec) {
       onFullscreen: () => toggleFullscreen(),
       onSpeed: s => { clock.speed = s; },
     });
-    stage.append(tp);
+    // the player bar sits directly under the view, like a video player: buttons, the clock and
+    // the timeline with its key moments, speed, full screen
+    const firstSep = tp.querySelector('.sep');
+    const clockEl = $('.psim-clock');
+    clockEl.hidden = false;
+    tp.insertBefore(clockEl, firstSep);
+    tp.insertBefore(tlEl, firstSep);
+    viewEl.after(tp);
   } else {
     fsBtn = el('button', { class: 'psim-fsbtn', title: 'Full screen (F)', 'aria-label': 'Full screen', html: ICONS.fullscreen, onclick: () => toggleFullscreen() });
-    scene.append(fsBtn);
-    stage.querySelector('.psim-hud').querySelector('.dim').textContent = '';
+    viewEl.append(fsBtn);
   }
-  function setPlaying(p) { clock.playing = p; tp?.setPlaying(p); }
+  // the page's main actions ("Heat it up", "Fire one electron"): large buttons directly under the
+  // view, where the eye already is; settings stay in the side panel
+  if ((spec.actions ?? []).length) {
+    const api = () => ({ setParams, setParam, getSim: () => sim, values, play: () => setPlaying(true), pause: () => setPlaying(false), restart: () => rebuild(),
+      // jump to time t of the run (from the start: restart first to go back), e.g. to just before the moment the action is about
+      seek: t => window.psim.advanceTo(t) });
+    const bar = el('div', { class: 'psim-actions' }, ...spec.actions.map(a => {
+      const b = el('button', { type: 'button', class: 'psim-action', title: a.hint ?? '' }, a.label);
+      b.addEventListener('click', () => a.onClick?.(api()));
+      return b;
+    }));
+    viewEl.after(bar);
+  }
+  // at the end of a run: the final state stays on screen with a replay button over it
+  const endcard = $('.psim-endcard');
+  endcard.querySelector('button').addEventListener('click', () => { rebuild(); setPlaying(true); });
+  function showEndcard() {
+    const on = timeDependent && !clock.playing && isDone();
+    if (endcard.hidden === !on) return;
+    endcard.hidden = !on;
+    if (on) endcard.querySelector('span').textContent = texts.finishedCard ?? `Finished at ${formatTime ? formatTime(endTime()) : `${fix(endTime(), timeDigits)} ${timeUnit}`}`;
+  }
+  function setPlaying(p) { clock.playing = p; tp?.setPlaying(p); showEndcard(); }
   // A model that ends (a merger, everything decayed, the last particle left) sets sim.done (or
   // sim.ended): the clock stops there instead of counting time in which nothing is computed,
   // and play starts the run again from the beginning.
@@ -291,7 +430,7 @@ export function createInstrument(spec) {
       nextPlot = 0;
       const firstErr = d.find(x => x.kind === 'error');
       diagPlot.el.style.display = firstErr ? '' : 'none';
-      diagPlot.el.querySelector('.cap').textContent = firstErr ? `${firstErr.label}   vs   t` : '';
+      diagPlot.el.querySelector('.cap').textContent = firstErr ? `${firstErr.label}   vs   ${timeLabel}` : '';   // the real progress axis (time, temperature, sweeps)
       if (spec.duration) diagPlot.setXMax(spec.duration);
     }
     for (const x of d) {
@@ -318,7 +457,7 @@ export function createInstrument(spec) {
         el('i', { class: c.pass !== true ? 'bad' : c.state === 'warn' ? 'warn' : '' }),
         el('span', {}, c.label), el('code', {}, c.value)));
     }
-    if (report.notes) for (const n of report.notes) secVerify.body.append(el('p', { class: 'psim-hint' }, n));
+    if (report.notes) for (const n of [].concat(report.notes)) secVerify.body.append(el('p', { class: 'psim-hint' }, n));
   } else {
     secVerify.body.append(el('p', { class: 'psim-hint' }, 'No build-time verification report is embedded in this page.'));
   }
@@ -418,7 +557,7 @@ export function createInstrument(spec) {
     if (glLayer?.ok) { glLayer.sync(view.dpr); drawGL?.(glLayer.gl, sim, view, tDisplay); }
     ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
     ctx.clearRect(0, 0, view.W, view.H);
-    if (glLayer && !glLayer.ok) { ctx.fillStyle = cssVar('--muted'); ctx.font = '13px system-ui, sans-serif'; ctx.fillText(`${glLayer.reason}: the 3D view cannot be shown.`, 16, view.H - 20); }
+    if (glLayer && !glLayer.ok) { ctx.fillStyle = sceneVar('--muted'); ctx.font = '13px system-ui, sans-serif'; ctx.fillText(`${glLayer.reason}: the 3D view cannot be shown.`, 16, view.H - 20); }
     draw(ctx, sim, view, tDisplay);
     if (now - lastUi > 100) {
       lastUi = now;
@@ -427,8 +566,9 @@ export function createInstrument(spec) {
       if (tl) tlEl.querySelector('.fill').style.width = `${(100 * Math.max(0, Math.min(1, (tDisplay - tl.start) / (tl.duration - tl.start)))).toFixed(2)}%`;
       const firstErr = d.find(x => x.kind === 'error' && !x.pending);
       hud.a.textContent = firstErr && hudError ? `${firstErr.label} ${sci(firstErr.value)}` : '';
-      hud.b.textContent = spec.hudLine?.(sim) ?? '';
-      hud.flag.textContent = isDone() ? (texts.finished ?? 'finished · play restarts')
+      hud.b.textContent = spec.hudLine?.(sim, tDisplay) ?? '';   // same moment as draw()
+      showEndcard();
+      hud.flag.textContent = isDone() ? (texts.finished ?? 'finished')
         : limited ? 'compute-limited: playback slowed to keep the calculation exact' : '';
       benchApi?.update?.(sim, tDisplay, { rebuilt: false });
       status.set('t', timeDependent ? tDisplay : 1);
@@ -452,8 +592,13 @@ export function createInstrument(spec) {
       return window.psim.state();
     },
     /** The run's declared span and key times ({ duration, markers, note }), or null. */
-    get timeline() { return tl ? { start: tl.start, duration: tl.duration, markers: tl.markers.map(m => ({ ...m })), note: tl.note } : null; },
+    get timeline() { return tl ? { start: tl.start, duration: tl.duration, markers: tl.markers.map(m => ({ ...m })), beyond: tl.beyond.map(m => ({ ...m })), note: tl.note } : null; },
     get done() { return isDone(); },
+    /** The main actions, for checks: label and the seconds of playback until the result shows. */
+    actions: (spec.actions ?? []).map(a => ({ label: a.label, reveal: a.reveal ?? 8 })),
+    /** The default playback speed (simulated time per second) and the plain-language intro, for checks. */
+    get defaultSpeed() { return defaultSpeedNow; },
+    get intro() { return intro?.text ? { text: intro.text, watch: [...(intro.watch ?? [])] } : null; },
     restart: () => rebuild(),
     setParams: (next, opts) => setParams(next, opts),
     setParam: (k, v) => setParam(k, v),
@@ -468,14 +613,15 @@ export function createInstrument(spec) {
     steps: n => { if (typeof sim.step === "function") for (let i = 0; i < n; i++) sim.step(); tDisplay = sim.t ?? 0; return window.psim.state(); },
   };
 
+  rebuild();   // the first sim exists before bench() runs, so bench may call getSim() at once
   if (bench && benchParts) {
     benchApi = bench({
       ...benchParts, createPlot, createEquation, createDerivation, M, values, report,
       setParam, setParams, play: () => setPlaying(true), pause: () => setPlaying(false),
       getSim: () => sim,
     }) ?? null;
+    benchApi?.update?.(sim, tDisplay, { rebuilt: true });
   }
-  rebuild();
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   setPlaying(timeDependent && (query.get('autoplay') ? query.get('autoplay') !== '0' : !reduced));
   addEventListener('keydown', e => {

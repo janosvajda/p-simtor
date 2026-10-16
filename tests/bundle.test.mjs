@@ -110,3 +110,24 @@ result = (${exercise.toString()})(L, F, P);
   const [L, F, P] = await Promise.all([import('../core/linalg.mjs'), import('../core/fields.mjs'), import('../core/probability.mjs')]);
   assert.equal(ctx.result, exercise(L, F, P));
 });
+
+test('scientific audit calculations survive bundling, including exact polynomials and shared spectral dependencies', async () => {
+  const exercise = (S, C, T, W) => {
+    const st = T.stiffStepper({ f: (_t, y) => [-y[0]], y0: [1], h: 0.01, adaptive: false });
+    st.advanceTo(0.1, 20, { exact: true });
+    const wave = W.nls({ re0: Float64Array.of(1, -1, 1, -1), dx: 1, dt: 0.01, kappa: 0 });
+    return JSON.stringify([S.hyp2f1(-50, 20, 2.5, 0.99), S.hyp1f1(-50, 3.5, 20), S.besselK(300, 750),
+      C.smallEigenvalues([[1, 0, 0], [0, 1, 0], [0, 0, 1]]), st.y[0], wave.hamiltonian()]);
+  };
+  const code = bundleModules(`
+import * as S from 'psim:core/special.mjs';
+import * as C from 'psim:core/chaos.mjs';
+import * as T from 'psim:core/stiff.mjs';
+import * as W from 'psim:core/spectral.mjs';
+result = (${exercise.toString()})(S, C, T, W);
+`, SKILL_DIR);
+  const ctx = { result: null };
+  vm.runInNewContext(code, ctx);
+  const [S, C, T, W] = await Promise.all([import('../core/special.mjs'), import('../core/chaos.mjs'), import('../core/stiff.mjs'), import('../core/spectral.mjs')]);
+  assert.equal(ctx.result, exercise(S, C, T, W));
+});

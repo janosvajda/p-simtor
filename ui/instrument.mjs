@@ -84,6 +84,17 @@ export function cssVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
+/**
+ * A colour token as it applies INSIDE the animation view: the view is dark in both page themes
+ * (like a screen), so scene drawing (canvas labels, grids, glows) reads its tokens here, while
+ * figures and panels use cssVar and follow the page theme.
+ */
+export function sceneVar(name) {
+  if (typeof name !== 'string' || !name.startsWith('--')) return name;
+  const host = typeof document !== 'undefined' ? document.querySelector('.psim-view') ?? document.documentElement : null;
+  return host ? getComputedStyle(host).getPropertyValue(name).trim() : '';
+}
+
 // ---------- layout pieces ----------
 
 export function section(title, { open = true, aside } = {}) {
@@ -105,7 +116,8 @@ export function row(label, value = '—', cls = '') {
 /** Value for a numeric input: short, exact enough, scientific notation for small or huge numbers. */
 export const inputValue = v => {
   const a = Math.abs(v);
-  return a !== 0 && (a < 1e-3 || a >= 1e7) ? v.toExponential(4) : String(+Number(v).toPrecision(6));
+  // large or tiny values in scientific form without padded zeros (3e+10, not 3.0000e+10)
+  return a !== 0 && (a < 1e-3 || a >= 1e7) ? v.toExponential(4).replace(/\.?0+e/, 'e') : String(+Number(v).toPrecision(6));
 };
 
 /**
@@ -193,6 +205,13 @@ export function transport({ onToggle, onStep, onRestart, onFit, onFullscreen, sp
     el('button', { title: 'Fit the view', 'aria-label': 'Fit view', html: ICONS.fit, onclick: onFit }),
     onFullscreen ? el('button', { class: 'fs', title: 'Full screen (F)', 'aria-label': 'Full screen', html: ICONS.fullscreen, onclick: onFullscreen }) : null);
   bar.setPlaying = p => { play.innerHTML = p ? ICONS.pause : ICONS.play; };
+  /** Show a speed set by the shell (e.g. a timeline's play time); widens the slider range if needed. */
+  bar.setSpeed = s => {
+    const v = Math.log10(s);
+    if (v < +range.min) range.min = v - 1;
+    if (v > +range.max) range.max = v + 1;
+    range.value = v; out.textContent = speedLabel(s);
+  };
   bar.setFullscreen = on => {
     const b = bar.querySelector('button.fs');
     if (b) { b.innerHTML = on ? ICONS.exitFullscreen : ICONS.fullscreen; b.title = on ? 'Leave full screen (F or Esc)' : 'Full screen (F)'; }

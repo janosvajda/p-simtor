@@ -82,19 +82,19 @@
     },
     {
       "id": "bec-vortex-lattice",
-      "title": "Stirred condensate: vortex lattice",
+      "title": "Stirring a Bose–Einstein condensate until a vortex lattice forms",
       "prompt": "/p-simtor show a Bose–Einstein condensate being stirred until quantum vortices appear and form a lattice",
-      "about": "The 2D Gross–Pitaevskii equation in a rotating trap: stirring nucleates quantised vortices that settle into a triangular lattice; density matches Feynman's rule (1.05–1.12 × Ω/π).",
-      "date": "2026-10-15",
+      "about": "A stirred condensate (2D Gross–Pitaevskii, computed live) can only spin through identical tiny whirlpools, which settle into a triangular grid; stir faster and more appear.",
+      "group": "experiments",
+      "gl": false,
+      "date": "2026-10-16",
       "source": "/Users/janvajda/projects/psim-test/simulations/bec-vortex-lattice.html",
       "checks": {
-        "total": 12,
-        "passed": 12
+        "total": 24,
+        "passed": 24
       },
       "thumb": true,
-      "skillVersion": "0.3.0",
-      "group": "experiments",
-      "gl": true
+      "skillVersion": "0.3.0"
     },
     {
       "id": "qcd-vacuum-4d-slices",
@@ -116,17 +116,17 @@
       "id": "cavendish-experiment-3d",
       "title": "Cavendish experiment: weighing the Earth",
       "prompt": "/p-simtor recreate the Cavendish experiment in 3D: weighing the Earth with a torsion balance",
-      "about": "Cavendish's 1798 torsion balance: the four ball-pair torques drive the beam, the readings are fitted, and G and Earth's density come out (5.48 vs 5.448 explained).",
-      "date": "2026-10-14",
+      "about": "Cavendish's 1798 torsion balance in 3D: four lead balls twist a wire by about a millimetre, and the computed swing gives G and the Earth's mass (5.97×10²⁴ kg).",
+      "group": "experiments",
+      "gl": true,
+      "date": "2026-10-16",
       "source": "/Users/janvajda/projects/psim-test/simulations/cavendish-experiment-3d.html",
       "checks": {
         "total": 15,
         "passed": 15
       },
       "thumb": true,
-      "skillVersion": "0.3.0",
-      "group": "experiments",
-      "gl": true
+      "skillVersion": "0.3.0"
     },
     {
       "id": "hydrogen-orbitals-3d",
@@ -178,19 +178,19 @@
     },
     {
       "id": "wave-packet-tunnelling",
-      "title": "Electron wave packet tunnelling in 2D",
+      "title": "Electron tunnelling through a wall",
       "prompt": "/p-simtor show an electron wave packet tunnelling through a barrier in 2D",
-      "about": "An electron's probability wave hits a barrier: most reflects, a quarter tunnels through, matching the exact quantum result.",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/wave-packet-tunnelling.html",
+      "about": "An electron fired at a wall it cannot climb over: its computed wave splits, and 11.98 % gets through (exact: 11.99 %); a slightly thicker wall lets far less through.",
+      "group": "quantum",
+      "gl": false,
+      "date": "2026-10-16",
+      "source": "/Users/janvajda/projects/psim-test/fresh/wave-packet-tunnelling.html",
       "checks": {
-        "total": 17,
-        "passed": 17
+        "total": 15,
+        "passed": 15
       },
       "thumb": true,
-      "skillVersion": "0.3.0",
-      "group": "quantum",
-      "gl": true
+      "skillVersion": "0.3.0"
     },
     {
       "id": "black-body",
@@ -258,19 +258,19 @@
     },
     {
       "id": "three-level-thermal",
-      "title": "Three-level system heating up",
+      "title": "Three levels warming up",
       "prompt": "/p-simtor show how the populations of a three-level quantum system change as it heats up",
-      "date": "2026-10-14",
-      "source": "/Users/janvajda/projects/psim-test/simulations/three-level-thermal.html",
+      "about": "Boltzmann populations of three energy levels as the temperature rises, with the heat-capacity peaks they cause.",
+      "group": "quantum",
+      "gl": false,
+      "date": "2026-10-16",
+      "source": "/Users/janvajda/projects/psim-test/fresh2/three-level-thermal.html",
       "checks": {
         "total": 10,
         "passed": 10
       },
       "thumb": true,
-      "skillVersion": "0.3.0",
-      "about": "Boltzmann populations of three energy levels as the temperature rises, with the heat-capacity peaks they cause.",
-      "group": "quantum",
-      "gl": false
+      "skillVersion": "0.3.0"
     },
     {
       "id": "lennard-jones",
@@ -466,12 +466,12 @@
     },
     {
       "id": "enzyme-tunnelling",
-      "title": "Hydrogen tunnelling in enzymes",
+      "title": "Hydrogen tunnelling in an enzyme",
       "prompt": "/p-simtor show how enzymes use quantum tunnelling to move hydrogen, and why deuterium is so much slower",
-      "about": "H, D and T wave packets meet the same transfer barrier; exact Eckart tunnelling gives the kinetic isotope effect, and a gated-tunnelling model gives the nearly temperature-independent KIE seen in lipoxygenase.",
+      "about": "Hydrogen and deuterium race through the same energy wall (computed eigenstates, 1D double well): hydrogen seeps across ~100× faster, matching the size of the measured isotope effect.",
       "group": "biology",
-      "gl": true,
-      "date": "2026-10-15",
+      "gl": false,
+      "date": "2026-10-16",
       "source": "/Users/janvajda/projects/psim-test/simulations/enzyme-tunnelling.html",
       "checks": {
         "total": 15,
@@ -498,16 +498,208 @@
     },
     {
       "id": "retinal-vision",
-      "title": "The first step of vision: retinal photoisomerisation",
+      "title": "How light twists retinal: the first step of vision",
       "prompt": "/p-simtor show the first step of vision: how light twists retinal in rhodopsin in 200 femtoseconds through a conical intersection",
-      "about": "The first step of vision: a wave packet on two coupled potential surfaces pours through a conical intersection as retinal twists, giving a 0.64 trans yield (0.65 measured) — in a reduced two-mode model whose yield depends on the published parameter set.",
+      "about": "A computed quantum wave packet twists retinal's C11=C12 bond and drops through the funnel where two energy states meet; most comes out trans within 200 fs (Hahn & Stock model).",
       "group": "biology",
+      "gl": false,
+      "date": "2026-10-16",
+      "source": "/Users/janvajda/projects/psim-test/simulations/retinal-vision.html",
+      "checks": {
+        "total": 11,
+        "passed": 11
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "karman-vortex-street",
+      "title": "Kármán vortex street",
+      "prompt": "/p-simtor show how wind flowing past a cylinder sheds a vortex street, and how the shedding frequency depends on the Reynolds number",
+      "about": "Live lattice-Boltzmann flow past a cylinder: the vortex street appears above Re ≈ 47 (fit 47.0) and sheds at St = 0.167 at Re 100 (Williamson: 0.164).",
+      "group": "waves",
+      "gl": false,
+      "date": "2026-10-15",
+      "source": "/Users/janvajda/projects/psim-test/simulations/karman-vortex-street.html",
+      "checks": {
+        "total": 10,
+        "passed": 10
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "dzhanibekov-effect",
+      "title": "Dzhanibekov effect: the flipping wing nut",
+      "prompt": "/p-simtor show the Dzhanibekov effect: why a spinning wing nut in space flips over and over",
+      "about": "A wing nut spun about its middle axis flips over and over; the measured flip interval 1.769842 s matches the exact elliptic-function value 2K(m)/λ to 4×10⁻⁹.",
+      "group": "matter",
       "gl": true,
       "date": "2026-10-15",
-      "source": "/Users/janvajda/projects/psim-test/simulations/retinal-vision.html",
+      "source": "/Users/janvajda/projects/psim-test/simulations/dzhanibekov-effect.html",
       "checks": {
         "total": 17,
         "passed": 17
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "age-of-universe",
+      "title": "The expanding universe",
+      "prompt": "/p-simtor show the universe expanding from the Big Bang to today, with galaxies moving apart and their light stretching, and how we know it is 13.8 billion years old; explain it so someone without a science background understands",
+      "about": "Space stretches, carrying galaxies apart and stretching their light; running the measured expansion backwards gives the age, 13.79 billion years (Planck: 13.787 ± 0.020).",
+      "group": "space",
+      "gl": false,
+      "date": "2026-10-16",
+      "source": "/Users/janvajda/projects/psim-test/simulations/universe-age.html",
+      "checks": {
+        "total": 16,
+        "passed": 16
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "soliton-collision",
+      "title": "Two solitary waves colliding in a canal",
+      "prompt": "/p-simtor show two solitary water waves colliding in a shallow canal and passing through each other unchanged",
+      "about": "Two KdV solitary waves in a canal pass through each other unchanged except for position jumps of +1.238 m and −2.526 m, matching Hirota's exact solution to 10⁻⁶.",
+      "group": "waves",
+      "gl": false,
+      "date": "2026-10-15",
+      "source": "/Users/janvajda/projects/psim-test/simulations/soliton-collision.html",
+      "checks": {
+        "total": 13,
+        "passed": 13
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "laser-cavity",
+      "title": "Laser cavity: mirrors and stability",
+      "prompt": "/p-simtor show how a laser cavity's mirrors shape the light beam and when the cavity becomes unstable",
+      "about": "Curved mirrors trap light in a beam whose shape they set (computed Gaussian mode and bouncing ray); pull them past the limit and the light walks off.",
+      "group": "waves",
+      "gl": false,
+      "date": "2026-10-16",
+      "source": "/Users/janvajda/projects/psim-test/simulations/laser-cavity.html",
+      "checks": {
+        "total": 9,
+        "passed": 9
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "chandrasekhar-limit",
+      "title": "The Chandrasekhar limit",
+      "prompt": "/p-simtor show why white dwarfs cannot be heavier than about 1.4 solar masses",
+      "about": "Cold white dwarfs from the exact relativistic electron pressure: mass levels off at 1.456 M☉ (μe = 2) as the radius shrinks; Sirius B's radius reproduced within 0.7σ.",
+      "group": "space",
+      "gl": false,
+      "date": "2026-10-15",
+      "source": "/Users/janvajda/projects/psim-test/simulations/chandrasekhar-limit.html",
+      "checks": {
+        "total": 17,
+        "passed": 17
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "dam-break",
+      "title": "Dam break: how fast the flood front moves",
+      "prompt": "/p-simtor show what happens when a dam breaks and how fast the flood front moves",
+      "about": "A shallow-water dam break against the exact Ritter/Stoker solutions: the 10 cm flood front runs at 16.81 m/s (exact 16.835), and a rough bed slows it to 5.1 m/s.",
+      "group": "waves",
+      "gl": false,
+      "date": "2026-10-15",
+      "source": "/Users/janvajda/projects/psim-test/simulations/dam-break.html",
+      "checks": {
+        "total": 14,
+        "passed": 14
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "geometrodynamics",
+      "title": "Spacetime storm: inspiral",
+      "prompt": "/p-simtor show the nonlinear dynamics of curved spacetime from Kip Thorne's colloquium \"Geometrodynamics: The Nonlinear Dynamics of Curved Spacetime\"",
+      "about": "Two black holes spiral together; the stretch and squeeze of space around them streams out as spiral gravitational waves. The inspiral is computed; the merger is not.",
+      "group": "space",
+      "gl": false,
+      "date": "2026-10-16",
+      "source": "/Users/janvajda/projects/psim-test/simulations/geometrodynamics.html",
+      "checks": {
+        "total": 12,
+        "passed": 12
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "lagrange-points",
+      "title": "Lagrange points",
+      "prompt": "/p-simtor show the Lagrange points where the James Webb Space Telescope and the Trojan asteroids stay in step with a planet; explain it so someone without a science background understands",
+      "about": "Five spots keep pace with a planet: push everything a little and objects at L1/L2 (where Webb works) slide off, while L4/L5 and the Trojan swarm hold.",
+      "group": "space",
+      "gl": false,
+      "date": "2026-10-16",
+      "source": "/Users/janvajda/projects/psim-test/simulations/lagrange-points.html",
+      "checks": {
+        "total": 24,
+        "passed": 24
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "exoplanet-transit",
+      "title": "A planet crossing its star",
+      "prompt": "/p-simtor show how astronomers find planets around other stars by watching a star dim when a planet passes in front of it; explain it so someone without a science background understands",
+      "about": "A planet crossing its star (HD 209458 b, the first found this way) blocks a little light; the computed dip and its length match the measured transit.",
+      "group": "space",
+      "gl": false,
+      "date": "2026-10-16",
+      "source": "/Users/janvajda/projects/psim-test/simulations/exoplanet-transit.html",
+      "checks": {
+        "total": 10,
+        "passed": 10
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "comet-breakup",
+      "title": "How Jupiter tore comet Shoemaker–Levy 9 apart",
+      "prompt": "/p-simtor show how Jupiter's gravity tore comet Shoemaker–Levy 9 apart before its pieces crashed into Jupiter in 1994; explain it so someone without a science background understands",
+      "about": "A 1.5 km rubble comet (500 computed grains) passes 1.33 Jupiter radii from Jupiter in July 1992; the tide beats its own gravity and it breaks into a line of pieces.",
+      "group": "space",
+      "gl": false,
+      "date": "2026-10-16",
+      "source": "/Users/janvajda/projects/psim-test/simulations/comet-breakup.html",
+      "checks": {
+        "total": 16,
+        "passed": 16
+      },
+      "thumb": true,
+      "skillVersion": "0.3.0"
+    },
+    {
+      "id": "spiral-arms",
+      "title": "How spiral arms form",
+      "prompt": "/p-simtor show how spiral arms form in a galaxy; explain it so someone without a science background understands",
+      "about": "30 000 stars pulling on each other (particle-mesh N-body) turn small clumps into spiral arms, traffic jams that stars drift through; switch off their pull and the disk stays smooth.",
+      "group": "space",
+      "gl": true,
+      "date": "2026-10-16",
+      "source": "/Users/janvajda/projects/psim-test/simulations/spiral-arms.html",
+      "checks": {
+        "total": 18,
+        "passed": 18
       },
       "thumb": true,
       "skillVersion": "0.3.0"

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="generator" content="p-simtor">
-<title>Electron wave packet tunnelling in 2D</title>
+<title>Electron tunnelling through a wall</title>
 <style>/* psim:ui/instrument.css */
 /* p-simtor instrument shell.
    A simulation page is a scientific instrument: a large stage for the physics,
@@ -143,35 +143,10 @@ body {
   background:
     radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 92%, var(--accent) 8%) 0%, var(--stage) 60%);
 }
-.psim-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
-.psim-stage canvas.grab { cursor: grab; }
-.psim-stage canvas.grabbing { cursor: grabbing; }
-.psim-stage canvas.move { cursor: move; }
+.psim-view canvas.grab { cursor: grab; }
+.psim-view canvas.grabbing { cursor: grabbing; }
+.psim-view canvas.move { cursor: move; }
 
-.psim-hud {
-  position: absolute; left: 16px; top: 14px;
-  display: grid; gap: 2px; pointer-events: none;
-  font: 12px/1.35 var(--mono); color: var(--ink-2);
-}
-.psim-hud b { font-weight: 500; color: var(--ink); font-size: 20px; letter-spacing: -.01em; }
-.psim-hud .dim { color: var(--muted); }
-.psim-hud .flag { color: var(--warn); }
-
-.psim-legend {
-  position: absolute; right: 16px; top: 14px; display: grid; gap: 4px; justify-items: end;
-  font: 11px/1.3 var(--sans); color: var(--muted); pointer-events: none; text-align: right;
-}
-
-.psim-transport {
-  position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
-  display: flex; align-items: center; gap: 4px;
-  padding: 5px; border-radius: 12px;
-  background: color-mix(in srgb, var(--panel) 86%, transparent);
-  border: 1px solid var(--line);
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 10px 30px rgba(0,0,0,.25);
-  max-width: calc(100% - 32px);
-}
 .psim-transport button {
   height: 32px; min-width: 32px; padding: 0 9px; border-radius: 8px;
   border: 0; background: transparent; color: var(--ink-2); cursor: pointer;
@@ -316,7 +291,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 @media (max-width: 860px) {
-  .psim-app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 64vh auto; height: auto; }
+  .psim-app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto; height: auto; }
   .psim-head { gap: 10px; }
   .psim-title { flex: 1; }
   .psim-tier { padding: 6px; }
@@ -324,7 +299,6 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
   .psim-side { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
   .psim-head { padding: 10px 16px; }
   .psim-title p { display: none; }
-  .psim-transport label.speed { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -378,28 +352,17 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 
 /* ---------- workbench layout: stage + figures + equations (instrument-app layout: 'workbench') ---------- */
 .psim-app.workbench .psim-stage { overflow: auto; background: var(--stage); }
-.psim-bench { position: relative; display: grid; gap: 18px; padding: 18px 18px 84px; min-height: 100%; }
-.psim-bench .psim-canvaswrap { position: relative; height: clamp(300px, 52vh, 620px); border-radius: 12px; overflow: hidden; border: 1px solid var(--line);
-  background: radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 90%, var(--accent) 10%) 0%, var(--stage) 65%); }
-.psim-bench .psim-canvaswrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+.psim-bench { position: relative; display: grid; gap: 18px; padding: 18px; min-height: 100%; }
 .psim-bench .psim-figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
 .psim-bench .psim-eqs { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
-.psim-app.workbench .psim-transport { position: fixed; left: calc((100vw - 372px) / 2); }
-.psim-app.workbench .psim-hud { left: 30px; top: 30px; }
-.psim-app.workbench .psim-legend { right: 30px; top: 30px; }
 @media (max-width: 860px) {
-  .psim-app.workbench .psim-transport { left: 50%; }
-  .psim-bench { padding: 12px 12px 84px; }
+  .psim-bench { padding: 12px; }
 }
 
 @media (max-width: 860px) {
   /* phones: legend bottom-right, clear of HUD (top-left), scale bars (bottom-left) and transport */
-  .psim-legend { top: auto; bottom: 70px; left: auto; right: 14px; max-width: 58%; justify-items: end; text-align: right; font-size: 10.5px; }
   .psim-app.workbench { grid-template-rows: auto auto auto; }
   .psim-app.workbench .psim-stage { overflow: visible; }
-  .psim-app.workbench .psim-transport { position: absolute; }
-  .psim-app.workbench .psim-legend { top: auto; bottom: 14px; left: auto; right: 26px; }
-  .psim-bench .psim-canvaswrap { height: 70vh; }
 }
 
 /* GPU layer (ui/gl.mjs): under the 2D canvas, which keeps labels and pointer events */
@@ -410,147 +373,230 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 .psim-presets .psim-hint { width: 100%; margin: 0; }
 
 /* Over a GPU scene the HUD and legend get a soft backing so they stay readable on bright content */
-.psim-app.has-gl .psim-hud, .psim-app.has-gl .psim-legend {
-  padding: 6px 9px; border-radius: 8px;
-  background: color-mix(in srgb, var(--stage) 72%, transparent);
-  backdrop-filter: blur(3px);
-}
 
 /* ---------- full screen (scene + HUD + legend + playback bar) ---------- */
 .psim-fs { background: var(--stage, var(--bg)); border-radius: 0 !important; border: 0 !important; }
-.psim-app .psim-fs .psim-transport { position: absolute; left: 50%; right: auto; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 5; }
 .psim-pseudo-fs { position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100dvh !important; max-height: none !important; z-index: 1000; margin: 0 !important; }
 .psim-fsbtn { position: absolute; right: 12px; bottom: 12px; z-index: 4; width: 34px; height: 34px; display: grid; place-items: center;
   border-radius: 9px; border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); cursor: pointer; }
 .psim-fsbtn:hover { background: var(--raise); color: var(--ink); }
 .psim-fsbtn svg { width: 15px; height: 15px; }
 
-/* ---------- timeline: the run's span and its key times (spec.timeline) ---------- */
-.psim-timeline { position: absolute; left: 50%; transform: translateX(-50%); bottom: 78px; width: min(560px, 62%); z-index: 3;
-  font: 10.5px var(--mono); color: var(--muted); pointer-events: auto; }
-.psim-canvaswrap > .psim-timeline { bottom: 14px; }
-.psim-app .psim-fs > .psim-timeline { bottom: 86px; }
+
+
+/* The animation view is a dark screen in BOTH page themes: scenes (glows, density maps, space) are
+   designed for it, and every page looks the same. Panels, text and figures follow the page theme. */
+.psim-view, :root[data-theme="light"] .psim-view {
+  --bg: #07090d;
+  --stage: #0a0d13;
+  --panel: #0e1219;
+  --raise: #141923;
+  --line: rgba(196, 214, 255, 0.09);
+  --line-strong: rgba(196, 214, 255, 0.18);
+  --ink: #e6e9ef;
+  --ink-2: #b6bdcb;
+  --muted: #7b8396;
+  --faint: #4a5163;
+  --accent: #8cc8ff;
+  --accent-ink: #06121f;
+  --good: #7fd8a4;
+  --warn: #f2c46d;
+  --bad: #ff7a85;
+  --grid: rgba(150, 175, 230, 0.06);
+  --grid-strong: rgba(150, 175, 230, 0.13);
+  --glow: 1;
+  --body-0: #ffb35c;
+  --body-1: #68c3ff;
+  --body-2: #ff6f9a;
+  --body-3: #9be08a;
+  --body-4: #c49bff;
+  --body-5: #ffe07a;
+  color-scheme: dark;
+}
+
+/* ---------- the scene: plain intro, clean view, player bar, key ---------- */
+/* Everything about the animation lives in one card: what it shows (in plain words), the view with
+   nothing written over it, a video-player bar right under it, and the key to its colours below. */
+.psim-scene { display: flex; flex-direction: column; min-height: 0; background: var(--stage); }
+.psim-stage > .psim-scene { position: absolute; inset: 0; }
+.psim-scene.psim-canvaswrap { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
+.psim-view { position: relative; flex: 1 1 auto; min-height: 0;
+  background: radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 90%, var(--accent) 10%) 0%, var(--stage) 65%); }
+.psim-canvaswrap > .psim-view { flex: none; height: clamp(320px, 58vh, 660px); }
+.psim-view canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+.psim-intro { padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); font: 14px/1.55 var(--sans); color: var(--ink-2); }
+.psim-side > .psim-intro { margin: 14px 16px 4px; }
+.psim-intro b { display: block; font: 600 11px/1.4 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.psim-intro p { margin: 0; color: var(--ink); max-width: 80ch; }
+.psim-intro ul { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 3px; font-size: 13px; color: var(--ink-2); }
+.psim-intro li::before { content: '→ '; color: var(--accent); }
+.psim-intro.collapsed p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.psim-intro.collapsed ul { display: none; }
+.psim-more { margin-top: 4px; padding: 0; border: 0; background: none; color: var(--accent); font: 500 12.5px var(--sans); cursor: pointer; }
+.psim-more:hover { text-decoration: underline; }
+.psim-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 92%, var(--stage)); }
+.psim-action { padding: 9px 16px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--line)); background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--ink); font: 600 13.5px var(--sans); cursor: pointer; }
+.psim-action:hover { background: color-mix(in srgb, var(--accent) 26%, transparent); }
+
+.psim-transport { display: flex; align-items: center; gap: 4px; padding: 6px 10px; flex-wrap: nowrap;
+  border-top: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 92%, var(--stage)); }
+.psim-clock[hidden] { display: none; }
+.psim-clock { display: grid; line-height: 1.15; padding: 0 8px; min-width: 0; max-width: 220px; }
+.psim-clock .dim { font: 10.5px var(--sans); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.psim-clock b { font: 500 15px var(--mono); color: var(--ink); white-space: nowrap; }
+
+.psim-timeline { flex: 1 1 200px; min-width: 120px; padding: 0 10px; font: 10.5px var(--mono); color: var(--muted); position: relative; }
+.psim-timeline .ticks { position: relative; height: 17px; }
 .psim-timeline .bar { position: relative; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--ink) 16%, transparent); cursor: pointer; }
+.psim-timeline .bar::before { content: ''; position: absolute; inset: -8px 0; }   /* a taller hit area */
 .psim-timeline .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 3px; background: var(--accent); }
 .psim-timeline .m { position: absolute; top: -4px; width: 2px; height: 14px; margin-left: -1px; background: var(--ink); }
-.psim-timeline .ticks { position: relative; height: 30px; }
 .psim-timeline .lab { position: absolute; bottom: 2px; transform: translateX(-50%); white-space: nowrap; color: var(--ink-2); }
-.psim-timeline .lab.r1 { bottom: 16px; }
 .psim-timeline .ends { display: flex; justify-content: space-between; margin-top: 3px; }
 .psim-timeline .m.measured, .psim-tlrow i.measured { background: var(--good, #4cc38a); }
 .psim-timeline .lab.measured { color: var(--good, #4cc38a); }
 .psim-timeline .m.requested, .psim-tlrow i.requested { background: var(--warn, #e0a030); }
 .psim-timeline .lab.requested { color: var(--warn, #e0a030); }
-.psim-timeline { background: color-mix(in srgb, var(--stage) 78%, transparent); padding: 4px 12px 6px; border-radius: 10px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 .psim-tlrow { display: grid; grid-template-columns: 10px 1fr auto; gap: 2px 8px; align-items: baseline; margin: 6px 0; font-size: 12px; }
 .psim-tlrow i { width: 8px; height: 8px; border-radius: 2px; background: var(--ink); }
 .psim-tlrow code { font: 12px var(--mono); color: var(--ink); }
 .psim-tlrow small { grid-column: 2 / 4; color: var(--muted); font-size: 11px; }
+
+.psim-key { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 18px; padding: 8px 14px 10px;
+  border-top: 1px solid var(--line); font: 12px/1.45 var(--sans); color: var(--ink-2); }
+.psim-key:has(.psim-legend:empty):has(.psim-hud span:empty + span:empty + span:empty) { display: none; }
+.psim-legend { display: flex; flex-wrap: wrap; gap: 2px 16px; min-width: 0; }
+.psim-legend span { min-width: 0; }
+.psim-hud { display: flex; flex-wrap: wrap; gap: 2px 14px; font: 11.5px/1.45 var(--mono); color: var(--muted); }
+.psim-hud span:empty { display: none; }
+.psim-hud .flag { color: var(--warn); }
+
+.psim-endcard { position: absolute; right: 12px; bottom: 12px; z-index: 4; display: flex; align-items: center; gap: 10px;
+  padding: 6px 6px 6px 12px; border-radius: 10px; border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 90%, transparent);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); font: 12.5px var(--sans); color: var(--ink-2); }
+.psim-endcard .psim-btn { padding: 5px 10px; }
+.psim-endcard[hidden] { display: none; }
+
+/* full screen: the view grows, the intro steps aside, player and key stay */
+.psim-fs > .psim-view, .psim-fs.psim-canvaswrap > .psim-view { flex: 1 1 auto; height: auto; }
+.psim-fs .psim-transport { padding-bottom: max(6px, env(safe-area-inset-bottom)); }
+
 @media (max-width: 860px) {
-  .psim-timeline { left: 10px; transform: none; width: calc(50% - 16px); bottom: 70px; }
-  .psim-app .psim-legend { max-width: calc(50% - 16px); }
-  .psim-canvaswrap > .psim-timeline { bottom: 12px; }
+  .psim-stage { overflow: visible; }
+  .psim-stage > .psim-scene { position: relative; inset: auto; }
+  /* the first screen holds the view and the whole player bar: header ≈ 64 px, player ≈ 104 px */
+  .psim-stage > .psim-scene > .psim-view, .psim-canvaswrap > .psim-view { flex: none; height: max(280px, calc(100svh - 64px - 104px - 26px)); }
+  .psim-scene:has(.psim-actions) > .psim-view { height: max(260px, calc(100svh - 64px - 104px - 26px - 58px)); }   /* the action row fits too */
+  .psim-intro { padding: 12px 14px; font-size: 13.5px; }
+  .psim-side > .psim-intro { margin: 12px 12px 4px; }
+  .psim-transport { flex-wrap: wrap; row-gap: 2px; padding: 6px 8px; }
+  .psim-transport .psim-timeline { order: -1; flex: 1 1 100%; padding: 0 4px 4px; }
+  .psim-transport .psim-clock { flex: 1 1 auto; }
+  .psim-transport label.speed { padding: 0 4px; }
+  .psim-transport label.speed { font-size: 0; }
+  .psim-transport input[type=range] { width: 80px; }
+  .psim-transport output { min-width: 0; font-size: 11px; }
+  .psim-transport .sep { display: none; }
   .psim-timeline .lab { font-size: 9.5px; }
+  .psim-key { padding: 8px 12px; font-size: 11.5px; }
+  .psim-fs > .psim-view { height: auto; }
 }
 </style>
 </head>
 <body>
 <script type="application/json" id="psim-verification">{
- "summary": "2D split-operator TDSE vs the exact separable slab transmission, free-packet solution, unitarity, dt and dx refinement",
+ "summary": "Split-operator TDSE in 2D: separability vs 1D, flux and end-of-run transmission vs exact packet average, free spreading, unitarity, refinement",
  "checks": [
   {
-   "label": "ħ²/2mₑ from CODATA constants (eV nm²)",
-   "value": "0.0380998",
+   "label": "Transmitted flux through x = 80 nm vs exact ∫|φ(k)|²T(k)dk (default)",
+   "value": "11.984 % vs 11.986 % (rel 2.2e-4; left over 9.0e-10)",
    "pass": true
   },
   {
-   "label": "Unitarity, no absorbers, 2D grid, 300 steps: |ΔN/N|",
-   "value": "8.9e-15",
+   "label": "Transmitted flux through x = 79.5 nm vs exact ∫|φ(k)|²T(k)dk (Thin wall (1 nm))",
+   "value": "50.210 % vs 50.217 % (rel 1.5e-4; left over 5.7e-9)",
    "pass": true
   },
   {
-   "label": "Free packet centre ⟨x⟩ = x₀ + ħk₀t/mₑ at t = 10 fs",
-   "value": "|Δx| = 1.1e-14 nm",
+   "label": "Transmitted flux through x = 80.75 nm vs exact ∫|φ(k)|²T(k)dk (Thick wall (3.5 nm))",
+   "value": "1.245 % vs 1.245 % (rel 7.6e-5; left over 1.9e-10)",
    "pass": true
   },
   {
-   "label": "Free packet spreading σ(t) = σ₀√(1 + (ħt/2mₑσ₀²)²)",
-   "value": "6.8e-15 rel.",
+   "label": "Transmitted flux through x = 80 nm vs exact ∫|φ(k)|²T(k)dk (Energy above the wall)",
+   "value": "62.827 % vs 62.837 % (rel 1.7e-4; left over 1.5e-10)",
    "pass": true
   },
   {
-   "label": "2D transmission vs exact ⟨T⟩, default (E₀ 0.6 eV, θ 30°, V₀ 0.7 eV, a 0.5 nm)",
-   "value": "0.2523 vs 0.2562 (1.5 %)",
+   "label": "\"Got through\" at the end of the run (345 fs) vs exact (default)",
+   "value": "11.984 % vs 11.986 %, rel 2.4e-4; absorbed 6.9e-7",
    "pass": true
   },
   {
-   "label": "Probability balance incl. absorbed, default (E₀ 0.6 eV, θ 30°, V₀ 0.7 eV, a 0.5 nm)",
-   "value": "4.7e-12",
+   "label": "\"Got through\" at the end of the run (355 fs) vs exact (Thin wall (1 nm))",
+   "value": "50.201 % vs 50.217 %, rel 3.3e-4; absorbed 2.7e-7",
    "pass": true
   },
   {
-   "label": "2D transmission vs exact ⟨T⟩, normal incidence θ = 0°, E₀ 0.5 eV",
-   "value": "0.2910 vs 0.2965 (1.9 %)",
+   "label": "\"Got through\" at the end of the run (340 fs) vs exact (Thick wall (3.5 nm))",
+   "value": "1.245 % vs 1.245 %, rel 3.8e-5; absorbed 1.8e-6",
    "pass": true
   },
   {
-   "label": "Probability balance incl. absorbed, normal incidence θ = 0°, E₀ 0.5 eV",
-   "value": "4.2e-12",
+   "label": "\"Got through\" at the end of the run (250 fs) vs exact (Energy above the wall)",
+   "value": "62.825 % vs 62.837 %, rel 1.9e-4; absorbed 2.5e-7",
    "pass": true
   },
   {
-   "label": "2D transmission vs exact ⟨T⟩, above the barrier (E₀ 1.2 eV, θ 0°, a 1 nm)",
-   "value": "0.9372 vs 0.9440 (0.7 %)",
+   "label": "2D \"got through\" equals the 1D x-factor run at t = 200 fs (V depends on x only)",
+   "value": "|Δ| = 2.1e-16",
    "pass": true
   },
   {
-   "label": "Probability balance incl. absorbed, above the barrier (E₀ 1.2 eV, θ 0°, a 1 nm)",
-   "value": "1.8e-12",
+   "label": "Sideways spread σ_y(200 fs) vs free packet σ√(1+(ħt/2mσ²)²)",
+   "value": "5.51007 nm vs 5.51007 nm",
    "pass": true
   },
   {
-   "label": "2D transmission equals 1D lane (y motion separates)",
-   "value": "Δ = 1.5e-7",
+   "label": "Norm conserved without absorbers (2D, 400 steps)",
+   "value": "|ΔN| = 5.1e-15",
    "pass": true
   },
   {
-   "label": "T has settled at the read-out time (change by 1.4 × later)",
-   "value": "7.1e-6",
+   "label": "Grid refinement Δx 0.25 → 0.125 nm, Δt 0.25 → 0.0625 fs: change of \"got through\"",
+   "value": "11.9836 % → 11.9862 % (rel 2.2e-4)",
    "pass": true
   },
   {
-   "label": "Splitting order in dt (T at dt/2, dt/4, dt/8)",
-   "value": "p = 2.01",
+   "label": "Time-step refinement at Δx = 0.125 nm (Δt 0.0625 → 0.03125 fs)",
+   "value": "rel 7.3e-6",
    "pass": true
   },
   {
-   "label": "Time-step error of T at dt = 0.05 fs",
-   "value": "2.9e-4",
+   "label": "Production grid: Δt 0.25 → 0.125 fs",
+   "value": "rel 1.2e-4",
    "pass": true
   },
   {
-   "label": "Grid refinement dx 0.125 → 0.03125 nm: T converges to exact",
-   "value": "0.25260 → 0.25536 → 0.25614 (exact 0.25622)",
-   "pass": true
-  },
-  {
-   "label": "Spatial order of the error in T (dx, dx/2 vs exact)",
-   "value": "p = 2.07",
-   "pass": true
-  },
-  {
-   "label": "Absorbing edge: probability left in the box after the slowest packet (0.2 eV) hits it",
-   "value": "3.1e-3",
+   "label": "Default energy is below the wall (classically forbidden)",
+   "value": "E = 0.05 eV < V₀ = 0.08 eV; exact P_T = 11.99 %",
    "pass": true
   }
  ],
  "notes": [
-  "T(dt = 0.1, 0.05, 0.025, 0.0125 fs) = 0.251443, 0.252330, 0.252548, 0.252603.",
-  "At the production grid (dx = 0.125 nm) the sampled barrier gives T low by 1.4 % (default case); this dominates the error budget.",
-  "Model limits: free-electron mass, no spin, non-relativistic (E ≪ mₑc²), static ideal rectangular barrier, single electron (no image charge, no phonons)."
+  "Key times (default): packet at the wall 182 fs, split settled 315 fs, run ends 345 fs.",
+  "Spin, the electron’s own charge and any magnetic field are ignored; the wall is a static potential.",
+  "Absorbing layers at the x edges remove probability by design; the run ends before they matter (absorbed < 0.1 %)."
  ],
- "generated": "2026-10-15T08:21:13.695Z",
- "runtimeMs": 53975
+ "keyTimes": {
+  "tWall": 181.5,
+  "tSettle": 315.25,
+  "end": 345
+ },
+ "generated": "2026-10-16T01:50:28.596Z",
+ "runtimeMs": 10494
 }</script>
 <script type="module">
 const __psim = {};
@@ -642,6 +688,17 @@ function cssVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
+/**
+ * A colour token as it applies INSIDE the animation view: the view is dark in both page themes
+ * (like a screen), so scene drawing (canvas labels, grids, glows) reads its tokens here, while
+ * figures and panels use cssVar and follow the page theme.
+ */
+function sceneVar(name) {
+  if (typeof name !== 'string' || !name.startsWith('--')) return name;
+  const host = typeof document !== 'undefined' ? document.querySelector('.psim-view') ?? document.documentElement : null;
+  return host ? getComputedStyle(host).getPropertyValue(name).trim() : '';
+}
+
 // ---------- layout pieces ----------
 
 function section(title, { open = true, aside } = {}) {
@@ -663,7 +720,8 @@ function row(label, value = '—', cls = '') {
 /** Value for a numeric input: short, exact enough, scientific notation for small or huge numbers. */
 const inputValue = v => {
   const a = Math.abs(v);
-  return a !== 0 && (a < 1e-3 || a >= 1e7) ? v.toExponential(4) : String(+Number(v).toPrecision(6));
+  // large or tiny values in scientific form without padded zeros (3e+10, not 3.0000e+10)
+  return a !== 0 && (a < 1e-3 || a >= 1e7) ? v.toExponential(4).replace(/\.?0+e/, 'e') : String(+Number(v).toPrecision(6));
 };
 
 /**
@@ -751,6 +809,13 @@ function transport({ onToggle, onStep, onRestart, onFit, onFullscreen, speed, sp
     el('button', { title: 'Fit the view', 'aria-label': 'Fit view', html: ICONS.fit, onclick: onFit }),
     onFullscreen ? el('button', { class: 'fs', title: 'Full screen (F)', 'aria-label': 'Full screen', html: ICONS.fullscreen, onclick: onFullscreen }) : null);
   bar.setPlaying = p => { play.innerHTML = p ? ICONS.pause : ICONS.play; };
+  /** Show a speed set by the shell (e.g. a timeline's play time); widens the slider range if needed. */
+  bar.setSpeed = s => {
+    const v = Math.log10(s);
+    if (v < +range.min) range.min = v - 1;
+    if (v > +range.max) range.max = v + 1;
+    range.value = v; out.textContent = speedLabel(s);
+  };
   bar.setFullscreen = on => {
     const b = bar.querySelector('button.fs');
     if (b) { b.innerHTML = on ? ICONS.exitFullscreen : ICONS.fullscreen; b.title = on ? 'Leave full screen (F or Esc)' : 'Full screen (F)'; }
@@ -886,7 +951,7 @@ function beacon() {
   };
 }
 
-return { el, ICONS, sci, fix, grade, initTheme, cssVar, section, row, inputValue, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon };
+return { el, ICONS, sci, fix, grade, initTheme, cssVar, sceneVar, section, row, inputValue, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon };
 })();
 
 // ---- psim:ui/plot.mjs
@@ -2075,10 +2140,12 @@ const polylines = {
  * horizontal. Ticks at nice values (decades when log). Returns the bar's rectangle.
  */
 function drawColorBar(ctx, { x, y, width = 12, height = 120, colormap: map = 'viridis', range = [0, 1], log = false, label = '', ticks = 5, horizontal = false, color, format } = {}) {
-  const css = name => (typeof getComputedStyle === 'function' ? getComputedStyle(document.documentElement).getPropertyValue(name).trim() : '');
+  // tokens of the element the bar is drawn in (the view is dark in both page themes)
+  const css = name => (typeof getComputedStyle === 'function' ? getComputedStyle(ctx.canvas?.closest?.('.psim-view') ?? document.documentElement).getPropertyValue(name).trim() : '');
   const text = color ?? (css('--muted') || '#8a94a6');
   const [lo, hi] = log ? range.map(Math.log10) : range;
   const steps = Math.max(2, Math.round(horizontal ? width : height));
+  ctx.save();   // leaves the caller's fill, stroke, font and text alignment unchanged
   for (let i = 0; i < steps; i++) {
     const c = colormap(map, (i + 0.5) / steps).map(v => Math.round(255 * v));
     ctx.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`;
@@ -2101,8 +2168,10 @@ function drawColorBar(ctx, { x, y, width = 12, height = 120, colormap: map = 'vi
   }
   if (label) {
     ctx.textAlign = horizontal ? 'center' : 'left'; ctx.textBaseline = 'bottom';
-    ctx.fillText(label, horizontal ? x + width / 2 : x, y - 4);
+    // vertical: clear of the top tick's label, which is centred on the bar's top edge
+    ctx.fillText(label, horizontal ? x + width / 2 : x, y - (horizontal ? 4 : 10));
   }
+  ctx.restore();
   return { x, y, width, height };
 }
 
@@ -2447,12 +2516,12 @@ __psim["ui/instrument-app.mjs"] = (() => {
 // Simulation contract (returned by create(params)):
 //   sim.t                    physical time of the latest computed state
 //   sim.step()               advance by one integrator step (or one analytic tick)
-//   sim.sample?(t)           state at t between steps, for drawing (default: current state)
+//   sim.sample?(t)           state at t between steps: the shell passes t to draw/drawGL; call it there (not called by the shell)
 //   sim.diagnostics()        [{ key, label, value, kind: 'error'|'value', unit?, good?, warn? }]
 //   sim.state()              JSON-serialisable state (export, tests)
 //   sim.record?()            { header: [...], rows: [[...], ...] } for CSV export
 //   sim.timeDependent        false for static analytic visualisations (no transport)
-const { el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast, ICONS, transport, createClock, logPlot, download, readJsonScript, beacon, cssVar } = __psim["ui/instrument.mjs"];
+const { el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast, ICONS, transport, createClock, logPlot, download, readJsonScript, beacon, sceneVar } = __psim["ui/instrument.mjs"];
 const { createPlot } = __psim["ui/plot.mjs"];
 const { createGLLayer } = __psim["ui/gl.mjs"];
 const { createEquation, createDerivation, M } = __psim["ui/equation.mjs"];
@@ -2468,7 +2537,7 @@ function createInstrument(spec) {
   const {
     title, subtitle = '', tier, tierReason, create, draw, params = [], model = {},
     timeUnit = 'T', timeLabel = 'simulated time', speed: speed0 = 1, gl: wantGL = false, drawGL, controls, onPointer, layout = 'stage', bench,
-    presets = [], texts = {}, hudError = true, formatTime, timeDigits: digitsGiven, frameBudget = 9, speedRange, viewControls, testSteps = 300,
+    presets = [], texts = {}, hudError = false, formatTime, timeDigits: digitsGiven, frameBudget = 9, speedRange, viewControls, testSteps = 300,
     glResolution = 'auto', timeline: timelineSpec,
   } = spec;
   // counted progress (sweeps, steps, generations, events) shows whole numbers unless told otherwise
@@ -2491,10 +2560,15 @@ function createInstrument(spec) {
       <button class="psim-tier" type="button"><i></i><span></span></button>
       <button class="psim-iconbtn" type="button" aria-label="Toggle theme"></button>
     </header>
-    <main class="psim-stage"><canvas></canvas>
-      <div class="psim-hud"><span class="dim"></span><b>0</b><span class="h1"></span><span class="dim h2"></span><span class="flag"></span></div>
-      <div class="psim-timeline" hidden><div class="ticks"></div><div class="bar"><i class="fill"></i></div><div class="ends"><span></span><span></span></div></div>
-      <div class="psim-legend"></div>
+    <main class="psim-stage">
+      <section class="psim-scene">
+        <div class="psim-view"><canvas></canvas>
+          <div class="psim-endcard" hidden><span></span><button type="button" class="psim-btn">↺ Replay</button></div>
+        </div>
+        <div class="psim-clock" hidden><span class="dim"></span><b>0</b></div>
+        <div class="psim-timeline" hidden><div class="ticks"></div><div class="bar"><i class="fill"></i></div><div class="ends"><span></span><span></span></div></div>
+        <div class="psim-key"><div class="psim-legend"></div><div class="psim-hud"><span class="h1"></span><span class="h2"></span><span class="flag"></span></div></div>
+      </section>
     </main>
     <aside class="psim-side"></aside>
   </div>`;
@@ -2505,43 +2579,113 @@ function createInstrument(spec) {
   tierBtn.dataset.tier = verified ? tier : 'unverified';
   tierBtn.querySelector('span').textContent = trustLabel;
   initTheme($('.psim-iconbtn'));
-  const stage = $('.psim-stage'), side = $('.psim-side');
+  const stage = $('.psim-stage'), side = $('.psim-side'), sceneEl = $('.psim-scene'), viewEl = $('.psim-view');
+  // a plain-language introduction above the scene: what is shown and what to look for
+  const intro = typeof spec.intro === 'string' ? { text: spec.intro } : spec.intro;
+  // it goes BELOW the animation and its controls (like a video's description): after the scene card
+  // when equations follow, otherwise first in the side panel (which follows the player on phones)
+  // shown as two lines with "more", so the settings below it stay in reach
+  const introEl = intro?.text ? el('section', { class: 'psim-intro collapsed' }, el('b', {}, texts.intro ?? 'What you are seeing'), el('p', {}, intro.text),
+    (intro.watch ?? []).length ? el('ul', {}, ...intro.watch.map(w => el('li', {}, w))) : null) : null;
+  if (introEl) {
+    const more = el('button', { type: 'button', class: 'psim-more', 'aria-expanded': 'false' }, texts.more ?? 'more');
+    more.addEventListener('click', () => {
+      const open = introEl.classList.toggle('collapsed') === false;
+      more.textContent = open ? (texts.less ?? 'less') : (texts.more ?? 'more');
+      more.setAttribute('aria-expanded', String(open));
+    });
+    introEl.append(more);
+  }
   // Workbench layout: the live canvas on top, then term-split equations and figures that
   // update with the model (spec.bench builds them; see references/compose.md).
   let benchParts = null;
   if (layout === 'workbench') {
-    const wrap = el('div', { class: 'psim-canvaswrap' }, stage.querySelector('canvas'), stage.querySelector('.psim-hud'), stage.querySelector('.psim-legend'));
+    const wrap = sceneEl;
+    wrap.classList.add('psim-canvaswrap');
     const eqs = el('div', { class: 'psim-eqs' }), figs = el('div', { class: 'psim-figs' });
     stage.prepend(el('div', { class: 'psim-bench' }, wrap, eqs, figs));
     benchParts = { wrap, eqs, figs };
+  }
+  // the same place on every page: first in the side panel on wide screens; on phones (one column)
+  // right under the scene card, so it follows the player bar instead of the equations
+  if (introEl) {
+    const narrow = matchMedia('(max-width: 860px)');
+    const place = () => { if (narrow.matches && benchParts) sceneEl.after(introEl); else side.prepend(introEl); };
+    place();
+    narrow.addEventListener('change', place);
   }
   const canvas = stage.querySelector('canvas');
   const ctx = canvas.getContext('2d');
   // optional GPU layer under the 2D canvas (ui/gl.mjs): drawGL renders the scene, draw adds labels
   const glLayer = wantGL ? createGLLayer(canvas) : null;
   if (glLayer) $('.psim-app').classList.add('has-gl');      // HUD and legend get a backing over bright GPU scenes
-  $('.psim-hud .dim').textContent = timeLabel;
-  const hud = { t: $('.psim-hud b'), a: $('.psim-hud .h1'), b: $('.psim-hud .h2'), flag: $('.psim-hud .flag') };
+  $('.psim-clock .dim').textContent = timeLabel;
+  $('.psim-clock').title = timeLabel;
+  const hud = { t: $('.psim-clock b'), a: $('.psim-hud .h1'), b: $('.psim-hud .h2'), flag: $('.psim-hud .flag') };
   // the legend beside the view; view.setLegend(items) replaces it when the representation changes
   const setLegend = items => $('.psim-legend').replaceChildren(...(items ?? []).map(t => el('span', {}, t)));
   setLegend(model.legend);
 
   // ------------------------------------------------------------ state
   const values = Object.fromEntries(params.map(p => [p.key, p.value]));
-  let sim, tDisplay = 0, limited = false;
+  let sim, tDisplay = 0, limited = false, defaultSpeedNow = speed0;
+  const steadyLabels = new Map();
   const clock = createClock({ speed: speed0 });
   const view = {
-    W: 0, H: 0, dpr: 1, color: cssVar, opts: {}, pointer: null, gl: glLayer?.gl ?? null, glError: glLayer && !glLayer.ok ? glLayer.reason : '',
+    W: 0, H: 0, dpr: 1, color: sceneVar, opts: {}, pointer: null, gl: glLayer?.gl ?? null, glError: glLayer && !glLayer.ok ? glLayer.reason : '',
     /** Current playback speed (simulated time per second) and state, e.g. to disclose time compression. */
     get speed() { return clock.speed; }, get playing() { return clock.playing; },
     /** GL layer resolution as a fraction of the device pixel ratio (adaptive unless glResolution is a number). */
     get glScale() { return glLayer?.scale ?? 1; },
-    /** 'dark' or 'light': the theme now shown (e.g. additive vs alpha blending, mesh colours). */
-    get theme() { return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'; },
+    /** The scene's theme: always 'dark' (the view is a dark screen in both page themes); use it for blending and mesh colours. */
+    get theme() { return 'dark'; },
+    /** The page theme around the view ('dark' or 'light'), for anything drawn outside it. */
+    get pageTheme() { return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'; },
     setLegend,
     /** The embedded build-time report (verify()'s return value, including any extra data fields), or null. */
     report,
+    /**
+     * Shell overlays drawn over the canvas, in canvas CSS pixels: `overlays` lists each visible one
+     * ({ name: 'hud' | 'legend' | 'timeline' | 'transport', x, y, w, h }); `insets` gives how far the
+     * bottom ones (timeline, playback bar, a phone legend) reach up from the bottom edge and the top
+     * ones (HUD, legend) down from the top. Lay the scene out inside them. Cached for 200 ms.
+     */
+    get overlays() { return overlayInfo().list; },
+    /**
+     * A steady position for a label attached to something that moves or flickers (a wave's peak,
+     * a cloud's centre): returns { x, y } that follows (x, y) smoothly and ignores sub-`deadband`
+     * jitter, so the text does not jump from frame to frame. One state per id; reset on rebuild.
+     */
+    steady(id, x, y, { deadband = 6, ease = 0.15 } = {}) {
+      const p = steadyLabels.get(id);
+      if (!p || !Number.isFinite(p.x)) { const q = { x, y }; steadyLabels.set(id, q); return q; }
+      const dx = x - p.x, dy = y - p.y, d = Math.hypot(dx, dy);
+      if (d > 120) { p.x = x; p.y = y; }                       // a jump (new run, reframing): follow at once
+      else if (d > deadband) { const k = ease * (1 - deadband / d); p.x += k * dx; p.y += k * dy; }
+      return p;
+    },
+    get insets() { return overlayInfo().insets; },
   };
+  let overlayCache = null;
+  function overlayInfo() {
+    const now = performance.now();
+    if (overlayCache && now - overlayCache.at < 200) return overlayCache;
+    const c = canvas.getBoundingClientRect(), list = [];
+    const add = (name, node) => {
+      if (!node || node.hidden || !node.getClientRects().length) return;
+      const r = node.getBoundingClientRect();
+      const x = Math.max(r.left, c.left), y = Math.max(r.top, c.top), x1 = Math.min(r.right, c.right), y1 = Math.min(r.bottom, c.bottom);
+      if (x1 > x && y1 > y && (r.width > 0 && r.height > 0)) list.push({ name, x: x - c.left, y: y - c.top, w: x1 - x, h: y1 - y });
+    };
+    for (const node of viewEl.children) if (node.tagName !== 'CANVAS') add(node.className.split(' ')[0].replace('psim-', ''), node);
+    const insets = { top: 0, bottom: 0 };
+    for (const o of list) {
+      if (o.y + o.h / 2 < c.height / 2) insets.top = Math.max(insets.top, o.y + o.h);
+      else insets.bottom = Math.max(insets.bottom, c.height - o.y);
+    }
+    overlayCache = { at: now, list, insets };
+    return overlayCache;
+  }
 
   let benchApi = null;
   // ------------------------------------------------------------ timeline: the run's span and its key times
@@ -2550,7 +2694,6 @@ function createInstrument(spec) {
   // on a bar under the time readout; clicking the bar jumps to that time (recomputing if earlier).
   let tl = null;
   const tlEl = $('.psim-timeline');
-  if (benchParts) benchParts.wrap.append(tlEl);              // inside the scene card in the workbench layout
   const secTimeline = timelineSpec ? section(texts.timeline ?? 'Timeline', { aside: 'key times' }) : null;
   const shortLabel = m => m.short ?? m.label.replace(/\s*\(.*$/, '').slice(0, 28);
   function resolveTimeline() {
@@ -2565,23 +2708,27 @@ function createInstrument(spec) {
     const markers = (val(timelineSpec.markers) ?? []).filter(m => Number.isFinite(m.t));
     for (const m of markers) if (m.t < start - tol || m.t > duration + tol) throw new Error(`timeline marker "${m.label}" at ${m.t} lies outside the run ${start}…${duration}`);
     tl = { start, duration, markers, note: val(timelineSpec.note) ?? '' };
+    // a watchable run in every mode: `seconds` (or a function of sim and params) sets the default
+    // speed so that the whole run plays in that many seconds, whatever its length in this mode
+    const secs = +val(timelineSpec.seconds);
+    // (only when the run's length changed, so a speed the viewer chose survives a restart)
+    if (secs > 0 && (duration - start) / secs !== defaultSpeedNow) { clock.speed = (duration - start) / secs; tp?.setSpeed?.(clock.speed); defaultSpeedNow = clock.speed; }
     tlEl.hidden = false;
     const fmt = t => (formatTime ? formatTime(t) : `${+t.toPrecision(4)} ${timeUnit}`);
     // the bar: one tick per key time, short labels above (staggered when close), full text as a tooltip
     const bar = tlEl.querySelector('.bar'), ticks = tlEl.querySelector('.ticks');
     bar.querySelectorAll('.m').forEach(e => e.remove());
-    let lastX = -1, level = 0;
     ticks.replaceChildren(...markers.slice().sort((a, b) => a.t - b.t).map(m => {
       const x = 100 * (m.t - start) / span;
-      level = x - lastX < 22 ? 1 - level : 0; lastX = x;
       bar.append(el('span', { class: `m ${m.kind ?? 'computed'}`, style: `left:${x.toFixed(3)}%`, title: `${m.label}: ${fmt(m.t)}` }));
       const sl = shortLabel(m), withTime = /\d/.test(sl) ? sl : `${sl} · ${fmt(m.t)}`;   // no repeated time
       // near the ends, anchor the label at its tick instead of centring it (never clipped by the bar's edges)
       const anchor = x < 15 ? 'translateX(0)' : x > 85 ? 'translateX(-100%)' : 'translateX(-50%)';
-      return el('span', { class: `lab ${m.kind ?? 'computed'} r${level}`, style: `left:${x.toFixed(3)}%;transform:${anchor}`, title: `${m.label}: ${fmt(m.t)}` }, withTime);
+      return el('span', { class: `lab ${m.kind ?? 'computed'}`, style: `left:${x.toFixed(3)}%;transform:${anchor}`, title: `${m.label}: ${fmt(m.t)}` }, withTime);
     }));
     const [a, b] = tlEl.querySelectorAll('.ends span');
     a.textContent = fmt(start); b.textContent = `${fmt(duration)} (end)`;
+    layoutTimelineLabels();
     // the side panel lists every key time in full, with its kind, and the note
     if (secTimeline) {
       const kinds = { computed: 'computed in this model', measured: 'measured (literature)', requested: 'named in the request' };
@@ -2591,6 +2738,33 @@ function createInstrument(spec) {
         tl.note ? el('p', { class: 'psim-hint' }, tl.note) : null);
     }
   }
+  // Labels are placed by their measured widths: each goes in the lowest of three rows where it does
+  // not touch another label; one that fits nowhere is hidden (its tick keeps the tooltip, and the
+  // side panel lists every key time). Rerun when the bar changes size (phone, full screen).
+  const TL_ROWS = 3, TL_ROW_H = 13, TL_GAP = 6;
+  function layoutTimelineLabels() {
+    if (!tl || tlEl.hidden) return;
+    const labs = [...tlEl.querySelectorAll('.ticks .lab')];
+    labs.forEach(l => { l.style.bottom = '2px'; l.style.visibility = ''; l.classList.remove('hid'); });
+    const box = tlEl.querySelector('.ticks').getBoundingClientRect();
+    if (!(box.width > 0)) return;
+    const rows = Array.from({ length: TL_ROWS }, () => []);
+    let used = labs.length ? 1 : 0;
+    for (const l of labs) {
+      const r = l.getBoundingClientRect(), lo = Math.max(r.left, box.left), hi = Math.min(r.right, box.right);
+      const k = rows.findIndex(slots => slots.every(([a, b]) => hi + TL_GAP <= a || lo >= b + TL_GAP));
+      if (k < 0) { l.style.visibility = 'hidden'; l.classList.add('hid'); continue; }
+      rows[k].push([lo, hi]); used = Math.max(used, k + 1);
+      l.style.bottom = `${2 + k * TL_ROW_H}px`;
+    }
+    tlEl.querySelector('.ticks').style.height = `${4 + used * TL_ROW_H}px`;
+    // the two end labels: drop the start when they would touch
+    const [a, b] = tlEl.querySelectorAll('.ends span');
+    a.style.visibility = '';
+    if (a.getBoundingClientRect().right + TL_GAP > b.getBoundingClientRect().left) a.style.visibility = 'hidden';
+  }
+  new ResizeObserver(() => layoutTimelineLabels()).observe(tlEl);
+
   tlEl.querySelector('.bar').addEventListener('click', e => {
     if (!tl) return;
     const r = e.currentTarget.getBoundingClientRect(), T = tl.start + Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * (tl.duration - tl.start);
@@ -2599,6 +2773,7 @@ function createInstrument(spec) {
   });
 
   function rebuild() {
+    steadyLabels.clear();
     sim = create({ ...values });
     tDisplay = sim.t ?? 0;
     resolveTimeline();
@@ -2611,14 +2786,14 @@ function createInstrument(spec) {
   // ------------------------------------------------------------ full screen
   // The scene (canvas, HUD, legend) and the playback bar fill the screen. Falls back to filling the
   // window with CSS where the Fullscreen API is missing or refused (iPhone Safari, sandboxed frames).
-  const scene = benchParts?.wrap ?? stage;
+  const scene = sceneEl;
   let pseudoFs = false, fsBtn = null;
   const fsElement = () => document.fullscreenElement ?? document.webkitFullscreenElement ?? null;
   const isFullscreen = () => pseudoFs || fsElement() === scene;
   function afterFullscreen() {
     const on = isFullscreen();
     scene.classList.toggle('psim-fs', on);
-    if (tp) { if (on && tp.parentNode !== scene) scene.append(tp); else if (!on && tp.parentNode !== stage) stage.append(tp); tp.setFullscreen(on); }
+    tp?.setFullscreen(on);
     if (fsBtn) fsBtn.innerHTML = on ? ICONS.exitFullscreen : ICONS.fullscreen;
     requestAnimationFrame(() => spec.onFit?.(view));
   }
@@ -2649,13 +2824,39 @@ function createInstrument(spec) {
       onFullscreen: () => toggleFullscreen(),
       onSpeed: s => { clock.speed = s; },
     });
-    stage.append(tp);
+    // the player bar sits directly under the view, like a video player: buttons, the clock and
+    // the timeline with its key moments, speed, full screen
+    const firstSep = tp.querySelector('.sep');
+    const clockEl = $('.psim-clock');
+    clockEl.hidden = false;
+    tp.insertBefore(clockEl, firstSep);
+    tp.insertBefore(tlEl, firstSep);
+    viewEl.after(tp);
   } else {
     fsBtn = el('button', { class: 'psim-fsbtn', title: 'Full screen (F)', 'aria-label': 'Full screen', html: ICONS.fullscreen, onclick: () => toggleFullscreen() });
-    scene.append(fsBtn);
-    stage.querySelector('.psim-hud').querySelector('.dim').textContent = '';
+    viewEl.append(fsBtn);
   }
-  function setPlaying(p) { clock.playing = p; tp?.setPlaying(p); }
+  // the page's main actions ("Heat it up", "Fire one electron"): large buttons directly under the
+  // view, where the eye already is; settings stay in the side panel
+  if ((spec.actions ?? []).length) {
+    const api = () => ({ setParams, setParam, getSim: () => sim, values, play: () => setPlaying(true), pause: () => setPlaying(false), restart: () => rebuild() });
+    const bar = el('div', { class: 'psim-actions' }, ...spec.actions.map(a => {
+      const b = el('button', { type: 'button', class: 'psim-action', title: a.hint ?? '' }, a.label);
+      b.addEventListener('click', () => a.onClick?.(api()));
+      return b;
+    }));
+    viewEl.after(bar);
+  }
+  // at the end of a run: the final state stays on screen with a replay button over it
+  const endcard = $('.psim-endcard');
+  endcard.querySelector('button').addEventListener('click', () => { rebuild(); setPlaying(true); });
+  function showEndcard() {
+    const on = timeDependent && !clock.playing && isDone();
+    if (endcard.hidden === !on) return;
+    endcard.hidden = !on;
+    if (on) endcard.querySelector('span').textContent = texts.finishedCard ?? `Finished at ${formatTime ? formatTime(endTime()) : `${fix(endTime(), timeDigits)} ${timeUnit}`}`;
+  }
+  function setPlaying(p) { clock.playing = p; tp?.setPlaying(p); showEndcard(); }
   // A model that ends (a merger, everything decayed, the last particle left) sets sim.done (or
   // sim.ended): the clock stops there instead of counting time in which nothing is computed,
   // and play starts the run again from the beginning.
@@ -2851,7 +3052,7 @@ function createInstrument(spec) {
     if (glLayer?.ok) { glLayer.sync(view.dpr); drawGL?.(glLayer.gl, sim, view, tDisplay); }
     ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
     ctx.clearRect(0, 0, view.W, view.H);
-    if (glLayer && !glLayer.ok) { ctx.fillStyle = cssVar('--muted'); ctx.font = '13px system-ui, sans-serif'; ctx.fillText(`${glLayer.reason}: the 3D view cannot be shown.`, 16, view.H - 20); }
+    if (glLayer && !glLayer.ok) { ctx.fillStyle = sceneVar('--muted'); ctx.font = '13px system-ui, sans-serif'; ctx.fillText(`${glLayer.reason}: the 3D view cannot be shown.`, 16, view.H - 20); }
     draw(ctx, sim, view, tDisplay);
     if (now - lastUi > 100) {
       lastUi = now;
@@ -2861,7 +3062,8 @@ function createInstrument(spec) {
       const firstErr = d.find(x => x.kind === 'error' && !x.pending);
       hud.a.textContent = firstErr && hudError ? `${firstErr.label} ${sci(firstErr.value)}` : '';
       hud.b.textContent = spec.hudLine?.(sim) ?? '';
-      hud.flag.textContent = isDone() ? (texts.finished ?? 'finished · play restarts')
+      showEndcard();
+      hud.flag.textContent = isDone() ? (texts.finished ?? 'finished')
         : limited ? 'compute-limited: playback slowed to keep the calculation exact' : '';
       benchApi?.update?.(sim, tDisplay, { rebuilt: false });
       status.set('t', timeDependent ? tDisplay : 1);
@@ -2887,6 +3089,9 @@ function createInstrument(spec) {
     /** The run's declared span and key times ({ duration, markers, note }), or null. */
     get timeline() { return tl ? { start: tl.start, duration: tl.duration, markers: tl.markers.map(m => ({ ...m })), note: tl.note } : null; },
     get done() { return isDone(); },
+    /** The default playback speed (simulated time per second) and the plain-language intro, for checks. */
+    get defaultSpeed() { return defaultSpeedNow; },
+    get intro() { return intro?.text ? { text: intro.text, watch: [...(intro.watch ?? [])] } : null; },
     restart: () => rebuild(),
     setParams: (next, opts) => setParams(next, opts),
     setParam: (k, v) => setParam(k, v),
@@ -2901,14 +3106,15 @@ function createInstrument(spec) {
     steps: n => { if (typeof sim.step === "function") for (let i = 0; i < n; i++) sim.step(); tDisplay = sim.t ?? 0; return window.psim.state(); },
   };
 
+  rebuild();   // the first sim exists before bench() runs, so bench may call getSim() at once
   if (bench && benchParts) {
     benchApi = bench({
       ...benchParts, createPlot, createEquation, createDerivation, M, values, report,
       setParam, setParams, play: () => setPlaying(true), pause: () => setPlaying(false),
       getSim: () => sim,
     }) ?? null;
+    benchApi?.update?.(sim, tDisplay, { rebuilt: true });
   }
-  rebuild();
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   setPlaying(timeDependent && (query.get('autoplay') ? query.get('autoplay') !== '0' : !reduced));
   addEventListener('keydown', e => {
@@ -3589,6 +3795,870 @@ function meanWithError(xs, minBins = 16) {
 return { rng, rngFor, fft, fftFreq, rk4Step, DORMAND_PRINCE, dopri5, gaussLegendreNodes, gaussLegendre, adaptiveSimpson, integrateToInfinity, brent, lgamma, gamma, factorial, erf, gammaP, gammaQ, besselI, besselJ, besselJZeros, ellipticK, laguerre, legendreP, normalizedLegendre, realYlm, complexYlm, hydrogenRadial, solveTridiagonal, eigenTridiagonal, lowestTridiagonal, linearFit, meanWithError };
 })();
 
+// ---- psim:core/linalg.mjs
+__psim["core/linalg.mjs"] = (() => {
+// Shared real linear algebra and nonlinear equations. Dense matrices are arrays of rows;
+// vectors may be ordinary arrays or Float64Array. Inputs are not modified.
+
+const EPS = Number.EPSILON;
+const finiteVector = (v, n, who) => {
+  if (!v || v.length !== n || !Array.from(v).every(Number.isFinite)) throw new Error(`${who}: expected ${n} finite values`);
+};
+const matrixShape = (A, who) => {
+  const m = A?.length, n = A?.[0]?.length;
+  if (!(m > 0 && n > 0)) throw new Error(`${who}: matrix must be non-empty`);
+  for (const row of A) finiteVector(row, n, who);
+  return [m, n];
+};
+const norm = v => {
+  let result = 0;
+  for (const value of v) result = Math.hypot(result, value);
+  return result;
+};
+const dot = (a, b) => {
+  let sum = 0, correction = 0;
+  for (let i = 0; i < a.length; i++) {
+    const term = a[i] * b[i], next = sum + term;
+    correction += Math.abs(sum) >= Math.abs(term) ? (sum - next) + term : (term - next) + sum;
+    sum = next;
+  }
+  return sum + correction;
+};
+const tolerance = (value, who) => {
+  if (!(Number.isFinite(value) && value >= 0)) throw new Error(`${who}: tolerance must be finite and non-negative`);
+};
+const budget = (value, who) => {
+  if (!(Number.isSafeInteger(value) && value > 0)) throw new Error(`${who}: budget must be a positive integer`);
+};
+const finiteResult = (value, who) => {
+  if (!Number.isFinite(value)) throw new Error(`${who}: numerical range exceeded; rescale the problem`);
+  return value;
+};
+
+/** Rectangular matrix-vector product, with compensated summation in each row. */
+function matrixVector(A, x) {
+  const [m, n] = matrixShape(A, 'matrixVector');
+  finiteVector(x, n, 'matrixVector');
+  return Float64Array.from({ length: m }, (_, i) => finiteResult(dot(A[i], x), 'matrixVector'));
+}
+
+/**
+ * Solve square A x = b by row equilibration and Gaussian elimination with partial pivoting.
+ * pivotTolerance is relative to each equilibrated row (default 64 epsilon).
+ * Throws for singular/numerically rank-deficient input; no inverse is formed.
+ */
+function solveLinear(A, b, { pivotTolerance = 64 * EPS } = {}) {
+  const [m, n] = matrixShape(A, 'solveLinear');
+  if (m !== n) throw new Error('solveLinear: matrix must be square');
+  finiteVector(b, n, 'solveLinear'); tolerance(pivotTolerance, 'solveLinear');
+  const M = [], rhs = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    let scale = 0;
+    for (const value of A[i]) scale = Math.max(scale, Math.abs(value));
+    if (scale === 0) throw new Error('solveLinear: singular matrix (zero row)');
+    M.push(Float64Array.from(A[i], value => value / scale));
+    rhs[i] = finiteResult(b[i] / scale, 'solveLinear');
+  }
+  for (let k = 0; k < n; k++) {
+    let pivot = k;
+    for (let i = k + 1; i < n; i++) if (Math.abs(M[i][k]) > Math.abs(M[pivot][k])) pivot = i;
+    if (!(Math.abs(M[pivot][k]) > pivotTolerance)) throw new Error('solveLinear: singular or numerically rank-deficient matrix');
+    if (pivot !== k) { [M[k], M[pivot]] = [M[pivot], M[k]]; [rhs[k], rhs[pivot]] = [rhs[pivot], rhs[k]]; }
+    for (let i = k + 1; i < n; i++) {
+      const factor = M[i][k] / M[k][k];
+      M[i][k] = 0;
+      for (let j = k + 1; j < n; j++) M[i][j] = finiteResult(M[i][j] - factor * M[k][j], 'solveLinear');
+      rhs[i] = finiteResult(rhs[i] - factor * rhs[k], 'solveLinear');
+    }
+  }
+  const x = new Float64Array(n);
+  for (let i = n - 1; i >= 0; i--) {
+    let value = rhs[i];
+    for (let j = i + 1; j < n; j++) value -= M[i][j] * x[j];
+    x[i] = finiteResult(value / M[i][i], 'solveLinear');
+  }
+  return x;
+}
+
+/**
+ * Full-column-rank least squares (m >= n), using Householder QR with column pivoting.
+ * Columns and rhs are scaled independently. Returns { x, residualNorm, rank, permutation }.
+ * Rank-deficient systems throw: this routine is not a pseudoinverse/minimum-norm solver.
+ */
+function leastSquares(A, b, { rankTolerance = 64 * EPS } = {}) {
+  const [m, n] = matrixShape(A, 'leastSquares');
+  if (m < n) throw new Error('leastSquares: need at least as many rows as columns');
+  finiteVector(b, m, 'leastSquares'); tolerance(rankTolerance, 'leastSquares');
+  const scales = new Float64Array(n), permutation = Array.from({ length: n }, (_, i) => i);
+  let bScale = 0;
+  for (const value of b) bScale = Math.max(bScale, Math.abs(value));
+  if (bScale === 0) bScale = 1;
+  for (let j = 0; j < n; j++) {
+    for (let i = 0; i < m; i++) scales[j] = Math.max(scales[j], Math.abs(A[i][j]));
+    if (scales[j] === 0) throw new Error('leastSquares: numerically rank-deficient matrix (zero column)');
+  }
+  const R = A.map(row => Float64Array.from(row, (value, j) => value / scales[j]));
+  const y = Float64Array.from(b, value => value / bScale);
+  const columnNorm = (j, start) => { let value = 0; for (let i = start; i < m; i++) value = Math.hypot(value, R[i][j]); return value; };
+  let reference = 0;
+  for (let j = 0; j < n; j++) reference = Math.max(reference, columnNorm(j, 0));
+  for (let k = 0; k < n; k++) {
+    let pivot = k;
+    for (let j = k + 1; j < n; j++) if (columnNorm(j, k) > columnNorm(pivot, k)) pivot = j;
+    if (!(columnNorm(pivot, k) > rankTolerance * reference)) throw new Error('leastSquares: numerically rank-deficient matrix');
+    if (pivot !== k) {
+      for (const row of R) [row[k], row[pivot]] = [row[pivot], row[k]];
+      [permutation[k], permutation[pivot]] = [permutation[pivot], permutation[k]];
+    }
+    const v = Float64Array.from({ length: m - k }, (_, i) => R[k + i][k]);
+    const alpha = (v[0] >= 0 ? -1 : 1) * norm(v);
+    v[0] -= alpha;
+    const vNorm = norm(v);
+    for (let i = 0; i < v.length; i++) v[i] /= vNorm;
+    for (let j = k; j < n; j++) {
+      let projection = 0;
+      for (let i = 0; i < v.length; i++) projection += v[i] * R[k + i][j];
+      for (let i = 0; i < v.length; i++) R[k + i][j] -= 2 * v[i] * projection;
+    }
+    let projection = 0;
+    for (let i = 0; i < v.length; i++) projection += v[i] * y[k + i];
+    for (let i = 0; i < v.length; i++) y[k + i] -= 2 * v[i] * projection;
+    R[k][k] = alpha;
+    for (let i = k + 1; i < m; i++) R[i][k] = 0;
+  }
+  const z = new Float64Array(n), x = new Float64Array(n);
+  for (let i = n - 1; i >= 0; i--) {
+    let value = y[i];
+    for (let j = i + 1; j < n; j++) value -= R[i][j] * z[j];
+    z[i] = value / R[i][i];
+  }
+  for (let i = 0; i < n; i++) x[permutation[i]] = finiteResult(z[i] * bScale / scales[permutation[i]], 'leastSquares');
+  const residual = Float64Array.from(matrixVector(A, x), (value, i) => value - b[i]);
+  return { x, residualNorm: finiteResult(norm(residual), 'leastSquares'), rank: n, permutation };
+}
+
+/**
+ * Real symmetric dense eigensystem by cyclic Jacobi rotations. Values sorted ascending;
+ * vectors[i] is the unit eigenvector of values[i]. O(n^3) per sweep, for modest dense systems.
+ * rtol controls the off-diagonal Frobenius norm relative to the original Frobenius norm.
+ */
+function eigenSymmetric(A, { rtol = 1e-12, symmetryTolerance = 64 * EPS, maxSweeps = 100 } = {}) {
+  const [m, n] = matrixShape(A, 'eigenSymmetric');
+  if (m !== n) throw new Error('eigenSymmetric: matrix must be square');
+  tolerance(rtol, 'eigenSymmetric'); tolerance(symmetryTolerance, 'eigenSymmetric'); budget(maxSweeps, 'eigenSymmetric');
+  let scale = 0;
+  for (const row of A) for (const value of row) scale = Math.max(scale, Math.abs(value));
+  const divisor = scale || 1;
+  const M = A.map(row => Float64Array.from(row, value => value / divisor));
+  const V = Array.from({ length: n }, (_row, i) => Float64Array.from({ length: n }, (_column, j) => i === j ? 1 : 0));
+  for (let i = 0; i < n; i++) { for (let j = i + 1; j < n; j++) {
+    if (Math.abs(M[i][j] - M[j][i]) > symmetryTolerance) throw new Error('eigenSymmetric: matrix must be symmetric');
+    M[i][j] = M[j][i] = (M[i][j] + M[j][i]) / 2;
+  } }
+  let reference = 0;
+  for (const row of M) for (const value of row) reference = Math.hypot(reference, value);
+  const target = rtol * reference;
+  const offNorm = () => { let value = 0; for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) value = Math.hypot(value, Math.SQRT2 * M[i][j]); return value; };
+  let sweeps = 0;
+  while (offNorm() > target) {
+    if (sweeps === maxSweeps) throw new Error('eigenSymmetric: sweep budget exhausted before convergence');
+    for (let p = 0; p < n; p++) { for (let q = p + 1; q < n; q++) {
+      const a = M[p][q];
+      if (Math.abs(a) <= target / (n * n)) continue;
+      const delta = (M[q][q] - M[p][p]) / 2;
+      const t = delta === 0 ? 1 : a / (delta + Math.sign(delta) * Math.hypot(delta, a));
+      const c = 1 / Math.hypot(1, t), s = t * c;
+      M[p][p] -= t * a; M[q][q] += t * a; M[p][q] = M[q][p] = 0;
+      for (let k = 0; k < n; k++) {
+        if (k !== p && k !== q) {
+          const u = M[k][p], v = M[k][q];
+          M[k][p] = M[p][k] = c * u - s * v;
+          M[k][q] = M[q][k] = s * u + c * v;
+        }
+        const u = V[k][p], v = V[k][q];
+        V[k][p] = c * u - s * v; V[k][q] = s * u + c * v;
+      }
+    } }
+    sweeps++;
+  }
+  const order = Array.from({ length: n }, (_, i) => i).sort((i, j) => M[i][i] - M[j][j]);
+  return {
+    values: Float64Array.from(order, i => finiteResult(M[i][i] * divisor, 'eigenSymmetric')),
+    vectors: order.map(i => Float64Array.from(V, row => row[i])),
+    sweeps, offDiagonalNorm: finiteResult(offNorm() * divisor, 'eigenSymmetric'),
+  };
+}
+
+/**
+ * Cholesky factor of a symmetric positive-definite matrix: A = L Lᵀ, L lower triangular (arrays of
+ * rows). Throws when A is not positive definite (a pivot ≤ rtol·max diagonal), e.g. a noisy
+ * correlation matrix at large time separation: drop that operator or that time.
+ */
+function cholesky(A, { symmetryTolerance = 64 * EPS, rtol = 64 * EPS } = {}) {
+  const [m, n] = matrixShape(A, 'cholesky');
+  if (m !== n) throw new Error('cholesky: matrix must be square');
+  let scale = 0;
+  for (let i = 0; i < n; i++) {
+    scale = Math.max(scale, Math.abs(A[i][i]));
+    for (let j = 0; j < i; j++) if (Math.abs(A[i][j] - A[j][i]) > symmetryTolerance * Math.max(1, Math.abs(A[i][j]))) throw new Error('cholesky: matrix must be symmetric');
+  }
+  const L = Array.from({ length: n }, () => new Float64Array(n));
+  for (let j = 0; j < n; j++) {
+    let d = A[j][j];
+    for (let k = 0; k < j; k++) d -= L[j][k] * L[j][k];
+    if (!(d > rtol * scale)) throw new Error(`cholesky: matrix is not positive definite (pivot ${j}: ${d})`);
+    L[j][j] = Math.sqrt(d);
+    for (let i = j + 1; i < n; i++) {
+      let v = (A[i][j] + A[j][i]) / 2;
+      for (let k = 0; k < j; k++) v -= L[i][k] * L[j][k];
+      L[i][j] = v / L[j][j];
+    }
+  }
+  return L;
+}
+
+/**
+ * Generalised symmetric-definite eigenproblem A v = λ B v (B positive definite), by Cholesky
+ * B = LLᵀ and the ordinary problem L⁻¹AL⁻ᵀ w = λ w, v = L⁻ᵀw. Values ascending; vectors[i] is
+ * B-normalised (vᵀBv = 1). The variational (GEVP) method for correlation matrices is
+ * A = C(t), B = C(t₀): the largest λ = e^{−E₀(t−t₀)} gives the ground state.
+ */
+function eigenGeneralized(A, B, options = {}) {
+  const [n] = matrixShape(A, 'eigenGeneralized');
+  if (matrixShape(B, 'eigenGeneralized')[0] !== n || A[0].length !== n) throw new Error('eigenGeneralized: A and B must be square and the same size');
+  const L = cholesky(B, options);
+  // X = L⁻¹ A (forward substitution column by column), then C = X L⁻ᵀ = L⁻¹ (L⁻¹A)ᵀ
+  const lower = M => {
+    const X = Array.from({ length: n }, () => new Float64Array(n));
+    for (let c = 0; c < n; c++) {
+      for (let i = 0; i < n; i++) {
+        let v = M[i][c];
+        for (let k = 0; k < i; k++) v -= L[i][k] * X[k][c];
+        X[i][c] = v / L[i][i];
+      }
+    }
+    return X;
+  };
+  const X = lower(A);
+  const C = lower(Array.from({ length: n }, (_a, i) => Float64Array.from({ length: n }, (_b, j) => X[j][i])));
+  for (let i = 0; i < n; i++) for (let j = 0; j < i; j++) C[i][j] = C[j][i] = (C[i][j] + C[j][i]) / 2;
+  const { values, vectors } = eigenSymmetric(C, { rtol: options.rtol ?? 1e-12 });
+  // v = L⁻ᵀ w (back substitution)
+  return {
+    values,
+    vectors: vectors.map(w => {
+      const v = new Float64Array(n);
+      for (let i = n - 1; i >= 0; i--) { let x = w[i]; for (let k = i + 1; k < n; k++) x -= L[k][i] * v[k]; v[i] = x / L[i][i]; }
+      return v;
+    }),
+  };
+}
+
+/** Dense matrix or a linear callback (x, out) -> out/array/undefined. Callback must not mutate x. */
+function linearOperator(A, n, who) {
+  if (typeof A !== 'function') {
+    const [m, columns] = matrixShape(A, who);
+    if (m !== n || columns !== n) throw new Error(`${who}: operator must be ${n} by ${n}`);
+    return (x, out) => { for (let i = 0; i < n; i++) out[i] = dot(A[i], x); finiteVector(out, n, who); return out; };
+  }
+  return (x, out) => {
+    out.fill(NaN);
+    const result = A(x, out) ?? out;
+    finiteVector(result, n, who);
+    if (result !== out) out.set(result);
+    return out;
+  };
+}
+
+/**
+ * Preconditioned conjugate gradient for symmetric positive-definite A. Dense or matrix-free.
+ * preconditioner applies M ~= A^-1, also SPD. True residual is checked before success.
+ * Returns { x, converged, iterations, residualNorm }; exhausted budgets return converged:false.
+ */
+function conjugateGradient(A, b, { x0, preconditioner, rtol = 1e-10, atol = 0, maxIterations = Math.max(20, 4 * b.length) } = {}) {
+  const n = b?.length;
+  if (!(n > 0)) throw new Error('conjugateGradient: rhs must be non-empty');
+  finiteVector(b, n, 'conjugateGradient');
+  if (x0) finiteVector(x0, n, 'conjugateGradient');
+  tolerance(rtol, 'conjugateGradient'); tolerance(atol, 'conjugateGradient'); budget(maxIterations, 'conjugateGradient');
+  const apply = linearOperator(A, n, 'conjugateGradient');
+  const precondition = preconditioner ? linearOperator(preconditioner, n, 'conjugateGradient preconditioner') : (r, z) => { z.set(r); return z; };
+  let bScale = 0;
+  for (const value of b) bScale = Math.max(bScale, Math.abs(value));
+  const bNorm = finiteResult(norm(b), 'conjugateGradient');
+  const target = Math.max(rtol * bNorm, atol);
+  if (bScale === 0) return { x: new Float64Array(n), converged: true, iterations: 0, residualNorm: 0 };
+  const y = x0 ? Float64Array.from(x0, value => value / bScale) : new Float64Array(n);
+  finiteVector(y, n, 'conjugateGradient');
+  const rhs = Float64Array.from(b, value => value / bScale), Ay = new Float64Array(n), r = new Float64Array(n), z = new Float64Array(n), p = new Float64Array(n), Ap = new Float64Array(n);
+  apply(y, Ay);
+  for (let i = 0; i < n; i++) r[i] = rhs[i] - Ay[i];
+  const report = iterations => {
+    const x = Float64Array.from(y, value => finiteResult(value * bScale, 'conjugateGradient'));
+    apply(x, Ay);
+    const residual = Float64Array.from(b, (value, i) => value - Ay[i]);
+    const residualNorm = finiteResult(norm(residual), 'conjugateGradient');
+    return { x, converged: residualNorm <= target, iterations, residualNorm, residual };
+  };
+  if (norm(r) <= target / bScale) { const result = report(0); if (result.converged) return result; }
+  precondition(r, z); p.set(z);
+  let rz = finiteResult(dot(r, z), 'conjugateGradient');
+  if (!(rz > 0)) throw new Error('conjugateGradient: non-positive preconditioned residual (need SPD preconditioner)');
+  for (let iteration = 1; iteration <= maxIterations; iteration++) {
+    apply(p, Ap);
+    const curvature = finiteResult(dot(p, Ap), 'conjugateGradient');
+    if (!(curvature > 0)) throw new Error('conjugateGradient: non-positive curvature (need SPD operator)');
+    const alpha = rz / curvature;
+    for (let i = 0; i < n; i++) { y[i] += alpha * p[i]; r[i] -= alpha * Ap[i]; }
+    finiteVector(y, n, 'conjugateGradient'); finiteVector(r, n, 'conjugateGradient');
+    let restart = false;
+    if (norm(r) <= target / bScale || iteration === maxIterations) {
+      const result = report(iteration);
+      if (result.converged || iteration === maxIterations) return result;
+      for (let i = 0; i < n; i++) r[i] = result.residual[i] / bScale;
+      restart = true;
+    }
+    precondition(r, z);
+    const next = finiteResult(dot(r, z), 'conjugateGradient');
+    if (!(next > 0)) throw new Error('conjugateGradient: non-positive preconditioned residual (need SPD preconditioner)');
+    const beta = restart ? 0 : next / rz;
+    for (let i = 0; i < n; i++) p[i] = z[i] + beta * p[i];
+    rz = next;
+  }
+}
+
+/**
+ * Damped Newton solve f(x)=0, with an analytic Jacobian or central finite differences.
+ * Use dimensionless/scaled equations; xScale sets coordinate scales for differencing.
+ * Success means ||f|| <= max(atol, rtol*||f(x0)||), not a bound on distance to a root.
+ */
+function newtonSolve(f, x0, { jacobian, xScale, rtol = 1e-10, atol = 1e-12, maxIterations = 50, maxBacktracks = 25 } = {}) {
+  const n = x0?.length;
+  if (typeof f !== 'function' || !(n > 0)) throw new Error('newtonSolve: function and non-empty initial state required');
+  finiteVector(x0, n, 'newtonSolve');
+  if (jacobian !== undefined && typeof jacobian !== 'function') throw new Error('newtonSolve: jacobian must be a function');
+  tolerance(rtol, 'newtonSolve'); tolerance(atol, 'newtonSolve'); budget(maxIterations, 'newtonSolve'); budget(maxBacktracks, 'newtonSolve');
+  const scales = xScale ? Float64Array.from(xScale) : new Float64Array(n).fill(1);
+  finiteVector(scales, n, 'newtonSolve');
+  if (!scales.every(value => value > 0)) throw new Error('newtonSolve: xScale must be positive');
+  let x = Float64Array.from(x0), residual = Float64Array.from(f(x));
+  finiteVector(residual, n, 'newtonSolve');
+  let residualNorm = finiteResult(norm(residual), 'newtonSolve');
+  const target = Math.max(atol, rtol * residualNorm);
+  const result = (iterations, reason) => ({ x, residual, residualNorm, iterations, converged: residualNorm <= target, reason });
+  for (let iteration = 0; iteration < maxIterations; iteration++) {
+    if (residualNorm <= target) return result(iteration, 'residual tolerance');
+    let J;
+    if (jacobian) J = jacobian(x);
+    else {
+      J = Array.from({ length: n }, () => new Float64Array(n));
+      for (let j = 0; j < n; j++) {
+        const h = Math.cbrt(EPS) * Math.max(Math.abs(x[j]), scales[j]);
+        const plus = x.slice(), minus = x.slice(); plus[j] += h; minus[j] -= h;
+        if (!Number.isFinite(h) || plus[j] === minus[j]) throw new Error('newtonSolve: derivative step cannot be resolved');
+        const fp = Float64Array.from(f(plus)), fm = f(minus);
+        finiteVector(fp, n, 'newtonSolve derivative'); finiteVector(fm, n, 'newtonSolve derivative');
+        for (let i = 0; i < n; i++) J[i][j] = (fp[i] - fm[i]) / (plus[j] - minus[j]);
+      }
+    }
+    const delta = solveLinear(J, Float64Array.from(residual, value => -value));
+    let accepted = false, alpha = 1;
+    for (let attempt = 0; attempt < maxBacktracks; attempt++, alpha /= 2) {
+      const trial = Float64Array.from(x, (value, i) => value + alpha * delta[i]);
+      if (!trial.every(Number.isFinite)) continue;
+      const next = f(trial);
+      if (!next || next.length !== n) throw new Error('newtonSolve: function must return one residual per coordinate');
+      if (!Array.from(next).every(Number.isFinite)) continue;
+      const nextNorm = norm(next);
+      if (nextNorm <= (1 - 1e-4 * alpha) * residualNorm || nextNorm <= target) {
+        x = trial; residual = Float64Array.from(next); residualNorm = nextNorm; accepted = true; break;
+      }
+    }
+    if (!accepted) return result(iteration, 'line search stalled');
+  }
+  return result(maxIterations, residualNorm <= target ? 'residual tolerance' : 'iteration budget exhausted');
+}
+
+/**
+ * Matrix exponential e^A of a real square matrix (Higham 2005: scaling and squaring with the
+ * degree-13 Padé approximant). x(t) = e^{At}x₀ solves any linear system x' = Ax: decay chains,
+ * first-order kinetics, compartment models, continuous-time Markov chains. Accuracy is normwise
+ * (relative to ‖e^A‖); check tiny components against a structured solution when they matter.
+ * Returns the matrix as an array of Float64Array rows.
+ */
+function expm(A) {
+  const [m, n] = matrixShape(A, 'expm');
+  if (m !== n) throw new Error('expm: matrix must be square');
+  const b = [64764752532480000, 32382376266240000, 7771770303897600, 1187353796428800, 129060195264000, 10559470521600, 670442572800, 33522128640, 1323241920, 40840800, 960960, 16380, 182, 1];
+  const mul = (X, Y) => X.map(row => { const out = new Float64Array(n); for (let k = 0; k < n; k++) { const r = row[k]; if (r) for (let j = 0; j < n; j++) out[j] += r * Y[k][j]; } return out; });
+  const comb = terms => Array.from({ length: n }, (_, i) => { const out = new Float64Array(n); for (const [c, X] of terms) for (let j = 0; j < n; j++) out[j] += c * (X === null ? (i === j ? 1 : 0) : X[i][j]); return out; });
+  const norm1 = Math.max(...Array.from({ length: n }, (_, j) => A.reduce((s, row) => s + Math.abs(row[j]), 0)));
+  const s = Math.max(0, Math.ceil(Math.log2(norm1 / 5.371920351148152)));
+  const S = A.map(row => Float64Array.from(row, v => v / 2 ** s));
+  const A2 = mul(S, S), A4 = mul(A2, A2), A6 = mul(A4, A2);
+  const U = mul(S, comb([[1, mul(A6, comb([[b[13], A6], [b[11], A4], [b[9], A2]]))], [b[7], A6], [b[5], A4], [b[3], A2], [b[1], null]]));
+  const V = comb([[1, mul(A6, comb([[b[12], A6], [b[10], A4], [b[8], A2]]))], [b[6], A6], [b[4], A4], [b[2], A2], [b[0], null]]);
+  const P = comb([[1, V], [-1, U]]), Q = comb([[1, V], [1, U]]);
+  // R = P⁻¹Q column by column, then undo the scaling by repeated squaring
+  const cols = Array.from({ length: n }, (_, j) => solveLinear(P, Q.map(row => row[j])));
+  let R = Array.from({ length: n }, (_, i) => Float64Array.from(cols, col => col[i]));
+  for (let k = 0; k < s; k++) R = mul(R, R);
+  for (const row of R) for (const v of row) finiteResult(v, 'expm');
+  return R;
+}
+
+return { matrixVector, solveLinear, leastSquares, eigenSymmetric, cholesky, eigenGeneralized, conjugateGradient, newtonSolve, expm };
+})();
+
+// ---- psim:core/data.mjs
+__psim["core/data.mjs"] = (() => {
+// Working with data, independent of subject: interpolation that does not invent wiggles,
+// histograms with uncertainties, goodness-of-fit tests and error bars on derived quantities.
+//
+//   interpolate       linear / monotone cubic through tabulated points
+//   histogram         one-shot histogram with Poisson errors
+//   createHistogram   incremental (weighted) histogram with under/overflow and density errors
+//   ksTest            Kolmogorov–Smirnov test against a model CDF
+//   chiSquareTest     Pearson χ² of binned counts against expectations, with p-value
+//   jackknife         blocked jackknife: value, error and bias of any function of means
+//   bootstrap         blocked bootstrap: error and confidence quantiles of any function of means
+//   meanSem / pull    mean ± standard error of independent samples; (measured − expected)/error
+//   jackknifeRefit    blocked jackknife of any estimator that needs the samples themselves (a refit)
+//   curveFit          nonlinear least squares (Levenberg–Marquardt) with parameter covariance
+const { rng, gammaQ } = __psim["core/numerics.mjs"];
+const { solveLinear } = __psim["core/linalg.mjs"];
+/**
+ * Interpolate tabulated data (xs strictly increasing). method 'linear' or 'monotone'
+ * (Fritsch–Carlson monotone cubic: no overshoot between data points, so it never invents
+ * maxima that the data do not have). Outside [x₀, x_last] returns NaN unless extrapolate: true
+ * (then linear from the end segment). Returns a function x → y.
+ */
+function interpolate(xs, ys, { method = 'monotone', extrapolate = false } = {}) {
+  const n = xs.length;
+  if (n < 2 || ys.length !== n) throw new Error('interpolate: need ≥ 2 points and equal-length xs, ys');
+  for (let i = 1; i < n; i++) if (!(xs[i] > xs[i - 1])) throw new Error('interpolate: xs must be strictly increasing');
+  const h = Array.from({ length: n - 1 }, (_, i) => xs[i + 1] - xs[i]);
+  const delta = h.map((hi, i) => (ys[i + 1] - ys[i]) / hi);
+  let m = null;
+  if (method === 'monotone') {
+    m = new Float64Array(n);
+    m[0] = delta[0]; m[n - 1] = delta[n - 2];
+    for (let i = 1; i < n - 1; i++) m[i] = delta[i - 1] * delta[i] <= 0 ? 0 : (delta[i - 1] + delta[i]) / 2;
+    for (let i = 0; i < n - 1; i++) {
+      if (delta[i] === 0) { m[i] = 0; m[i + 1] = 0; continue; }
+      const a = m[i] / delta[i], b = m[i + 1] / delta[i], s = a * a + b * b;
+      if (s > 9) { const t = 3 / Math.sqrt(s); m[i] = t * a * delta[i]; m[i + 1] = t * b * delta[i]; }
+    }
+  } else if (method !== 'linear') throw new Error(`interpolate: unknown method "${method}"`);
+  return x => {
+    if (x < xs[0] || x > xs[n - 1]) {
+      if (!extrapolate) return NaN;
+      const i = x < xs[0] ? 0 : n - 2;
+      return ys[i] + delta[i] * (x - xs[i]);
+    }
+    let lo = 0, hi = n - 1;
+    while (hi - lo > 1) { const mid = (lo + hi) >> 1; xs[mid] <= x ? (lo = mid) : (hi = mid); }
+    const t = (x - xs[lo]) / h[lo];
+    if (!m) return ys[lo] + t * (ys[hi] - ys[lo]);
+    const t2 = t * t, t3 = t2 * t;
+    return (2 * t3 - 3 * t2 + 1) * ys[lo] + (t3 - 2 * t2 + t) * h[lo] * m[lo] + (-2 * t3 + 3 * t2) * ys[hi] + (t3 - t2) * h[lo] * m[hi];
+  };
+}
+
+/**
+ * Histogram with Poisson uncertainties, normalised as a probability density if density: true.
+ * Returns { edges, centers, counts, values, errors }.
+ */
+function histogram(samples, { bins = 30, range, density = true } = {}) {
+  const [lo, hi] = range ?? [Math.min(...samples), Math.max(...samples)];
+  if (!(hi > lo)) throw new Error('histogram: empty or degenerate range');
+  const w = (hi - lo) / bins, counts = new Float64Array(bins);
+  let inRange = 0;
+  for (const s of samples) {
+    if (s < lo || s > hi) continue;
+    counts[Math.min(bins - 1, Math.floor((s - lo) / w))]++; inRange++;
+  }
+  const norm = density ? 1 / (samples.length * w) : 1;
+  return {
+    edges: Array.from({ length: bins + 1 }, (_, i) => lo + i * w),
+    centers: Array.from({ length: bins }, (_, i) => lo + (i + 0.5) * w),
+    counts, inRange,
+    values: Array.from(counts, c => c * norm),
+    errors: Array.from(counts, c => Math.sqrt(c) * norm),
+  };
+}
+
+/**
+ * One-sample Kolmogorov–Smirnov test of samples against a model CDF. Returns { D, p }:
+ * D is the largest CDF difference; p the asymptotic probability of a D at least this large if
+ * the samples came from the model (assumes independent samples; thin correlated chains first).
+ */
+function ksTest(samples, cdf) {
+  const s = Float64Array.from(samples).sort(), n = s.length;
+  if (n < 5) throw new Error('ksTest: need at least 5 samples');
+  let D = 0;
+  for (let i = 0; i < n; i++) {
+    const F = cdf(s[i]);
+    D = Math.max(D, Math.abs((i + 1) / n - F), Math.abs(F - i / n));
+  }
+  const l = (Math.sqrt(n) + 0.12 + 0.11 / Math.sqrt(n)) * D;      // Stephens' correction
+  let p = 0;
+  for (let k = 1; k <= 100; k++) p += 2 * (k % 2 ? 1 : -1) * Math.exp(-2 * k * k * l * l);
+  return { D, p: Math.min(1, Math.max(0, p)) };
+}
+
+/**
+ * Incremental histogram over range [lo, hi] with `bins` equal bins and optional weights.
+ * add(x, w = 1); x outside the range goes to underflow / overflow, NaN to nan. total sums every
+ * weight added (in range or not). errors() = √Σw² per bin (Poisson for unit weights);
+ * density(total) → { values: counts/(total·width), errors } (default total: everything added).
+ */
+function createHistogram({ bins = 30, range } = {}) {
+  if (!(Number.isInteger(bins) && bins > 0)) throw new Error('createHistogram: bins must be a positive integer');
+  const [lo, hi] = range ?? [];
+  if (!(Number.isFinite(lo) && Number.isFinite(hi) && hi > lo)) throw new Error('createHistogram: range [lo, hi] with finite hi > lo is required');
+  const width = (hi - lo) / bins;
+  const h = {
+    bins, range: [lo, hi], width,
+    counts: new Float64Array(bins), sumW2: new Float64Array(bins),
+    total: 0, underflow: 0, overflow: 0, nan: 0,
+    edges: Array.from({ length: bins + 1 }, (_, i) => lo + i * width),
+    centers: Array.from({ length: bins }, (_, i) => lo + (i + 0.5) * width),
+    add(x, w = 1) {
+      h.total += w;
+      if (Number.isNaN(x)) h.nan += w;
+      else if (x < lo) h.underflow += w;
+      else if (x > hi) h.overflow += w;
+      else { const i = Math.min(bins - 1, Math.floor((x - lo) / width)); h.counts[i] += w; h.sumW2[i] += w * w; }
+      return h;
+    },
+    errors: () => Array.from(h.sumW2, Math.sqrt),
+    density(total = h.total) {
+      const k = 1 / (total * width);
+      return { values: Array.from(h.counts, c => c * k), errors: Array.from(h.sumW2, s => Math.sqrt(s) * k) };
+    },
+  };
+  return h;
+}
+
+/**
+ * Pearson χ² test of observed counts against expected counts: Σ(o−e)²/e, or Σ((o−e)/σ)² when
+ * errors σ are given. Bins with e ≤ 0 (or σ ≤ 0) are skipped and counted. dof = used bins − ddof
+ * (ddof: constraints, e.g. 1 if the expectation was normalised to the total, plus fitted parameters).
+ * Returns { chi2, dof, p (upper tail Q(dof/2, χ²/2)), z = (χ² − dof)/√(2 dof), skipped }.
+ * For Pearson's form the χ² law needs e ≳ 5 per bin; merge sparse bins first.
+ */
+function chiSquareTest(observed, expected, { ddof = 0, errors } = {}) {
+  if (observed.length !== expected.length || (errors && errors.length !== observed.length)) throw new Error('chiSquareTest: observed, expected (and errors) must have equal length');
+  let chi2 = 0, used = 0, skipped = 0;
+  for (let i = 0; i < observed.length; i++) {
+    const e = expected[i], s = errors ? errors[i] : Math.sqrt(e);
+    if (!(e > 0) || !(s > 0)) { skipped++; continue; }
+    chi2 += ((observed[i] - e) / s) ** 2; used++;
+  }
+  const dof = used - ddof;
+  if (!(dof > 0)) throw new Error(`chiSquareTest: no degrees of freedom left (${used} usable bins, ddof = ${ddof})`);
+  return { chi2, dof, p: Number.isFinite(chi2) ? gammaQ(dof / 2, chi2 / 2) : NaN, z: (chi2 - dof) / Math.sqrt(2 * dof), skipped };
+}
+
+/** Mean, standard error and sample standard deviation of INDEPENDENT samples (use meanWithError from numerics for correlated series). */
+function meanSem(xs) {
+  const n = xs.length;
+  if (!n) throw new Error('meanSem: no samples');
+  let mean = 0;
+  for (const x of xs) mean += x;
+  mean /= n;
+  let ss = 0;
+  for (const x of xs) ss += (x - mean) ** 2;
+  const sd = n > 1 ? Math.sqrt(ss / (n - 1)) : NaN;
+  return { mean, sem: sd / Math.sqrt(n), sd, n };
+}
+
+/** Pull (measured − expected)/error: how many standard errors a measurement is from the expectation. */
+function pull(measured, error, expected) { return (measured - expected) / error; }
+
+// Group samples (numbers or equal-length vectors) into B consecutive blocks of equal size,
+// dropping the remainder at the START (it is the least thermalised part of a chain).
+function blockSums(samples, bins, who) {
+  const n = samples?.length ?? 0;
+  if (n < 2) throw new Error(`${who}: need at least 2 samples`);
+  const B = bins ?? Math.min(n, 50);
+  if (!(Number.isInteger(B) && B >= 2 && B <= n)) throw new Error(`${who}: bins must be an integer in [2, ${n}] (got ${B})`);
+  const scalar = typeof samples[0] === 'number', dim = scalar ? 1 : samples[0].length;
+  if (!scalar && !(dim > 0)) throw new Error(`${who}: samples must be numbers or non-empty arrays`);
+  const size = Math.floor(n / B), start = n - B * size;
+  const sums = Array.from({ length: B }, () => new Float64Array(dim)), total = new Float64Array(dim);
+  for (let b = 0; b < B; b++) {
+    for (let i = start + b * size, end = i + size; i < end; i++) {
+      const s = samples[i];
+      if (scalar) sums[b][0] += s;
+      else { if (s.length !== dim) throw new Error(`${who}: sample ${i} has length ${s.length}, expected ${dim}`); for (let k = 0; k < dim; k++) sums[b][k] += s[k]; }
+    }
+    for (let k = 0; k < dim; k++) total[k] += sums[b][k];
+  }
+  // mean of a set of blocks, in the samples' own shape (number or Float64Array)
+  const meanOf = (vec, count) => scalar ? vec[0] / (count * size) : vec.map(v => v / (count * size));
+  return { B, size, scalar, dim, sums, total, meanOf };
+}
+
+const asArray = v => (typeof v === 'number' ? [v] : Array.from(v));
+
+/**
+ * Blocked jackknife error of θ = estimator(mean). samples: numbers, or arrays of observables
+ * measured together (e.g. all Wilson loops of one sweep). Consecutive samples form `bins` blocks
+ * (default min(n, 50)); the estimator sees the full mean and each leave-one-block-out mean
+ * (a number or a Float64Array, like the samples) and returns a number or an array. Blocks much
+ * longer than the autocorrelation time τ_int also make the error honest for correlated chains.
+ * Returns { value: θ(full mean), error: √((B−1)/B Σ(θᵢ−θ̄)²), bias: (B−1)(θ̄−θ), blocks: B }
+ * (arrays when the estimator returns arrays). A NaN from any block gives a NaN error, never a
+ * silently smaller one: show it as "unresolved".
+ */
+function jackknife(samples, estimator, { bins } = {}) {
+  const { B, sums, total, meanOf } = blockSums(samples, bins, 'jackknife');
+  const raw = estimator(meanOf(total.slice(), B)), vector = typeof raw !== 'number', value = asArray(raw);
+  const m = value.length, thetas = sums.map(s => {
+    const t = asArray(estimator(meanOf(total.map((v, k) => v - s[k]), B - 1)));
+    if (t.length !== m) throw new Error('jackknife: estimator returned a different length for a block');
+    return t;
+  });
+  const error = new Array(m), bias = new Array(m);
+  for (let k = 0; k < m; k++) {
+    const mean = thetas.reduce((a, t) => a + t[k], 0) / B;
+    error[k] = Math.sqrt((B - 1) / B * thetas.reduce((a, t) => a + (t[k] - mean) ** 2, 0));
+    bias[k] = (B - 1) * (mean - value[k]);
+  }
+  return vector ? { value, error, bias, blocks: B } : { value: value[0], error: error[0], bias: bias[0], blocks: B };
+}
+
+/**
+ * Blocked bootstrap of θ = estimator(mean), same sample conventions as jackknife: each of
+ * `resamples` replicas draws B blocks with replacement. rand defaults to rng(1), so results are
+ * reproducible. Returns { value: θ(full mean), error: standard deviation over replicas,
+ * quantiles(p): replica quantile(s) for p in [0, 1] (e.g. 0.16 and 0.84 for a 68 % interval),
+ * blocks, resamples }; arrays when the estimator returns arrays. NaN replicas give NaN.
+ */
+function bootstrap(samples, estimator, { resamples = 1000, bins, rand = rng(1) } = {}) {
+  if (typeof rand !== 'function') throw new Error('bootstrap: rand must be a function (e.g. rng(seed) from core/numerics.mjs)');
+  if (!(Number.isInteger(resamples) && resamples >= 2)) throw new Error('bootstrap: resamples must be an integer ≥ 2');
+  const { B, dim, sums, total, meanOf } = blockSums(samples, bins, 'bootstrap');
+  const raw = estimator(meanOf(total.slice(), B)), vector = typeof raw !== 'number', value = asArray(raw);
+  const m = value.length, reps = Array.from({ length: m }, () => new Float64Array(resamples));
+  const acc = new Float64Array(dim);
+  for (let r = 0; r < resamples; r++) {
+    acc.fill(0);
+    for (let b = 0; b < B; b++) { const s = sums[Math.floor(rand() * B)]; for (let k = 0; k < dim; k++) acc[k] += s[k]; }
+    const t = asArray(estimator(meanOf(acc.slice(), B)));
+    if (t.length !== m) throw new Error('bootstrap: estimator returned a different length for a replica');
+    for (let k = 0; k < m; k++) reps[k][r] = t[k];
+  }
+  const error = reps.map(x => {
+    const mu = x.reduce((a, v) => a + v, 0) / resamples;
+    return Math.sqrt(x.reduce((a, v) => a + (v - mu) ** 2, 0) / (resamples - 1));
+  });
+  const sorted = reps.map(x => (x.some(Number.isNaN) ? null : x.slice().sort()));
+  const quant = p => sorted.map(s => {
+    if (!s) return NaN;
+    const pos = Math.min(1, Math.max(0, p)) * (resamples - 1), i = Math.floor(pos), f = pos - i;
+    return i + 1 < resamples ? s[i] * (1 - f) + s[i + 1] * f : s[i];
+  });
+  const quantiles = p => (Array.isArray(p) ? p.map(q => (vector ? quant(q) : quant(q)[0])) : (vector ? quant(p) : quant(p)[0]));
+  return vector ? { value, error, quantiles, blocks: B, resamples } : { value: value[0], error: error[0], quantiles, blocks: B, resamples };
+}
+
+/**
+ * Blocked jackknife for estimators that need the samples themselves, not just their means (a fit,
+ * a median, a spectral estimate): fit(subset) is re-run on the data with each block left out.
+ * samples: an array of anything (points, segments, events); consecutive samples form `bins`
+ * blocks (default min(n, 20)); the remainder at the start is dropped. fit returns a number or an
+ * array. Returns { value, error, bias, blocks } like jackknife. Costs B + 1 fits.
+ */
+function jackknifeRefit(samples, fit, { bins } = {}) {
+  const n = samples.length, B = Math.min(n, bins ?? 20);
+  if (!(B >= 2)) throw new Error('jackknifeRefit: need at least 2 samples and 2 blocks');
+  const size = Math.floor(n / B), used = samples.slice(n - B * size);
+  const asArr = v => (typeof v === 'number' ? [v] : Array.from(v));
+  const raw = fit(used), vector = typeof raw !== 'number', value = asArr(raw);
+  const thetas = Array.from({ length: B }, (_, b) => asArr(fit([...used.slice(0, b * size), ...used.slice((b + 1) * size)])));
+  const mean = value.map((_, k) => thetas.reduce((a, t) => a + t[k], 0) / B);
+  const error = value.map((_, k) => Math.sqrt((B - 1) / B * thetas.reduce((a, t) => a + (t[k] - mean[k]) ** 2, 0)));
+  const bias = value.map((v, k) => (B - 1) * (mean[k] - v));
+  return vector ? { value, error, bias, blocks: B } : { value: value[0], error: error[0], bias: bias[0], blocks: B };
+}
+
+/**
+ * Nonlinear least squares by Levenberg–Marquardt: minimise Σ ((y_i − model(x_i, p)) / σ_i)².
+ * model(x, p) → number; jacobian(x, p) → ∂model/∂p (optional; central differences otherwise).
+ * sigma: per-point errors (number or array). With sigma the covariance is (JᵀWJ)⁻¹; without it,
+ * that matrix is scaled by χ²/dof (errors estimated from the scatter). Returns
+ * { p, errors, cov, chi2, dof, p_value (only with sigma), iterations, converged }.
+ * Start values matter: a damped oscillation needs a frequency guess within ~20 %.
+ */
+function curveFit(model, xs, ys, p0, { sigma, jacobian, maxIterations = 200, tol = 1e-12 } = {}) {
+  const n = xs.length, m = p0.length;
+  if (ys.length !== n || !(n > m)) throw new Error('curveFit: need equal-length xs, ys and more points than parameters');
+  const w = Array.from({ length: n }, (_, i) => { const s = sigma == null ? 1 : typeof sigma === 'number' ? sigma : sigma[i]; if (!(s > 0)) throw new Error('curveFit: sigma must be positive'); return 1 / (s * s); });
+  const resid = p => xs.map((x, i) => ys[i] - model(x, p));
+  const chi2Of = r => r.reduce((a, v, i) => a + w[i] * v * v, 0);
+  const jac = p => xs.map(x => {
+    if (jacobian) return Array.from(jacobian(x, p));
+    return p.map((pk, k) => {
+      const h = 1e-6 * Math.max(1, Math.abs(pk)), up = p.slice(), dn = p.slice();
+      up[k] += h; dn[k] -= h;
+      return (model(x, up) - model(x, dn)) / (2 * h);
+    });
+  });
+  const normal = (J, r) => {
+    const A = Array.from({ length: m }, () => new Array(m).fill(0)), g = new Array(m).fill(0);
+    for (let i = 0; i < n; i++) for (let a = 0; a < m; a++) { g[a] += w[i] * J[i][a] * r[i]; for (let b = 0; b < m; b++) A[a][b] += w[i] * J[i][a] * J[i][b]; }
+    return { A, g };
+  };
+  let p = Array.from(p0), r = resid(p), chi2 = chi2Of(r), lambda = 1e-3, it = 0, converged = false;
+  if (!Number.isFinite(chi2)) throw new Error('curveFit: the model is not finite at the start values');
+  for (; it < maxIterations; it++) {
+    const J = jac(p), { A, g } = normal(J, r);
+    let improved = false;
+    for (let tries = 0; tries < 30 && !improved; tries++) {
+      const M = A.map((row, a) => row.map((v, b) => (a === b ? v * (1 + lambda) + 1e-300 : v)));
+      let dp;
+      try { dp = solveLinear(M, g); } catch { lambda *= 10; continue; }
+      const trial = p.map((v, k) => v + dp[k]), rt = resid(trial), ct = chi2Of(rt);
+      if (Number.isFinite(ct) && ct <= chi2) {
+        const rel = (chi2 - ct) / Math.max(chi2, 1e-300), step = Math.max(...dp.map((d, k) => Math.abs(d) / Math.max(Math.abs(trial[k]), 1e-300)));
+        p = trial; r = rt; chi2 = ct; lambda = Math.max(lambda / 10, 1e-12); improved = true;
+        if (rel < tol || step < tol) converged = true;
+      } else lambda *= 10;
+    }
+    if (!improved) { converged = true; break; }   // no downhill step left: at the minimum (to round-off)
+    if (converged) break;
+  }
+  const { A } = normal(jac(p), r), dof = n - m;
+  const inv = Array.from({ length: m }, (_a, k) => solveLinear(A, Array.from({ length: m }, (_b, j) => (j === k ? 1 : 0))));
+  const scale = sigma == null ? chi2 / dof : 1;
+  const cov = inv.map(row => Array.from(row, v => v * scale));
+  return { p, errors: cov.map((row, k) => Math.sqrt(row[k])), cov, chi2, dof, p_value: sigma == null ? undefined : gammaQ(dof / 2, chi2 / 2), iterations: it, converged };
+}
+
+
+return { interpolate, histogram, ksTest, createHistogram, chiSquareTest, meanSem, pull, jackknife, bootstrap, jackknifeRefit, curveFit };
+})();
+
+// ---- psim:core/constants.mjs
+__psim["core/constants.mjs"] = (() => {
+// Physical constants, SI units. CODATA 2018 recommended values
+// (Tiesinga et al., Rev. Mod. Phys. 93, 025010, 2021). "exact" = defined by the 2019 SI.
+// Import from here instead of typing constants by hand; cite the source in the page.
+// PDG (end of file): particle-physics inputs as { value, error, unit, source }, from the PDG 2024
+// Review of Particle Physics or CODATA 2022 as each entry's source says.
+
+const CODATA = 'CODATA 2018';
+
+const c = 299792458;                 // m s^-1, exact
+const h = 6.62607015e-34;            // J s, exact
+const hbar = 6.62607015e-34 / (2 * Math.PI);  // J s, exact (h/2π)
+const e = 1.602176634e-19;           // C, exact
+const kB = 1.380649e-23;             // J K^-1, exact
+const NA = 6.02214076e23;            // mol^-1, exact
+const eps0 = 8.8541878128e-12;       // F m^-1
+const mu0 = 1.25663706212e-6;        // N A^-2
+const G = 6.67430e-11;               // m^3 kg^-1 s^-2 (relative uncertainty 2.2e-5)
+const me = 9.1093837015e-31;         // kg
+const mp = 1.67262192369e-27;        // kg
+const mn = 1.67492749804e-27;        // kg
+const u = 1.66053906660e-27;         // kg (atomic mass constant)
+const a0 = 5.29177210903e-11;        // m (Bohr radius)
+const alpha = 7.2973525693e-3;       // fine-structure constant
+const Eh = 4.3597447222071e-18;      // J (Hartree energy)
+const Ry = 13.605693122994;          // eV (Rydberg energy)
+const eV = 1.602176634e-19;          // J, exact
+const MeV = 1.602176634e-13;         // J, exact
+const mpc2MeV = 938.27208816;        // MeV (proton rest energy)
+const mec2MeV = 0.51099895000;       // MeV (electron rest energy)
+const hbarcMeVfm = 197.3269804;      // MeV fm
+const mAlphaMeV = 3727.3794066;      // MeV (alpha-particle rest energy)
+const muB = 1.602176634e-19 * (6.62607015e-34 / (2 * Math.PI)) / (2 * 9.1093837015e-31); // J T^-1, Bohr magneton eħ/2mₑ (CODATA 9.2740100783e-24)
+const ge = 2.00231930436256;         // |g| of the free electron (g_e = −2.00231930436256)
+
+// Astronomy (IAU 2012/2015 nominal values)
+const AU = 1.495978707e11;           // m, exact (IAU 2012)
+const GMsun = 1.3271244e20;          // m^3 s^-2 (IAU 2015 nominal)
+const Msun = 1.3271244e20 / 6.67430e-11;     // kg, GM☉/G (G-limited, ±2.2e-5)
+const yearJulian = 365.25 * 86400;   // s
+/**
+ * G in AU³ M☉⁻¹ yr⁻² with the Julian year and IAU GM☉: 39.47693 (≈ 4π², which is exact only
+ * for the Gaussian year 2π/k). Using this value keeps AU–yr runs consistent with SI ones.
+ */
+const G_AU_MSUN_YR = 1.3271244e20 * (365.25 * 86400) ** 2 / 1.495978707e11 ** 3;
+
+// Everyday mechanics and the Earth–Moon system
+const gn = 9.80665;                  // m s^-2, standard gravity (exact by definition, 3rd CGPM 1901)
+const GMearth = 3.986004e14;         // m^3 s^-2 (IAU 2015 nominal terrestrial mass parameter)
+const Rearth = 6.3781e6;             // m, equatorial (IAU 2015 nominal); mean radius 6.3710e6 m
+const RearthMean = 6.3710e6;         // m (IUGG mean radius)
+const GMmoon = 4.9028e12;            // m^3 s^-2 (JPL DE430: 4902.800066 km^3 s^-2)
+const Rmoon = 1.7374e6;              // m, mean radius (NASA lunar fact sheet)
+const earthMoonDistance = 3.844e8;   // m, mean (NASA lunar fact sheet)
+
+// Gases and the atmosphere
+const R = 8.314462618;               // J mol^-1 K^-1, molar gas constant = kB·NA (exact)
+const Mair = 28.9644e-3;             // kg mol^-1, dry air (U.S. Standard Atmosphere 1976 / ISA)
+const gammaAir = 1.4;                // cp/cv of dry air near room temperature (measured 1.401 at 20 °C)
+const p0 = 101325;                   // Pa, standard atmosphere (exact)
+const T0isa = 288.15;                // K, ISA sea-level temperature
+const rho0isa = 1.2250;              // kg m^-3, ISA sea-level density (= p0·Mair/(R·T0isa))
+
+// Particle-physics inputs: { value, error, unit, source }. PDG 2024 = Review of Particle Physics,
+// Navas et al., Phys. Rev. D 110, 030001 (2024); CODATA 2022 where it is the primary source.
+// Quark masses are MS-bar running masses except the top (direct-measurement mass).
+const pdg = (value, error, unit, source, note) => Object.freeze(note ? { value, error, unit, source, note } : { value, error, unit, source });
+const RPP = 'PDG 2024 (RPP)';
+const PDG = Object.freeze({
+  me: pdg(0.51099895069, 0.00000000016, 'MeV', 'CODATA 2022'),
+  mmu: pdg(105.6583755, 0.0000023, 'MeV', 'CODATA 2022'),
+  tauMu: pdg(2.1969811e-6, 0.0000022e-6, 's', RPP),
+  amu: pdg(116592059e-11, 22e-11, '', RPP, 'experimental world average (BNL + FNAL 2023), a_μ = (g−2)/2'),
+  mp: pdg(938.27208943, 0.00000029, 'MeV', 'CODATA 2022'),
+  mpiCharged: pdg(139.57039, 0.00018, 'MeV', RPP),
+  mpi0: pdg(134.9768, 0.0005, 'MeV', RPP),
+  tauPiCharged: pdg(2.6033e-8, 0.0005e-8, 's', RPP, 'π± mean life (cτ = 7.80 m)'),
+  tauPi0: pdg(8.43e-17, 0.13e-17, 's', RPP, 'π⁰ mean life'),
+  mKCharged: pdg(493.677, 0.015, 'MeV', RPP),
+  tauKCharged: pdg(1.2380e-8, 0.0020e-8, 's', RPP, 'K± mean life'),
+  GF: pdg(1.1663788e-5, 0.0000006e-5, 'GeV^-2', RPP, 'G_F/(ħc)³ from the muon lifetime'),
+  mW: pdg(80.3692, 0.0133, 'GeV', RPP),
+  mZ: pdg(91.1876, 0.0021, 'GeV', RPP),
+  mH: pdg(125.20, 0.11, 'GeV', RPP),
+  sin2thetaW: pdg(0.23129, 0.00004, '', RPP, 'MS-bar, at μ = M_Z'),
+  alphaS_MZ: pdg(0.1180, 0.0009, '', RPP, 'MS-bar, nf = 5, world average'),
+  alphaInv0: pdg(137.035999177, 0.000000021, '', 'CODATA 2022', 'α(0)⁻¹, Thomson limit'),
+  hbarc: pdg(197.3269804, 0, 'MeV fm', 'CODATA 2022', 'exact in the 2019 SI (shown truncated)'),
+  mc_mc: pdg(1.2730, 0.0046, 'GeV', RPP, 'MS-bar m_c(m_c)'),
+  mb_mb: pdg(4.183, 0.007, 'GeV', RPP, 'MS-bar m_b(m_b)'),
+  mt: pdg(172.57, 0.29, 'GeV', RPP, 'direct measurements (≈ pole mass)'),
+  michelRho: pdg(0.74979, 0.00026, '', RPP, 'Michel parameter ρ (SM: 3/4)'),
+  michelDelta: pdg(0.75047, 0.00034, '', RPP, 'Michel parameter δ (SM: 3/4)'),
+  michelXi: pdg(1.0009, 0.0016, '', RPP, 'Michel parameter ξ (SM: 1); asymmetric error +0.0016 −0.0007, larger side given'),
+  michelEta: pdg(0.057, 0.034, '', RPP, 'Michel parameter η (SM: 0)'),
+});
+
+// Standard atomic weights (IUPAC; abridged values where the natural variation is large), g/mol.
+// Multiply by u·1000 (or divide by NA·1000) for the mass of one atom in kg.
+const ATOMIC_WEIGHT = Object.freeze({
+  H: 1.008, He: 4.002602, C: 12.011, N: 14.007, O: 15.999, Na: 22.98976928, Al: 26.9815384, Si: 28.085,
+  Cl: 35.45, Ar: 39.95, K: 39.0983, Fe: 55.845, Cu: 63.546, Rb: 85.4678, Ag: 107.8682, Cs: 132.90545196,
+  W: 183.84, Au: 196.966570, Hg: 200.592, Pb: 207.2, U: 238.02891,
+});
+
+// Chemistry energy units (J per unit): kcal/mol, kJ/mol, wavenumber cm⁻¹ (= h c × 100 m⁻¹), all exact.
+const kcalPerMol = 4184 / 6.02214076e23;
+const kJPerMol = 1000 / 6.02214076e23;
+const invCm = 6.62607015e-34 * 299792458 * 100;
+// Nuclide masses in u (AME2020): isotope effects need these, not the standard atomic weights.
+const NUCLIDE_MASS = Object.freeze({ H1: 1.00782503207, H2: 2.01410177812, H3: 3.01604928, C12: 12, N14: 14.00307400443, O16: 15.99491461957 });
+
+
+return { CODATA, c, h, hbar, e, kB, NA, eps0, mu0, G, me, mp, mn, u, a0, alpha, Eh, Ry, eV, MeV, mpc2MeV, mec2MeV, hbarcMeVfm, mAlphaMeV, muB, ge, AU, GMsun, Msun, yearJulian, G_AU_MSUN_YR, gn, GMearth, Rearth, RearthMean, GMmoon, Rmoon, earthMoonDistance, R, Mair, gammaAir, p0, T0isa, rho0isa, PDG, ATOMIC_WEIGHT, kcalPerMol, kJPerMol, invCm, NUCLIDE_MASS };
+})();
+
 // ---- psim:core/fields.mjs
 __psim["core/fields.mjs"] = (() => {
 // Multidimensional regular-grid mathematics. Axis 0 is fastest:
@@ -4108,744 +5178,782 @@ function coupledSchrodinger2({ psi0, V11, V22, V12, shape, spacing = 1, dt, mass
 return { laplacianND, gradientND, divergenceND, fftND, solvePoissonPeriodic, diffusionPeriodic, schrodingerND, fftAxis, phaseWinding, probabilityCurrent, contourLines, densityLevel, coupledSchrodinger2 };
 })();
 
-// ---- psim:core/constants.mjs
-__psim["core/constants.mjs"] = (() => {
-// Physical constants, SI units. CODATA 2018 recommended values
-// (Tiesinga et al., Rev. Mod. Phys. 93, 025010, 2021). "exact" = defined by the 2019 SI.
-// Import from here instead of typing constants by hand; cite the source in the page.
-// PDG (end of file): particle-physics inputs as { value, error, unit, source }, from the PDG 2024
-// Review of Particle Physics or CODATA 2022 as each entry's source says.
+// ---- psim:core/pde.mjs
+__psim["core/pde.mjs"] = (() => {
+// Grid evolution that complements core/fields.mjs (same storage and boundary conventions):
+//   diffusion1D        ∂u/∂t = D ∂²u/∂x² (+ source)  Crank–Nicolson: walls or periodic, sources, 2nd order
+//   waveND             ∂²u/∂t² = c² ∇²u               leapfrog in any dimension, CFL-checked, exact discrete energy
+//   stationaryStates1D Hψ = Eψ                        finite differences + symmetric tridiagonal eigensolver
+//   transmission1D     scattering T(E), R(E) through any 1D barrier (stationary, integrated from the far side)
+//   thermalAverage     (1/kT)∫ f(E) e^{−E/kT} dE  (Bell's tunnelling rate factor, thermionic emission)
+//   packetTransmission ∫ |φ(k)|² T(k) dk for a Gaussian packet: the exact benchmark for wave-packet runs
+// Source-free periodic diffusion and time-dependent Schrödinger in any dimension: fields.mjs.
+//
+// Boundary conditions as in laplacianND: 'dirichlet' (zero ghost values), 'neumann' (copied
+// edge-cell ghosts: zero face flux, cell-centred) or 'periodic'.
+const { solveTridiagonal, lowestTridiagonal, dopri5, gaussLegendre } = __psim["core/numerics.mjs"];
+const { laplacianND } = __psim["core/fields.mjs"];
+const BCS = ['dirichlet', 'neumann', 'periodic'];
+const checkGrid = (u, dx, who) => {
+  if (!(u.length >= 3) || !Array.from(u).every(Number.isFinite)) throw new Error(`${who}: need at least 3 finite grid values`);
+  if (!(Number.isFinite(dx) && dx > 0)) throw new Error(`${who}: dx must be positive and finite`);
+};
 
-const CODATA = 'CODATA 2018';
+/** Solve a cyclic tridiagonal system (periodic boundaries) by Sherman–Morrison. */
+function solveCyclic(a, b, c, alpha, beta, d) {
+  const n = b.length, gamma = -b[0];
+  const bb = Float64Array.from(b);
+  bb[0] = b[0] - gamma; bb[n - 1] = b[n - 1] - alpha * beta / gamma;
+  const x = solveTridiagonal(a, bb, c, d);
+  const uvec = new Float64Array(n); uvec[0] = gamma; uvec[n - 1] = alpha;
+  const z = solveTridiagonal(a, bb, c, uvec);
+  const fact = (x[0] + beta * x[n - 1] / gamma) / (1 + z[0] + beta * z[n - 1] / gamma);
+  for (let i = 0; i < n; i++) x[i] -= fact * z[i];
+  return x;
+}
 
-const c = 299792458;                 // m s^-1, exact
-const h = 6.62607015e-34;            // J s, exact
-const hbar = 6.62607015e-34 / (2 * Math.PI);  // J s, exact (h/2π)
-const e = 1.602176634e-19;           // C, exact
-const kB = 1.380649e-23;             // J K^-1, exact
-const NA = 6.02214076e23;            // mol^-1, exact
-const eps0 = 8.8541878128e-12;       // F m^-1
-const mu0 = 1.25663706212e-6;        // N A^-2
-const G = 6.67430e-11;               // m^3 kg^-1 s^-2 (relative uncertainty 2.2e-5)
-const me = 9.1093837015e-31;         // kg
-const mp = 1.67262192369e-27;        // kg
-const mn = 1.67492749804e-27;        // kg
-const u = 1.66053906660e-27;         // kg (atomic mass constant)
-const a0 = 5.29177210903e-11;        // m (Bohr radius)
-const alpha = 7.2973525693e-3;       // fine-structure constant
-const Eh = 4.3597447222071e-18;      // J (Hartree energy)
-const Ry = 13.605693122994;          // eV (Rydberg energy)
-const eV = 1.602176634e-19;          // J, exact
-const MeV = 1.602176634e-13;         // J, exact
-const mpc2MeV = 938.27208816;        // MeV (proton rest energy)
-const mec2MeV = 0.51099895000;       // MeV (electron rest energy)
-const hbarcMeVfm = 197.3269804;      // MeV fm
-const mAlphaMeV = 3727.3794066;      // MeV (alpha-particle rest energy)
-const muB = 1.602176634e-19 * (6.62607015e-34 / (2 * Math.PI)) / (2 * 9.1093837015e-31); // J T^-1, Bohr magneton eħ/2mₑ (CODATA 9.2740100783e-24)
-const ge = 2.00231930436256;         // |g| of the free electron (g_e = −2.00231930436256)
+/** Normalise a wall: legacy strings, or { type: 'value' | 'flux', value: number | (t => number) }. */
+function wall(spec, who) {
+  if (spec === 'neumann') return { type: 'flux', value: () => 0 };
+  if (spec === 'dirichlet') return { type: 'ghost' };                 // zero ghost value (laplacianND convention)
+  if (spec?.type === 'value' || spec?.type === 'flux') {
+    const v = spec.value ?? 0, f = typeof v === 'function' ? v : () => v;
+    if (!Number.isFinite(f(0))) throw new Error(`${who}: boundary value must be finite`);
+    return { type: spec.type, value: f };
+  }
+  throw new Error(`${who}: a wall is 'dirichlet', 'neumann', { type: 'value', value } or { type: 'flux', value }`);
+}
 
-// Astronomy (IAU 2012/2015 nominal values)
-const AU = 1.495978707e11;           // m, exact (IAU 2012)
-const GMsun = 1.3271244e20;          // m^3 s^-2 (IAU 2015 nominal)
-const Msun = 1.3271244e20 / 6.67430e-11;     // kg, GM☉/G (G-limited, ±2.2e-5)
-const yearJulian = 365.25 * 86400;   // s
 /**
- * G in AU³ M☉⁻¹ yr⁻² with the Julian year and IAU GM☉: 39.47693 (≈ 4π², which is exact only
- * for the Gaussian year 2π/k). Using this value keeps AU–yr runs consistent with SI ones.
+ * Diffusion ∂u/∂t = D ∂²u/∂x² + s(i, t) by Crank–Nicolson on cells x_i = x₀ + (i + ½)dx.
+ * Walls: bc 'dirichlet' | 'neumann' | 'periodic' for both, or left/right separately:
+ *   { type: 'value', value }  u = value at the wall face (second order; value may be a function of t)
+ *   { type: 'flux', value }   inward flux −D∂u/∂n = value at the wall (0 = insulated)
+ * setBoundary('left' | 'right', wall) switches a wall mid-run (e.g. a dissolving solid used up).
+ * inflow is the amount that entered through the walls since t0 (discrete, consistent with the
+ * scheme), so total() − total₀ − ∫source = inflow to round-off.
+ * Returns { t, u, step(), advanceTo(t), total(), inflow, setBoundary() }.
  */
-const G_AU_MSUN_YR = 1.3271244e20 * (365.25 * 86400) ** 2 / 1.495978707e11 ** 3;
+function diffusion1D({ u0, D, dx, dt, bc = 'neumann', left, right, source, t0 = 0 }) {
+  checkGrid(u0, dx, 'diffusion1D');
+  if (!(D > 0) || !(dt > 0)) throw new Error('diffusion1D: D and dt must be positive');
+  if (!BCS.includes(bc)) throw new Error(`diffusion1D: bc must be one of ${BCS.join(', ')}`);
+  const periodic = bc === 'periodic';
+  if (periodic && (left || right)) throw new Error('diffusion1D: periodic boundaries have no walls');
+  const n = u0.length, r = D * dt / (dx * dx);
+  const walls = periodic ? null : [wall(left ?? bc, 'diffusion1D'), wall(right ?? bc, 'diffusion1D')];
+  const a = new Float64Array(n).fill(-r / 2), b = new Float64Array(n).fill(1 + r), c = new Float64Array(n).fill(-r / 2);
+  // diagonal of the discrete Laplacian (×dx²) in the edge cell for each wall type
+  const edge = { ghost: -2, value: -3, flux: -1 };
+  const setDiag = () => { if (walls) { b[0] = 1 - (r / 2) * edge[walls[0].type]; b[n - 1] = 1 - (r / 2) * edge[walls[1].type]; } };
+  setDiag();
+  const u = Float64Array.from(u0), rhs = new Float64Array(n), next = new Float64Array(n);
+  const lapEdge = (w, inner, own, t) => {                           // ∂²u/∂x² in an edge cell, × dx²
+    if (w.type === 'ghost') return inner - 2 * own;
+    if (w.type === 'value') return inner - 3 * own + 2 * w.value(t);
+    return inner - own + w.value(t) * dx / D;
+  };
+  // amount entering through a wall during the step, from the same discrete fluxes the scheme uses
+  const wallIn = (w, ownOld, ownNew, t) => {
+    if (w.type === 'flux') return 0.5 * dt * (w.value(t) + w.value(t + dt));
+    const face = (own, tt) => (w.type === 'value' ? 2 * (w.value(tt) - own) : -own) * D / dx;
+    return 0.5 * dt * (face(ownOld, t) + face(ownNew, t + dt));
+  };
+  const s = {
+    t: t0, u, steps: 0, inflow: 0,
+    step() {
+      const t = s.t;
+      for (let i = 1; i < n - 1; i++) rhs[i] = u[i] + (r / 2) * (u[i - 1] - 2 * u[i] + u[i + 1]);
+      if (periodic) {
+        rhs[0] = u[0] + (r / 2) * (u[n - 1] - 2 * u[0] + u[1]);
+        rhs[n - 1] = u[n - 1] + (r / 2) * (u[n - 2] - 2 * u[n - 1] + u[0]);
+      } else {
+        const [L, R] = walls;
+        rhs[0] = u[0] + (r / 2) * lapEdge(L, u[1], u[0], t);
+        rhs[n - 1] = u[n - 1] + (r / 2) * lapEdge(R, u[n - 2], u[n - 1], t);
+        // implicit half: constant parts of the boundary terms at t + dt
+        if (L.type === 'value') rhs[0] += r * L.value(t + dt);
+        if (L.type === 'flux') rhs[0] += (dt / (2 * dx)) * L.value(t + dt);
+        if (R.type === 'value') rhs[n - 1] += r * R.value(t + dt);
+        if (R.type === 'flux') rhs[n - 1] += (dt / (2 * dx)) * R.value(t + dt);
+      }
+      if (source) for (let i = 0; i < n; i++) rhs[i] += dt * 0.5 * (source(i, t) + source(i, t + dt));
+      next.set(periodic ? solveCyclic(a, b, c, -r / 2, -r / 2, rhs) : solveTridiagonal(a, b, c, rhs));
+      if (walls) s.inflow += wallIn(walls[0], u[0], next[0], t) + wallIn(walls[1], u[n - 1], next[n - 1], t);
+      u.set(next); s.t += dt; s.steps++;
+    },
+    advanceTo(target) { while (s.t < target - 1e-12 * dt) s.step(); },
+    /** Σ u dx. Changes only by inflow through the walls and by the source. */
+    total() { let sum = 0; for (let i = 0; i < n; i++) sum += u[i]; return sum * dx; },
+    setBoundary(side, spec) {
+      if (periodic) throw new Error('diffusion1D: periodic boundaries have no walls');
+      if (side !== 'left' && side !== 'right') throw new Error("diffusion1D: side must be 'left' or 'right'");
+      walls[side === 'left' ? 0 : 1] = wall(spec, 'diffusion1D');
+      setDiag();
+    },
+  };
+  return s;
+}
 
-// Everyday mechanics and the Earth–Moon system
-const gn = 9.80665;                  // m s^-2, standard gravity (exact by definition, 3rd CGPM 1901)
-const GMearth = 3.986004e14;         // m^3 s^-2 (IAU 2015 nominal terrestrial mass parameter)
-const Rearth = 6.3781e6;             // m, equatorial (IAU 2015 nominal); mean radius 6.3710e6 m
-const RearthMean = 6.3710e6;         // m (IUGG mean radius)
-const GMmoon = 4.9028e12;            // m^3 s^-2 (JPL DE430: 4902.800066 km^3 s^-2)
-const Rmoon = 1.7374e6;              // m, mean radius (NASA lunar fact sheet)
-const earthMoonDistance = 3.844e8;   // m, mean (NASA lunar fact sheet)
+/**
+ * Wave equation ∂²u/∂t² = c²∇²u on an any-dimensional grid (fields.mjs storage: axis 0 fastest),
+ * leapfrog in time with the compact laplacianND. Requires c·dt·√(Σ 1/dxₐ²) ≤ 1 (CFL).
+ * Optional mask/maskBc restrict it to an irregular domain (see fields.mjs; values outside stay 0).
+ * v0 is the initial ∂u/∂t. energy() is the discrete energy that leapfrog conserves exactly
+ * (to round-off); it is positive whenever the CFL condition holds.
+ * Returns { t, u, step(), advanceTo(t), energy(), courant }.
+ */
+function waveND({ u0, v0, shape, spacing = 1, bc = 'dirichlet', mask, maskBc, c, dt, t0 = 0 }) {
+  const grid = { shape, spacing, bc, mask, maskBc }, n = u0.length;
+  const dxs = typeof spacing === 'number' ? Array.from(shape, () => spacing) : Array.from(spacing);
+  const courant = c * dt * Math.sqrt(dxs.reduce((sum, d) => sum + 1 / (d * d), 0));
+  if (!(courant > 0 && courant <= 1)) throw new Error(`waveND: Courant number c·dt·√(Σ1/dx²) = ${courant} must be in (0, 1]`);
+  if (v0 && v0.length !== n) throw new Error('waveND: v0 must match u0');
+  const cellVolume = dxs.reduce((p, d) => p * d, 1);
+  const u = Float64Array.from(u0, (value, i) => (mask && !mask[i] ? 0 : value)), prev = new Float64Array(n), next = new Float64Array(n), lap = new Float64Array(n);
+  laplacianND(u, grid, lap);
+  // u(−dt) from a Taylor expansion: u − dt·v + ½dt²c²∇²u
+  for (let i = 0; i < n; i++) prev[i] = u[i] - dt * (mask && !mask[i] ? 0 : v0?.[i] ?? 0) + 0.5 * dt * dt * c * c * lap[i];
+  const s = {
+    t: t0, u, steps: 0, courant,
+    step() {
+      laplacianND(u, grid, lap);
+      for (let i = 0; i < n; i++) next[i] = 2 * u[i] - prev[i] + dt * dt * c * c * lap[i];
+      prev.set(u); u.set(next); s.t += dt; s.steps++;
+    },
+    advanceTo(target) { while (s.t < target - 1e-12 * dt) s.step(); },
+    /** ½Σ[((uⁿ − uⁿ⁻¹)/dt)² − c²uⁿ·∇²uⁿ⁻¹]dV: exactly conserved by leapfrog because ∇² is symmetric. */
+    energy() {
+      laplacianND(prev, grid, lap);
+      let E = 0;
+      for (let i = 0; i < n; i++) { const vt = (u[i] - prev[i]) / dt; E += vt * vt - c * c * u[i] * lap[i]; }
+      return 0.5 * E * cellVolume;
+    },
+  };
+  return s;
+}
 
-// Gases and the atmosphere
-const R = 8.314462618;               // J mol^-1 K^-1, molar gas constant = kB·NA (exact)
-const Mair = 28.9644e-3;             // kg mol^-1, dry air (U.S. Standard Atmosphere 1976 / ISA)
-const gammaAir = 1.4;                // cp/cv of dry air near room temperature (measured 1.401 at 20 °C)
-const p0 = 101325;                   // Pa, standard atmosphere (exact)
-const T0isa = 288.15;                // K, ISA sea-level temperature
-const rho0isa = 1.2250;              // kg m^-3, ISA sea-level density (= p0·Mair/(R·T0isa))
+/**
+ * Lowest stationary states of H = −ħ²/2m d²/dx² + V(x) on a grid with ψ = 0 beyond both ends
+ * (second-order finite differences). Returns { energies, states } with states normalised so that
+ * Σ|ψ|²dx = 1. Accuracy O(dx²); confine the domain so ψ is negligible at the walls.
+ * The `count` lowest energies by Sturm bisection and their states by shifted inverse iteration
+ * (both O(n) per level), orthogonalised within near-degenerate groups (tunnelling doublets):
+ * 10⁴ grid points take milliseconds.
+ */
+function stationaryStates1D({ V, dx, count = 5, mass = 1, hbar = 1 }) {
+  const n = V.length;
+  if (!(n >= 3) || !(dx > 0)) throw new Error('stationaryStates1D: need ≥ 3 grid points and dx > 0');
+  const t = hbar * hbar / (2 * mass * dx * dx);
+  const diag = Float64Array.from(V, v => v + 2 * t), off = new Float64Array(n - 1).fill(-t);
+  const energies = lowestTridiagonal(diag, off, count);
+  const scale = Math.max(...energies.map(Math.abs), t);
+  const states = [];
+  energies.forEach((E, k) => {
+    // shifted inverse iteration: (H − (E + δ)) x = b converges to the eigenvector of E
+    const shift = E + 1e-10 * scale * (1 + k * 1e-3);
+    const a = new Float64Array(n).fill(-t), c = new Float64Array(n).fill(-t), b = Float64Array.from(diag, v => v - shift);
+    let x = Float64Array.from({ length: n }, (_, i) => Math.sin((k + 1) * Math.PI * (i + 1) / (n + 1)) + 1e-3 * Math.cos(7.3 * i));
+    for (let it = 0; it < 4; it++) {
+      x = solveTridiagonal(a, b, c, x);
+      // remove components along already-found states of nearly equal energy (degenerate or doublet pairs)
+      states.forEach((v, j) => {
+        if (Math.abs(energies[j] - E) > 1e-6 * scale) return;
+        let d = 0; for (let i = 0; i < n; i++) d += v[i] * x[i] * dx;
+        for (let i = 0; i < n; i++) x[i] -= d * v[i];
+      });
+      let s2 = 0; for (const v of x) s2 += v * v;
+      const f = 1 / Math.sqrt(s2 * dx);
+      for (let i = 0; i < n; i++) x[i] *= f;
+    }
+    let peak = 0; for (const v of x) peak = Math.max(peak, Math.abs(v));
+    const sign = x.find(v => Math.abs(v) > 1e-6 * peak) > 0 ? 1 : -1;   // first lobe positive
+    states.push(Float64Array.from(x, v => sign * v));
+  });
+  return { energies, states };
+}
 
-// Particle-physics inputs: { value, error, unit, source }. PDG 2024 = Review of Particle Physics,
-// Navas et al., Phys. Rev. D 110, 030001 (2024); CODATA 2022 where it is the primary source.
-// Quark masses are MS-bar running masses except the top (direct-measurement mass).
-const pdg = (value, error, unit, source, note) => Object.freeze(note ? { value, error, unit, source, note } : { value, error, unit, source });
-const RPP = 'PDG 2024 (RPP)';
-const PDG = Object.freeze({
-  me: pdg(0.51099895069, 0.00000000016, 'MeV', 'CODATA 2022'),
-  mmu: pdg(105.6583755, 0.0000023, 'MeV', 'CODATA 2022'),
-  tauMu: pdg(2.1969811e-6, 0.0000022e-6, 's', RPP),
-  amu: pdg(116592059e-11, 22e-11, '', RPP, 'experimental world average (BNL + FNAL 2023), a_μ = (g−2)/2'),
-  mp: pdg(938.27208943, 0.00000029, 'MeV', 'CODATA 2022'),
-  mpiCharged: pdg(139.57039, 0.00018, 'MeV', RPP),
-  mpi0: pdg(134.9768, 0.0005, 'MeV', RPP),
-  tauPiCharged: pdg(2.6033e-8, 0.0005e-8, 's', RPP, 'π± mean life (cτ = 7.80 m)'),
-  tauPi0: pdg(8.43e-17, 0.13e-17, 's', RPP, 'π⁰ mean life'),
-  mKCharged: pdg(493.677, 0.015, 'MeV', RPP),
-  tauKCharged: pdg(1.2380e-8, 0.0020e-8, 's', RPP, 'K± mean life'),
-  GF: pdg(1.1663788e-5, 0.0000006e-5, 'GeV^-2', RPP, 'G_F/(ħc)³ from the muon lifetime'),
-  mW: pdg(80.3692, 0.0133, 'GeV', RPP),
-  mZ: pdg(91.1876, 0.0021, 'GeV', RPP),
-  mH: pdg(125.20, 0.11, 'GeV', RPP),
-  sin2thetaW: pdg(0.23129, 0.00004, '', RPP, 'MS-bar, at μ = M_Z'),
-  alphaS_MZ: pdg(0.1180, 0.0009, '', RPP, 'MS-bar, nf = 5, world average'),
-  alphaInv0: pdg(137.035999177, 0.000000021, '', 'CODATA 2022', 'α(0)⁻¹, Thomson limit'),
-  hbarc: pdg(197.3269804, 0, 'MeV fm', 'CODATA 2022', 'exact in the 2019 SI (shown truncated)'),
-  mc_mc: pdg(1.2730, 0.0046, 'GeV', RPP, 'MS-bar m_c(m_c)'),
-  mb_mb: pdg(4.183, 0.007, 'GeV', RPP, 'MS-bar m_b(m_b)'),
-  mt: pdg(172.57, 0.29, 'GeV', RPP, 'direct measurements (≈ pole mass)'),
-  michelRho: pdg(0.74979, 0.00026, '', RPP, 'Michel parameter ρ (SM: 3/4)'),
-  michelDelta: pdg(0.75047, 0.00034, '', RPP, 'Michel parameter δ (SM: 3/4)'),
-  michelXi: pdg(1.0009, 0.0016, '', RPP, 'Michel parameter ξ (SM: 1); asymmetric error +0.0016 −0.0007, larger side given'),
-  michelEta: pdg(0.057, 0.034, '', RPP, 'Michel parameter η (SM: 0)'),
-});
+/**
+ * Stationary scattering through a 1D potential V(x) (a function; constant outside [x0, x1]).
+ * Integrates −(ħ²/2m)ψ'' + Vψ = Eψ from x1 leftwards, starting from the purely transmitted wave
+ * e^{ik_R x}, and decomposes ψ at x0 into incoming and reflected waves, so tunnelling probabilities
+ * down to ~1e−12 stay accurate (no exponentially growing transfer matrices). E must exceed V at
+ * both ends. Returns { T, R } with T + R = 1 to the integration tolerance (a check in itself).
+ */
+function transmission1D({ V, E, x0, x1, mass = 1, hbar = 1, rtol = 1e-11, atol = 1e-14 }) {
+  if (typeof V !== 'function') throw new Error('transmission1D: V must be a function of x');
+  const VL = V(x0), VR = V(x1);
+  if (!(E > VL && E > VR)) throw new Error('transmission1D: E must lie above the potential at both ends');
+  const c = 2 * mass / (hbar * hbar), kL = Math.sqrt(c * (E - VL)), kR = Math.sqrt(c * (E - VR));
+  // state [Re ψ, Im ψ, Re ψ', Im ψ'] at x; integrate in s = x1 − x (forward in s)
+  const f = (sv, y) => { const x = x1 - sv, q = c * (V(x) - E); return [-y[2], -y[3], -q * y[0], -q * y[1]]; };
+  const y1 = [Math.cos(kR * x1), Math.sin(kR * x1), -kR * Math.sin(kR * x1), kR * Math.cos(kR * x1)];
+  const { y } = dopri5(f, 0, y1, x1 - x0, { rtol, atol, h0: Math.min(1e-3, 0.01 / kR), hmax: Math.PI / (4 * Math.max(kL, kR)) });
+  // ψ = A e^{ik x} + B e^{−ik x}: A = ½ e^{−ikx}(ψ + ψ'/(ik)), B = ½ e^{ikx}(ψ − ψ'/(ik))
+  const [pr, pi, dr, di] = y, cx = Math.cos(kL * x0), sx = Math.sin(kL * x0);
+  const qr = di / kL, qi = -dr / kL;                       // ψ'/(ik)
+  const Ar = 0.5 * ((pr + qr) * cx + (pi + qi) * sx), Ai = 0.5 * ((pi + qi) * cx - (pr + qr) * sx);
+  const Br = 0.5 * ((pr - qr) * cx - (pi - qi) * sx), Bi = 0.5 * ((pi - qi) * cx + (pr - qr) * sx);
+  const A2 = Ar * Ar + Ai * Ai;
+  return { T: (kR / kL) / A2, R: (Br * Br + Bi * Bi) / A2 };
+}
 
-// Standard atomic weights (IUPAC; abridged values where the natural variation is large), g/mol.
-// Multiply by u·1000 (or divide by NA·1000) for the mass of one atom in kg.
-const ATOMIC_WEIGHT = Object.freeze({
-  H: 1.008, He: 4.002602, C: 12.011, N: 14.007, O: 15.999, Na: 22.98976928, Al: 26.9815384, Si: 28.085,
-  Cl: 35.45, Ar: 39.95, K: 39.0983, Fe: 55.845, Cu: 63.546, Rb: 85.4678, Ag: 107.8682, Cs: 132.90545196,
-  W: 183.84, Au: 196.966570, Hg: 200.592, Pb: 207.2, U: 238.02891,
-});
+/** (1/kT) ∫_{from}^{∞} f(E) e^{−(E − from)/kT} dE by Gauss–Legendre panels (f bounded, e.g. a transmission). */
+function thermalAverage(f, kT, { from = 0, panels = 40, n = 16, upto = 50 } = {}) {
+  if (!(kT > 0)) throw new Error('thermalAverage: kT must be positive');
+  let sum = 0;
+  const w = upto * kT / panels;
+  for (let p = 0; p < panels; p++) sum += gaussLegendre(E => f(E) * Math.exp(-(E - from) / kT), from + p * w, from + (p + 1) * w, n);
+  return sum / kT;
+}
 
-// Chemistry energy units (J per unit): kcal/mol, kJ/mol, wavenumber cm⁻¹ (= h c × 100 m⁻¹), all exact.
-const kcalPerMol = 4184 / 6.02214076e23;
-const kJPerMol = 1000 / 6.02214076e23;
-const invCm = 6.62607015e-34 * 299792458 * 100;
-// Nuclide masses in u (AME2020): isotope effects need these, not the standard atomic weights.
-const NUCLIDE_MASS = Object.freeze({ H1: 1.00782503207, H2: 2.01410177812, H3: 3.01604928, C12: 12, N14: 14.00307400443, O16: 15.99491461957 });
+/** ∫ |φ(k)|² T(k) dk for a Gaussian packet with |φ(k)|² ∝ exp(−(k − k0)²/(2σ_k²)) (σ_k = 1/(2σ_x)). */
+function packetTransmission(T, k0, sigmaK, { width = 8, n = 400 } = {}) {
+  const a = k0 - width * sigmaK, b = k0 + width * sigmaK, norm = 1 / (Math.sqrt(2 * Math.PI) * sigmaK);
+  let sum = 0;
+  const panels = Math.ceil(n / 16), w = (b - a) / panels;
+  for (let p = 0; p < panels; p++) sum += gaussLegendre(k => (k > 0 ? T(k) : 0) * norm * Math.exp(-((k - k0) ** 2) / (2 * sigmaK * sigmaK)), a + p * w, a + (p + 1) * w, 16);
+  return sum;
+}
 
 
-return { CODATA, c, h, hbar, e, kB, NA, eps0, mu0, G, me, mp, mn, u, a0, alpha, Eh, Ry, eV, MeV, mpc2MeV, mec2MeV, hbarcMeVfm, mAlphaMeV, muB, ge, AU, GMsun, Msun, yearJulian, G_AU_MSUN_YR, gn, GMearth, Rearth, RearthMean, GMmoon, Rmoon, earthMoonDistance, R, Mair, gammaAir, p0, T0isa, rho0isa, PDG, ATOMIC_WEIGHT, kcalPerMol, kJPerMol, invCm, NUCLIDE_MASS };
+return { diffusion1D, waveND, stationaryStates1D, transmission1D, thermalAverage, packetTransmission };
 })();
 
 // ---- local:physics.mjs
 __psim["local:physics.mjs"] = (() => {
-// Electron wave packet tunnelling through a rectangular barrier in two dimensions.
+// An electron wave packet tunnelling through a barrier, in two dimensions.
 //
-// Model (non-relativistic, spinless, single electron, free-electron mass):
-//   iħ ∂ψ/∂t = [−ħ²∇²/(2mₑ) + V(x)] ψ,   V = V₀ for |x| < a/2, else 0   (a straight slab, uniform in y)
-// State: the complex amplitude ψ(x, y, t) on a 256 × 256 grid (dx = 0.125 nm, 32 nm × 32 nm).
-// Units: nm, fs, eV.  ħ = 0.658212 eV fs,  mₑ = 5.68563 eV fs² nm⁻² (CODATA 2018 via core/constants).
-// Method: Strang split-operator FFT (core/fields.mjs schrodingerND), second order in dt, unitary,
-// with complex absorbing layers (−iW, W = W₀·depth²) on all four edges so outgoing waves leave the
-// box instead of wrapping around the periodic FFT domain.
-// Initial state: a normalised Gaussian packet, |ψ|² with standard deviation σ in x and y, centre
-// 8 nm before the barrier, mean wavevector k₀ at angle θ to the barrier normal, ħ²k₀²/2mₑ = E₀.
+// ONE IDEA (SKILL.md step 5)
+//   Learn:   An electron fired at a wall it does not have the energy to climb over still partly gets
+//            through: its wave leaks through the wall, and a slightly thicker wall lets far less through.
+//   Picture: Seen from above, the electron's probability cloud flies into a thin wall and splits into a
+//            large cloud that bounces back and a faint cloud beyond the wall, with the share on each
+//            side shown as a percentage.
+//   Action:  "Fire the electron" (a large button under the view): restart and play the collision.
 //
-// Observables (all from ψ, nothing scripted):
-//   P_left, P_barrier, P_right  = ∫|ψ|² dA over x < −a/2, |x| < a/2, x > a/2
-//   A_left, A_right             = probability removed by the absorbing layers in x < 0 and x ≥ 0,
-//                                 booked exactly per step from the solver's damping factors
-//   transmitted T(t) = P_right + A_right   (reflected R = P_left + A_left once the packet has left)
-// Balance: P_left + P_barrier + P_right + A_left + A_right = 1 to round-off (checked live).
+// MODEL (time-dependent Schrödinger equation, one electron, no spin, no magnetic field)
+//   iħ ∂ψ/∂t = −(ħ²/2mₑ)(∂²/∂x² + ∂²/∂y²)ψ + V(x)ψ
+//   State:    the complex wavefunction ψ(x, y, t) on a 512 × 128 grid, cells 0.25 nm (x) × 0.5 nm (y): 128 nm × 64 nm.
+//   Barrier:  V(x) = V₀·½[tanh((x − x_a)/s) − tanh((x − x_b)/s)], a wall of height V₀ and width w = x_b − x_a
+//             across the whole box (uniform in y), edge softness s = 0.25 nm.
+//   Start:    a Gaussian packet ψ ∝ exp(−(x−x₀)²/4σ² − (y−y₀)²/4σ² + i k₀ x), σ = 5 nm (the standard
+//             deviation of |ψ|²), mean kinetic energy E = ħ²k₀²/2mₑ, moving in +x towards the wall.
+//   Edges:    absorbing layers 12 nm deep at the left and right edges (complex potential −iW, W ∝ depth²)
+//             so waves leave instead of wrapping round; periodic in y (the packet stays far from y edges).
+//   Units:    nm, fs, eV; ħ = 0.6582119569 eV fs, mₑ = 5.685630 eV fs²/nm² (CODATA 2018 via core/constants).
+//   Method:   Strang split-operator FFT (`schrodingerND`, core/fields.mjs), Δt = 0.25 fs: unitary to
+//             round-off away from the absorbers, second order in Δt, spectral in space.
 //
-// Benchmark: for a slab uniform in y the Hamiltonian separates, ky is conserved, and the exact
-// transmission of the packet is ⟨T(E_x)⟩ = ∫ |φ(kx)|² T_slab(ħ²kx²/2mₑ) dkx with the textbook
-// square-barrier T(E) (Griffiths & Schroeter, Introduction to QM 3rd ed., §2.6 and Problem 2.33)
-// and the packet's Gaussian momentum distribution (σ_k = 1/2σ). Only the normal energy
-// E_x = E₀cos²θ tunnels.
-const { schrodingerND } = __psim["core/fields.mjs"];
-const { gaussLegendre } = __psim["core/numerics.mjs"];
+// OBSERVABLES
+//   through(t) = ∫_{x > x_c} |ψ|² dx dy   (probability beyond the wall centre x_c)
+//   back(t)    = ∫_{x < x_c} |ψ|² dx dy
+//   After the collision `through` is the transmission probability. Its exact value for this packet is the
+//   packet average  P_T = ∫ |φ(k)|² T(k) dk  with T(k) the stationary transmission of the same V(x)
+//   (`transmission1D` + `packetTransmission`, core/pde.mjs), not T at the mean energy.
+//
+// WHY 2D IS STILL BENCHMARKABLE
+//   V depends on x only and the start is a product ψx(x)ψy(y), so ψ(x, y, t) = ψx(x, t)·ψy(y, t) exactly:
+//   the x-part is a 1D scattering problem, the y-part spreads like a free packet. verify() checks the 2D
+//   grid against a 1D run on the same x-grid (separability), the 1D run against the exact packet average
+//   and against the probability flux through a line beyond the wall, and the sideways spread against the
+//   free-packet formula σ(t) = σ√(1 + (ħt/2mσ²)²).
+//
+// TIME AXIS
+//   The run starts with the packet 24 nm in front of the wall and ends when the split has settled (the
+//   share beyond the wall changes by < 0.3 % per 20 fs), plus a 10 % margin. A cheap 1D pre-run on the
+//   same grid (the x-factor of the exact 2D solution) measures the key times in createSim:
+//   "at the wall" (the most probability inside the wall) and "split settled".
+//
+// REPRESENTATION
+//   View: physical space seen from above, x to the right, y up, the interior 104 nm × 64 nm (absorbing
+//   layers not drawn). Brightness/colour = |ψ|², inferno colour map with a square-root transfer, scaled
+//   to the initial peak density (disclosed, with a colour bar). The wall is a translucent band labelled
+//   with its height. Numbers on the view: the shares on each side (computed).
+//   Illustrative parameters: free-electron mass and meV-scale energies chosen so that the electron's
+//   wavelength (≈ 5 nm) and the packet fit on screen; real barriers (oxide layers, STM gaps) are ~1 nm
+//   wide and ~1 eV high, which gives the same physics at a smaller scale.
 const { hbar: HBAR_SI, me, eV } = __psim["core/constants.mjs"];
-const HBAR = HBAR_SI / eV * 1e15;          // eV fs
-const ME = me / eV * 1e12;                 // eV fs² nm⁻²   (kg = J s² m⁻²)
-const C2 = 2 * ME / (HBAR * HBAR);         // k² = C2·E, nm⁻² eV⁻¹
-const N = 256, DX = 0.125, L = N * DX;     // grid
-const ABSORB = { width: 24, strength: 2 };      // cells (3 nm), eV
-const START = 8;                           // nm from the barrier centre to the packet centre
+const { schrodingerND, probabilityCurrent } = __psim["core/fields.mjs"];
+const { transmission1D, packetTransmission } = __psim["core/pde.mjs"];
+const HBAR = HBAR_SI / eV * 1e15;            // eV fs
+const MASS = me / eV * 1e6 ** 2;              // eV fs² / nm²   (1 nm/fs = 1e6 m/s)
+const NX = 512, NY = 128, DX = 0.25, DY = 0.5; // grid: 0.25 nm along x (resolves the wall edges), 0.5 nm along y
+const LX = NX * DX, LY = NY * DY;             // 128 nm × 64 nm
+const ABS = 48;                               // absorbing cells at each x edge (12 nm)
+const ABS_STRENGTH = 0.1;                     // eV, peak of the absorbing potential W
+const DT = 0.25;                              // fs
+const SIGMA = 5;                              // nm, packet width (std of |ψ|²)
+const X0 = 40, Y0 = LY / 2, XC = 64;          // packet start, wall centre (nm)
+const EDGE = 0.25;                            // nm, wall edge softness
+const VIEW_X = [ABS * DX, LX - ABS * DX];     // interior shown on the page
 
 const PARAMS = [
-  { key: 'E', label: 'Electron energy E₀', min: 0.2, max: 1.5, value: 0.6, unit: 'eV', digits: 3,
-    hint: 'Centre of the packet’s energy spread, E₀ = ħ²k₀²/2mₑ.' },
-  { key: 'V0', label: 'Barrier height V₀', min: 0, max: 3, value: 0.7, unit: 'eV', digits: 3 },
-  { key: 'a', label: 'Barrier width a', min: 0.125, max: 2, value: 0.5, unit: 'nm', digits: 3,
-    hint: 'Rounded to whole grid cells of 0.125 nm.' },
-  { key: 'theta', label: 'Angle of incidence θ', min: 0, max: 50, value: 30, unit: '°', digits: 2,
-    hint: 'Only the normal energy E₀cos²θ tunnels: oblique packets are reflected more.' },
-  { key: 'sigma', label: 'Packet size σ', min: 0.8, max: 2, value: 1.5, unit: 'nm', digits: 3,
-    hint: 'Smaller packets contain a wider spread of energies (σ_k = 1/2σ).' },
+  { key: 'E', label: 'Electron energy', min: 0.01, max: 0.15, value: 0.05, unit: 'eV', digits: 3,
+    hint: 'Mean kinetic energy of the electron. Below the wall height it could never get over the wall in classical physics.' },
+  { key: 'V0', label: 'Wall height', min: 0, max: 0.2, value: 0.08, unit: 'eV', digits: 3,
+    hint: 'The energy needed to climb over the wall.' },
+  { key: 'w', label: 'Wall thickness', min: 0.5, max: 6, value: 2, unit: 'nm', digits: 2,
+    hint: 'Tunnelling falls off roughly exponentially with thickness.' },
 ];
 
-/** Exact transmission of a plane wave of normal energy E (eV) through a square barrier V0 (eV), width a (nm). */
-function slabT(E, V0, a) {
-  if (!(E > 0)) return 0;
-  if (V0 === 0 || a === 0) return 1;
-  const d = E - V0;
-  if (Math.abs(d) < 1e-12 * Math.max(E, Math.abs(V0))) return 1 / (1 + C2 * a * a * V0 / 4);
-  if (d < 0) {
-    const s = Math.sinh(Math.sqrt(C2 * -d) * a);
-    return 1 / (1 + V0 * V0 * s * s / (4 * E * -d));
-  }
-  const s = Math.sin(Math.sqrt(C2 * d) * a);
-  return 1 / (1 + V0 * V0 * s * s / (4 * E * d));
+const PRESETS = [
+  { label: 'Thin wall (1 nm)', values: { E: 0.05, V0: 0.08, w: 1 } },
+  { label: 'Thick wall (3.5 nm)', values: { E: 0.05, V0: 0.08, w: 3.5 } },
+  { label: 'Energy above the wall', values: { E: 0.1, V0: 0.08, w: 2 } },
+];
+
+/** The wall potential (eV) at x (nm). */
+function wall({ V0, w }) {
+  const xa = XC - w / 2, xb = XC + w / 2;
+  return x => V0 * 0.5 * (Math.tanh((x - xa) / EDGE) - Math.tanh((x - xb) / EDGE));
+}
+const k0Of = E => Math.sqrt(2 * MASS * E) / HBAR;        // nm⁻¹
+const speedOf = E => HBAR * k0Of(E) / MASS;               // nm/fs (group velocity)
+
+/** Exact transmission of the packet: ∫|φ(k)|² T(k) dk, σ_k = 1/(2σ). */
+function exactPacketTransmission(p, { n = 160 } = {}) {
+  if (!(p.V0 > 0)) return 1;
+  const V = wall(p), span = p.w / 2 + 12 * EDGE + 2;
+  const T = k => transmission1D({ V, E: HBAR * HBAR * k * k / (2 * MASS), x0: XC - span, x1: XC + span, mass: MASS, hbar: HBAR }).T;
+  return packetTransmission(T, k0Of(p.E), 1 / (2 * SIGMA), { n });
+}
+/** Stationary transmission at the mean energy (for comparison only). */
+function transmissionAtMeanEnergy(p) {
+  if (!(p.V0 > 0)) return 1;
+  const span = p.w / 2 + 12 * EDGE + 2;
+  return transmission1D({ V: wall(p), E: p.E, x0: XC - span, x1: XC + span, mass: MASS, hbar: HBAR }).T;
 }
 
-/** Exact packet-averaged transmission: Gaussian kx distribution (mean kx0, std sk) weighted by slabT. */
-function packetT(kx0, sk, V0, a) {
-  const lo = Math.max(0, kx0 - 9 * sk), hi = kx0 + 9 * sk, n = 40;
-  const g = k => Math.exp(-((k - kx0) ** 2) / (2 * sk * sk)) / (Math.sqrt(2 * Math.PI) * sk);
+// ------------------------------------------------------------------ grids and initial state
+function gauss1D(n, dx, c, k) {
+  const re = new Float64Array(n), im = new Float64Array(n);
   let s = 0;
-  for (let j = 0; j < n; j++) {                    // 40 panels × 32-point Gauss–Legendre: resolves sin² resonances
-    const k0 = lo + (hi - lo) * j / n, k1 = lo + (hi - lo) * (j + 1) / n;
-    s += gaussLegendre(k => g(k) * slabT(k * k / C2, V0, a), k0, k1, 32);
+  for (let i = 0; i < n; i++) {
+    const x = (i + 0.5) * dx, a = Math.exp(-((x - c) ** 2) / (4 * SIGMA * SIGMA));
+    re[i] = a * Math.cos(k * x); im[i] = a * Math.sin(k * x); s += a * a;
   }
+  const f = 1 / Math.sqrt(s * dx);
+  for (let i = 0; i < n; i++) { re[i] *= f; im[i] *= f; }
+  return { re, im };
+}
+
+/** A 1D solver on the x-grid: the x-factor of the 2D solution (same grid, same Δt, same absorbers). */
+function create1D(p, { dx = DX, dt = DT, n = NX, absorb = true } = {}) {
+  const V = wall(p), g = gauss1D(n, dx, X0, k0Of(p.E));
+  const Vg = Float64Array.from({ length: n }, (_, i) => V((i + 0.5) * dx));
+  const absCells = Math.round(ABS * DX / dx);
+  const s = schrodingerND({ re0: g.re, im0: g.im, V: Vg, shape: [n], spacing: dx, dt, mass: MASS, hbar: HBAR,
+    absorb: absorb ? { width: [absCells], strength: ABS_STRENGTH } : undefined });
+  const ic = Math.round(XC / dx);
+  s.through = () => { let a = 0; for (let i = ic; i < n; i++) a += s.re[i] ** 2 + s.im[i] ** 2; return a * dx; };
+  s.inWall = () => {
+    const h = p.w / 2 + 2; let a = 0;
+    for (let i = 0; i < n; i++) { const x = (i + 0.5) * dx; if (Math.abs(x - XC) < h) a += s.re[i] ** 2 + s.im[i] ** 2; }
+    return a * dx;
+  };
   return s;
 }
 
-/** Geometry and derived quantities shared by the simulation and the page. */
-function setup(p, { n = N, dx = DX } = {}) {
-  const cells = Math.max(1, Math.round(p.a / dx));
-  const a = cells * dx;
-  const th = p.theta * Math.PI / 180;
-  const k0 = Math.sqrt(C2 * p.E), kx0 = k0 * Math.cos(th), ky0 = k0 * Math.sin(th);
-  const sk = 1 / (2 * p.sigma);
-  const x0 = -START * Math.cos(th), y0 = -START * Math.sin(th);
-  const Ex = p.E * Math.cos(th) ** 2;
-  return {
-    n, dx, cells, a, th, k0, kx0, ky0, sk, x0, y0, Ex, V0: p.V0, sigma: p.sigma,
-    v: HBAR * k0 / ME,                                       // group speed, nm/fs
-    Tplane: slabT(Ex, p.V0, a),
-    Texact: packetT(kx0, sk, p.V0, a),
-    kappa: p.V0 > Ex ? Math.sqrt(C2 * (p.V0 - Ex)) : 0,     // decay constant inside the barrier, nm⁻¹
-    xc: i => (i + 0.5 - n / 2) * dx,                          // cell-centre coordinate
-  };
-}
-
-/**
- * One run of the solver in 1D (shape [n]) or 2D (shape [n, n]) with exact bookkeeping of the
- * probability removed by the absorbing layers on each side of the barrier.
- */
-function createRun(p, { dims = 2, n = N, dx = DX, dt = 0.05, absorb = ABSORB } = {}) {
-  const g = setup(p, { n, dx });
-  const size = dims === 2 ? n * n : n, shape = dims === 2 ? [n, n] : [n];
-  const re0 = new Float64Array(size), im0 = new Float64Array(size), V = new Float64Array(size);
-  const region = new Uint8Array(size);                       // 0 left, 1 barrier, 2 right
-  const s2 = 4 * g.sigma * g.sigma;
-  const amp = dims === 2 ? 1 / (Math.sqrt(2 * Math.PI) * g.sigma) : (2 * Math.PI * g.sigma * g.sigma) ** -0.25;
-  for (let idx = 0; idx < size; idx++) {
-    const i = idx % n, j = (idx / n) | 0, x = g.xc(i), y = dims === 2 ? g.xc(j) : 0;
-    const X = x - g.x0, Y = dims === 2 ? y - g.y0 : 0;
-    const env = amp * Math.exp(-(X * X + Y * Y) / s2), ph = g.kx0 * X + (dims === 2 ? g.ky0 * Y : 0);
-    re0[idx] = env * Math.cos(ph); im0[idx] = env * Math.sin(ph);
-    const inBarrier = Math.abs(x) < g.a / 2;
-    V[idx] = inBarrier ? g.V0 : 0;
-    region[idx] = inBarrier ? 1 : x < 0 ? 0 : 2;
-  }
-  const sol = schrodingerND({ re0, im0, V, shape, spacing: dx, dt, mass: ME, hbar: HBAR, absorb: absorb || undefined });
-  const cell = dims === 2 ? dx * dx : dx;
-  // Absorbing-layer damping, the same profile as schrodingerND: amplitude × e^{−W dt/2ħ} twice per step.
-  const layer = [], d2 = [];
-  if (absorb) {
-    for (let idx = 0; idx < size; idx++) {
-      let W = 0;
-      for (let axis = 0; axis < dims; axis++) {
-        const k = axis === 0 ? idx % n : (idx / n) | 0;
-        const depth = Math.max(absorb.width - k, k - (n - 1 - absorb.width), 0) / absorb.width;
-        W += absorb.strength * depth * depth;
-      }
-      if (W > 0) { layer.push(idx); d2.push(Math.exp(-W * dt / HBAR)); }
-    }
-  }
-  const lay = Int32Array.from(layer), f1 = Float64Array.from(d2, q => 1 - q), f2 = Float64Array.from(d2, q => 1 / q - 1);
-  const side = Uint8Array.from(lay, idx => (g.xc(idx % n) < 0 ? 0 : 1));
-  const A = [0, 0];
-  const run = {
-    g, sol, dt, region, A, n, dims,
-    get t() { return sol.t; },
-    step() {
-      // Loss in one Strang step: |ψₙ|²(1 − d²) at the first damping, |ψₙ₊₁|²(1/d² − 1) at the second (exact).
-      const { re, im } = sol;
-      for (let q = 0; q < lay.length; q++) { const k = lay[q]; A[side[q]] += (re[k] * re[k] + im[k] * im[k]) * f1[q] * cell; }
-      sol.step();
-      for (let q = 0; q < lay.length; q++) { const k = lay[q]; A[side[q]] += (re[k] * re[k] + im[k] * im[k]) * f2[q] * cell; }
-    },
-    regions() {
-      const P = [0, 0, 0], { re, im } = sol;
-      for (let k = 0; k < size; k++) P[region[k]] += re[k] * re[k] + im[k] * im[k];
-      return P.map(v => v * cell);
-    },
-    budget() {
-      const [Pl, Pb, Pr] = run.regions();
-      return { Pl, Pb, Pr, Al: A[0], Ar: A[1], T: Pr + A[1], R: Pl + A[0], total: Pl + Pb + Pr + A[0] + A[1] };
-    },
-  };
-  run.N0 = run.regions().reduce((s, v) => s + v, 0);
-  return run;
-}
-
-/** Time after which the transmitted fraction has settled (packet well past the barrier). */
-const settleTime = g => (START + 6 * g.sigma) / (HBAR * Math.max(g.kx0 - 2.5 * g.sk, 0.4 * g.kx0) / ME) + 6;
-
-function createSim(p) {
-  const run = createRun(p);
-  const g = run.g;
+/** 1D pre-run: key times of the collision (the 2D x-factor evolves exactly like this). */
+function keyTimes(p) {
+  const s = create1D(p);
+  const window = Math.round(20 / DT);
   const hist = [];
-  const push = () => { const b = run.budget(); hist.push([run.t, b.Pl, b.Pb, b.Pr, b.Al, b.Ar]); return b; };
-  let last = push();
-  // Centroids of the left and right parts (for labels on the view).
-  const centroid = () => {
-    const { re, im } = run.sol, c = [[0, 0, 0], [0, 0, 0]];
-    for (let k = 0; k < run.region.length; k++) {
-      const r = run.region[k]; if (r === 1) continue;
-      const w = re[k] * re[k] + im[k] * im[k], s = c[r === 0 ? 0 : 1];
-      s[0] += w; s[1] += w * g.xc(k % N); s[2] += w * g.xc((k / N) | 0);
+  let tWall = 0, peak = -1, tSettle = null;
+  const tMax = 4 * (XC - X0) / speedOf(p.E) + 400;
+  while (s.t < tMax) {
+    s.step();
+    const P = s.through(), q = s.inWall();
+    hist.push(P);
+    if (q > peak) { peak = q; tWall = s.t; }
+    if (s.t > tWall + 10 && hist.length > window) {
+      const prev = hist[hist.length - 1 - window];
+      if (Math.abs(P - prev) <= 0.003 * Math.max(P, 1e-12) && q < 0.02 * peak) { tSettle = s.t; break; }
     }
-    return c.map(([w, x, y]) => (w > 0 ? { x: x / w, y: y / w, w: w * DX * DX } : null));
-  };
-  let every = 0;
-  return {
-    g, run, hist, params: { ...p },
-    get t() { return run.t; },
-    get re() { return run.sol.re; },
-    get im() { return run.sol.im; },
-    get budget() { return last; },
-    get settled() { return run.t >= settleTime(g); },
-    /** Run over: transmission settled and the packets have left through the absorbing layers. */
-    get done() { return run.t >= settleTime(g) && last.Pl + last.Pb + last.Pr < 2e-3; },
-    centroid,
-    step() { run.step(); last = run.budget(); if (++every % 4 === 0) push(); },
+  }
+  if (tSettle === null) tSettle = s.t;
+  const end = Math.round(tSettle * 1.1 / 5) * 5;
+  return { tWall, tSettle, end };
+}
+
+// ------------------------------------------------------------------ the 2D simulation
+function createSim(params) {
+  const p = { E: params.E, V0: params.V0, w: params.w };
+  const V = wall(p), k0 = k0Of(p.E);
+  const gx = gauss1D(NX, DX, X0, k0), gy = gauss1D(NY, DY, Y0, 0);
+  const N = NX * NY, re0 = new Float64Array(N), im0 = new Float64Array(N), Vg = new Float64Array(N);
+  for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) {
+    const a = i + NX * j;
+    re0[a] = gx.re[i] * gy.re[j] - gx.im[i] * gy.im[j];
+    im0[a] = gx.re[i] * gy.im[j] + gx.im[i] * gy.re[j];
+    Vg[a] = V((i + 0.5) * DX);
+  }
+  const solver = schrodingerND({ re0, im0, V: Vg, shape: [NX, NY], spacing: [DX, DY], dt: DT, mass: MASS, hbar: HBAR,
+    absorb: { width: [ABS, 0], strength: ABS_STRENGTH } });
+  const times = keyTimes(p);
+  const exact = exactPacketTransmission(p), atMean = transmissionAtMeanEnergy(p);
+  const ic = Math.round(XC / DX);
+  const peak0 = (gx.re[Math.round(X0 / DX)] ** 2 + gx.im[Math.round(X0 / DX)] ** 2) * (gy.re[Math.round(Y0 / DY)] ** 2 + gy.im[Math.round(Y0 / DY)] ** 2);
+  const density = new Float32Array(N);
+  let through = 0, back = 1, densT = -1;
+  const history = [[0, 0]];
+  function measure() {
+    let a = 0, b = 0;
+    const { re, im } = solver;
+    for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) {
+      const k = i + NX * j, d = re[k] * re[k] + im[k] * im[k];
+      if (i >= ic) a += d; else b += d;
+    }
+    through = a * DX * DY; back = b * DX * DY;
+  }
+  measure();
+  const sim = {
+    params: p, nx: NX, ny: NY, dx: DX, dy: DY, times, exact, atMean, peak0,
+    get t() { return solver.t; },
+    get done() { return solver.t >= times.end - 1e-9; },
+    get through() { return through; },
+    get back() { return back; },
+    history,
+    step() {
+      if (sim.done) return;
+      solver.step();
+      measure();
+      if (solver.steps % 8 === 0) history.push([solver.t, through]);
+    },
+    /** |ψ|² as Float32 (cached per time). */
+    density() {
+      if (densT !== solver.t) {
+        const { re, im } = solver;
+        for (let k = 0; k < N; k++) density[k] = re[k] * re[k] + im[k] * im[k];
+        densT = solver.t;
+      }
+      return density;
+    },
+    absorbed() { return solver.absorbed(); },
+    /** ⟨H⟩, ⟨V⟩ and ⟨T⟩ = ⟨H⟩ − ⟨V⟩ per unit remaining norm (eV); the split-operator ⟨H⟩ oscillates at O(Δt²). */
+    energies() {
+      const H = solver.energy(), { re, im } = solver;
+      let v = 0, n = 0;
+      for (let k = 0; k < N; k++) { const d = re[k] * re[k] + im[k] * im[k]; v += d * Vg[k]; n += d; }
+      return { H, V: v / n, T: H - v / n };
+    },
     diagnostics() {
-      const b = last, bal = Math.abs(b.total - run.N0);
-      const d = [
-        { key: 'bal', label: 'balance |ΣP + absorbed − 1|', value: bal, kind: 'error', good: 1e-10, warn: 1e-8 },
-        { key: 'T', label: 'transmitted so far T(t)', value: b.T, kind: 'value', text: b.T.toFixed(4) },
-        { key: 'Tx', label: 'exact ⟨T(E_x)⟩ for this packet', value: g.Texact, kind: 'value', text: g.Texact.toFixed(4) },
-        { key: 'Pl', label: 'left of barrier (incident + reflected)', value: b.Pl + b.Al, kind: 'value', text: (b.Pl + b.Al).toFixed(4) },
-        { key: 'Pb', label: 'inside the barrier', value: b.Pb, kind: 'value', text: b.Pb.toExponential(2) },
-        { key: 'Ab', label: 'absorbed at the edges', value: b.Al + b.Ar, kind: 'value', text: (b.Al + b.Ar).toFixed(4) },
-        { key: 'Ex', label: 'normal energy E₀cos²θ', value: g.Ex, kind: 'value', unit: 'eV' },
-        { key: 'Tp', label: 'plane-wave T at E₀cos²θ', value: g.Tplane, kind: 'value', text: g.Tplane.toFixed(4) },
+      const settled = solver.t >= times.tSettle;
+      const rel = Math.abs(through - exact) / Math.max(exact, 1e-300);
+      return [
+        { key: 'dev', label: 'Got through vs exact packet value', kind: 'error', value: settled ? rel : 0, pending: !settled, good: 0.01, warn: 0.03 },
+        { key: 'through', label: 'Got through (beyond the wall centre)', kind: 'value', value: through * 100, unit: '%' },
+        { key: 'back', label: 'Bounced back (in front of the wall centre)', kind: 'value', value: back * 100, unit: '%' },
+        { key: 'exact', label: 'Exact packet transmission ∫|φ(k)|²T(k)dk', kind: 'value', value: exact * 100, unit: '%' },
+        { key: 'mean', label: 'Stationary T at the mean energy (comparison)', kind: 'value', value: atMean * 100, unit: '%' },
+        { key: 'abs', label: 'Absorbed at the box edges so far', kind: 'value', value: solver.absorbed() * 100, unit: '%' },
       ];
-      if (g.kappa > 0) d.push({ key: 'k', label: 'decay length 1/κ in barrier', value: 1 / g.kappa, kind: 'value', unit: 'nm' });
-      return d;
     },
-    state() {
-      const b = last;
-      return { t: run.t, transmitted: b.T, reflectedSide: b.Pl + b.Al, inside: b.Pb, absorbed: b.Al + b.Ar, Texact: g.Texact, barrierWidth: g.a, balance: b.total - run.N0 };
-    },
-    record() {
-      return { header: ['t_fs', 'P_left', 'P_barrier', 'P_right', 'absorbed_left', 'absorbed_right'], rows: hist.map(r => r.map(v => +v.toPrecision(8))) };
-    },
+    state() { return { t: solver.t, through, back, absorbed: solver.absorbed(), E: p.E, V0: p.V0, w: p.w }; },
+    record() { return { header: ['t_fs', 'through', 'back'], rows: history.map(([t, a]) => [t, a, 1 - a]) }; },
   };
+  return sim;
 }
 
-// ---------------------------------------------------------------- verification
-
-function finalT(p, opts) {
-  const r = createRun(p, opts), tEnd = settleTime(r.g);
-  let maxBal = 0;
-  while (r.t < tEnd) { r.step(); }
-  const b = r.budget(); maxBal = Math.abs(b.total - r.N0);
-  return { T: b.T, R: b.R, Pb: b.Pb, bal: maxBal, g: r.g, run: r };
-}
-
-function verify() {
+// ------------------------------------------------------------------ verification
+function verify({ log } = {}) {
   const checks = [], notes = [];
-  const def = Object.fromEntries(PARAMS.map(q => [q.key, q.value]));
-  const pass = (label, value, ok, state) => checks.push({ label, value, pass: !!ok, ...(state ? { state } : {}) });
+  const base = Object.fromEntries(PARAMS.map(q => [q.key, q.value]));
+  const cases = [{ label: 'default', values: base }, ...PRESETS];
 
-  // 1. Units: ħ²/2mₑ = 0.0380998 eV nm² (CODATA 2018).
-  const h2m = HBAR * HBAR / (2 * ME);
-  pass('ħ²/2mₑ from CODATA constants (eV nm²)', h2m.toFixed(7), Math.abs(h2m - 0.0380998212) < 1e-9);
+  // 1. 1D x-factor vs exact packet transmission, measured by the flux through a line beyond the wall
+  for (const c of cases) {
+    log?.(`flux benchmark: ${c.label}`);
+    const p = c.values, s = create1D(p), xf = XC + p.w / 2 + 15, jf = Math.round(xf / DX - 0.5);
+    let flux = 0;
+    const tLong = 3 * (VIEW_X[1] - X0) / speedOf(p.E) + 600;
+    const jAt = () => probabilityCurrent(s.re, s.im, { shape: [NX], spacing: DX, mass: MASS, hbar: HBAR })[0][jf];
+    let jPrev = jAt();
+    while (s.t < tLong) { s.step(); const j = jAt(); flux += 0.5 * (j + jPrev) * DT; jPrev = j; }
+    // probability still between the flux line and the absorber
+    let rest = 0; for (let i = jf + 1; i < NX; i++) rest += (s.re[i] ** 2 + s.im[i] ** 2) * DX;
+    const exact = exactPacketTransmission(p), rel = Math.abs(flux - exact) / exact;
+    checks.push({ label: `Transmitted flux through x = ${xf} nm vs exact ∫|φ(k)|²T(k)dk (${c.label})`,
+      value: `${(flux * 100).toFixed(3)} % vs ${(exact * 100).toFixed(3)} % (rel ${rel.toExponential(1)}; left over ${rest.toExponential(1)})`, pass: rel < 0.01 && rest < 1e-3 });
+  }
 
-  // 2. Unitarity with no absorbers: 2D production grid, barrier present, 300 steps.
+  // 2. the page's displayed number at the end of the run vs exact, and nothing lost to absorbers yet
+  for (const c of cases) {
+    log?.(`end of run: ${c.label}`);
+    const p = c.values, kt = keyTimes(p), s = create1D(p);
+    s.advanceTo(kt.end - 1e-9);
+    const exact = exactPacketTransmission(p), P = s.through(), rel = Math.abs(P - exact) / exact;
+    checks.push({ label: `"Got through" at the end of the run (${kt.end} fs) vs exact (${c.label})`,
+      value: `${(P * 100).toFixed(3)} % vs ${(exact * 100).toFixed(3)} %, rel ${rel.toExponential(1)}; absorbed ${s.absorbed().toExponential(1)}`,
+      pass: rel < 0.01 && s.absorbed() < 1e-3 });
+  }
+
+  // 3. 2D grid = product of 1D x-factor and free y-factor (separability) and the sideways spread
   {
-    const r = createRun(def, { absorb: null });
-    for (let i = 0; i < 300; i++) r.step();
-    const drift = Math.abs(r.sol.norm() / r.N0 - 1);
-    // Round-off bound: 65 536 cells, two 2D FFTs per step: allow 1e-10 (the observables need ~1e-4).
-    pass('Unitarity, no absorbers, 2D grid, 300 steps: |ΔN/N|', drift.toExponential(1), drift < 1e-10);
+    log?.('2D run vs 1D (separability)');
+    const sim = createSim(base), s1 = create1D(base), tEnd = 200;
+    while (sim.t < tEnd - 1e-9) sim.step();
+    s1.advanceTo(tEnd - 1e-9);
+    const d = Math.abs(sim.through - s1.through());
+    checks.push({ label: '2D "got through" equals the 1D x-factor run at t = 200 fs (V depends on x only)', value: `|Δ| = ${d.toExponential(1)}`, pass: d < 1e-10 });
+    const rho = sim.density();
+    let m0 = 0, m2 = 0;
+    for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) { const r = rho[i + NX * j], y = (j + 0.5) * DY - Y0; m0 += r; m2 += r * y * y; }
+    const sy = Math.sqrt(m2 / m0), want = SIGMA * Math.sqrt(1 + (HBAR * tEnd / (2 * MASS * SIGMA * SIGMA)) ** 2);
+    checks.push({ label: 'Sideways spread σ_y(200 fs) vs free packet σ√(1+(ħt/2mσ²)²)', value: `${sy.toFixed(5)} nm vs ${want.toFixed(5)} nm`, pass: Math.abs(sy - want) / want < 1e-4 });
   }
 
-  // 3. Free packet (V₀ = 0, no absorbers, 1D lane, θ = 0): centre and width vs exact.
+  // 4. unitarity without absorbers (2D, 400 steps)
   {
-    const p = { ...def, V0: 0 }, r = createRun(p, { dims: 1, absorb: null, n: 512 });
-    const tf = 10;
-    while (r.t < tf - 1e-9) r.step();
-    let w = 0, mx = 0, mx2 = 0;
-    const { re, im } = r.sol;
-    for (let i = 0; i < r.n; i++) { const q = re[i] * re[i] + im[i] * im[i], x = r.g.xc(i); w += q; mx += q * x; mx2 += q * x * x; }
-    const xm = mx / w, sd = Math.sqrt(mx2 / w - xm * xm);
-    const xe = r.g.x0 + HBAR * r.g.kx0 * r.t / ME, se = p.sigma * Math.sqrt(1 + (HBAR * r.t / (2 * ME * p.sigma ** 2)) ** 2);
-    const e1 = Math.abs(xm - xe), e2 = Math.abs(sd / se - 1);
-    pass('Free packet centre ⟨x⟩ = x₀ + ħk₀t/mₑ at t = 10 fs', `|Δx| = ${e1.toExponential(1)} nm`, e1 < 1e-8);
-    pass('Free packet spreading σ(t) = σ₀√(1 + (ħt/2mₑσ₀²)²)', `${e2.toExponential(1)} rel.`, e2 < 1e-8);
+    log?.('unitarity');
+    const sim = createSim(base);
+    const N = NX * NY, Vg = new Float64Array(N), V = wall(base);
+    for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) Vg[i + NX * j] = V((i + 0.5) * DX);
+    const s = schrodingerND({ re0: sim.density().map(() => 0), V: Vg, shape: [NX, NY], spacing: [DX, DY], dt: DT, mass: MASS, hbar: HBAR });
+    // reuse the 2D initial state
+    const gx = create1D(base, { absorb: false });
+    const re = new Float64Array(N), im = new Float64Array(N);
+    const gy = (j) => Math.exp(-(((j + 0.5) * DY - Y0) ** 2) / (4 * SIGMA * SIGMA));
+    let ny = 0; for (let j = 0; j < NY; j++) ny += gy(j) ** 2 * DY;
+    for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) { re[i + NX * j] = gx.re[i] * gy(j) / Math.sqrt(ny); im[i + NX * j] = gx.im[i] * gy(j) / Math.sqrt(ny); }
+    s.re.set(re); s.im.set(im);
+    const n0 = s.norm(); for (let k = 0; k < 400; k++) s.step();
+    const drift = Math.abs(s.norm() - n0);
+    checks.push({ label: 'Norm conserved without absorbers (2D, 400 steps)', value: `|ΔN| = ${drift.toExponential(1)}`, pass: drift < 1e-11 });
   }
 
-  // 4. Production 2D runs vs the exact packet-averaged transmission.
-  const cases = [
-    { name: 'default (E₀ 0.6 eV, θ 30°, V₀ 0.7 eV, a 0.5 nm)', p: def },
-    { name: 'normal incidence θ = 0°, E₀ 0.5 eV', p: { ...def, theta: 0, E: 0.5 } },
-    { name: 'above the barrier (E₀ 1.2 eV, θ 0°, a 1 nm)', p: { ...def, E: 1.2, theta: 0, a: 1 } },
-  ];
-  const res2D = cases.map(c => ({ ...c, out: finalT(c.p) }));
-  for (const c of res2D) {
-    const { T, g, bal } = c.out, err = Math.abs(T - g.Texact);
-    pass(`2D transmission vs exact ⟨T⟩, ${c.name}`, `${T.toFixed(4)} vs ${g.Texact.toFixed(4)} (${(100 * err / g.Texact).toFixed(1)} %)`, err < 0.025 * g.Texact);
-    pass(`Probability balance incl. absorbed, ${c.name}`, bal.toExponential(1), bal < 1e-10);
-  }
-
-  // 5. Separability: the 2D result equals the 1D result for the same normal motion.
+  // 5. refinement: Δx/2 and Δt/4 (Δt ∝ Δx²) at the end time, 1D
   {
-    const r1 = finalT(def, { dims: 1 });
-    const d = Math.abs(r1.T - res2D[0].out.T);
-    pass('2D transmission equals 1D lane (y motion separates)', `Δ = ${d.toExponential(1)}`, d < 1e-6);
-    const later = r1.run, tl = settleTime(r1.g) * 1.4;
-    while (later.t < tl) later.step();
-    const dT = Math.abs(later.budget().T - r1.T);
-    pass('T has settled at the read-out time (change by 1.4 × later)', dT.toExponential(1), dT < 1e-4);
+    log?.('refinement');
+    const kt = keyTimes(base);
+    const run = (dx, dt) => { const s = create1D(base, { dx, dt, n: Math.round(LX / dx) }); s.advanceTo(kt.end - 1e-9); return s.through(); };
+    const a = run(DX, DT), b = run(DX / 2, DT / 4), c = run(DX / 2, DT / 8);
+    checks.push({ label: 'Grid refinement Δx 0.25 → 0.125 nm, Δt 0.25 → 0.0625 fs: change of "got through"', value: `${(a * 100).toFixed(4)} % → ${(b * 100).toFixed(4)} % (rel ${(Math.abs(a - b) / b).toExponential(1)})`, pass: Math.abs(a - b) / b < 0.005 });
+    checks.push({ label: 'Time-step refinement at Δx = 0.125 nm (Δt 0.0625 → 0.03125 fs)', value: `rel ${(Math.abs(b - c) / c).toExponential(1)}`, pass: Math.abs(b - c) / c < 1e-3 });
+    const d = run(DX, DT / 2);
+    checks.push({ label: 'Production grid: Δt 0.25 → 0.125 fs', value: `rel ${(Math.abs(a - d) / d).toExponential(1)}`, pass: Math.abs(a - d) / d < 1e-3 });
   }
 
-  // 6. Time-step refinement (1D lane): second order, error at production dt.
-  {
-    const T = [0.1, 0.05, 0.025, 0.0125].map(dt => finalT(def, { dims: 1, dt }).T);
-    const e1 = Math.abs(T[0] - T[1]), e2 = Math.abs(T[1] - T[2]), e3 = Math.abs(T[2] - T[3]);
-    const order = Math.log2(e2 / e3);
-    pass('Splitting order in dt (T at dt/2, dt/4, dt/8)', `p = ${order.toFixed(2)}`, Math.abs(order - 2) < 0.3);
-    pass('Time-step error of T at dt = 0.05 fs', `${(e2 * 4 / 3).toExponential(1)}`, e2 * 4 / 3 < 1e-3);
-    notes.push(`T(dt = 0.1, 0.05, 0.025, 0.0125 fs) = ${T.map(v => v.toFixed(6)).join(', ')}.`);
-  }
+  // 6. classical contrast: at the default energy the classical particle can never cross
+  checks.push({ label: 'Default energy is below the wall (classically forbidden)', value: `E = ${base.E} eV < V₀ = ${base.V0} eV; exact P_T = ${(exactPacketTransmission(base) * 100).toFixed(2)} %`, pass: base.E < base.V0 && exactPacketTransmission(base) > 0.01 });
 
-  // 7. Grid refinement (1D lane in a large box without absorbers, same barrier): error vs exact and order.
-  //    dt = 0.0125 fs so the splitting error (which grows as finer grids resolve the sharp barrier edges)
-  //    stays below the spatial error being measured.
-  {
-    const box = (k) => finalT(def, { dims: 1, n: 4096 * k, dx: DX / k, absorb: null, dt: 0.0125 });
-    const r = [1, 2, 4].map(box), ex = r[0].g.Texact, e = r.map(x => Math.abs(x.T - ex));
-    const order = Math.log2(e[0] / e[1]);   // e[2] is at the dt-error floor
-    pass('Grid refinement dx 0.125 → 0.03125 nm: T converges to exact', `${r.map(x => x.T.toFixed(5)).join(' → ')} (exact ${ex.toFixed(5)})`, e[2] < e[1] && e[1] < e[0] && e[2] < 1e-3);
-    pass('Spatial order of the error in T (dx, dx/2 vs exact)', `p = ${order.toFixed(2)}`, Math.abs(order - 2) < 0.3);
-    notes.push(`At the production grid (dx = 0.125 nm) the sampled barrier gives T low by ${(100 * e[0] / ex).toFixed(1)} % (default case); this dominates the error budget.`);
-  }
-
-  // 8. Absorbing layers: probability reflected back from an edge (no barrier), slowest packet.
-  {
-    const p = { ...def, V0: 0, E: 0.2, sigma: 2, theta: 0 }, r = createRun(p, { dims: 1 });
-    const tEnd = (L / 2 + START) / (HBAR * r.g.kx0 / ME) * 2.5;
-    while (r.t < tEnd) r.step();
-    const back = r.regions()[0] + r.regions()[1] + r.regions()[2];
-    pass('Absorbing edge: probability left in the box after the slowest packet (0.2 eV) hits it', back.toExponential(1), back < 5e-3);
-  }
-
-  notes.push('Model limits: free-electron mass, no spin, non-relativistic (E ≪ mₑc²), static ideal rectangular barrier, single electron (no image charge, no phonons).');
-  return { summary: '2D split-operator TDSE vs the exact separable slab transmission, free-packet solution, unitarity, dt and dx refinement', checks, notes };
+  const kt = keyTimes(base);
+  notes.push(`Key times (default): packet at the wall ${kt.tWall.toFixed(0)} fs, split settled ${kt.tSettle.toFixed(0)} fs, run ends ${kt.end} fs.`);
+  notes.push('Spin, the electron’s own charge and any magnetic field are ignored; the wall is a static potential.');
+  notes.push('Absorbing layers at the x edges remove probability by design; the run ends before they matter (absorbed < 0.1 %).');
+  return { summary: 'Split-operator TDSE in 2D: separability vs 1D, flux and end-of-run transmission vs exact packet average, free spreading, unitarity, refinement', checks, notes, keyTimes: kt };
 }
 
-return { HBAR, ME, C2, N, ABSORB, START, PARAMS, slabT, packetT, setup, createRun, settleTime, createSim, verify, DX, L };
+return { HBAR, MASS, NX, LX, ABS, ABS_STRENGTH, DT, SIGMA, X0, EDGE, VIEW_X, PARAMS, PRESETS, wall, k0Of, speedOf, exactPacketTransmission, transmissionAtMeanEnergy, create1D, keyTimes, createSim, verify, NY, DX, DY, LY, Y0, XC };
 })();
 
 // ---- page
 const { createInstrument } = __psim["ui/instrument-app.mjs"];
-const { select, toggle } = __psim["ui/instrument.mjs"];
-const { createFieldRenderer, colormap } = __psim["ui/gl.mjs"];
-const { PARAMS, createSim, settleTime, slabT, N, DX, ABSORB, C2, START } = __psim["local:physics.mjs"];
-// time for the packet centre to reach the barrier's front face: (START·cosθ − a/2) / (v cosθ), v = ħk₀/mₑ
-const arrivalTime = g => (START * Math.cos(g.th) - g.a / 2) / (g.v * Math.cos(g.th));
+const { colormap, drawColorBar } = __psim["ui/gl.mjs"];
+const { interpolate } = __psim["core/data.mjs"];
+const { PARAMS, PRESETS, createSim, exactPacketTransmission, k0Of, HBAR, MASS, SIGMA, XC, X0, DX, DY, NX, NY, ABS, VIEW_X, LY } = __psim["local:physics.mjs"];
+// ------------------------------------------------------------------ the view: |ψ|² seen from above
+const LUT = Array.from({ length: 256 }, (_, i) => colormap('inferno', i / 255).map(v => Math.round(255 * v)));
+const I0 = ABS, I1 = NX - ABS, COLS = I1 - I0;                 // interior columns (absorbers not drawn)
+const off = document.createElement('canvas'); off.width = COLS; off.height = NY;
+const offCtx = off.getContext('2d'), img = offCtx.createImageData(COLS, NY);
+let drawnT = null, drawnSim = null;
+const pct = v => (v >= 0.0995 ? (100 * v).toFixed(1) : v >= 0.000995 ? (100 * v).toFixed(2) : (100 * v).toPrecision(2)) + ' %';
+// on the view: one decimal, and "< 0.1 %" for the packet's far tail (no false precision over the animation)
+const share = v => (v >= 0.0005 ? `${(100 * v).toFixed(1)} %` : '< 0.1 %');
 
-// ------------------------------------------------------------ representation settings (display only)
-const VIEW = 13;                                   // nm: half-width of the shown interior (absorbers lie outside)
-const MODES = {
-  log2: { label: '|ψ|², log scale, 2 decades', log: true, lo: 1e-2 },
-  log4: { label: '|ψ|², log scale, 4 decades', log: true, lo: 1e-4 },
-  log6: { label: '|ψ|², log scale, 6 decades (shows faint tails)', log: true, lo: 1e-6 },
-  lin: { label: '|ψ|², linear scale', log: false, lo: 0 },
-};
-const disp = { mode: 'log2', smooth: true };
-const MAP = 'inferno';
-
-// Layout of the stage: square field view plus (when wide) a read-out panel on the left.
-const TL = 62;                                     // px kept free at the bottom for the timeline bar
-function layout(W, H) {
-  const wide = W >= 760;
-  if (wide) {
-    const S = Math.max(200, Math.min(H - 24 - 112 - TL, W - 330 - 24));
-    return { wide, S, x: W - S - 24, y: 24, panel: { x: 18, y: 116, w: W - S - 24 - 18 - 58, h: H - 116 - 84 - TL } };
+function paint(sim) {
+  if (drawnSim === sim && drawnT === sim.t) return;
+  const rho = sim.density(), inv = 1 / sim.peak0, d = img.data;
+  for (let j = 0; j < NY; j++) {
+    const row = NY - 1 - j;                                       // y up
+    for (let i = 0; i < COLS; i++) {
+      const v = Math.sqrt(Math.min(1, rho[i + I0 + NX * j] * inv));   // √ transfer (disclosed)
+      const c = LUT[Math.round(v * 255)], o = 4 * (i + COLS * row);
+      d[o] = c[0]; d[o + 1] = c[1]; d[o + 2] = c[2]; d[o + 3] = 255;
+    }
   }
-  const S = Math.max(160, Math.min(W - 54, H - 110 - 96 - TL - 20));
-  return { wide, S, x: 42 + (W - 54 - S) / 2, y: 110, panel: null };
-}
-const rho0 = sim => 1 / (2 * Math.PI * sim.g.sigma ** 2);         // initial peak density, nm⁻²
-
-// ------------------------------------------------------------ GPU layer: the computed density field
-let field = null, uploadedT = -1, uploadedSim = null, uploadedMode = null;
-const density = new Float32Array(N * N);
-function drawGL(gl, sim, view) {
-  if (!field) field = createFieldRenderer(gl);
-  const m = MODES[disp.mode], r0 = rho0(sim);
-  if (uploadedSim !== sim || uploadedT !== sim.t || uploadedMode !== disp.mode) {
-    const { re, im } = sim;
-    for (let k = 0; k < density.length; k++) density[k] = re[k] * re[k] + im[k] * im[k];
-    field.update(density, N, N, { range: [m.log ? r0 * m.lo : 0, r0], log: m.log });
-    uploadedSim = sim; uploadedT = sim.t; uploadedMode = disp.mode;
-  }
-  const L = layout(view.W, view.H), px = L.S / (2 * VIEW), half = N * DX / 2;
-  const d = view.dpr;
-  gl.enable(gl.SCISSOR_TEST);
-  gl.scissor(Math.round(L.x * d), Math.round((view.H - L.y - L.S) * d), Math.round(L.S * d), Math.round(L.S * d));
-  field.draw({ rect: [L.x + (-half + VIEW) * px, L.y + (-half + VIEW) * px, 2 * half * px, 2 * half * px], colormap: MAP, smooth: disp.smooth });
-  gl.disable(gl.SCISSOR_TEST);
+  offCtx.putImageData(img, 0, 0);
+  drawnSim = sim; drawnT = sim.t;
 }
 
-// ------------------------------------------------------------ 2D overlay: geometry, labels, read-outs
-const pct = v => `${(100 * v).toFixed(1)} %`;
-const mono = (s = 11) => `${s}px ui-monospace, Menlo, monospace`;
-const sans = (s = 11, w = 400) => `${w} ${s}px ui-sans-serif, system-ui, sans-serif`;
-function pill(ctx, text, x, y, C, align = 'left') {
-  ctx.font = sans(11.5, 500);
-  const w = ctx.measureText(text).width + 12, x0 = align === 'left' ? x : x - w;
-  ctx.fillStyle = 'rgba(8,10,16,0.72)'; ctx.beginPath(); ctx.roundRect(x0, y - 10, w, 20, 6); ctx.fill();
-  ctx.fillStyle = '#f2f2f2'; ctx.textAlign = 'left'; ctx.fillText(text, x0 + 6, y + 4);
-}
-function wrap(ctx, text, x, y, w, lh) {
-  let line = '';
-  for (const word of text.split(' ')) {
-    if (ctx.measureText(line + word).width > w && line) { ctx.fillText(line.trim(), x, y); y += lh; line = ''; }
-    line += `${word} `;
-  }
-  ctx.fillText(line.trim(), x, y);
-  return y + lh;
-}
-function colourBar(ctx, x, y, w, sim, C) {
-  const m = MODES[disp.mode];
-  for (let i = 0; i < w; i++) { const [r, g, b] = colormap(MAP, i / (w - 1)); ctx.fillStyle = `rgb(${255 * r | 0},${255 * g | 0},${255 * b | 0})`; ctx.fillRect(x + i, y, 1.5, 9); }
-  ctx.strokeStyle = C('--line-strong'); ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, w - 1, 9);
-  ctx.fillStyle = C('--muted'); ctx.font = mono(10);
-  const r0 = rho0(sim);
-  if (m.log) {
-    const dec = Math.round(-Math.log10(m.lo));
-    for (let k = 0; k <= dec; k += dec > 4 ? 2 : 1) { ctx.textAlign = k === 0 ? 'left' : k === dec ? 'right' : 'center'; ctx.fillText(k === dec ? 'ρ₀' : `10⁻${'⁰¹²³⁴⁵⁶'[dec - k]}`, x + w * k / dec, y + 22); }
-  } else {
-    ctx.textAlign = 'left'; ctx.fillText('0', x, y + 22); ctx.textAlign = 'center'; ctx.fillText('ρ₀/2', x + w / 2, y + 22); ctx.textAlign = 'right'; ctx.fillText('ρ₀', x + w, y + 22);
-  }
-  ctx.textAlign = 'left';
-  return `ρ₀ = ${r0.toFixed(3)} nm⁻² (initial peak)`;
+function layout(view) {
+  const { W, H } = view, narrow = W < 560;
+  const wNm = VIEW_X[1] - VIEW_X[0], hNm = LY;
+  const padX = narrow ? 10 : 24, padTop = narrow ? 34 : 58, padBottom = narrow ? 86 : 92;
+  const s = Math.min((W - 2 * padX) / wNm, (H - padTop - padBottom) / hNm);
+  const bw = wNm * s, bh = hNm * s, x = (W - bw) / 2, y = padTop + (H - padTop - padBottom - bh) / 2;
+  return { x, y, bw, bh, s, narrow, X: xn => x + (xn - VIEW_X[0]) * s };
 }
 
 function draw(ctx, sim, view) {
-  const { W, H } = view, C = view.color, g = sim.g, L = layout(W, H), S = L.S, px = S / (2 * VIEW);
-  const X = x => L.x + (x + VIEW) * px, Y = y => L.y + (VIEW - y) * px;
-  const b = sim.budget;
-  if (view.glError) { ctx.fillStyle = C('--muted'); ctx.font = sans(12); ctx.fillText(`${view.glError}: density map unavailable; read-outs below remain computed.`, L.x, L.y + 20); }
+  const L = layout(view), p = sim.params, C = view.color;
+  paint(sim);
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(off, L.x, L.y, L.bw, L.bh);
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1; ctx.strokeRect(L.x + 0.5, L.y + 0.5, L.bw - 1, L.bh - 1);
 
-  // frame and axes (nm)
-  ctx.strokeStyle = C('--line-strong'); ctx.lineWidth = 1; ctx.strokeRect(L.x - 0.5, L.y - 0.5, S + 1, S + 1);
-  ctx.fillStyle = C('--muted'); ctx.font = mono(10.5); ctx.strokeStyle = C('--grid-strong');
-  for (let v = -10; v <= 10; v += 5) {
-    ctx.textAlign = 'center'; ctx.fillText(`${v}`.replace('-', '−'), X(v), L.y + S + 14);
-    ctx.beginPath(); ctx.moveTo(X(v), L.y + S); ctx.lineTo(X(v), L.y + S + 4); ctx.moveTo(L.x, Y(v)); ctx.lineTo(L.x - 4, Y(v)); ctx.stroke();
-    ctx.textAlign = 'right'; ctx.fillText(`${v}`.replace('-', '−'), L.x - 7, Y(v) + 3.5);
+  // the wall: a translucent band (fixed light colour over the dark colour map)
+  if (p.V0 > 0) {
+    const xa = L.X(XC - p.w / 2), xb = L.X(XC + p.w / 2);
+    ctx.fillStyle = 'rgba(150,205,255,0.28)'; ctx.fillRect(xa, L.y, xb - xa, L.bh);
+    ctx.strokeStyle = 'rgba(170,215,255,0.85)'; ctx.beginPath();
+    ctx.moveTo(xa + 0.5, L.y); ctx.lineTo(xa + 0.5, L.y + L.bh); ctx.moveTo(xb - 0.5, L.y); ctx.lineTo(xb - 0.5, L.y + L.bh); ctx.stroke();
   }
-  ctx.textAlign = 'right'; ctx.fillText('x  (nm)', L.x + S, L.y + S + 28);
-  ctx.save(); ctx.translate(L.x - (L.wide ? 26 : 30), L.y + S - 4); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'left'; ctx.fillText('y  (nm)', 0, 0); ctx.restore();
+  const fs = L.narrow ? 13 : 15;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = 'rgb(190,225,255)'; ctx.font = `600 ${fs}px ui-sans-serif, system-ui`;
+  ctx.fillText(p.V0 > 0 ? `wall, ${p.w} nm thick` : 'no wall', L.X(XC), L.y - (L.narrow ? 10 : 14));
 
-  // barrier: V₀ for |x| < a/2, uniform in y
-  if (g.V0 > 0) {
-    const x0 = X(-g.a / 2), x1 = X(g.a / 2);
-    ctx.fillStyle = 'rgba(160,200,255,0.16)'; ctx.fillRect(x0, L.y, x1 - x0, S);
-    ctx.strokeStyle = 'rgba(190,220,255,0.75)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(x0, L.y); ctx.lineTo(x0, L.y + S); ctx.moveTo(x1, L.y); ctx.lineTo(x1, L.y + S); ctx.stroke();
-    const t = L.wide ? `barrier V₀ = ${g.V0.toFixed(2)} eV, a = ${g.a.toFixed(3)} nm` : `V₀ ${g.V0.toFixed(2)} eV, a ${g.a.toFixed(3)} nm`;
-    ctx.font = sans(11.5, 500);
-    const fits = x1 + 6 + ctx.measureText(t).width + 12 < L.x + S;
-    pill(ctx, t, fits ? x1 + 6 : x0 - 6, L.y + 16, C, fits ? 'left' : 'right');
-  } else pill(ctx, 'no barrier (V₀ = 0): free packet', X(0) + 6, L.y + 16, C);
+  // the shares on each side (computed from |ψ|²): a word line and a number line under each half
+  const yW = L.y + L.bh + (L.narrow ? 20 : 24), yN = yW + (L.narrow ? 22 : 27);
+  const xl = (L.x + L.X(XC)) / 2, xr = (L.X(XC) + L.x + L.bw) / 2;
+  ctx.font = `${L.narrow ? 13 : 15}px ui-sans-serif, system-ui`;
+  ctx.fillStyle = '#ffd9a8'; ctx.fillText(sim.t < sim.times.tWall ? 'in front of the wall' : 'bounced back', xl, yW);   // nothing has bounced before the collision
+  ctx.fillStyle = '#ffffff'; ctx.fillText('got through', xr, yW);
+  ctx.font = `600 ${L.narrow ? 18 : 22}px ui-monospace, Menlo, monospace`;
+  ctx.fillStyle = '#ffd9a8'; ctx.fillText(share(sim.back), xl, yN);
+  ctx.fillStyle = '#ffffff'; ctx.fillText(share(sim.through), xr, yN);
 
-  // initial mean wavevector (a parameter of ψ at t = 0, not a path)
-  const ux = Math.cos(g.th), uy = Math.sin(g.th), len = 2.2;
-  if (sim.t < 8) {
-  ctx.globalAlpha = 1 - sim.t / 10;
-  ctx.strokeStyle = '#ffffff'; ctx.fillStyle = '#ffffff'; ctx.lineWidth = 1.5;
-  const ax0 = X(g.x0 - ux * 1.1), ay0 = Y(g.y0 - uy * 1.1), ax1 = X(g.x0 - ux * 1.1 + ux * len), ay1 = Y(g.y0 - uy * 1.1 + uy * len);
-  ctx.beginPath(); ctx.moveTo(ax0, ay0); ctx.lineTo(ax1, ay1); ctx.stroke();
-  const ang = Math.atan2(ay1 - ay0, ax1 - ax0);
-  ctx.beginPath(); ctx.moveTo(ax1, ay1); ctx.lineTo(ax1 - 8 * Math.cos(ang - 0.4), ay1 - 8 * Math.sin(ang - 0.4)); ctx.lineTo(ax1 - 8 * Math.cos(ang + 0.4), ay1 - 8 * Math.sin(ang + 0.4)); ctx.fill();
-  ctx.font = sans(11, 500); ctx.textAlign = 'left'; ctx.fillText('k₀ at t = 0', ax1 + 6, ay1 + (uy > 0.3 ? 12 : -6));
-  ctx.globalAlpha = 1;
-  }
-
-  // centroids ⟨r⟩ of the probability on each side, with the probabilities they carry
-  const cs = sim.centroid(), split = b.Pr + b.Ar > 2e-3, settled = sim.settled;
-  const mark = (c, text, right) => {
-    if (!c || c.w < 0.01 || Math.abs(c.x) > VIEW - 0.5 || Math.abs(c.y) > VIEW - 0.5) return;
-    const cx = X(c.x), cy = Y(c.y);
-    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.2; ctx.beginPath();
-    ctx.moveTo(cx - 6, cy); ctx.lineTo(cx + 6, cy); ctx.moveTo(cx, cy - 6); ctx.lineTo(cx, cy + 6); ctx.stroke();
-    const ty = Math.min(L.y + S - 14, Math.max(L.y + 40, cy + (right ? 28 : -24)));
-    ctx.font = sans(11.5, 500); const tw = ctx.measureText(text).width + 16;
-    pill(ctx, text, right ? Math.min(cx + 8, L.x + S - tw) : Math.max(cx - 8, L.x + tw), ty, C, right ? 'left' : 'right');
-  };
-  mark(cs[0], !split ? `incident packet · ${pct(b.Pl + b.Al)}` : settled ? `reflected R = ${pct(b.Pl + b.Al)}` : `incident + reflected · ${pct(b.Pl + b.Al)}`, false);
-  if (split) mark(cs[1], `${settled ? 'transmitted T' : 'transmitted so far'} = ${pct(b.T)}`, true);
-
-  if (L.wide) drawPanel(ctx, sim, view, L, C);
-  else {
-    // phone: colour scale top right, budget line under the view
-    const cw = Math.min(150, W * 0.4), cx = W - cw - 14;
-    ctx.fillStyle = C('--muted'); ctx.font = sans(10.5); ctx.textAlign = 'right';
-    ctx.fillText(`|ψ|² ${MODES[disp.mode].log ? '(log)' : '(linear)'}, ρ₀ = initial peak`, W - 14, 22);
-    colourBar(ctx, cx, 30, cw, sim, C);
-    ctx.fillStyle = C('--ink-2'); ctx.font = mono(11); ctx.textAlign = 'center';
-    ctx.fillText(`T(t) ${pct(b.T)} · exact ⟨T⟩ ${pct(g.Texact)}`, W / 2, L.y + S + 46);   // below the x tick labels
-    ctx.textAlign = 'left';
+  // scale bar (10 nm) and colour bar, small, under the box
+  ctx.textAlign = 'start';
+  const sb = 10 * L.s, yb = yN + (L.narrow ? 22 : 24);
+  ctx.strokeStyle = C('--muted'); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(L.x, yb); ctx.lineTo(L.x + sb, yb); ctx.stroke();
+  ctx.fillStyle = C('--muted'); ctx.font = '11px ui-monospace, Menlo, monospace'; ctx.fillText('10 nm', L.x + sb + 6, yb + 4);
+  if (!L.narrow) {
+    // above the box, top right: the end-of-run card covers the bottom right of the view
+    const yc = L.y - 30;
+    ctx.textAlign = 'end'; ctx.fillText('|ψ|² ÷ start peak', L.x + L.bw, yc - 6); ctx.textAlign = 'start';
+    drawColorBar(ctx, { x: L.x + L.bw - 120, y: yc, width: 120, height: 7, horizontal: true, colormap: 'inferno', range: [0, 1], ticks: 3,
+      label: '', format: v => (v * v).toFixed(2) });
   }
 }
 
-function drawPanel(ctx, sim, view, L, C) {
-  const { x, y, w } = L.panel, g = sim.g, b = sim.budget;
-  let yy = y;
-  const head = t => { ctx.fillStyle = C('--muted'); ctx.font = sans(10.5, 600); ctx.textAlign = 'left'; ctx.fillText(t.toUpperCase(), x, yy); yy += 14; };
-  // colour scale
-  head(`|ψ|² ${MODES[disp.mode].log ? 'log scale' : 'linear scale'}`);
-  const note = colourBar(ctx, x, yy, w, sim, C); yy += 36;
-  ctx.fillStyle = C('--muted'); ctx.font = sans(11);
-  yy = wrap(ctx, `Probability density of one electron; ${note}. Absorbing layers (3 nm) lie beyond the frame.`, x, yy, w, 14) + 14;
+// ------------------------------------------------------------------ figures and equations below the view
+function bench({ eqs, figs, createPlot, createEquation, M, getSim }) {
+  const fig = (plot, caption) => { const w = document.createElement('div'); const c = document.createElement('p'); c.className = 'psim-caption'; c.textContent = caption; w.append(plot.el, c); return w; };
+  const run = createPlot({ title: 'Chance that the electron got through, over time', height: 260,
+    x: { label: 'time', unit: 'fs', min: 0, max: 400 }, y: { label: 'got through', unit: '%', min: 0, max: 20 } });
+  const thick = createPlot({ title: 'Thicker wall, far less gets through', height: 260,
+    x: { label: 'wall thickness', unit: 'nm', min: 0.5, max: 6 }, y: { label: 'gets through', unit: '%', log: true, min: 1e-4, max: 100 } });
+  figs.append(
+    fig(run, 'Solid: share beyond the wall centre in this 2D run (computed, split-operator). Dashed: the exact transmission of this packet, ∫|φ(k)|²T(k)dk.'),
+    fig(thick, 'Exact packet transmission for the current energy and wall height (stationary scattering, averaged over the packet’s momenta; log scale). The dot is the wall on screen.'),
+  );
 
-  // where the probability is
-  head('Where the electron would be found');
-  const rows = [
-    ['reflected side (x < −a/2)', b.Pl + b.Al, C('--body-1')],
-    ['inside the barrier', b.Pb, C('--body-0')],
-    ['transmitted side (x > a/2)', b.T, C('--body-3')],
-  ];
-  for (const [label, v, col] of rows) {
-    ctx.fillStyle = C('--ink-2'); ctx.font = sans(11.5); ctx.fillText(label, x, yy + 9);
-    ctx.font = mono(11.5); ctx.textAlign = 'right'; ctx.fillText(v < 1e-3 && v > 0 ? `${(100 * v).toExponential(1)} %` : pct(v), x + w, yy + 9); ctx.textAlign = 'left';
-    ctx.fillStyle = C('--grid'); ctx.fillRect(x, yy + 14, w, 5);
-    ctx.fillStyle = col; ctx.fillRect(x, yy + 14, w * Math.min(1, v), 5);
-    yy += 30;
-  }
-  const tx = x + w * g.Texact;
-  ctx.strokeStyle = C('--ink'); ctx.setLineDash([2, 2]); ctx.beginPath(); ctx.moveTo(tx, yy - 20); ctx.lineTo(tx, yy - 6); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle = C('--muted'); ctx.font = sans(10.5); ctx.textAlign = tx > x + w - 70 ? 'right' : 'left';
-  ctx.fillText(`exact ⟨T⟩ = ${pct(g.Texact)}`, tx + (ctx.textAlign === 'left' ? 4 : -4), yy + 4); ctx.textAlign = 'left';
-  yy += 22;
-
-  const rest = L.panel.y + L.panel.h - yy, chartH = Math.min(150, (rest - 70) / 2);
-  if (chartH < 70) return;
-  // T(t) chart
-  head('Probability vs time');
-  const ch = { x: x + 30, y: yy, w: w - 30, h: chartH - 20 }, tMax = settleTime(g);   // the run's end (timeline)
-  const cx = t => ch.x + ch.w * Math.min(1, t / tMax), cy = v => ch.y + ch.h * (1 - v);
-  ctx.strokeStyle = C('--grid'); ctx.fillStyle = C('--muted'); ctx.font = mono(10); ctx.textAlign = 'right';
-  for (const v of [0, 0.5, 1]) { ctx.beginPath(); ctx.moveTo(ch.x, cy(v)); ctx.lineTo(ch.x + ch.w, cy(v)); ctx.stroke(); ctx.fillText(v.toFixed(1), ch.x - 5, cy(v) + 3.5); }
-  ctx.textAlign = 'center';
-  const step = tMax > 60 ? 20 : 10;
-  for (let t = 0; t <= tMax; t += step) ctx.fillText(`${t}`, cx(t), ch.y + ch.h + 13);
-  ctx.textAlign = 'right'; ctx.fillText('t (fs)', ch.x + ch.w, ch.y + ch.h + 26); ctx.textAlign = 'left';
-  ctx.strokeStyle = C('--muted'); ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.moveTo(ch.x, cy(g.Texact)); ctx.lineTo(ch.x + ch.w, cy(g.Texact)); ctx.stroke(); ctx.setLineDash([]);
-  const line = (f, col) => {
-    ctx.strokeStyle = col; ctx.lineWidth = 1.8; ctx.beginPath();
-    sim.hist.forEach((r, i) => { if (r[0] > tMax) return; i ? ctx.lineTo(cx(r[0]), cy(f(r))) : ctx.moveTo(cx(r[0]), cy(f(r))); });
-    ctx.stroke(); ctx.lineWidth = 1;
-  };
-  line(r => r[1] + r[4], C('--body-1'));
-  line(r => r[3] + r[5], C('--body-3'));
-  ctx.fillStyle = C('--muted'); ctx.font = sans(10.5);
-  ctx.fillText('dashed: exact ⟨T⟩ (Griffiths §2.6, packet average)', x, ch.y + ch.h + 40);
-  ctx.fillStyle = C('--body-1'); ctx.fillText('— reflected side', x + w - 190, ch.y + 10); ctx.fillStyle = C('--body-3'); ctx.fillText('— transmitted side', x + w - 100, ch.y + 10);
-  yy += chartH + 52;
-
-  // energy diagram along the barrier normal
-  head('Energy along the barrier normal');
-  const eh = Math.min(150, L.panel.y + L.panel.h - yy - 8);
-  if (eh < 60) return;
-  const ed = { x: x + 30, y: yy + 4, w: w - 30, h: eh - 22 };
-  const k1 = Math.max(0, g.kx0 - g.sk), k2 = g.kx0 + g.sk, E1 = k1 * k1 / C2, E2 = k2 * k2 / C2;
-  const Emax = Math.max(g.V0, E2) * 1.25 || 1, ex = xx => ed.x + ed.w * (xx + 3) / 6, ey = E => ed.y + ed.h * (1 - E / Emax);
-  ctx.fillStyle = 'rgba(160,200,255,0.16)'; ctx.fillRect(ex(-g.a / 2), ey(g.V0), ex(g.a / 2) - ex(-g.a / 2), ey(0) - ey(g.V0));
-  ctx.strokeStyle = C('--ink-2'); ctx.lineWidth = 1.5; ctx.beginPath();
-  ctx.moveTo(ex(-3), ey(0)); ctx.lineTo(ex(-g.a / 2), ey(0)); ctx.lineTo(ex(-g.a / 2), ey(g.V0)); ctx.lineTo(ex(g.a / 2), ey(g.V0)); ctx.lineTo(ex(g.a / 2), ey(0)); ctx.lineTo(ex(3), ey(0)); ctx.stroke();
-  ctx.fillStyle = C('--accent'); ctx.globalAlpha = 0.18; ctx.fillRect(ed.x, ey(E2), ed.w, ey(E1) - ey(E2)); ctx.globalAlpha = 1;
-  ctx.strokeStyle = C('--accent'); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(ed.x, ey(g.Ex)); ctx.lineTo(ed.x + ed.w, ey(g.Ex)); ctx.stroke(); ctx.lineWidth = 1;
-  ctx.fillStyle = C('--muted'); ctx.font = mono(10); ctx.textAlign = 'right';
-  for (const E of [0, Emax / 2]) ctx.fillText(E.toFixed(1), ed.x - 5, ey(E) + 3.5);
-  ctx.fillText('eV', ed.x - 5, ed.y + 8);
-  ctx.textAlign = 'center'; for (const xx of [-3, 0, 3]) ctx.fillText(`${xx}`.replace('-', '−'), ex(xx), ed.y + ed.h + 13);
-  ctx.textAlign = 'left'; ctx.font = sans(10.5);
-  ctx.fillStyle = C('--accent'); ctx.textAlign = 'right'; ctx.fillText(`E₀cos²θ = ${g.Ex.toFixed(3)} eV`, ed.x + ed.w, ey(E2) - 5); ctx.textAlign = 'left';
-  ctx.fillStyle = C('--ink-2'); if (g.V0 > 0) ctx.fillText(`V₀ = ${g.V0.toFixed(2)} eV`, ex(g.a / 2) + 6, ey(g.V0) + (Math.abs(ey(g.V0) - ey(g.Ex)) < 14 ? 14 : -4));
-  ctx.fillStyle = C('--muted'); ctx.textAlign = 'right'; ctx.fillText('x (nm)', ed.x + ed.w, ed.y + ed.h + 26); ctx.textAlign = 'left';
-}
-
-// ------------------------------------------------------------ the instrument
-const M = s => `<math display="block">${s}</math>`;
-const app = createInstrument({
-  title: 'Electron wave packet tunnelling in 2D',
-  subtitle: 'Time-dependent Schrödinger equation on a 256 × 256 grid (split-operator FFT): one electron meeting a thin potential barrier',
-  tier: 'validated',
-  tierReason: 'The 2D Schrödinger equation is solved by the Strang split-operator FFT method (second order, unitary). The final transmitted probability matches the exact square-barrier transmission averaged over the packet within 2 % (1.5 % default, 1.9 % worst tested; grid-limited, converging at second order); unitarity, the free-packet solution and the probability balance with the absorbing edges hold to round-off (Verification).',
-  params: PARAMS, create: createSim, draw, gl: true, drawGL,
-  timeUnit: 'fs', timeLabel: 'time since release', speed: 3, duration: 65,
-  timeline: {
-    duration: sim => settleTime(sim.g),
-    markers: sim => [
-      { t: arrivalTime(sim.g), label: 'packet centre reaches the barrier (computed from the group velocity ħk₀/mₑ)', short: `arrival ${arrivalTime(sim.g).toFixed(0)} fs`, kind: 'computed' },
-      { t: settleTime(sim.g), label: 'transmission settled: slowest component (k_x − 2.5σ_k) past the barrier', short: `settled ${settleTime(sim.g).toFixed(0)} fs`, kind: 'computed' },
+  const cur = { sim: null, en: { H: 0, T: 0, V: 0 } };
+  const psi = M.i('ψ'), t = M.i('t'), hb = M.i('ħ');
+  const schr = createEquation({
+    title: 'Schrödinger equation, term by term (values: averages over the electron’s wave)',
+    lhs: { mathml: `${M.i('i')}${hb}${M.frac(`<mo>∂</mo>${psi}`, `<mo>∂</mo>${t}`)}`, label: 'total energy ⟨H⟩', unit: 'eV', digits: 4, value: () => cur.en.H },
+    op: '=',
+    terms: [
+      { id: 'kin', mathml: `<mo>−</mo>${M.frac(M.sup(hb, M.n(2)), `${M.n(2)}${M.sub(M.i('m'), M.i('e'))}`)}${M.sup('<mo>∇</mo>', M.n(2))}${psi}`, label: 'motion (kinetic energy ⟨T⟩)', color: '--body-0', unit: 'eV', digits: 4, value: () => cur.en.T },
+      { id: 'pot', sign: '+', mathml: `${M.i('V')}${M.paren(M.i('x'))}${psi}`, label: 'the wall (potential energy ⟨V⟩)', color: '--body-1', unit: 'eV', digits: 4, value: () => cur.en.V },
     ],
-    note: 'The run ends when the slowest relevant part of the packet (k_x − 2.5σ_k, 6σ behind the centre) has passed the barrier, so the transmitted probability T(t) has reached its final value. That takes about 3–4× the centre’s arrival time, because the slow tail of the packet arrives late; what remains in the box then leaves through the absorbing edges.',
+    where: [
+      { mathml: hb, meaning: 'reduced Planck constant', value: () => HBAR, unit: 'eV fs' },
+      { mathml: M.sub(M.i('m'), M.i('e')), meaning: 'electron mass', value: () => MASS, unit: 'eV fs²/nm²' },
+    ],
+  });
+  const trans = createEquation({
+    title: 'What fraction gets through, exactly',
+    lhs: { mathml: M.sub(M.i('P'), M.i('T')), label: 'transmission of this packet', unit: '%', digits: 4, value: () => (cur.sim ? cur.sim.exact * 100 : 0) },
+    op: '=',
+    terms: [{ id: 'pt', mathml: `<mo>∫</mo>${M.sup(`<mo>|</mo>${M.i('φ')}${M.paren(M.i('k'))}<mo>|</mo>`, M.n(2))}${M.i('T')}${M.paren(M.i('k'))}${M.i('d')}${M.i('k')}`, label: 'stationary transmission T(k), averaged over the packet’s momenta', color: '--body-2', unit: '%', digits: 4, value: () => (cur.sim ? cur.sim.exact * 100 : 0) }],
+    where: [
+      { mathml: M.sub(M.i('k'), M.n(0)), meaning: 'mean wavenumber', value: () => (cur.sim ? k0Of(cur.sim.params.E) : 0), unit: 'nm⁻¹' },
+      { mathml: M.sub(M.i('σ'), M.i('k')), meaning: 'momentum spread 1/(2σ)', value: () => 1 / (2 * SIGMA), unit: 'nm⁻¹' },
+      { mathml: `${M.i('T')}${M.paren(M.sub(M.i('k'), M.n(0)))}`, meaning: 'stationary T at the mean energy alone (not the packet value)', value: () => (cur.sim ? `${(cur.sim.atMean * 100).toPrecision(4)} %` : '—') },
+    ],
+  });
+  eqs.append(schr.el, trans.el);
+
+  let curveKey = '';
+  return {
+    update(sim, time, { rebuilt } = {}) {
+      cur.sim = sim; cur.en = sim.energies();
+      schr.update(); trans.update();
+      if (rebuilt) {
+        const end = sim.times.end, top = Math.max(sim.exact, ...sim.history.map(h => h[1])) * 100;
+        run.setX({ min: 0, max: end }).setY({ min: 0, max: Math.min(100, Math.max(1, top * 1.3)) });
+        run.hline('exact', sim.exact * 100, { color: '--muted', dash: true, label: `exact ${pct(sim.exact)}` });
+        const key = `${sim.params.E}|${sim.params.V0}`;
+        if (key !== curveKey) {
+          curveKey = key;
+          // 12 thicknesses, 32-node packet average each (≈ 0.3 s); log-linear interpolation between them
+          const ws = Array.from({ length: 12 }, (_, i) => 0.5 + i * 0.5);
+          const ts = ws.map(w => Math.max(1e-12, exactPacketTransmission({ ...sim.params, w }, { n: 32 }) * 100));
+          const lo = Math.max(1e-6, Math.min(...ts) / 3), logT = interpolate(ws, ts.map(Math.log));
+          thick.setY({ min: lo, max: 100 });
+          thick.fn('curve', w => Math.exp(logT(w)), { color: '--body-2', label: 'exact, this energy and height' });
+        }
+        thick.marker('now', sim.params.w, Math.max(1e-12, sim.exact * 100), { color: '--body-0', label: pct(sim.exact) });
+        thick.draw();
+      }
+      run.data('through', sim.history.map(([tt, a]) => [tt, a * 100]), { color: '--body-0', label: '2D run' });
+      run.draw();
+    },
+  };
+}
+
+createInstrument({
+  intro: {
+    text: 'An electron is not a tiny ball: it travels as a wave that tells you where it is likely to be found. Here that wave, seen from above as a glowing cloud, flies at a thin wall that the electron does not have enough energy to climb over. Most of it bounces back, but part of it leaks through and keeps going. This is quantum tunnelling, the effect behind flash memory and scanning tunnelling microscopes.',
+    watch: ['the faint cloud that comes out behind the wall', 'the two percentages under the picture', 'stripes in front of the wall where the incoming and returning waves overlap'],
   },
-  hudLine: sim => `E₀cos²θ ${sim.g.Ex.toFixed(3)} eV · ${sim.g.kappa > 0 ? `1/κ ${(1 / sim.g.kappa).toFixed(2)} nm` : 'above barrier'}`,
+  title: 'An electron tunnelling through a wall',
+  subtitle: 'Time-dependent Schrödinger equation in 2D, split-operator FFT; wall uniform across the box',
+  tier: 'validated',
+  tierReason: 'The 2D Schrödinger equation is solved by the split-operator FFT method; the transmitted share matches the exact packet transmission (stationary scattering averaged over the packet) to 0.03 %, the sideways spreading matches the free-packet formula, norm is conserved to 10⁻¹⁴ without absorbers, and refinement changes the result by 0.02 % (Verification). Scope: one spinless electron, a static wall, illustrative meV/nm scales.',
+  layout: 'workbench',
+  params: PARAMS, create: createSim,
+  draw, bench,
+  actions: [{ label: 'Fire the electron', hint: 'start again and watch the wave hit the wall', onClick: ({ restart, play }) => { restart(); play(); } }],
+  presets: PRESETS.map(p => ({ ...p, play: true })),
+  timeUnit: 'fs', timeLabel: 'time since launch', timeDigits: 0,
+  timeline: {
+    duration: sim => sim.times.end,
+    markers: sim => [
+      { t: sim.times.tWall, label: `packet at the wall ${Math.round(sim.times.tWall)} fs`, short: 'at wall', kind: 'computed' },
+      { t: sim.times.tSettle, label: `split settled ${Math.round(sim.times.tSettle)} fs`, short: 'settled', kind: 'computed' },
+    ],
+    note: 'Key times measured in this model (a 1D run of the wave’s x-part on the same grid). The run ends 10 % after the split has settled, before anything reaches the box edges.',
+    seconds: 60,
+  },
+  hudError: false,
+  hudLine: sim => (sim.params.V0 > sim.params.E
+    ? `energy ${sim.params.E.toFixed(3)} eV, wall ${sim.params.V0.toFixed(3)} eV high: a ball would always bounce back`
+    : `energy ${sim.params.E.toFixed(3)} eV, wall ${sim.params.V0.toFixed(3)} eV high: a ball would always get over`),
+  texts: { parameters: 'Electron and wall', paramsNote: 'Changing a value restarts the run.' },
   model: {
-    equations: [
-      { caption: 'Time-dependent Schrödinger equation solved on the grid (free-electron mass, V = V₀ for |x| < a/2):', mathml: M('<mi>i</mi><mi>ħ</mi><mfrac><mrow><mo>∂</mo><mi>ψ</mi></mrow><mrow><mo>∂</mo><mi>t</mi></mrow></mfrac><mo>=</mo><mrow><mo>[</mo><mo>−</mo><mfrac><msup><mi>ħ</mi><mn>2</mn></msup><mrow><mn>2</mn><msub><mi>m</mi><mi>e</mi></msub></mrow></mfrac><msup><mo>∇</mo><mn>2</mn></msup><mo>+</mo><mi>V</mi><mo>(</mo><mi>x</mi><mo>)</mo><mo>−</mo><mi>i</mi><mi>W</mi><mo>(</mo><mi>x</mi><mo>,</mo><mi>y</mi><mo>)</mo><mo>]</mo></mrow><mi>ψ</mi>') },
-      { caption: 'Exact plane-wave transmission for normal energy E < V₀, with κ = √(2mₑ(V₀ − E))/ħ (above the barrier sinh → sin):', mathml: M('<mi>T</mi><mo>(</mo><mi>E</mi><mo>)</mo><mo>=</mo><msup><mrow><mo>[</mo><mn>1</mn><mo>+</mo><mfrac><mrow><msubsup><mi>V</mi><mn>0</mn><mn>2</mn></msubsup><msup><mi>sinh</mi><mn>2</mn></msup><mo>(</mo><mi>κ</mi><mi>a</mi><mo>)</mo></mrow><mrow><mn>4</mn><mi>E</mi><mo>(</mo><msub><mi>V</mi><mn>0</mn></msub><mo>−</mo><mi>E</mi><mo>)</mo></mrow></mfrac><mo>]</mo></mrow><mrow><mo>−</mo><mn>1</mn></mrow></msup>') },
-      { caption: 'For a straight barrier y-motion is free, so only the normal energy E_x = ħ²k_x²/2mₑ tunnels; the packet’s transmission is the average over its momentum distribution (σ_k = 1/2σ):', mathml: M('<mo>⟨</mo><mi>T</mi><mo>⟩</mo><mo>=</mo><mo>∫</mo><msup><mrow><mo>|</mo><mi>φ</mi><mo>(</mo><msub><mi>k</mi><mi>x</mi></msub><mo>)</mo><mo>|</mo></mrow><mn>2</mn></msup><mspace width="0.2em"/><mi>T</mi><mo>(</mo><msup><mi>ħ</mi><mn>2</mn></msup><msubsup><mi>k</mi><mi>x</mi><mn>2</mn></msubsup><mo>/</mo><mn>2</mn><msub><mi>m</mi><mi>e</mi></msub><mo>)</mo><mspace width="0.2em"/><mi>d</mi><msub><mi>k</mi><mi>x</mi></msub>') },
+    legend: [
+      'brightness: chance of finding the electron there (|ψ|², √ scale, relative to the start)',
+      'blue band: the wall (energy barrier); view seen from above, 104 nm × 64 nm',
+      'percentages: computed share of the wave on each side of the wall’s centre',
     ],
     assumptions: [
-      'One spinless electron, non-relativistic (E ≪ mₑc² = 511 keV), free-electron mass mₑ. In a solid the effective mass and band structure would change the numbers.',
-      'Ideal rectangular barrier, static and uniform along y; no image-charge rounding, no phonons or other electrons.',
-      'Grid 256 × 256 with dx = 0.125 nm (32 nm box); the barrier width is rounded to whole cells. At this grid the transmitted probability is low by 0.7–1.9 % in the tested cases (1.5 % default), converging at second order.',
-      'Absorbing layers (complex potential −iW, quadratic ramp to 2 eV over 3 nm) at all four edges remove outgoing waves instead of letting them wrap around the periodic FFT box. Probability removed there is booked exactly per side, so T(t) = P(x > a/2) + absorbed on that side.',
-      'The colour shows where the electron would be found if measured; a single measurement finds it on one side only, with probabilities T and R. The packet does not split into two partial electrons.',
+      'One electron (free-electron mass), no spin, no magnetic field; the wall is a fixed energy barrier V(x) with soft edges (tanh, 0.25 nm), the same for every y.',
+      'Because the wall is the same across y, the wave factorises: tunnelling depends only on the motion towards the wall; sideways the cloud spreads like a free wave.',
+      'Illustrative scale: meV energies and nm sizes chosen so the electron’s wavelength (≈ 5.5 nm by default) shows on screen. Real tunnel barriers (oxide layers, STM gaps) are ≈ 1 nm and ≈ 1 eV; the physics is the same.',
+      'Absorbing layers (12 nm, not drawn) at the left and right edges let waves leave; the run ends before they remove more than 0.001 % (default). Periodic in y.',
+      'Not built: a wall hit at an angle, a wall with a gap or finite length (where 2D effects such as diffraction would matter), many electrons or a thermal beam.',
     ],
     conventions: [
-      'Colour: |ψ(x, y)|² in nm⁻², inferno colour map, relative to the initial peak density ρ₀; log scale by default (2 decades below ρ₀; 4, 6 decades or linear selectable). Energy diagram: the shaded band spans the normal energies of k_x ± σ_k. Bilinear interpolation between grid cells unless “show grid cells” is on.',
-      'Pale blue band: the barrier region |x| < a/2. Crosses: ⟨r⟩ of the probability on each side of the barrier, labelled with that side’s probability (absorbed parts included).',
-      'White arrow: the packet’s mean wavevector k₀ at t = 0 (an initial-state parameter, not a trajectory).',
-      'The view shows the 26 × 26 nm interior; the 3 nm absorbing layers are outside the frame.',
-      'Playback: physical time in femtoseconds, about 3 fs per second of wall time by default (compressed ~10¹⁵×).',
+      'Colour: inferno colour map of √(|ψ|²/peak at start), clipped at 1; the colour bar shows |ψ|²/peak.',
+      'The percentages count probability on each side of the wall centre; during the collision part of the wave is inside the wall.',
+      'Time: physical time since launch, in femtoseconds; playback is slowed by about 10¹⁶ (shown by the speed control).',
+      'The cloud is a probability amplitude, not a swarm of particles and not the electron’s size. One measurement would find the electron at one spot.',
     ],
     references: [
-      'D. J. Griffiths, D. F. Schroeter, Introduction to Quantum Mechanics, 3rd ed., Cambridge (2018), §2.6 and Problem 2.33 (square-barrier transmission).',
+      'D. J. Griffiths, D. F. Schroeter, Introduction to Quantum Mechanics, 3rd ed. (Cambridge, 2018), §2.6 (scattering, tunnelling).',
       'M. D. Feit, J. A. Fleck, A. Steiger, J. Comput. Phys. 47, 412 (1982): split-operator FFT method.',
-      'J. G. Muga et al., Phys. Rep. 395, 357 (2004): complex absorbing potentials.',
+      'A. Goldberg, H. M. Schey, J. L. Schwartz, Am. J. Phys. 35, 177 (1967): wave packets scattering from barriers.',
       'E. Tiesinga et al., CODATA 2018, Rev. Mod. Phys. 93, 025010 (2021): ħ, mₑ, e.',
     ],
   },
-  extraSections(side, { section, el, toggle: tg }) {
-    const sec = section('View (display only)');
-    sec.body.append(
-      el('p', { class: 'psim-hint' }, 'These change how the computed density is drawn, not the calculation.'),
-      el('div', { class: 'psim-field' }, el('div', { class: 'top' }, el('span', {}, 'Colour scale')),
-        select(Object.entries(MODES).map(([value, m]) => ({ value, label: m.label })), disp.mode, v => { disp.mode = v; })),
-      tg('Show grid cells (no interpolation)', !disp.smooth, v => { disp.smooth = !v; }),
-    );
-    side.insertBefore(sec, side.children[1]);
-  },
 });
-
-// Representation self-test: the GPU colour at the densest cell equals the colour map at its computed value.
-window.psim.selfTest = () => {
-  const gl = document.querySelector('canvas.psim-gl').getContext('webgl2'), sim = app.sim, view = app.view;
-  const L = layout(view.W, view.H), px = L.S / (2 * VIEW), dpr = view.dpr;
-  let kMax = 0;
-  const { re, im } = sim;
-  for (let k = 1; k < re.length; k++) if (re[k] ** 2 + im[k] ** 2 > re[kMax] ** 2 + im[kMax] ** 2) kMax = k;
-  const xc = i => (i + 0.5 - N / 2) * DX, xi = xc(kMax % N), yi = xc((kMax / N) | 0);
-  const sx = (L.x + (xi + VIEW) * px) * dpr, sy = (L.y + (VIEW - yi) * px) * dpr;
-  const b = new Uint8Array(4); gl.readPixels(Math.round(sx), Math.round(gl.drawingBufferHeight - 1 - sy), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, b);
-  const m = MODES[disp.mode], r0 = 1 / (2 * Math.PI * sim.g.sigma ** 2), v = re[kMax] ** 2 + im[kMax] ** 2;
-  const tt = m.log ? (Math.log10(v) - Math.log10(r0 * m.lo)) / -Math.log10(m.lo) : v / r0;
-  const want = colormap(MAP, tt).map(c => Math.round(255 * c)), dev = Math.max(...[0, 1, 2].map(i => Math.abs(b[i] - want[i])));
-  return { label: 'GPU density colour at the peak cell matches the colour map of its computed |ψ|²', got: [...b].slice(0, 3), want, maxDeviation: dev, pass: dev <= 6 };
-};
 
 </script>
 </body>

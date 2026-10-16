@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="generator" content="p-simtor">
-<title>Stirred condensate: vortex lattice</title>
+<title>Stirring a Bose–Einstein condensate until a vortex lattice forms</title>
 <style>/* psim:ui/instrument.css */
 /* p-simtor instrument shell.
    A simulation page is a scientific instrument: a large stage for the physics,
@@ -143,35 +143,10 @@ body {
   background:
     radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 92%, var(--accent) 8%) 0%, var(--stage) 60%);
 }
-.psim-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
-.psim-stage canvas.grab { cursor: grab; }
-.psim-stage canvas.grabbing { cursor: grabbing; }
-.psim-stage canvas.move { cursor: move; }
+.psim-view canvas.grab { cursor: grab; }
+.psim-view canvas.grabbing { cursor: grabbing; }
+.psim-view canvas.move { cursor: move; }
 
-.psim-hud {
-  position: absolute; left: 16px; top: 14px;
-  display: grid; gap: 2px; pointer-events: none;
-  font: 12px/1.35 var(--mono); color: var(--ink-2);
-}
-.psim-hud b { font-weight: 500; color: var(--ink); font-size: 20px; letter-spacing: -.01em; }
-.psim-hud .dim { color: var(--muted); }
-.psim-hud .flag { color: var(--warn); }
-
-.psim-legend {
-  position: absolute; right: 16px; top: 14px; display: grid; gap: 4px; justify-items: end;
-  font: 11px/1.3 var(--sans); color: var(--muted); pointer-events: none; text-align: right;
-}
-
-.psim-transport {
-  position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
-  display: flex; align-items: center; gap: 4px;
-  padding: 5px; border-radius: 12px;
-  background: color-mix(in srgb, var(--panel) 86%, transparent);
-  border: 1px solid var(--line);
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 10px 30px rgba(0,0,0,.25);
-  max-width: calc(100% - 32px);
-}
 .psim-transport button {
   height: 32px; min-width: 32px; padding: 0 9px; border-radius: 8px;
   border: 0; background: transparent; color: var(--ink-2); cursor: pointer;
@@ -316,7 +291,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 @media (max-width: 860px) {
-  .psim-app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 64vh auto; height: auto; }
+  .psim-app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto; height: auto; }
   .psim-head { gap: 10px; }
   .psim-title { flex: 1; }
   .psim-tier { padding: 6px; }
@@ -324,7 +299,6 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
   .psim-side { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
   .psim-head { padding: 10px 16px; }
   .psim-title p { display: none; }
-  .psim-transport label.speed { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -378,28 +352,17 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 
 /* ---------- workbench layout: stage + figures + equations (instrument-app layout: 'workbench') ---------- */
 .psim-app.workbench .psim-stage { overflow: auto; background: var(--stage); }
-.psim-bench { position: relative; display: grid; gap: 18px; padding: 18px 18px 84px; min-height: 100%; }
-.psim-bench .psim-canvaswrap { position: relative; height: clamp(300px, 52vh, 620px); border-radius: 12px; overflow: hidden; border: 1px solid var(--line);
-  background: radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 90%, var(--accent) 10%) 0%, var(--stage) 65%); }
-.psim-bench .psim-canvaswrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+.psim-bench { position: relative; display: grid; gap: 18px; padding: 18px; min-height: 100%; }
 .psim-bench .psim-figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
 .psim-bench .psim-eqs { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
-.psim-app.workbench .psim-transport { position: fixed; left: calc((100vw - 372px) / 2); }
-.psim-app.workbench .psim-hud { left: 30px; top: 30px; }
-.psim-app.workbench .psim-legend { right: 30px; top: 30px; }
 @media (max-width: 860px) {
-  .psim-app.workbench .psim-transport { left: 50%; }
-  .psim-bench { padding: 12px 12px 84px; }
+  .psim-bench { padding: 12px; }
 }
 
 @media (max-width: 860px) {
   /* phones: legend bottom-right, clear of HUD (top-left), scale bars (bottom-left) and transport */
-  .psim-legend { top: auto; bottom: 70px; left: auto; right: 14px; max-width: 58%; justify-items: end; text-align: right; font-size: 10.5px; }
   .psim-app.workbench { grid-template-rows: auto auto auto; }
   .psim-app.workbench .psim-stage { overflow: visible; }
-  .psim-app.workbench .psim-transport { position: absolute; }
-  .psim-app.workbench .psim-legend { top: auto; bottom: 14px; left: auto; right: 26px; }
-  .psim-bench .psim-canvaswrap { height: 70vh; }
 }
 
 /* GPU layer (ui/gl.mjs): under the 2D canvas, which keeps labels and pointer events */
@@ -410,218 +373,2112 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 .psim-presets .psim-hint { width: 100%; margin: 0; }
 
 /* Over a GPU scene the HUD and legend get a soft backing so they stay readable on bright content */
-.psim-app.has-gl .psim-hud, .psim-app.has-gl .psim-legend {
-  padding: 6px 9px; border-radius: 8px;
-  background: color-mix(in srgb, var(--stage) 72%, transparent);
-  backdrop-filter: blur(3px);
-}
 
 /* ---------- full screen (scene + HUD + legend + playback bar) ---------- */
 .psim-fs { background: var(--stage, var(--bg)); border-radius: 0 !important; border: 0 !important; }
-.psim-app .psim-fs .psim-transport { position: absolute; left: 50%; right: auto; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 5; }
 .psim-pseudo-fs { position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100dvh !important; max-height: none !important; z-index: 1000; margin: 0 !important; }
 .psim-fsbtn { position: absolute; right: 12px; bottom: 12px; z-index: 4; width: 34px; height: 34px; display: grid; place-items: center;
   border-radius: 9px; border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); cursor: pointer; }
 .psim-fsbtn:hover { background: var(--raise); color: var(--ink); }
 .psim-fsbtn svg { width: 15px; height: 15px; }
 
-/* ---------- timeline: the run's span and its key times (spec.timeline) ---------- */
-.psim-timeline { position: absolute; left: 50%; transform: translateX(-50%); bottom: 78px; width: min(560px, 62%); z-index: 3;
-  font: 10.5px var(--mono); color: var(--muted); pointer-events: auto; }
-.psim-canvaswrap > .psim-timeline { bottom: 14px; }
-.psim-app .psim-fs > .psim-timeline { bottom: 86px; }
+
+
+/* The animation view is a dark screen in BOTH page themes: scenes (glows, density maps, space) are
+   designed for it, and every page looks the same. Panels, text and figures follow the page theme. */
+.psim-view, :root[data-theme="light"] .psim-view {
+  --bg: #07090d;
+  --stage: #0a0d13;
+  --panel: #0e1219;
+  --raise: #141923;
+  --line: rgba(196, 214, 255, 0.09);
+  --line-strong: rgba(196, 214, 255, 0.18);
+  --ink: #e6e9ef;
+  --ink-2: #b6bdcb;
+  --muted: #7b8396;
+  --faint: #4a5163;
+  --accent: #8cc8ff;
+  --accent-ink: #06121f;
+  --good: #7fd8a4;
+  --warn: #f2c46d;
+  --bad: #ff7a85;
+  --grid: rgba(150, 175, 230, 0.06);
+  --grid-strong: rgba(150, 175, 230, 0.13);
+  --glow: 1;
+  --body-0: #ffb35c;
+  --body-1: #68c3ff;
+  --body-2: #ff6f9a;
+  --body-3: #9be08a;
+  --body-4: #c49bff;
+  --body-5: #ffe07a;
+  color-scheme: dark;
+}
+
+/* ---------- the scene: plain intro, clean view, player bar, key ---------- */
+/* Everything about the animation lives in one card: what it shows (in plain words), the view with
+   nothing written over it, a video-player bar right under it, and the key to its colours below. */
+.psim-scene { display: flex; flex-direction: column; min-height: 0; background: var(--stage); }
+.psim-stage > .psim-scene { position: absolute; inset: 0; }
+.psim-scene.psim-canvaswrap { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
+.psim-view { position: relative; flex: 1 1 auto; min-height: 0;
+  background: radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 90%, var(--accent) 10%) 0%, var(--stage) 65%); }
+.psim-canvaswrap > .psim-view { flex: none; height: clamp(320px, 58vh, 660px); }
+.psim-view canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+.psim-intro { padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); font: 14px/1.55 var(--sans); color: var(--ink-2); }
+.psim-side > .psim-intro { margin: 14px 16px 4px; }
+.psim-intro b { display: block; font: 600 11px/1.4 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.psim-intro p { margin: 0; color: var(--ink); max-width: 80ch; }
+.psim-intro ul { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 3px; font-size: 13px; color: var(--ink-2); }
+.psim-intro li::before { content: '→ '; color: var(--accent); }
+.psim-intro.collapsed p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.psim-intro.collapsed ul { display: none; }
+.psim-more { margin-top: 4px; padding: 0; border: 0; background: none; color: var(--accent); font: 500 12.5px var(--sans); cursor: pointer; }
+.psim-more:hover { text-decoration: underline; }
+.psim-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 92%, var(--stage)); }
+.psim-action { padding: 9px 16px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--line)); background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--ink); font: 600 13.5px var(--sans); cursor: pointer; }
+.psim-action:hover { background: color-mix(in srgb, var(--accent) 26%, transparent); }
+
+.psim-transport { display: flex; align-items: center; gap: 4px; padding: 6px 10px; flex-wrap: nowrap;
+  border-top: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 92%, var(--stage)); }
+.psim-clock[hidden] { display: none; }
+.psim-clock { display: grid; line-height: 1.15; padding: 0 8px; min-width: 0; max-width: 220px; }
+.psim-clock .dim { font: 10.5px var(--sans); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.psim-clock b { font: 500 15px var(--mono); color: var(--ink); white-space: nowrap; }
+
+.psim-timeline { flex: 1 1 200px; min-width: 120px; padding: 0 10px; font: 10.5px var(--mono); color: var(--muted); position: relative; }
+.psim-timeline .ticks { position: relative; height: 17px; }
 .psim-timeline .bar { position: relative; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--ink) 16%, transparent); cursor: pointer; }
+.psim-timeline .bar::before { content: ''; position: absolute; inset: -8px 0; }   /* a taller hit area */
 .psim-timeline .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 3px; background: var(--accent); }
 .psim-timeline .m { position: absolute; top: -4px; width: 2px; height: 14px; margin-left: -1px; background: var(--ink); }
-.psim-timeline .ticks { position: relative; height: 30px; }
 .psim-timeline .lab { position: absolute; bottom: 2px; transform: translateX(-50%); white-space: nowrap; color: var(--ink-2); }
-.psim-timeline .lab.r1 { bottom: 16px; }
 .psim-timeline .ends { display: flex; justify-content: space-between; margin-top: 3px; }
 .psim-timeline .m.measured, .psim-tlrow i.measured { background: var(--good, #4cc38a); }
 .psim-timeline .lab.measured { color: var(--good, #4cc38a); }
 .psim-timeline .m.requested, .psim-tlrow i.requested { background: var(--warn, #e0a030); }
 .psim-timeline .lab.requested { color: var(--warn, #e0a030); }
-.psim-timeline { background: color-mix(in srgb, var(--stage) 78%, transparent); padding: 4px 12px 6px; border-radius: 10px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 .psim-tlrow { display: grid; grid-template-columns: 10px 1fr auto; gap: 2px 8px; align-items: baseline; margin: 6px 0; font-size: 12px; }
 .psim-tlrow i { width: 8px; height: 8px; border-radius: 2px; background: var(--ink); }
 .psim-tlrow code { font: 12px var(--mono); color: var(--ink); }
 .psim-tlrow small { grid-column: 2 / 4; color: var(--muted); font-size: 11px; }
+
+.psim-key { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 18px; padding: 8px 14px 10px;
+  border-top: 1px solid var(--line); font: 12px/1.45 var(--sans); color: var(--ink-2); }
+.psim-key:has(.psim-legend:empty):has(.psim-hud span:empty + span:empty + span:empty) { display: none; }
+.psim-legend { display: flex; flex-wrap: wrap; gap: 2px 16px; min-width: 0; }
+.psim-legend span { min-width: 0; }
+.psim-hud { display: flex; flex-wrap: wrap; gap: 2px 14px; font: 11.5px/1.45 var(--mono); color: var(--muted); }
+.psim-hud span:empty { display: none; }
+.psim-hud .flag { color: var(--warn); }
+
+.psim-endcard { position: absolute; right: 12px; bottom: 12px; z-index: 4; display: flex; align-items: center; gap: 10px;
+  padding: 6px 6px 6px 12px; border-radius: 10px; border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 90%, transparent);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); font: 12.5px var(--sans); color: var(--ink-2); }
+.psim-endcard .psim-btn { padding: 5px 10px; }
+.psim-endcard[hidden] { display: none; }
+
+/* full screen: the view grows, the intro steps aside, player and key stay */
+.psim-fs > .psim-view, .psim-fs.psim-canvaswrap > .psim-view { flex: 1 1 auto; height: auto; }
+.psim-fs .psim-transport { padding-bottom: max(6px, env(safe-area-inset-bottom)); }
+
 @media (max-width: 860px) {
-  .psim-timeline { left: 10px; transform: none; width: calc(50% - 16px); bottom: 70px; }
-  .psim-app .psim-legend { max-width: calc(50% - 16px); }
-  .psim-canvaswrap > .psim-timeline { bottom: 12px; }
+  .psim-stage { overflow: visible; }
+  .psim-stage > .psim-scene { position: relative; inset: auto; }
+  /* the first screen holds the view and the whole player bar: header ≈ 64 px, player ≈ 104 px */
+  .psim-stage > .psim-scene > .psim-view, .psim-canvaswrap > .psim-view { flex: none; height: max(280px, calc(100svh - 64px - 132px - 26px)); }
+  .psim-scene:has(.psim-actions) > .psim-view { height: max(260px, calc(100svh - 64px - 132px - 26px - 62px)); }   /* the action row fits too */
+  .psim-intro { padding: 12px 14px; font-size: 13.5px; }
+  .psim-side > .psim-intro { margin: 12px 12px 4px; }
+  .psim-transport { flex-wrap: wrap; row-gap: 2px; padding: 6px 8px; }
+  .psim-transport .psim-timeline { order: -1; flex: 1 1 100%; padding: 0 4px 4px; }
+  .psim-transport .psim-clock { flex: 1 1 auto; }
+  .psim-transport label.speed { padding: 0 4px; }
+  .psim-transport label.speed { font-size: 0; }
+  .psim-transport input[type=range] { width: 80px; }
+  .psim-transport output { min-width: 0; font-size: 11px; }
+  .psim-transport .sep { display: none; }
   .psim-timeline .lab { font-size: 9.5px; }
+  .psim-key { padding: 8px 12px; font-size: 11.5px; }
+  .psim-fs > .psim-view { height: auto; }
 }
 </style>
 </head>
 <body>
 <script type="application/json" id="psim-verification">{
- "summary": "Split-step GPE in the rotating frame, checked against the harmonic-oscillator and Thomas–Fermi limits, conservation laws, the damping energy balance, exact vortex windings, Feynman’s rule and time/grid refinement.",
+ "summary": "2D Gross–Pitaevskii, turning frame, split-step: order 2.00 on an exact benchmark; 17 whirlpools at Ω = 0.8 with spacing -2.6 % from Feynman's rule",
  "checks": [
   {
-   "label": "Ground state at g = 0: μ = ħω⊥ (exact)",
-   "value": "μ = 1.0000000, |μ−1| = 4.4e-13",
+   "label": "Turning-frame split-step vs exact harmonic-trap motion (t = 4/ω⊥, Δt = 0.01)",
+   "value": 0.000017924677345488627,
    "pass": true
   },
   {
-   "label": "Imaginary-time μ (Δτ → 0) vs Thomas–Fermi √(g/π): excess must fall as g grows",
-   "value": "g=250: μ=9.003 vs 8.921 (+0.92 %); g=1000: μ=17.889 vs 17.841 (+0.27 %); g=4000: μ=35.709 vs 35.682 (+0.08 %)",
+   "label": "Convergence order of the split-step, Δt = 0.04/0.02/0.01 (errors 2.9e-4, 7.2e-5, 1.8e-5; expected 2)",
+   "value": 2.0001303600628675,
    "pass": true
   },
   {
-   "label": "Norm conserved in real time (γ = 0, Ω = 0.75, ε = 0.05, t ≤ 20, 5900 steps)",
-   "value": "max |∫|ψ|²−1| = 9.6e-14 (round-off)",
+   "label": "Atom number conserved without friction (2000 steps; round-off budget 5.7e-12)",
+   "value": 5.728750807065808e-14,
    "pass": true
   },
   {
-   "label": "Rotating-frame energy conserved (γ = 0, t ≤ 20)",
-   "value": "max |ΔE/E₀| = 3.82e-7 (Δt=0.0034), 9.56e-8 (Δt/2)",
+   "label": "Turning-frame energy E − ΩL_z without friction, t = 5/ω⊥: drift at Δt = 0.005 (0.0025: 8.7e-7)",
+   "value": 0.000003502487116557873,
    "pass": true
   },
   {
-   "label": "Time-step convergence order of ψ(t = 3), γ = 0 (Strang splitting: 2)",
-   "value": "p = 2.00 (‖Δψ‖/‖ψ‖ 2.7e-6 → 6.8e-7)",
+   "label": "Order of that energy drift under Δt halving (expected ≈ 2)",
+   "value": 2.0159611776744133,
    "pass": true
   },
   {
-   "label": "Grid refinement with a vortex core (single-vortex E/N, Ω = 0.3): 64², 128² vs 256²",
-   "value": "|ΔE| 4.7e-5 → 1.5e-8 (E = 8.46074)",
-   "pass": true
-  },
-  {
-   "label": "Energy loss with γ = 0.05 equals the dissipation integral (t ≤ 40, through vortex entry)",
-   "value": "Δt=0.01: 1.1e-3; Δt=0.005: 4.9e-4; Δt=0.0025: 2.4e-4 of |E₀| (ΔE = −1.860)",
-   "pass": true
-  },
-  {
-   "label": "Single vortex (imaginary time, Ω = 0.3): one core, winding +1, ⟨L_z⟩ = +1 ħ",
-   "value": "1 core, plaquette w = 1, loop winding 1.000000, ⟨L_z⟩ = 1.00000",
-   "pass": true
-  },
-  {
-   "label": "Single antivortex (imaginary time, Ω = -0.3): one core, winding −1, ⟨L_z⟩ = −1 ħ",
-   "value": "1 core, plaquette w = -1, loop winding -1.000000, ⟨L_z⟩ = -1.00000",
-   "pass": true
-  },
-  {
-   "label": "Vortex number vs Ω (stirred, t = 150): N_v / Feynman count over the TF area",
-   "value": "Ω=0.5: 2/14; Ω=0.6: 8/19; Ω=0.65: 10/22; Ω=0.7: 12/25; Ω=0.75: 15/29; Ω=0.8: 20/35; Ω=0.85: 26/43",
+   "label": "Known limit: without friction the page's Δt = 0.01 is unstable (energy off by this factor after 5/ω⊥); the page therefore keeps γ ≥ 0.025",
+   "value": 26.239365496617538,
    "pass": true,
    "state": "warn"
   },
   {
-   "label": "Bulk vortex density (from lattice spacing) ÷ Feynman Ω/π, Ω ≥ 0.65",
-   "value": "Ω=0.65: 1.08; Ω=0.7: 1.08; Ω=0.75: 1.05; Ω=0.8: 1.06; Ω=0.85: 1.12",
+   "label": "γ = 0.025, Ω = 0.9: turning-frame energy at Δt = 0.01 vs 0.005 over the entry phase (0–40/ω⊥), largest relative difference",
+   "value": 0.0005221368493060208,
    "pass": true
   },
   {
-   "label": "Stirring protocol refined (Ω = 0.75, t = 150): N_v, bulk density ratio",
-   "value": "128², Δt=0.01: 15, 1.05; Δt=0.005: 16, 1.07; 256²: 16, 1.06",
+   "label": "…and it never rises (the damped equation can only lose energy): largest rise per 1/ω⊥",
+   "value": 0,
+   "pass": true
+  },
+  {
+   "label": "Ground state at g = 0: μ = ħω⊥ (exact)",
+   "value": 7.812772651050182e-11,
+   "pass": true
+  },
+  {
+   "label": "Ground state at g = 400: μ = 11.461 vs Thomas–Fermi 11.284 (TF neglects the edge's kinetic energy: a small excess is expected)",
+   "value": 0.015675098898903173,
+   "pass": true
+  },
+  {
+   "label": "Imprinted vortex: ⟨L_z⟩ = ħ per atom (exact for f(r)e^{iφ})",
+   "value": 6.771594396326464e-11,
+   "pass": true
+  },
+  {
+   "label": "…after 500 steps (Δt = 0.005, no friction) in the round trap: circulation around a 6 a_ho loop 1.000000 → 1.000000 quanta; ⟨L_z⟩ change",
+   "value": 0.0000019188726058105843,
+   "pass": true
+  },
+  {
+   "label": "Stir gently (0.6): only 6 whirlpools (5 inner), too few for a bulk lattice, so Feynman's bulk rule is only indicative: spacing 2.210 vs 2.459 a_ho",
+   "value": -0.10131981442817484,
+   "pass": true,
+   "state": "warn"
+  },
+  {
+   "label": "Stir gently (0.6): every winding is +1, in the stirring direction (wrong: 0)",
+   "value": 0,
+   "pass": true
+  },
+  {
+   "label": "Default (0.8): 17 whirlpools; inner spacing 2.075 vs Feynman 2.129 a_ho (±10 %)",
+   "value": -0.025546453517268475,
+   "pass": true
+  },
+  {
+   "label": "Default (0.8): every winding is +1, in the stirring direction (wrong: 0)",
+   "value": 0,
+   "pass": true
+  },
+  {
+   "label": "Default: first whirlpool inside the cloud at 41 ms, grid settled (count ±1, spacing scatter ≤ 6 %) from 232 ms, run ends 318 ms",
+   "value": 232.36621691416718,
+   "pass": true
+  },
+  {
+   "label": "\"Stir faster\" at 127 ms (0.8 → 0.9): 33 whirlpools at the end instead of 17; 4 more than steady stirring by 134 ms",
+   "value": 16,
+   "pass": true
+  },
+  {
+   "label": "Stir hard (0.9): 32 whirlpools; inner spacing 1.954 vs Feynman 2.008 a_ho (±10 %)",
+   "value": -0.026693308991616593,
+   "pass": true
+  },
+  {
+   "label": "Stir hard (0.9): every winding is +1, in the stirring direction (wrong: 0)",
+   "value": 0,
+   "pass": true
+  },
+  {
+   "label": "More whirlpools when stirred faster: 6 (0.6) < 17 (0.8) < 32 (0.9)",
+   "value": 26,
+   "pass": true
+  },
+  {
+   "label": "Spin per atom approaches the rigid-body value as whirlpools fill in: 71 %, 89 %, 94 % for Ω = 0.6, 0.8, 0.9",
+   "value": 0.9375930900078695,
+   "pass": true
+  },
+  {
+   "label": "Δt halved (0.005): 16 vs 17 whirlpools, spacing 2.048 vs 2.075 a_ho, ⟨L_z⟩ 9.23 vs 9.30 (the entry is chaotic: compare the settled state, |Δ⟨L_z⟩| ≤ 3 %)",
+   "value": 0.008074370674816977,
+   "pass": true
+  },
+  {
+   "label": "Other noise seed (2): 16 vs 17 whirlpools, ⟨L_z⟩ 9.22 vs 9.30",
+   "value": 0.009392340653303743,
    "pass": true
   }
  ],
  "notes": [
-  "Imaginary-time μ converges only to first order in Δτ (normalised gradient flow with splitting); the Δτ → 0 extrapolation moved μ by at most 0.15 %. The page starts from a Δτ = 0.01 ground state (μ about 1 % above its Δτ → 0 value at g = 500), i.e. a very slightly excited initial cloud.",
-  "μ exceeds μ_TF by the kinetic (surface) energy that the Thomas–Fermi approximation neglects; the excess shrinks as g grows, as it must.",
-  "Without damping, split-step Fourier has a resonance instability for large Δt (measured here: unstable above max|½k² + Ω(L/2)k|·Δt ≈ 2); with γ < 0.02 the page caps Δt at 1.6/max|…| (0.0034 ω⊥⁻¹ on the default 128² grid).",
-  "Healing length at the cloud centre ξ = 1/√(2μ) ≈ 0.20 a_ho for g = 500; the 128² grid has Δx = 0.125 a_ho (≈ 2 points per ξ, spectral accuracy); 64² (Δx = 0.25) is under-resolved.",
-  "The energy-balance residual falls roughly in proportion to Δt: renormalising after each step fixes μ to first order. At the default Δt = 0.01 the dissipation formula accounts for the computed energy loss to ≈ 10⁻³ of |E₀|.",
-  "Feynman’s rule fixes the vortex density in the bulk, and the lattice spacing reproduces it; the total over the TF area overestimates the number because a vortex-free edge layer about one lattice spacing wide is comparable with the cloud radius here (R ≈ 3 lattice spacings).",
-  "Vortex entry is a dynamical instability driven by the seed noise, so exact vortex positions and entry times are not reproducible across Δt or grids (chaotic dynamics); the converged quantities are the number (±3) and the lattice density."
+  "Benchmarks: exact harmonic-trap motion (linear limit), exact conservation laws without friction, μ = ħω at g = 0, Thomas–Fermi μ at g = 400, ⟨L_z⟩ = ħ for one vortex, Feynman’s rule n_v = mΩ/πħ for the whirlpool density.",
+  "Nucleation is chaotic: the moment and place of entry change with Δt and the noise seed; the settled count, spacing and spin do not (checked).",
+  "Spacing is measured as the mean nearest-neighbour distance of whirlpools in the inner 65 % of the cloud radius √(3⟨r²⟩).",
+  "Friction γ is phenomenological; the model is 2D. Times in ms and lengths in µm use the example trap ω⊥ = 2π × 100 Hz with ⁸⁷Rb."
  ],
- "scan": [
-  {
-   "omega": 0.5,
-   "nv": 2,
-   "nvMean": 2,
-   "feynman": 13.653332064893178,
-   "bulk": null,
-   "lz": 1.9396590934882114,
-   "firstEntry": 104.25000000001643
+ "runs": {
+  "0.600|5.00|0.0300|1": {
+   "tEnter": 162.33804195373324,
+   "tSettle": 308.76058959827697,
+   "nv": 6,
+   "a": 2.209729744469429,
+   "lz": 3.938589767921888,
+   "rigid": 5.564579434362125,
+   "trace": [
+    [
+     3.183,
+     0,
+     0.0254,
+     4.6558
+    ],
+    [
+     6.366,
+     0,
+     0.0924,
+     4.6383
+    ],
+    [
+     9.549,
+     0,
+     0.1848,
+     4.6239
+    ],
+    [
+     12.732,
+     0,
+     0.2769,
+     4.7647
+    ],
+    [
+     15.915,
+     0,
+     0.3469,
+     4.7424
+    ],
+    [
+     19.099,
+     0,
+     0.3747,
+     4.7635
+    ],
+    [
+     22.282,
+     0,
+     0.3571,
+     4.782
+    ],
+    [
+     25.465,
+     0,
+     0.3003,
+     4.7203
+    ],
+    [
+     28.648,
+     0,
+     0.2195,
+     4.6956
+    ],
+    [
+     31.831,
+     0,
+     0.1356,
+     4.6543
+    ],
+    [
+     35.014,
+     0,
+     0.0661,
+     4.6081
+    ],
+    [
+     38.197,
+     0,
+     0.0243,
+     4.5981
+    ],
+    [
+     41.38,
+     0,
+     0.0165,
+     4.5905
+    ],
+    [
+     44.563,
+     0,
+     0.0414,
+     4.6016
+    ],
+    [
+     47.746,
+     0,
+     0.0914,
+     4.6319
+    ],
+    [
+     50.93,
+     0,
+     0.1535,
+     4.6604
+    ],
+    [
+     54.113,
+     0,
+     0.2126,
+     4.6917
+    ],
+    [
+     57.296,
+     0,
+     0.2545,
+     4.7145
+    ],
+    [
+     60.479,
+     0,
+     0.2698,
+     4.7206
+    ],
+    [
+     63.662,
+     0,
+     0.2562,
+     4.7145
+    ],
+    [
+     66.845,
+     0,
+     0.2186,
+     4.6949
+    ],
+    [
+     70.028,
+     0,
+     0.1672,
+     4.668
+    ],
+    [
+     73.211,
+     0,
+     0.1146,
+     4.6417
+    ],
+    [
+     76.394,
+     0,
+     0.0722,
+     4.6201
+    ],
+    [
+     79.577,
+     0,
+     0.0483,
+     4.6081
+    ],
+    [
+     82.761,
+     0,
+     0.0464,
+     4.6076
+    ],
+    [
+     85.944,
+     0,
+     0.0652,
+     4.6172
+    ],
+    [
+     89.127,
+     0,
+     0.0994,
+     4.6346
+    ],
+    [
+     92.31,
+     0,
+     0.1406,
+     4.6556
+    ],
+    [
+     95.493,
+     0,
+     0.1793,
+     4.6751
+    ],
+    [
+     98.676,
+     0,
+     0.2072,
+     4.6891
+    ],
+    [
+     101.859,
+     0,
+     0.2187,
+     4.6946
+    ],
+    [
+     105.042,
+     0,
+     0.2125,
+     4.6909
+    ],
+    [
+     108.225,
+     0,
+     0.1916,
+     4.6798
+    ],
+    [
+     111.408,
+     0,
+     0.1621,
+     4.6644
+    ],
+    [
+     114.592,
+     0,
+     0.1311,
+     4.6483
+    ],
+    [
+     117.775,
+     0,
+     0.1057,
+     4.635
+    ],
+    [
+     120.958,
+     0,
+     0.0911,
+     4.6271
+    ],
+    [
+     124.141,
+     0,
+     0.0904,
+     4.6262
+    ],
+    [
+     127.324,
+     0,
+     0.1036,
+     4.6321
+    ],
+    [
+     130.507,
+     0,
+     0.1278,
+     4.6434
+    ],
+    [
+     133.69,
+     0,
+     0.1588,
+     4.6577
+    ],
+    [
+     136.873,
+     0,
+     0.1908,
+     4.6721
+    ],
+    [
+     140.056,
+     0,
+     0.219,
+     4.684
+    ],
+    [
+     143.239,
+     0,
+     0.2396,
+     4.6918
+    ],
+    [
+     146.423,
+     0,
+     0.2512,
+     4.6942
+    ],
+    [
+     149.606,
+     0,
+     0.2546,
+     4.6922
+    ],
+    [
+     152.789,
+     0,
+     0.2552,
+     4.6885
+    ],
+    [
+     155.972,
+     0,
+     0.2595,
+     4.6864
+    ],
+    [
+     159.155,
+     0,
+     0.271,
+     4.687
+    ],
+    [
+     162.338,
+     1,
+     0.2916,
+     4.6915
+    ],
+    [
+     165.521,
+     1,
+     0.3251,
+     4.7008
+    ],
+    [
+     168.704,
+     1,
+     0.3688,
+     4.7121
+    ],
+    [
+     171.887,
+     1,
+     0.4239,
+     4.7264
+    ],
+    [
+     175.07,
+     1,
+     0.4895,
+     4.7434
+    ],
+    [
+     178.254,
+     1,
+     0.5661,
+     4.7662
+    ],
+    [
+     181.437,
+     1,
+     0.6466,
+     4.7858
+    ],
+    [
+     184.62,
+     1,
+     0.7451,
+     4.8126
+    ],
+    [
+     187.803,
+     3,
+     0.8705,
+     4.8444
+    ],
+    [
+     190.986,
+     1,
+     0.9987,
+     4.8838
+    ],
+    [
+     194.169,
+     6,
+     1.1343,
+     4.9235
+    ],
+    [
+     197.352,
+     6,
+     1.2736,
+     4.9469
+    ],
+    [
+     200.535,
+     5,
+     1.4032,
+     4.9721
+    ],
+    [
+     203.718,
+     5,
+     1.5531,
+     4.9996
+    ],
+    [
+     206.901,
+     6,
+     1.7139,
+     5.0283
+    ],
+    [
+     210.085,
+     6,
+     1.883,
+     5.0666
+    ],
+    [
+     213.268,
+     6,
+     2.0627,
+     5.1046
+    ],
+    [
+     216.451,
+     5,
+     2.2342,
+     5.1381
+    ],
+    [
+     219.634,
+     5,
+     2.3846,
+     5.1605
+    ],
+    [
+     222.817,
+     7,
+     2.5474,
+     5.2045
+    ],
+    [
+     226,
+     6,
+     2.7032,
+     5.2448
+    ],
+    [
+     229.183,
+     5,
+     2.8239,
+     5.2684
+    ],
+    [
+     232.366,
+     6,
+     2.9143,
+     5.2791
+    ],
+    [
+     235.549,
+     6,
+     2.9948,
+     5.2935
+    ],
+    [
+     238.732,
+     5,
+     3.0726,
+     5.3182
+    ],
+    [
+     241.916,
+     7,
+     3.1436,
+     5.3405
+    ],
+    [
+     245.099,
+     6,
+     3.1995,
+     5.3594
+    ],
+    [
+     248.282,
+     7,
+     3.247,
+     5.3692
+    ],
+    [
+     251.465,
+     6,
+     3.3006,
+     5.3819
+    ],
+    [
+     254.648,
+     6,
+     3.3506,
+     5.3938
+    ],
+    [
+     257.831,
+     6,
+     3.4063,
+     5.4021
+    ],
+    [
+     261.014,
+     6,
+     3.472,
+     5.4204
+    ],
+    [
+     264.197,
+     6,
+     3.5408,
+     5.4447
+    ],
+    [
+     267.38,
+     6,
+     3.5981,
+     5.463
+    ],
+    [
+     270.563,
+     6,
+     3.6335,
+     5.4723
+    ],
+    [
+     273.747,
+     6,
+     3.6595,
+     5.4777
+    ],
+    [
+     276.93,
+     5,
+     3.6858,
+     5.4861
+    ],
+    [
+     280.113,
+     6,
+     3.7146,
+     5.4951
+    ],
+    [
+     283.296,
+     6,
+     3.7406,
+     5.5034
+    ],
+    [
+     286.479,
+     6,
+     3.7626,
+     5.5078
+    ],
+    [
+     289.662,
+     6,
+     3.7854,
+     5.5131
+    ],
+    [
+     292.845,
+     6,
+     3.8164,
+     5.5238
+    ],
+    [
+     296.028,
+     6,
+     3.8515,
+     5.5367
+    ],
+    [
+     299.211,
+     6,
+     3.8855,
+     5.5477
+    ],
+    [
+     302.394,
+     6,
+     3.9143,
+     5.5573
+    ],
+    [
+     305.577,
+     6,
+     3.9378,
+     5.5663
+    ],
+    [
+     308.761,
+     6,
+     3.9518,
+     5.5721
+    ],
+    [
+     311.944,
+     6,
+     3.9533,
+     5.5725
+    ],
+    [
+     315.127,
+     6,
+     3.9468,
+     5.5687
+    ],
+    [
+     318.31,
+     6,
+     3.9386,
+     5.5646
+    ]
+   ]
   },
-  {
-   "omega": 0.6,
-   "nv": 8,
-   "nvMean": 8,
-   "feynman": 19.19742856081014,
-   "bulk": 1.0771879611707398,
-   "lz": 5.152553334968809,
-   "firstEntry": 50.24999999999857
+  "0.800|5.00|0.0300|1": {
+   "tEnter": 41.38028520389278,
+   "tSettle": 232.36621691416718,
+   "nv": 17,
+   "a": 2.0750366298056675,
+   "lz": 9.304416126179405,
+   "rigid": 10.446779671979238,
+   "trace": [
+    [
+     3.183,
+     0,
+     0.0289,
+     6.2038
+    ],
+    [
+     6.366,
+     0,
+     0.1083,
+     6.1788
+    ],
+    [
+     9.549,
+     0,
+     0.2374,
+     6.1633
+    ],
+    [
+     12.732,
+     0,
+     0.407,
+     6.3744
+    ],
+    [
+     15.915,
+     0,
+     0.6065,
+     6.4075
+    ],
+    [
+     19.099,
+     0,
+     0.8248,
+     6.5283
+    ],
+    [
+     22.282,
+     0,
+     1.0577,
+     6.6978
+    ],
+    [
+     25.465,
+     0,
+     1.2976,
+     6.7906
+    ],
+    [
+     28.648,
+     0,
+     1.5446,
+     6.9472
+    ],
+    [
+     31.831,
+     0,
+     1.8047,
+     7.1033
+    ],
+    [
+     35.014,
+     0,
+     2.0854,
+     7.2432
+    ],
+    [
+     38.197,
+     0,
+     2.4089,
+     7.4296
+    ],
+    [
+     41.38,
+     1,
+     2.8102,
+     7.6428
+    ],
+    [
+     44.563,
+     3,
+     3.337,
+     7.8975
+    ],
+    [
+     47.746,
+     5,
+     4.0226,
+     8.2068
+    ],
+    [
+     50.93,
+     10,
+     4.8475,
+     8.556
+    ],
+    [
+     54.113,
+     13,
+     5.7854,
+     8.9529
+    ],
+    [
+     57.296,
+     13,
+     6.7299,
+     9.3933
+    ],
+    [
+     60.479,
+     16,
+     7.5445,
+     9.7891
+    ],
+    [
+     63.662,
+     14,
+     8.1961,
+     10.1108
+    ],
+    [
+     66.845,
+     16,
+     8.7007,
+     10.3963
+    ],
+    [
+     70.028,
+     17,
+     9.012,
+     10.5722
+    ],
+    [
+     73.211,
+     17,
+     9.1534,
+     10.6136
+    ],
+    [
+     76.394,
+     20,
+     9.2078,
+     10.5981
+    ],
+    [
+     79.577,
+     19,
+     9.223,
+     10.5757
+    ],
+    [
+     82.761,
+     19,
+     9.2432,
+     10.5369
+    ],
+    [
+     85.944,
+     19,
+     9.2889,
+     10.5317
+    ],
+    [
+     89.127,
+     20,
+     9.3362,
+     10.5583
+    ],
+    [
+     92.31,
+     21,
+     9.3686,
+     10.5769
+    ],
+    [
+     95.493,
+     21,
+     9.3904,
+     10.5896
+    ],
+    [
+     98.676,
+     19,
+     9.4045,
+     10.5895
+    ],
+    [
+     101.859,
+     19,
+     9.4134,
+     10.5866
+    ],
+    [
+     105.042,
+     20,
+     9.4094,
+     10.5774
+    ],
+    [
+     108.225,
+     19,
+     9.3853,
+     10.549
+    ],
+    [
+     111.408,
+     18,
+     9.3404,
+     10.5116
+    ],
+    [
+     114.592,
+     20,
+     9.2932,
+     10.4765
+    ],
+    [
+     117.775,
+     19,
+     9.2669,
+     10.457
+    ],
+    [
+     120.958,
+     18,
+     9.2653,
+     10.46
+    ],
+    [
+     124.141,
+     18,
+     9.2725,
+     10.4689
+    ],
+    [
+     127.324,
+     17,
+     9.2708,
+     10.467
+    ],
+    [
+     130.507,
+     17,
+     9.2555,
+     10.455
+    ],
+    [
+     133.69,
+     17,
+     9.2317,
+     10.4309
+    ],
+    [
+     136.873,
+     18,
+     9.2096,
+     10.4072
+    ],
+    [
+     140.056,
+     18,
+     9.195,
+     10.3945
+    ],
+    [
+     143.239,
+     16,
+     9.1928,
+     10.3892
+    ],
+    [
+     146.423,
+     17,
+     9.2071,
+     10.3981
+    ],
+    [
+     149.606,
+     18,
+     9.2348,
+     10.4192
+    ],
+    [
+     152.789,
+     18,
+     9.2663,
+     10.4405
+    ],
+    [
+     155.972,
+     17,
+     9.2925,
+     10.4581
+    ],
+    [
+     159.155,
+     17,
+     9.3104,
+     10.4698
+    ],
+    [
+     162.338,
+     17,
+     9.3219,
+     10.4739
+    ],
+    [
+     165.521,
+     17,
+     9.3307,
+     10.4758
+    ],
+    [
+     168.704,
+     16,
+     9.3395,
+     10.4787
+    ],
+    [
+     171.887,
+     17,
+     9.3487,
+     10.4831
+    ],
+    [
+     175.07,
+     16,
+     9.3561,
+     10.4882
+    ],
+    [
+     178.254,
+     17,
+     9.3602,
+     10.4915
+    ],
+    [
+     181.437,
+     17,
+     9.3614,
+     10.493
+    ],
+    [
+     184.62,
+     17,
+     9.3605,
+     10.4928
+    ],
+    [
+     187.803,
+     17,
+     9.3585,
+     10.4915
+    ],
+    [
+     190.986,
+     17,
+     9.3568,
+     10.49
+    ],
+    [
+     194.169,
+     17,
+     9.3561,
+     10.4885
+    ],
+    [
+     197.352,
+     17,
+     9.3564,
+     10.487
+    ],
+    [
+     200.535,
+     17,
+     9.3578,
+     10.4868
+    ],
+    [
+     203.718,
+     17,
+     9.3602,
+     10.4878
+    ],
+    [
+     206.901,
+     17,
+     9.3631,
+     10.4896
+    ],
+    [
+     210.085,
+     17,
+     9.3658,
+     10.4919
+    ],
+    [
+     213.268,
+     17,
+     9.3672,
+     10.4931
+    ],
+    [
+     216.451,
+     17,
+     9.3667,
+     10.4928
+    ],
+    [
+     219.634,
+     17,
+     9.365,
+     10.491
+    ],
+    [
+     222.817,
+     17,
+     9.3628,
+     10.4887
+    ],
+    [
+     226,
+     16,
+     9.3596,
+     10.4858
+    ],
+    [
+     229.183,
+     15,
+     9.3546,
+     10.4819
+    ],
+    [
+     232.366,
+     16,
+     9.3482,
+     10.4768
+    ],
+    [
+     235.549,
+     17,
+     9.3414,
+     10.4719
+    ],
+    [
+     238.732,
+     17,
+     9.3357,
+     10.4682
+    ],
+    [
+     241.916,
+     17,
+     9.3316,
+     10.4657
+    ],
+    [
+     245.099,
+     17,
+     9.3281,
+     10.464
+    ],
+    [
+     248.282,
+     17,
+     9.3245,
+     10.4622
+    ],
+    [
+     251.465,
+     17,
+     9.3203,
+     10.4594
+    ],
+    [
+     254.648,
+     17,
+     9.3154,
+     10.4557
+    ],
+    [
+     257.831,
+     17,
+     9.3106,
+     10.4521
+    ],
+    [
+     261.014,
+     17,
+     9.3068,
+     10.4494
+    ],
+    [
+     264.197,
+     17,
+     9.3043,
+     10.4476
+    ],
+    [
+     267.38,
+     17,
+     9.3029,
+     10.4469
+    ],
+    [
+     270.563,
+     17,
+     9.3023,
+     10.4467
+    ],
+    [
+     273.747,
+     17,
+     9.302,
+     10.4464
+    ],
+    [
+     276.93,
+     17,
+     9.3017,
+     10.4461
+    ],
+    [
+     280.113,
+     17,
+     9.3014,
+     10.4459
+    ],
+    [
+     283.296,
+     17,
+     9.3011,
+     10.4457
+    ],
+    [
+     286.479,
+     17,
+     9.3002,
+     10.445
+    ],
+    [
+     289.662,
+     17,
+     9.2989,
+     10.4439
+    ],
+    [
+     292.845,
+     17,
+     9.2975,
+     10.4429
+    ],
+    [
+     296.028,
+     17,
+     9.2966,
+     10.4422
+    ],
+    [
+     299.211,
+     17,
+     9.2966,
+     10.4421
+    ],
+    [
+     302.394,
+     17,
+     9.2975,
+     10.4427
+    ],
+    [
+     305.577,
+     17,
+     9.2992,
+     10.4437
+    ],
+    [
+     308.761,
+     17,
+     9.3009,
+     10.4449
+    ],
+    [
+     311.944,
+     17,
+     9.3022,
+     10.4456
+    ],
+    [
+     315.127,
+     17,
+     9.3032,
+     10.4462
+    ],
+    [
+     318.31,
+     17,
+     9.3044,
+     10.4468
+    ]
+   ]
   },
-  {
-   "omega": 0.65,
-   "nv": 10,
-   "nvMean": 10,
-   "feynman": 21.978408159939004,
-   "bulk": 1.0758073564783097,
-   "lz": 6.129204406463535,
-   "firstEntry": 30.25000000000193
+  "action": {
+   "t": 127.32395447351627,
+   "omega": 0.9,
+   "nvEnd": 33,
+   "plus4": 133.69015219719208
   },
-  {
-   "omega": 0.7,
-   "nv": 12,
-   "nvMean": 12,
-   "feynman": 25.147401664946983,
-   "bulk": 1.079920149646086,
-   "lz": 7.1745127355422555,
-   "firstEntry": 22.750000000000757
-  },
-  {
-   "omega": 0.75,
-   "nv": 15,
-   "nvMean": 15,
-   "feynman": 29.230728908495266,
-   "bulk": 1.0536800623163811,
-   "lz": 8.603219400768236,
-   "firstEntry": 19.750000000000288
-  },
-  {
-   "omega": 0.8,
-   "nv": 20,
-   "nvMean": 20,
-   "feynman": 34.8415043749382,
-   "bulk": 1.0563867188134233,
-   "lz": 10.605190213650676,
-   "firstEntry": 15.999999999999703
-  },
-  {
-   "omega": 0.85,
-   "nv": 26,
-   "nvMean": 26,
-   "feynman": 42.50549799374574,
-   "bulk": 1.1211936033422494,
-   "lz": 13.298910700676883,
-   "firstEntry": 13.999999999999746
+  "default": "0.800|5.00|0.0300|1",
+  "0.900|5.00|0.0300|1": {
+   "tEnter": 38.19718634205488,
+   "tSettle": 261.0141066707083,
+   "nv": 32,
+   "a": 1.9540608098790633,
+   "lz": 15.996964529003456,
+   "rigid": 17.06173466878813,
+   "trace": [
+    [
+     3.183,
+     0,
+     0.0308,
+     6.9779
+    ],
+    [
+     6.366,
+     0,
+     0.1016,
+     6.9399
+    ],
+    [
+     9.549,
+     0,
+     0.1886,
+     6.8909
+    ],
+    [
+     12.732,
+     0,
+     0.2544,
+     7.0608
+    ],
+    [
+     15.915,
+     0,
+     0.2709,
+     6.9893
+    ],
+    [
+     19.099,
+     0,
+     0.2367,
+     6.9747
+    ],
+    [
+     22.282,
+     0,
+     0.1872,
+     7.0018
+    ],
+    [
+     25.465,
+     0,
+     0.1891,
+     6.9706
+    ],
+    [
+     28.648,
+     0,
+     0.3425,
+     7.0951
+    ],
+    [
+     31.831,
+     0,
+     0.7821,
+     7.3686
+    ],
+    [
+     35.014,
+     0,
+     1.693,
+     7.878
+    ],
+    [
+     38.197,
+     2,
+     3.2719,
+     8.8955
+    ],
+    [
+     41.38,
+     9,
+     5.5245,
+     10.351
+    ],
+    [
+     44.563,
+     16,
+     8.0061,
+     11.8586
+    ],
+    [
+     47.746,
+     17,
+     10.1973,
+     13.4106
+    ],
+    [
+     50.93,
+     20,
+     11.8895,
+     14.5365
+    ],
+    [
+     54.113,
+     26,
+     13.0772,
+     15.2079
+    ],
+    [
+     57.296,
+     27,
+     13.9209,
+     15.8023
+    ],
+    [
+     60.479,
+     29,
+     14.5476,
+     16.1402
+    ],
+    [
+     63.662,
+     29,
+     15.029,
+     16.431
+    ],
+    [
+     66.845,
+     32,
+     15.3661,
+     16.7011
+    ],
+    [
+     70.028,
+     32,
+     15.5999,
+     16.8214
+    ],
+    [
+     73.211,
+     30,
+     15.7661,
+     16.9656
+    ],
+    [
+     76.394,
+     31,
+     15.9027,
+     17.0858
+    ],
+    [
+     79.577,
+     31,
+     16.006,
+     17.1294
+    ],
+    [
+     82.761,
+     32,
+     16.0849,
+     17.2236
+    ],
+    [
+     85.944,
+     33,
+     16.1772,
+     17.2951
+    ],
+    [
+     89.127,
+     33,
+     16.2459,
+     17.3434
+    ],
+    [
+     92.31,
+     35,
+     16.2818,
+     17.3801
+    ],
+    [
+     95.493,
+     36,
+     16.3055,
+     17.3764
+    ],
+    [
+     98.676,
+     35,
+     16.3261,
+     17.3918
+    ],
+    [
+     101.859,
+     36,
+     16.3407,
+     17.4211
+    ],
+    [
+     105.042,
+     35,
+     16.3349,
+     17.3984
+    ],
+    [
+     108.225,
+     32,
+     16.3073,
+     17.3659
+    ],
+    [
+     111.408,
+     34,
+     16.2789,
+     17.3329
+    ],
+    [
+     114.592,
+     31,
+     16.2537,
+     17.305
+    ],
+    [
+     117.775,
+     32,
+     16.2261,
+     17.2869
+    ],
+    [
+     120.958,
+     33,
+     16.1961,
+     17.2564
+    ],
+    [
+     124.141,
+     33,
+     16.1623,
+     17.2247
+    ],
+    [
+     127.324,
+     33,
+     16.1246,
+     17.1913
+    ],
+    [
+     130.507,
+     31,
+     16.0859,
+     17.1496
+    ],
+    [
+     133.69,
+     31,
+     16.0556,
+     17.1237
+    ],
+    [
+     136.873,
+     31,
+     16.0292,
+     17.0996
+    ],
+    [
+     140.056,
+     31,
+     16.0012,
+     17.0736
+    ],
+    [
+     143.239,
+     31,
+     15.9777,
+     17.0554
+    ],
+    [
+     146.423,
+     31,
+     15.9655,
+     17.0444
+    ],
+    [
+     149.606,
+     31,
+     15.9675,
+     17.0442
+    ],
+    [
+     152.789,
+     32,
+     15.9825,
+     17.0577
+    ],
+    [
+     155.972,
+     32,
+     15.9979,
+     17.0701
+    ],
+    [
+     159.155,
+     32,
+     16.0038,
+     17.0744
+    ],
+    [
+     162.338,
+     32,
+     15.9999,
+     17.0703
+    ],
+    [
+     165.521,
+     30,
+     15.986,
+     17.0574
+    ],
+    [
+     168.704,
+     32,
+     15.966,
+     17.0409
+    ],
+    [
+     171.887,
+     31,
+     15.9478,
+     17.0237
+    ],
+    [
+     175.07,
+     31,
+     15.9358,
+     17.0113
+    ],
+    [
+     178.254,
+     32,
+     15.9308,
+     17.0061
+    ],
+    [
+     181.437,
+     32,
+     15.9323,
+     17.0075
+    ],
+    [
+     184.62,
+     31,
+     15.9377,
+     17.014
+    ],
+    [
+     187.803,
+     32,
+     15.9447,
+     17.0207
+    ],
+    [
+     190.986,
+     33,
+     15.9518,
+     17.0259
+    ],
+    [
+     194.169,
+     33,
+     15.9578,
+     17.0302
+    ],
+    [
+     197.352,
+     32,
+     15.9636,
+     17.0331
+    ],
+    [
+     200.535,
+     33,
+     15.9701,
+     17.0355
+    ],
+    [
+     203.718,
+     34,
+     15.9765,
+     17.0399
+    ],
+    [
+     206.901,
+     33,
+     15.9817,
+     17.0444
+    ],
+    [
+     210.085,
+     32,
+     15.9843,
+     17.0456
+    ],
+    [
+     213.268,
+     33,
+     15.9849,
+     17.044
+    ],
+    [
+     216.451,
+     33,
+     15.986,
+     17.0442
+    ],
+    [
+     219.634,
+     33,
+     15.9895,
+     17.0478
+    ],
+    [
+     222.817,
+     35,
+     15.9953,
+     17.0532
+    ],
+    [
+     226,
+     35,
+     16.0018,
+     17.0568
+    ],
+    [
+     229.183,
+     35,
+     16.008,
+     17.0622
+    ],
+    [
+     232.366,
+     34,
+     16.0146,
+     17.069
+    ],
+    [
+     235.549,
+     32,
+     16.0222,
+     17.0775
+    ],
+    [
+     238.732,
+     33,
+     16.0299,
+     17.085
+    ],
+    [
+     241.916,
+     32,
+     16.0374,
+     17.0927
+    ],
+    [
+     245.099,
+     32,
+     16.0437,
+     17.0986
+    ],
+    [
+     248.282,
+     31,
+     16.0481,
+     17.1026
+    ],
+    [
+     251.465,
+     32,
+     16.0504,
+     17.1047
+    ],
+    [
+     254.648,
+     31,
+     16.0505,
+     17.1045
+    ],
+    [
+     257.831,
+     30,
+     16.0487,
+     17.1025
+    ],
+    [
+     261.014,
+     32,
+     16.0459,
+     17.1006
+    ],
+    [
+     264.197,
+     33,
+     16.0429,
+     17.099
+    ],
+    [
+     267.38,
+     33,
+     16.0397,
+     17.0967
+    ],
+    [
+     270.563,
+     33,
+     16.0362,
+     17.093
+    ],
+    [
+     273.747,
+     32,
+     16.0325,
+     17.0886
+    ],
+    [
+     276.93,
+     32,
+     16.0295,
+     17.0854
+    ],
+    [
+     280.113,
+     33,
+     16.028,
+     17.0844
+    ],
+    [
+     283.296,
+     32,
+     16.0277,
+     17.0849
+    ],
+    [
+     286.479,
+     32,
+     16.0279,
+     17.0858
+    ],
+    [
+     289.662,
+     32,
+     16.028,
+     17.0864
+    ],
+    [
+     292.845,
+     32,
+     16.0271,
+     17.0862
+    ],
+    [
+     296.028,
+     32,
+     16.0249,
+     17.0845
+    ],
+    [
+     299.211,
+     32,
+     16.0216,
+     17.0821
+    ],
+    [
+     302.394,
+     32,
+     16.0181,
+     17.0799
+    ],
+    [
+     305.577,
+     32,
+     16.0147,
+     17.0776
+    ],
+    [
+     308.761,
+     32,
+     16.0114,
+     17.0746
+    ],
+    [
+     311.944,
+     31,
+     16.0074,
+     17.0707
+    ],
+    [
+     315.127,
+     32,
+     16.0025,
+     17.0663
+    ],
+    [
+     318.31,
+     32,
+     15.997,
+     17.0617
+    ]
+   ]
   }
- ],
- "tf": [
-  {
-   "g": 250,
-   "mu": 9.003105591559803,
-   "muTF": 8.920620580763856,
-   "rel": 0.009246555219915464,
-   "extrapolation": 0.0032171597681944775,
-   "E": 6.078879894145586
-  },
-  {
-   "g": 1000,
-   "mu": 17.888645459257635,
-   "muTF": 17.841241161527712,
-   "rel": 0.0026570067239573003,
-   "extrapolation": 0.013157100792170695,
-   "E": 11.971803543583633
-  },
-  {
-   "g": 4000,
-   "mu": 35.70931561773435,
-   "muTF": 35.682482323055424,
-   "rel": 0.0007520019049118698,
-   "extrapolation": 0.05321299904983334,
-   "E": 23.833409676555036
-  }
- ],
- "generated": "2026-10-15T08:46:59.294Z",
- "runtimeMs": 1140847
+ },
+ "generated": "2026-10-16T07:11:10.933Z",
+ "runtimeMs": 268980
 }</script>
 <script type="module">
 const __psim = {};
@@ -713,6 +2570,17 @@ function cssVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
+/**
+ * A colour token as it applies INSIDE the animation view: the view is dark in both page themes
+ * (like a screen), so scene drawing (canvas labels, grids, glows) reads its tokens here, while
+ * figures and panels use cssVar and follow the page theme.
+ */
+function sceneVar(name) {
+  if (typeof name !== 'string' || !name.startsWith('--')) return name;
+  const host = typeof document !== 'undefined' ? document.querySelector('.psim-view') ?? document.documentElement : null;
+  return host ? getComputedStyle(host).getPropertyValue(name).trim() : '';
+}
+
 // ---------- layout pieces ----------
 
 function section(title, { open = true, aside } = {}) {
@@ -734,7 +2602,8 @@ function row(label, value = '—', cls = '') {
 /** Value for a numeric input: short, exact enough, scientific notation for small or huge numbers. */
 const inputValue = v => {
   const a = Math.abs(v);
-  return a !== 0 && (a < 1e-3 || a >= 1e7) ? v.toExponential(4) : String(+Number(v).toPrecision(6));
+  // large or tiny values in scientific form without padded zeros (3e+10, not 3.0000e+10)
+  return a !== 0 && (a < 1e-3 || a >= 1e7) ? v.toExponential(4).replace(/\.?0+e/, 'e') : String(+Number(v).toPrecision(6));
 };
 
 /**
@@ -822,6 +2691,13 @@ function transport({ onToggle, onStep, onRestart, onFit, onFullscreen, speed, sp
     el('button', { title: 'Fit the view', 'aria-label': 'Fit view', html: ICONS.fit, onclick: onFit }),
     onFullscreen ? el('button', { class: 'fs', title: 'Full screen (F)', 'aria-label': 'Full screen', html: ICONS.fullscreen, onclick: onFullscreen }) : null);
   bar.setPlaying = p => { play.innerHTML = p ? ICONS.pause : ICONS.play; };
+  /** Show a speed set by the shell (e.g. a timeline's play time); widens the slider range if needed. */
+  bar.setSpeed = s => {
+    const v = Math.log10(s);
+    if (v < +range.min) range.min = v - 1;
+    if (v > +range.max) range.max = v + 1;
+    range.value = v; out.textContent = speedLabel(s);
+  };
   bar.setFullscreen = on => {
     const b = bar.querySelector('button.fs');
     if (b) { b.innerHTML = on ? ICONS.exitFullscreen : ICONS.fullscreen; b.title = on ? 'Leave full screen (F or Esc)' : 'Full screen (F)'; }
@@ -957,7 +2833,7 @@ function beacon() {
   };
 }
 
-return { el, ICONS, sci, fix, grade, initTheme, cssVar, section, row, inputValue, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon };
+return { el, ICONS, sci, fix, grade, initTheme, cssVar, sceneVar, section, row, inputValue, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon };
 })();
 
 // ---- psim:ui/plot.mjs
@@ -2146,10 +4022,12 @@ const polylines = {
  * horizontal. Ticks at nice values (decades when log). Returns the bar's rectangle.
  */
 function drawColorBar(ctx, { x, y, width = 12, height = 120, colormap: map = 'viridis', range = [0, 1], log = false, label = '', ticks = 5, horizontal = false, color, format } = {}) {
-  const css = name => (typeof getComputedStyle === 'function' ? getComputedStyle(document.documentElement).getPropertyValue(name).trim() : '');
+  // tokens of the element the bar is drawn in (the view is dark in both page themes)
+  const css = name => (typeof getComputedStyle === 'function' ? getComputedStyle(ctx.canvas?.closest?.('.psim-view') ?? document.documentElement).getPropertyValue(name).trim() : '');
   const text = color ?? (css('--muted') || '#8a94a6');
   const [lo, hi] = log ? range.map(Math.log10) : range;
   const steps = Math.max(2, Math.round(horizontal ? width : height));
+  ctx.save();   // leaves the caller's fill, stroke, font and text alignment unchanged
   for (let i = 0; i < steps; i++) {
     const c = colormap(map, (i + 0.5) / steps).map(v => Math.round(255 * v));
     ctx.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`;
@@ -2172,8 +4050,10 @@ function drawColorBar(ctx, { x, y, width = 12, height = 120, colormap: map = 'vi
   }
   if (label) {
     ctx.textAlign = horizontal ? 'center' : 'left'; ctx.textBaseline = 'bottom';
-    ctx.fillText(label, horizontal ? x + width / 2 : x, y - 4);
+    // vertical: clear of the top tick's label, which is centred on the bar's top edge
+    ctx.fillText(label, horizontal ? x + width / 2 : x, y - (horizontal ? 4 : 10));
   }
+  ctx.restore();
   return { x, y, width, height };
 }
 
@@ -2518,12 +4398,12 @@ __psim["ui/instrument-app.mjs"] = (() => {
 // Simulation contract (returned by create(params)):
 //   sim.t                    physical time of the latest computed state
 //   sim.step()               advance by one integrator step (or one analytic tick)
-//   sim.sample?(t)           state at t between steps, for drawing (default: current state)
+//   sim.sample?(t)           state at t between steps: the shell passes t to draw/drawGL; call it there (not called by the shell)
 //   sim.diagnostics()        [{ key, label, value, kind: 'error'|'value', unit?, good?, warn? }]
 //   sim.state()              JSON-serialisable state (export, tests)
 //   sim.record?()            { header: [...], rows: [[...], ...] } for CSV export
 //   sim.timeDependent        false for static analytic visualisations (no transport)
-const { el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast, ICONS, transport, createClock, logPlot, download, readJsonScript, beacon, cssVar } = __psim["ui/instrument.mjs"];
+const { el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast, ICONS, transport, createClock, logPlot, download, readJsonScript, beacon, sceneVar } = __psim["ui/instrument.mjs"];
 const { createPlot } = __psim["ui/plot.mjs"];
 const { createGLLayer } = __psim["ui/gl.mjs"];
 const { createEquation, createDerivation, M } = __psim["ui/equation.mjs"];
@@ -2539,7 +4419,7 @@ function createInstrument(spec) {
   const {
     title, subtitle = '', tier, tierReason, create, draw, params = [], model = {},
     timeUnit = 'T', timeLabel = 'simulated time', speed: speed0 = 1, gl: wantGL = false, drawGL, controls, onPointer, layout = 'stage', bench,
-    presets = [], texts = {}, hudError = true, formatTime, timeDigits: digitsGiven, frameBudget = 9, speedRange, viewControls, testSteps = 300,
+    presets = [], texts = {}, hudError = false, formatTime, timeDigits: digitsGiven, frameBudget = 9, speedRange, viewControls, testSteps = 300,
     glResolution = 'auto', timeline: timelineSpec,
   } = spec;
   // counted progress (sweeps, steps, generations, events) shows whole numbers unless told otherwise
@@ -2562,10 +4442,15 @@ function createInstrument(spec) {
       <button class="psim-tier" type="button"><i></i><span></span></button>
       <button class="psim-iconbtn" type="button" aria-label="Toggle theme"></button>
     </header>
-    <main class="psim-stage"><canvas></canvas>
-      <div class="psim-hud"><span class="dim"></span><b>0</b><span class="h1"></span><span class="dim h2"></span><span class="flag"></span></div>
-      <div class="psim-timeline" hidden><div class="ticks"></div><div class="bar"><i class="fill"></i></div><div class="ends"><span></span><span></span></div></div>
-      <div class="psim-legend"></div>
+    <main class="psim-stage">
+      <section class="psim-scene">
+        <div class="psim-view"><canvas></canvas>
+          <div class="psim-endcard" hidden><span></span><button type="button" class="psim-btn">↺ Replay</button></div>
+        </div>
+        <div class="psim-clock" hidden><span class="dim"></span><b>0</b></div>
+        <div class="psim-timeline" hidden><div class="ticks"></div><div class="bar"><i class="fill"></i></div><div class="ends"><span></span><span></span></div></div>
+        <div class="psim-key"><div class="psim-legend"></div><div class="psim-hud"><span class="h1"></span><span class="h2"></span><span class="flag"></span></div></div>
+      </section>
     </main>
     <aside class="psim-side"></aside>
   </div>`;
@@ -2576,43 +4461,113 @@ function createInstrument(spec) {
   tierBtn.dataset.tier = verified ? tier : 'unverified';
   tierBtn.querySelector('span').textContent = trustLabel;
   initTheme($('.psim-iconbtn'));
-  const stage = $('.psim-stage'), side = $('.psim-side');
+  const stage = $('.psim-stage'), side = $('.psim-side'), sceneEl = $('.psim-scene'), viewEl = $('.psim-view');
+  // a plain-language introduction above the scene: what is shown and what to look for
+  const intro = typeof spec.intro === 'string' ? { text: spec.intro } : spec.intro;
+  // it goes BELOW the animation and its controls (like a video's description): after the scene card
+  // when equations follow, otherwise first in the side panel (which follows the player on phones)
+  // shown as two lines with "more", so the settings below it stay in reach
+  const introEl = intro?.text ? el('section', { class: 'psim-intro collapsed' }, el('b', {}, texts.intro ?? 'What you are seeing'), el('p', {}, intro.text),
+    (intro.watch ?? []).length ? el('ul', {}, ...intro.watch.map(w => el('li', {}, w))) : null) : null;
+  if (introEl) {
+    const more = el('button', { type: 'button', class: 'psim-more', 'aria-expanded': 'false' }, texts.more ?? 'more');
+    more.addEventListener('click', () => {
+      const open = introEl.classList.toggle('collapsed') === false;
+      more.textContent = open ? (texts.less ?? 'less') : (texts.more ?? 'more');
+      more.setAttribute('aria-expanded', String(open));
+    });
+    introEl.append(more);
+  }
   // Workbench layout: the live canvas on top, then term-split equations and figures that
   // update with the model (spec.bench builds them; see references/compose.md).
   let benchParts = null;
   if (layout === 'workbench') {
-    const wrap = el('div', { class: 'psim-canvaswrap' }, stage.querySelector('canvas'), stage.querySelector('.psim-hud'), stage.querySelector('.psim-legend'));
+    const wrap = sceneEl;
+    wrap.classList.add('psim-canvaswrap');
     const eqs = el('div', { class: 'psim-eqs' }), figs = el('div', { class: 'psim-figs' });
     stage.prepend(el('div', { class: 'psim-bench' }, wrap, eqs, figs));
     benchParts = { wrap, eqs, figs };
+  }
+  // the same place on every page: first in the side panel on wide screens; on phones (one column)
+  // right under the scene card, so it follows the player bar instead of the equations
+  if (introEl) {
+    const narrow = matchMedia('(max-width: 860px)');
+    const place = () => { if (narrow.matches && benchParts) sceneEl.after(introEl); else side.prepend(introEl); };
+    place();
+    narrow.addEventListener('change', place);
   }
   const canvas = stage.querySelector('canvas');
   const ctx = canvas.getContext('2d');
   // optional GPU layer under the 2D canvas (ui/gl.mjs): drawGL renders the scene, draw adds labels
   const glLayer = wantGL ? createGLLayer(canvas) : null;
   if (glLayer) $('.psim-app').classList.add('has-gl');      // HUD and legend get a backing over bright GPU scenes
-  $('.psim-hud .dim').textContent = timeLabel;
-  const hud = { t: $('.psim-hud b'), a: $('.psim-hud .h1'), b: $('.psim-hud .h2'), flag: $('.psim-hud .flag') };
+  $('.psim-clock .dim').textContent = timeLabel;
+  $('.psim-clock').title = timeLabel;
+  const hud = { t: $('.psim-clock b'), a: $('.psim-hud .h1'), b: $('.psim-hud .h2'), flag: $('.psim-hud .flag') };
   // the legend beside the view; view.setLegend(items) replaces it when the representation changes
   const setLegend = items => $('.psim-legend').replaceChildren(...(items ?? []).map(t => el('span', {}, t)));
   setLegend(model.legend);
 
   // ------------------------------------------------------------ state
   const values = Object.fromEntries(params.map(p => [p.key, p.value]));
-  let sim, tDisplay = 0, limited = false;
+  let sim, tDisplay = 0, limited = false, defaultSpeedNow = speed0;
+  const steadyLabels = new Map();
   const clock = createClock({ speed: speed0 });
   const view = {
-    W: 0, H: 0, dpr: 1, color: cssVar, opts: {}, pointer: null, gl: glLayer?.gl ?? null, glError: glLayer && !glLayer.ok ? glLayer.reason : '',
+    W: 0, H: 0, dpr: 1, color: sceneVar, opts: {}, pointer: null, gl: glLayer?.gl ?? null, glError: glLayer && !glLayer.ok ? glLayer.reason : '',
     /** Current playback speed (simulated time per second) and state, e.g. to disclose time compression. */
     get speed() { return clock.speed; }, get playing() { return clock.playing; },
     /** GL layer resolution as a fraction of the device pixel ratio (adaptive unless glResolution is a number). */
     get glScale() { return glLayer?.scale ?? 1; },
-    /** 'dark' or 'light': the theme now shown (e.g. additive vs alpha blending, mesh colours). */
-    get theme() { return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'; },
+    /** The scene's theme: always 'dark' (the view is a dark screen in both page themes); use it for blending and mesh colours. */
+    get theme() { return 'dark'; },
+    /** The page theme around the view ('dark' or 'light'), for anything drawn outside it. */
+    get pageTheme() { return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'; },
     setLegend,
     /** The embedded build-time report (verify()'s return value, including any extra data fields), or null. */
     report,
+    /**
+     * Shell overlays drawn over the canvas, in canvas CSS pixels: `overlays` lists each visible one
+     * ({ name: 'hud' | 'legend' | 'timeline' | 'transport', x, y, w, h }); `insets` gives how far the
+     * bottom ones (timeline, playback bar, a phone legend) reach up from the bottom edge and the top
+     * ones (HUD, legend) down from the top. Lay the scene out inside them. Cached for 200 ms.
+     */
+    get overlays() { return overlayInfo().list; },
+    /**
+     * A steady position for a label attached to something that moves or flickers (a wave's peak,
+     * a cloud's centre): returns { x, y } that follows (x, y) smoothly and ignores sub-`deadband`
+     * jitter, so the text does not jump from frame to frame. One state per id; reset on rebuild.
+     */
+    steady(id, x, y, { deadband = 6, ease = 0.15 } = {}) {
+      const p = steadyLabels.get(id);
+      if (!p || !Number.isFinite(p.x)) { const q = { x, y }; steadyLabels.set(id, q); return q; }
+      const dx = x - p.x, dy = y - p.y, d = Math.hypot(dx, dy);
+      if (d > 120) { p.x = x; p.y = y; }                       // a jump (new run, reframing): follow at once
+      else if (d > deadband) { const k = ease * (1 - deadband / d); p.x += k * dx; p.y += k * dy; }
+      return p;
+    },
+    get insets() { return overlayInfo().insets; },
   };
+  let overlayCache = null;
+  function overlayInfo() {
+    const now = performance.now();
+    if (overlayCache && now - overlayCache.at < 200) return overlayCache;
+    const c = canvas.getBoundingClientRect(), list = [];
+    const add = (name, node) => {
+      if (!node || node.hidden || !node.getClientRects().length) return;
+      const r = node.getBoundingClientRect();
+      const x = Math.max(r.left, c.left), y = Math.max(r.top, c.top), x1 = Math.min(r.right, c.right), y1 = Math.min(r.bottom, c.bottom);
+      if (x1 > x && y1 > y && (r.width > 0 && r.height > 0)) list.push({ name, x: x - c.left, y: y - c.top, w: x1 - x, h: y1 - y });
+    };
+    for (const node of viewEl.children) if (node.tagName !== 'CANVAS') add(node.className.split(' ')[0].replace('psim-', ''), node);
+    const insets = { top: 0, bottom: 0 };
+    for (const o of list) {
+      if (o.y + o.h / 2 < c.height / 2) insets.top = Math.max(insets.top, o.y + o.h);
+      else insets.bottom = Math.max(insets.bottom, c.height - o.y);
+    }
+    overlayCache = { at: now, list, insets };
+    return overlayCache;
+  }
 
   let benchApi = null;
   // ------------------------------------------------------------ timeline: the run's span and its key times
@@ -2621,7 +4576,6 @@ function createInstrument(spec) {
   // on a bar under the time readout; clicking the bar jumps to that time (recomputing if earlier).
   let tl = null;
   const tlEl = $('.psim-timeline');
-  if (benchParts) benchParts.wrap.append(tlEl);              // inside the scene card in the workbench layout
   const secTimeline = timelineSpec ? section(texts.timeline ?? 'Timeline', { aside: 'key times' }) : null;
   const shortLabel = m => m.short ?? m.label.replace(/\s*\(.*$/, '').slice(0, 28);
   function resolveTimeline() {
@@ -2633,35 +4587,71 @@ function createInstrument(spec) {
     const duration = +val(timelineSpec.duration);
     if (!(duration > start)) throw new Error(`timeline.duration (the end time) must be later than the start ${start}`);
     const span = duration - start, tol = 1e-9 * Math.max(Math.abs(duration), span);
-    const markers = (val(timelineSpec.markers) ?? []).filter(m => Number.isFinite(m.t));
-    for (const m of markers) if (m.t < start - tol || m.t > duration + tol) throw new Error(`timeline marker "${m.label}" at ${m.t} lies outside the run ${start}…${duration}`);
-    tl = { start, duration, markers, note: val(timelineSpec.note) ?? '' };
+    const all = (val(timelineSpec.markers) ?? []).filter(m => Number.isFinite(m.t));
+    // a key time outside the run (a measured event after the point where the model stops being valid,
+    // e.g. the impacts after a computed break-up) is listed in the side panel as "beyond this run",
+    // never stretched onto the bar: the run still ends where the model ends
+    const markers = all.filter(m => m.t >= start - tol && m.t <= duration + tol);
+    const beyond = all.filter(m => !markers.includes(m));
+    tl = { start, duration, markers, beyond, note: val(timelineSpec.note) ?? '' };
+    // a watchable run in every mode: `seconds` (or a function of sim and params) sets the default
+    // speed so that the whole run plays in that many seconds, whatever its length in this mode
+    const secs = +val(timelineSpec.seconds);
+    // (only when the run's length changed, so a speed the viewer chose survives a restart)
+    if (secs > 0 && (duration - start) / secs !== defaultSpeedNow) { clock.speed = (duration - start) / secs; tp?.setSpeed?.(clock.speed); defaultSpeedNow = clock.speed; }
     tlEl.hidden = false;
     const fmt = t => (formatTime ? formatTime(t) : `${+t.toPrecision(4)} ${timeUnit}`);
     // the bar: one tick per key time, short labels above (staggered when close), full text as a tooltip
     const bar = tlEl.querySelector('.bar'), ticks = tlEl.querySelector('.ticks');
     bar.querySelectorAll('.m').forEach(e => e.remove());
-    let lastX = -1, level = 0;
     ticks.replaceChildren(...markers.slice().sort((a, b) => a.t - b.t).map(m => {
       const x = 100 * (m.t - start) / span;
-      level = x - lastX < 22 ? 1 - level : 0; lastX = x;
       bar.append(el('span', { class: `m ${m.kind ?? 'computed'}`, style: `left:${x.toFixed(3)}%`, title: `${m.label}: ${fmt(m.t)}` }));
       const sl = shortLabel(m), withTime = /\d/.test(sl) ? sl : `${sl} · ${fmt(m.t)}`;   // no repeated time
       // near the ends, anchor the label at its tick instead of centring it (never clipped by the bar's edges)
       const anchor = x < 15 ? 'translateX(0)' : x > 85 ? 'translateX(-100%)' : 'translateX(-50%)';
-      return el('span', { class: `lab ${m.kind ?? 'computed'} r${level}`, style: `left:${x.toFixed(3)}%;transform:${anchor}`, title: `${m.label}: ${fmt(m.t)}` }, withTime);
+      return el('span', { class: `lab ${m.kind ?? 'computed'}`, style: `left:${x.toFixed(3)}%;transform:${anchor}`, title: `${m.label}: ${fmt(m.t)}` }, withTime);
     }));
     const [a, b] = tlEl.querySelectorAll('.ends span');
     a.textContent = fmt(start); b.textContent = `${fmt(duration)} (end)`;
+    layoutTimelineLabels();
     // the side panel lists every key time in full, with its kind, and the note
     if (secTimeline) {
       const kinds = { computed: 'computed in this model', measured: 'measured (literature)', requested: 'named in the request' };
       secTimeline.body.replaceChildren(
         row('run', `${fmt(start)} – ${fmt(duration)}`),
         ...markers.map(m => el('div', { class: 'psim-tlrow' }, el('i', { class: m.kind ?? 'computed' }), el('span', {}, m.label), el('code', {}, fmt(m.t)), el('small', {}, kinds[m.kind ?? 'computed']))),
+        ...beyond.map(m => el('div', { class: 'psim-tlrow' }, el('i', { class: m.kind ?? 'measured' }), el('span', {}, m.label), el('code', {}, fmt(m.t)), el('small', {}, `${kinds[m.kind ?? 'measured']}; ${m.t > duration ? 'after' : 'before'} this run, which ends where the model stops`))),
         tl.note ? el('p', { class: 'psim-hint' }, tl.note) : null);
     }
   }
+  // Labels are placed by their measured widths: each goes in the lowest of three rows where it does
+  // not touch another label; one that fits nowhere is hidden (its tick keeps the tooltip, and the
+  // side panel lists every key time). Rerun when the bar changes size (phone, full screen).
+  const TL_ROWS = 3, TL_ROW_H = 13, TL_GAP = 6;
+  function layoutTimelineLabels() {
+    if (!tl || tlEl.hidden) return;
+    const labs = [...tlEl.querySelectorAll('.ticks .lab')];
+    labs.forEach(l => { l.style.bottom = '2px'; l.style.visibility = ''; l.classList.remove('hid'); });
+    const box = tlEl.querySelector('.ticks').getBoundingClientRect();
+    if (!(box.width > 0)) return;
+    const rows = Array.from({ length: TL_ROWS }, () => []);
+    let used = labs.length ? 1 : 0;
+    for (const l of labs) {
+      const r = l.getBoundingClientRect(), lo = Math.max(r.left, box.left), hi = Math.min(r.right, box.right);
+      const k = rows.findIndex(slots => slots.every(([a, b]) => hi + TL_GAP <= a || lo >= b + TL_GAP));
+      if (k < 0) { l.style.visibility = 'hidden'; l.classList.add('hid'); continue; }
+      rows[k].push([lo, hi]); used = Math.max(used, k + 1);
+      l.style.bottom = `${2 + k * TL_ROW_H}px`;
+    }
+    tlEl.querySelector('.ticks').style.height = `${4 + used * TL_ROW_H}px`;
+    // the two end labels: drop the start when they would touch
+    const [a, b] = tlEl.querySelectorAll('.ends span');
+    a.style.visibility = '';
+    if (a.getBoundingClientRect().right + TL_GAP > b.getBoundingClientRect().left) a.style.visibility = 'hidden';
+  }
+  new ResizeObserver(() => layoutTimelineLabels()).observe(tlEl);
+
   tlEl.querySelector('.bar').addEventListener('click', e => {
     if (!tl) return;
     const r = e.currentTarget.getBoundingClientRect(), T = tl.start + Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * (tl.duration - tl.start);
@@ -2670,6 +4660,7 @@ function createInstrument(spec) {
   });
 
   function rebuild() {
+    steadyLabels.clear();
     sim = create({ ...values });
     tDisplay = sim.t ?? 0;
     resolveTimeline();
@@ -2682,14 +4673,14 @@ function createInstrument(spec) {
   // ------------------------------------------------------------ full screen
   // The scene (canvas, HUD, legend) and the playback bar fill the screen. Falls back to filling the
   // window with CSS where the Fullscreen API is missing or refused (iPhone Safari, sandboxed frames).
-  const scene = benchParts?.wrap ?? stage;
+  const scene = sceneEl;
   let pseudoFs = false, fsBtn = null;
   const fsElement = () => document.fullscreenElement ?? document.webkitFullscreenElement ?? null;
   const isFullscreen = () => pseudoFs || fsElement() === scene;
   function afterFullscreen() {
     const on = isFullscreen();
     scene.classList.toggle('psim-fs', on);
-    if (tp) { if (on && tp.parentNode !== scene) scene.append(tp); else if (!on && tp.parentNode !== stage) stage.append(tp); tp.setFullscreen(on); }
+    tp?.setFullscreen(on);
     if (fsBtn) fsBtn.innerHTML = on ? ICONS.exitFullscreen : ICONS.fullscreen;
     requestAnimationFrame(() => spec.onFit?.(view));
   }
@@ -2720,13 +4711,41 @@ function createInstrument(spec) {
       onFullscreen: () => toggleFullscreen(),
       onSpeed: s => { clock.speed = s; },
     });
-    stage.append(tp);
+    // the player bar sits directly under the view, like a video player: buttons, the clock and
+    // the timeline with its key moments, speed, full screen
+    const firstSep = tp.querySelector('.sep');
+    const clockEl = $('.psim-clock');
+    clockEl.hidden = false;
+    tp.insertBefore(clockEl, firstSep);
+    tp.insertBefore(tlEl, firstSep);
+    viewEl.after(tp);
   } else {
     fsBtn = el('button', { class: 'psim-fsbtn', title: 'Full screen (F)', 'aria-label': 'Full screen', html: ICONS.fullscreen, onclick: () => toggleFullscreen() });
-    scene.append(fsBtn);
-    stage.querySelector('.psim-hud').querySelector('.dim').textContent = '';
+    viewEl.append(fsBtn);
   }
-  function setPlaying(p) { clock.playing = p; tp?.setPlaying(p); }
+  // the page's main actions ("Heat it up", "Fire one electron"): large buttons directly under the
+  // view, where the eye already is; settings stay in the side panel
+  if ((spec.actions ?? []).length) {
+    const api = () => ({ setParams, setParam, getSim: () => sim, values, play: () => setPlaying(true), pause: () => setPlaying(false), restart: () => rebuild(),
+      // jump to time t of the run (from the start: restart first to go back), e.g. to just before the moment the action is about
+      seek: t => window.psim.advanceTo(t) });
+    const bar = el('div', { class: 'psim-actions' }, ...spec.actions.map(a => {
+      const b = el('button', { type: 'button', class: 'psim-action', title: a.hint ?? '' }, a.label);
+      b.addEventListener('click', () => a.onClick?.(api()));
+      return b;
+    }));
+    viewEl.after(bar);
+  }
+  // at the end of a run: the final state stays on screen with a replay button over it
+  const endcard = $('.psim-endcard');
+  endcard.querySelector('button').addEventListener('click', () => { rebuild(); setPlaying(true); });
+  function showEndcard() {
+    const on = timeDependent && !clock.playing && isDone();
+    if (endcard.hidden === !on) return;
+    endcard.hidden = !on;
+    if (on) endcard.querySelector('span').textContent = texts.finishedCard ?? `Finished at ${formatTime ? formatTime(endTime()) : `${fix(endTime(), timeDigits)} ${timeUnit}`}`;
+  }
+  function setPlaying(p) { clock.playing = p; tp?.setPlaying(p); showEndcard(); }
   // A model that ends (a merger, everything decayed, the last particle left) sets sim.done (or
   // sim.ended): the clock stops there instead of counting time in which nothing is computed,
   // and play starts the run again from the beginning.
@@ -2795,7 +4814,7 @@ function createInstrument(spec) {
       nextPlot = 0;
       const firstErr = d.find(x => x.kind === 'error');
       diagPlot.el.style.display = firstErr ? '' : 'none';
-      diagPlot.el.querySelector('.cap').textContent = firstErr ? `${firstErr.label}   vs   t` : '';
+      diagPlot.el.querySelector('.cap').textContent = firstErr ? `${firstErr.label}   vs   ${timeLabel}` : '';   // the real progress axis (time, temperature, sweeps)
       if (spec.duration) diagPlot.setXMax(spec.duration);
     }
     for (const x of d) {
@@ -2822,7 +4841,7 @@ function createInstrument(spec) {
         el('i', { class: c.pass !== true ? 'bad' : c.state === 'warn' ? 'warn' : '' }),
         el('span', {}, c.label), el('code', {}, c.value)));
     }
-    if (report.notes) for (const n of report.notes) secVerify.body.append(el('p', { class: 'psim-hint' }, n));
+    if (report.notes) for (const n of [].concat(report.notes)) secVerify.body.append(el('p', { class: 'psim-hint' }, n));
   } else {
     secVerify.body.append(el('p', { class: 'psim-hint' }, 'No build-time verification report is embedded in this page.'));
   }
@@ -2922,7 +4941,7 @@ function createInstrument(spec) {
     if (glLayer?.ok) { glLayer.sync(view.dpr); drawGL?.(glLayer.gl, sim, view, tDisplay); }
     ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
     ctx.clearRect(0, 0, view.W, view.H);
-    if (glLayer && !glLayer.ok) { ctx.fillStyle = cssVar('--muted'); ctx.font = '13px system-ui, sans-serif'; ctx.fillText(`${glLayer.reason}: the 3D view cannot be shown.`, 16, view.H - 20); }
+    if (glLayer && !glLayer.ok) { ctx.fillStyle = sceneVar('--muted'); ctx.font = '13px system-ui, sans-serif'; ctx.fillText(`${glLayer.reason}: the 3D view cannot be shown.`, 16, view.H - 20); }
     draw(ctx, sim, view, tDisplay);
     if (now - lastUi > 100) {
       lastUi = now;
@@ -2931,8 +4950,9 @@ function createInstrument(spec) {
       if (tl) tlEl.querySelector('.fill').style.width = `${(100 * Math.max(0, Math.min(1, (tDisplay - tl.start) / (tl.duration - tl.start)))).toFixed(2)}%`;
       const firstErr = d.find(x => x.kind === 'error' && !x.pending);
       hud.a.textContent = firstErr && hudError ? `${firstErr.label} ${sci(firstErr.value)}` : '';
-      hud.b.textContent = spec.hudLine?.(sim) ?? '';
-      hud.flag.textContent = isDone() ? (texts.finished ?? 'finished · play restarts')
+      hud.b.textContent = spec.hudLine?.(sim, tDisplay) ?? '';   // same moment as draw()
+      showEndcard();
+      hud.flag.textContent = isDone() ? (texts.finished ?? 'finished')
         : limited ? 'compute-limited: playback slowed to keep the calculation exact' : '';
       benchApi?.update?.(sim, tDisplay, { rebuilt: false });
       status.set('t', timeDependent ? tDisplay : 1);
@@ -2956,8 +4976,13 @@ function createInstrument(spec) {
       return window.psim.state();
     },
     /** The run's declared span and key times ({ duration, markers, note }), or null. */
-    get timeline() { return tl ? { start: tl.start, duration: tl.duration, markers: tl.markers.map(m => ({ ...m })), note: tl.note } : null; },
+    get timeline() { return tl ? { start: tl.start, duration: tl.duration, markers: tl.markers.map(m => ({ ...m })), beyond: tl.beyond.map(m => ({ ...m })), note: tl.note } : null; },
     get done() { return isDone(); },
+    /** The main actions, for checks: label and the seconds of playback until the result shows. */
+    actions: (spec.actions ?? []).map(a => ({ label: a.label, reveal: a.reveal ?? 8 })),
+    /** The default playback speed (simulated time per second) and the plain-language intro, for checks. */
+    get defaultSpeed() { return defaultSpeedNow; },
+    get intro() { return intro?.text ? { text: intro.text, watch: [...(intro.watch ?? [])] } : null; },
     restart: () => rebuild(),
     setParams: (next, opts) => setParams(next, opts),
     setParam: (k, v) => setParam(k, v),
@@ -2972,14 +4997,15 @@ function createInstrument(spec) {
     steps: n => { if (typeof sim.step === "function") for (let i = 0; i < n; i++) sim.step(); tDisplay = sim.t ?? 0; return window.psim.state(); },
   };
 
+  rebuild();   // the first sim exists before bench() runs, so bench may call getSim() at once
   if (bench && benchParts) {
     benchApi = bench({
       ...benchParts, createPlot, createEquation, createDerivation, M, values, report,
       setParam, setParams, play: () => setPlaying(true), pause: () => setPlaying(false),
       getSim: () => sim,
     }) ?? null;
+    benchApi?.update?.(sim, tDisplay, { rebuilt: true });
   }
-  rebuild();
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   setPlaying(timeDependent && (query.get('autoplay') ? query.get('autoplay') !== '0' : !reduced));
   addEventListener('keydown', e => {
@@ -2998,6 +5024,123 @@ function createInstrument(spec) {
 }
 
 return { createInstrument };
+})();
+
+// ---- psim:core/constants.mjs
+__psim["core/constants.mjs"] = (() => {
+// Physical constants, SI units. CODATA 2018 recommended values
+// (Tiesinga et al., Rev. Mod. Phys. 93, 025010, 2021). "exact" = defined by the 2019 SI.
+// Import from here instead of typing constants by hand; cite the source in the page.
+// PDG (end of file): particle-physics inputs as { value, error, unit, source }, from the PDG 2024
+// Review of Particle Physics or CODATA 2022 as each entry's source says.
+
+const CODATA = 'CODATA 2018';
+
+const c = 299792458;                 // m s^-1, exact
+const h = 6.62607015e-34;            // J s, exact
+const hbar = 6.62607015e-34 / (2 * Math.PI);  // J s, exact (h/2π)
+const e = 1.602176634e-19;           // C, exact
+const kB = 1.380649e-23;             // J K^-1, exact
+const NA = 6.02214076e23;            // mol^-1, exact
+const eps0 = 8.8541878128e-12;       // F m^-1
+const mu0 = 1.25663706212e-6;        // N A^-2
+const G = 6.67430e-11;               // m^3 kg^-1 s^-2 (relative uncertainty 2.2e-5)
+const me = 9.1093837015e-31;         // kg
+const mp = 1.67262192369e-27;        // kg
+const mn = 1.67492749804e-27;        // kg
+const u = 1.66053906660e-27;         // kg (atomic mass constant)
+const a0 = 5.29177210903e-11;        // m (Bohr radius)
+const alpha = 7.2973525693e-3;       // fine-structure constant
+const Eh = 4.3597447222071e-18;      // J (Hartree energy)
+const Ry = 13.605693122994;          // eV (Rydberg energy)
+const eV = 1.602176634e-19;          // J, exact
+const MeV = 1.602176634e-13;         // J, exact
+const mpc2MeV = 938.27208816;        // MeV (proton rest energy)
+const mec2MeV = 0.51099895000;       // MeV (electron rest energy)
+const hbarcMeVfm = 197.3269804;      // MeV fm
+const mAlphaMeV = 3727.3794066;      // MeV (alpha-particle rest energy)
+const muB = 1.602176634e-19 * (6.62607015e-34 / (2 * Math.PI)) / (2 * 9.1093837015e-31); // J T^-1, Bohr magneton eħ/2mₑ (CODATA 9.2740100783e-24)
+const ge = 2.00231930436256;         // |g| of the free electron (g_e = −2.00231930436256)
+
+// Astronomy (IAU 2012/2015 nominal values)
+const AU = 1.495978707e11;           // m, exact (IAU 2012)
+const GMsun = 1.3271244e20;          // m^3 s^-2 (IAU 2015 nominal)
+const Msun = 1.3271244e20 / 6.67430e-11;     // kg, GM☉/G (G-limited, ±2.2e-5)
+const yearJulian = 365.25 * 86400;   // s
+/**
+ * G in AU³ M☉⁻¹ yr⁻² with the Julian year and IAU GM☉: 39.47693 (≈ 4π², which is exact only
+ * for the Gaussian year 2π/k). Using this value keeps AU–yr runs consistent with SI ones.
+ */
+const G_AU_MSUN_YR = 1.3271244e20 * (365.25 * 86400) ** 2 / 1.495978707e11 ** 3;
+
+// Everyday mechanics and the Earth–Moon system
+const gn = 9.80665;                  // m s^-2, standard gravity (exact by definition, 3rd CGPM 1901)
+const GMearth = 3.986004e14;         // m^3 s^-2 (IAU 2015 nominal terrestrial mass parameter)
+const Rearth = 6.3781e6;             // m, equatorial (IAU 2015 nominal); mean radius 6.3710e6 m
+const RearthMean = 6.3710e6;         // m (IUGG mean radius)
+const GMmoon = 4.9028e12;            // m^3 s^-2 (JPL DE430: 4902.800066 km^3 s^-2)
+const Rmoon = 1.7374e6;              // m, mean radius (NASA lunar fact sheet)
+const earthMoonDistance = 3.844e8;   // m, mean (NASA lunar fact sheet)
+
+// Gases and the atmosphere
+const R = 8.314462618;               // J mol^-1 K^-1, molar gas constant = kB·NA (exact)
+const Mair = 28.9644e-3;             // kg mol^-1, dry air (U.S. Standard Atmosphere 1976 / ISA)
+const gammaAir = 1.4;                // cp/cv of dry air near room temperature (measured 1.401 at 20 °C)
+const p0 = 101325;                   // Pa, standard atmosphere (exact)
+const T0isa = 288.15;                // K, ISA sea-level temperature
+const rho0isa = 1.2250;              // kg m^-3, ISA sea-level density (= p0·Mair/(R·T0isa))
+
+// Particle-physics inputs: { value, error, unit, source }. PDG 2024 = Review of Particle Physics,
+// Navas et al., Phys. Rev. D 110, 030001 (2024); CODATA 2022 where it is the primary source.
+// Quark masses are MS-bar running masses except the top (direct-measurement mass).
+const pdg = (value, error, unit, source, note) => Object.freeze(note ? { value, error, unit, source, note } : { value, error, unit, source });
+const RPP = 'PDG 2024 (RPP)';
+const PDG = Object.freeze({
+  me: pdg(0.51099895069, 0.00000000016, 'MeV', 'CODATA 2022'),
+  mmu: pdg(105.6583755, 0.0000023, 'MeV', 'CODATA 2022'),
+  tauMu: pdg(2.1969811e-6, 0.0000022e-6, 's', RPP),
+  amu: pdg(116592059e-11, 22e-11, '', RPP, 'experimental world average (BNL + FNAL 2023), a_μ = (g−2)/2'),
+  mp: pdg(938.27208943, 0.00000029, 'MeV', 'CODATA 2022'),
+  mpiCharged: pdg(139.57039, 0.00018, 'MeV', RPP),
+  mpi0: pdg(134.9768, 0.0005, 'MeV', RPP),
+  tauPiCharged: pdg(2.6033e-8, 0.0005e-8, 's', RPP, 'π± mean life (cτ = 7.80 m)'),
+  tauPi0: pdg(8.43e-17, 0.13e-17, 's', RPP, 'π⁰ mean life'),
+  mKCharged: pdg(493.677, 0.015, 'MeV', RPP),
+  tauKCharged: pdg(1.2380e-8, 0.0020e-8, 's', RPP, 'K± mean life'),
+  GF: pdg(1.1663788e-5, 0.0000006e-5, 'GeV^-2', RPP, 'G_F/(ħc)³ from the muon lifetime'),
+  mW: pdg(80.3692, 0.0133, 'GeV', RPP),
+  mZ: pdg(91.1876, 0.0021, 'GeV', RPP),
+  mH: pdg(125.20, 0.11, 'GeV', RPP),
+  sin2thetaW: pdg(0.23129, 0.00004, '', RPP, 'MS-bar, at μ = M_Z'),
+  alphaS_MZ: pdg(0.1180, 0.0009, '', RPP, 'MS-bar, nf = 5, world average'),
+  alphaInv0: pdg(137.035999177, 0.000000021, '', 'CODATA 2022', 'α(0)⁻¹, Thomson limit'),
+  hbarc: pdg(197.3269804, 0, 'MeV fm', 'CODATA 2022', 'exact in the 2019 SI (shown truncated)'),
+  mc_mc: pdg(1.2730, 0.0046, 'GeV', RPP, 'MS-bar m_c(m_c)'),
+  mb_mb: pdg(4.183, 0.007, 'GeV', RPP, 'MS-bar m_b(m_b)'),
+  mt: pdg(172.57, 0.29, 'GeV', RPP, 'direct measurements (≈ pole mass)'),
+  michelRho: pdg(0.74979, 0.00026, '', RPP, 'Michel parameter ρ (SM: 3/4)'),
+  michelDelta: pdg(0.75047, 0.00034, '', RPP, 'Michel parameter δ (SM: 3/4)'),
+  michelXi: pdg(1.0009, 0.0016, '', RPP, 'Michel parameter ξ (SM: 1); asymmetric error +0.0016 −0.0007, larger side given'),
+  michelEta: pdg(0.057, 0.034, '', RPP, 'Michel parameter η (SM: 0)'),
+});
+
+// Standard atomic weights (IUPAC; abridged values where the natural variation is large), g/mol.
+// Multiply by u·1000 (or divide by NA·1000) for the mass of one atom in kg.
+const ATOMIC_WEIGHT = Object.freeze({
+  H: 1.008, He: 4.002602, C: 12.011, N: 14.007, O: 15.999, Na: 22.98976928, Al: 26.9815384, Si: 28.085,
+  Cl: 35.45, Ar: 39.95, K: 39.0983, Fe: 55.845, Cu: 63.546, Rb: 85.4678, Ag: 107.8682, Cs: 132.90545196,
+  W: 183.84, Au: 196.966570, Hg: 200.592, Pb: 207.2, U: 238.02891,
+});
+
+// Chemistry energy units (J per unit): kcal/mol, kJ/mol, wavenumber cm⁻¹ (= h c × 100 m⁻¹), all exact.
+const kcalPerMol = 4184 / 6.02214076e23;
+const kJPerMol = 1000 / 6.02214076e23;
+const invCm = 6.62607015e-34 * 299792458 * 100;
+// Nuclide masses in u (AME2020): isotope effects need these, not the standard atomic weights.
+const NUCLIDE_MASS = Object.freeze({ H1: 1.00782503207, H2: 2.01410177812, H3: 3.01604928, C12: 12, N14: 14.00307400443, O16: 15.99491461957 });
+
+
+return { CODATA, c, h, hbar, e, kB, NA, eps0, mu0, G, me, mp, mn, u, a0, alpha, Eh, Ry, eV, MeV, mpc2MeV, mec2MeV, hbarcMeVfm, mAlphaMeV, muB, ge, AU, GMsun, Msun, yearJulian, G_AU_MSUN_YR, gn, GMearth, Rearth, RearthMean, GMmoon, Rmoon, earthMoonDistance, R, Mair, gammaAir, p0, T0isa, rho0isa, PDG, ATOMIC_WEIGHT, kcalPerMol, kJPerMol, invCm, NUCLIDE_MASS };
 })();
 
 // ---- psim:core/numerics.mjs
@@ -4179,848 +6322,656 @@ function coupledSchrodinger2({ psi0, V11, V22, V12, shape, spacing = 1, dt, mass
 return { laplacianND, gradientND, divergenceND, fftND, solvePoissonPeriodic, diffusionPeriodic, schrodingerND, fftAxis, phaseWinding, probabilityCurrent, contourLines, densityLevel, coupledSchrodinger2 };
 })();
 
-// ---- local:gpe.mjs
-__psim["local:gpe.mjs"] = (() => {
-// 2D Gross–Pitaevskii equation in a harmonic trap, in the frame rotating at Ω.
+// ---- local:physics.mjs
+__psim["local:physics.mjs"] = (() => {
+// Bose–Einstein condensate stirred until quantum vortices enter and form a lattice.
 //
-// Units: ħ = m = ω⊥ = 1. Length a_ho = √(ħ/mω⊥), time 1/ω⊥, energy ħω⊥. ψ is normalised to 1
-// (∫|ψ|² dx dy = 1), so g = g₂D·N·m/ħ² is the dimensionless 2D interaction constant (reduced 2D
-// coupling times the atom number).
+// ONE IDEA (SKILL.md step 5)
+//   Learn:   a superfluid cannot swirl like water: stirred fast enough, it takes up the spin only as
+//            identical tiny whirlpools, which settle into a regular triangular grid; stir faster and more crowd in.
+//   Picture: the cloud of atoms seen from above, turned by a slightly squeezed trap (the stirrer); dark holes
+//            (the whirlpools) come in from the edge and lock into a grid that turns with the stirrer.
+//   Action:  "Stir faster": the stirrer speeds up (0.8 → 0.9 of the trap frequency); more whirlpools come in
+//            and the grid tightens.
 //
-//   i ∂ψ/∂t = H ψ,   H = −½∇² + V(x, y) + g|ψ|² − Ω L_z,   L_z = −i (x ∂_y − y ∂_x)
-//   V = ½[(1 + ε) x² + (1 − ε) y²]       (ε: the stirring anisotropy, static in the rotating frame)
-//
-// Optional phenomenological damping γ (Tsubota, Kasamatsu & Ueda, PRA 65, 023603 (2002)):
-//   (i − γ) ∂ψ/∂t = (H − μ) ψ, implemented as the complex time step ∂ψ/∂t = −i z H ψ with
-//   z = (1 − iγ)/(1 + γ²), followed by renormalisation to ∫|ψ|² = 1 (which plays the role of μ).
-// Imaginary time (ground states) is the same propagator with z = −i.
-//
-// Method: Strang split-step Fourier with the alternating-direction treatment of the rotation term
-// (Bao, Wang & Markowich, J. Comput. Phys. 187, 318 (2003); Bao & Wang, J. Comput. Phys. 217, 612 (2006)):
-//   H = N + A + B,   N = V + g|ψ|²,
-//   A = −½∂ₓ² + iΩ y ∂ₓ   → in kₓ space (y fixed) the real number ½kₓ² + Ω y kₓ   (exact)
-//   B = −½∂ᵧ² − iΩ x ∂ᵧ   → in kᵧ space (x fixed) the real number ½kᵧ² − Ω x kᵧ   (exact)
-//   ψ ← N(h/2) A(h/2) B(h) A(h/2) N(h/2) ψ, second order in h; each factor is unitary for γ = 0.
-// 1D transforms: fft from core/numerics.mjs (rows are contiguous; columns are gathered).
-// Diagnostics (energy, ⟨L_z⟩): 2D spectral derivatives with fftND from core/fields.mjs.
-const { fft, fftFreq } = __psim["core/numerics.mjs"];
-const { fftND } = __psim["core/fields.mjs"];
-function createGPE({ n, L, g, omega = 0, eps = 0, gamma = 0, dt, imaginary = false, re0, im0 }) {
-  if (!(Number.isInteger(Math.log2(n)) && n >= 8)) throw new Error('gpe: n must be a power of two ≥ 8');
-  const N2 = n * n, dx = L / n, dA = dx * dx;
-  const xs = Float64Array.from({ length: n }, (_, i) => -L / 2 + i * dx);
+// MODEL (2D Gross–Pitaevskii equation with phenomenological damping, frame turning with the stirrer)
+//   (i − γ) ∂ψ/∂t = [−½∇² + V + g|ψ|² − μ − Ω L_z] ψ,  V = ½[(1+ε)x² + (1−ε)y²],  ∫|ψ|² = 1
+//   Units ħ = m = ω⊥ = 1: lengths in a_ho = √(ħ/mω⊥), times in 1/ω⊥. γ stands for the friction with the
+//   thermal cloud (Choi, Morgan & Bigelow, PRA 57, 4057 (1998); Tsubota, Kasamatsu & Ueda, PRA 65, 023603 (2002),
+//   who used γ = 0.03). μ is fixed by renormalising to ∫|ψ|² = 1 after each step.
+//   State: ψ on a 128 × 128 periodic grid, box 18 a_ho (the cloud stays well inside it for Ω ≤ 0.9).
+//   Start: ground state of the round, still trap (imaginary time) plus seeded 1 % random ripples standing in for
+//   thermal/quantum noise (without them, only round-off breaks the symmetry). At t = 0 the squeeze ε is switched on
+//   and turns at Ω.
+//   Method: alternating-direction Strang split-step (Bao, Wang & Markowich, J. Comput. Phys. 2005-type ADI):
+//   the x-part −½∂x² + Ω y p_x is exact in x-Fourier space at fixed y; the y-part −½∂y² − Ω x p_y in y-Fourier
+//   space at fixed x; potential + g|ψ|² at the half steps. Δt = 0.01/ω⊥. Found by halving: without
+//   friction Δt = 0.01 is unstable (split-step resonance: the energy jumps ~30×), Δt = 0.005 is not; with γ ≥ 0.025
+//   (the page's lower limit) Δt = 0.01 matches Δt = 0.005 (verify). Δt = 0.02 changes the entry transient.
+//   Example scale (only for the readouts in ms and µm): ω⊥ = 2π × 100 Hz, ⁸⁷Rb: a_ho = 1.08 µm, one 1/ω⊥ = 1.59 ms.
+//   g = 400 corresponds to g = √(8π) N a_s / a_z, e.g. ≈ 5 000 ⁸⁷Rb atoms (a_s ≈ 100 a₀) in a pancake with
+//   ω_z = 2π × 1 kHz (computed below as EXAMPLE.atoms).
+// OBSERVABLES
+//   whirlpools: phase windings (core/fields phaseWinding) where the locally averaged density is ≥ 15 % of the
+//   central one (the cloud, not its empty surroundings); ⟨L_z⟩ per atom (spectral derivatives); the rigid-body value
+//   Ω⟨x² + y²⟩ a normal liquid turning with the stirrer would have; nearest-neighbour spacing of the inner whirlpools
+//   against Feynman's rule (whirlpool density mΩ/πħ ⇒ triangular spacing √(2πħ/(√3 mΩ))).
+// REPRESENTATION
+//   view: column density |ψ|² as seen from above, colour map inferno (black = no atoms, so the whirlpool cores are
+//   black holes); by default in the lab frame (the computed frame rotated by the stirrer's angle ∫Ω dt), the stirrer
+//   drawn as the trap's long axis; View option: turn with the stirrer.
+// LIMITS
+//   2D (a pancake, or straight vortex lines in a long cloud: no bending or 3D tangles); γ is phenomenological (no
+//   temperature); the noise seed changes when and where the first whirlpools enter, not the final count or spacing.
+const { hbar, u, a0 } = __psim["core/constants.mjs"];
+const { fft, fftFreq, rng } = __psim["core/numerics.mjs"];
+const { phaseWinding } = __psim["core/fields.mjs"];
+/**
+ * Split-step solver for the 2D Gross–Pitaevskii equation in the frame turning with the stirrer,
+ * with phenomenological damping γ (Choi, Morgan & Bigelow 1998; Tsubota, Kasamatsu & Ueda 2002):
+ *   (i − γ) ∂ψ/∂t = [−½∇² + V(x, y) + g|ψ|² − μ − Ω L_z] ψ,  V = ½[(1+ε)x² + (1−ε)y²],
+ * units: ħ = m = ω⊥ = 1 (lengths in a_ho = √(ħ/mω⊥), times in 1/ω⊥). ∫|ψ|² = 1 (μ fixed by renormalising).
+ * Alternating-direction split (Bao, Wang & Markowich 2005): the x-part −½∂x² + Ω y p_x is exact in
+ * x-Fourier space for fixed y, the y-part −½∂y² − Ω x p_y in y-Fourier space for fixed x.
+ * Strang order: P(½) X(½) Y(1) X(½) P(½).
+ */
+function createSolver({ n = 128, L = 18, g, omega, eps, gamma, dt, imaginary = false }) {
+  const N = n * n, dx = L / n, xs = Float64Array.from({ length: n }, (_, i) => -L / 2 + i * dx);
   const k = fftFreq(n, dx);
-  const V = new Float64Array(N2);
-  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) V[i + n * j] = 0.5 * ((1 + eps) * xs[i] ** 2 + (1 - eps) * xs[j] ** 2);
-  // z: ψ ← exp(−i z X h) for each real operator value X
-  const zr = imaginary ? 0 : 1 / (1 + gamma * gamma), zi = imaginary ? -1 : -gamma / (1 + gamma * gamma);
-  const factor = (X, h, outRe, outIm, idx) => {
-    const a = zi * X * h, b = zr * X * h, m = Math.exp(a);
-    outRe[idx] = m * Math.cos(b); outIm[idx] = -m * Math.sin(b);
-  };
-  // A(h/2): index i + n j holds (kₓ = k[i], y = xs[j]); B(h): index j + n i holds (kᵧ = k[j], x = xs[i])
-  const aRe = new Float64Array(N2), aIm = new Float64Array(N2), bRe = new Float64Array(N2), bIm = new Float64Array(N2);
-  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
-    factor(0.5 * k[i] * k[i] + omega * xs[j] * k[i], dt / 2, aRe, aIm, i + n * j);
-    factor(0.5 * k[j] * k[j] - omega * xs[i] * k[j], dt, bRe, bIm, j + n * i);
+  const re = new Float64Array(N), im = new Float64Array(N);
+  const rowRe = new Float64Array(n), rowIm = new Float64Array(n);
+  const V = new Float64Array(N);
+  // ψ_t = −c H ψ with c = (γ + i)/(1 + γ²); imaginary time: c = 1
+  const cr = imaginary ? 1 : gamma / (1 + gamma * gamma), ci = imaginary ? 0 : 1 / (1 + gamma * gamma);
+  let Om, mxRe, mxIm, myRe, myIm;
+  const expc = (E, tau, outRe, outIm, idx) => { const a = Math.exp(-cr * E * tau), ph = -ci * E * tau; outRe[idx] = a * Math.cos(ph); outIm[idx] = a * Math.sin(ph); };
+  function setPotential(e) { for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) V[i + n * j] = 0.5 * ((1 + e) * xs[i] ** 2 + (1 - e) * xs[j] ** 2); }
+  function setOmega(o) {
+    Om = o; mxRe = new Float64Array(N); mxIm = new Float64Array(N); myRe = new Float64Array(N); myIm = new Float64Array(N);
+    // X multiplier: row j (fixed y = xs[j]), mode m: ½k² + Ω y k ; Y multiplier: column i (fixed x), mode m: ½k² − Ω x k
+    for (let j = 0; j < n; j++) for (let m = 0; m < n; m++) expc(0.5 * k[m] ** 2 + o * xs[j] * k[m], dt / 2, mxRe, mxIm, m + n * j);
+    for (let i = 0; i < n; i++) for (let m = 0; m < n; m++) expc(0.5 * k[m] ** 2 - o * xs[i] * k[m], dt, myRe, myIm, m + n * i);
   }
-  const re = Float64Array.from(re0), im = im0 ? Float64Array.from(im0) : new Float64Array(N2);
-  const cRe = new Float64Array(n), cIm = new Float64Array(n);
-
-  function nonlinearHalf() {
-    const h = dt / 2;
-    for (let p = 0; p < N2; p++) {
-      const X = V[p] + g * (re[p] * re[p] + im[p] * im[p]);
-      const a = zi * X * h, b = zr * X * h, m = imaginary || gamma ? Math.exp(a) : 1, c = m * Math.cos(b), s = -m * Math.sin(b);
-      const r = re[p], q = im[p];
+  setPotential(eps); setOmega(omega);
+  function potentialStep(tau) {
+    for (let p = 0; p < N; p++) {
+      const r = re[p], q = im[p], E = V[p] + g * (r * r + q * q);
+      const a = Math.exp(-cr * E * tau), ph = -ci * E * tau, c = a * Math.cos(ph), s = a * Math.sin(ph);
       re[p] = r * c - q * s; im[p] = r * s + q * c;
     }
   }
-  function rows() {
+  function xStep() {
     for (let j = 0; j < n; j++) {
-      const o = n * j, R = re.subarray(o, o + n), I = im.subarray(o, o + n);
-      fft(R, I, false);
-      for (let i = 0; i < n; i++) {
-        const c = aRe[o + i], s = aIm[o + i], r = R[i], q = I[i];
-        R[i] = r * c - q * s; I[i] = r * s + q * c;
-      }
+      const b = n * j, R = re.subarray(b, b + n), I = im.subarray(b, b + n);
+      fft(R, I);
+      for (let m = 0; m < n; m++) { const c = mxRe[b + m], s = mxIm[b + m], r = R[m], q = I[m]; R[m] = r * c - q * s; I[m] = r * s + q * c; }
       fft(R, I, true);
     }
   }
-  function cols() {
+  function yStep() {
     for (let i = 0; i < n; i++) {
-      for (let j = 0; j < n; j++) { cRe[j] = re[i + n * j]; cIm[j] = im[i + n * j]; }
-      fft(cRe, cIm, false);
-      const o = n * i;
-      for (let j = 0; j < n; j++) {
-        const c = bRe[o + j], s = bIm[o + j], r = cRe[j], q = cIm[j];
-        cRe[j] = r * c - q * s; cIm[j] = r * s + q * c;
-      }
-      fft(cRe, cIm, true);
-      for (let j = 0; j < n; j++) { re[i + n * j] = cRe[j]; im[i + n * j] = cIm[j]; }
+      for (let j = 0; j < n; j++) { rowRe[j] = re[i + n * j]; rowIm[j] = im[i + n * j]; }
+      fft(rowRe, rowIm);
+      const b = n * i;
+      for (let m = 0; m < n; m++) { const c = myRe[b + m], s = myIm[b + m], r = rowRe[m], q = rowIm[m]; rowRe[m] = r * c - q * s; rowIm[m] = r * s + q * c; }
+      fft(rowRe, rowIm, true);
+      for (let j = 0; j < n; j++) { re[i + n * j] = rowRe[j]; im[i + n * j] = rowIm[j]; }
     }
   }
-  function norm() { let s = 0; for (let p = 0; p < N2; p++) s += re[p] * re[p] + im[p] * im[p]; return s * dA; }
-  function renormalise() { const f = 1 / Math.sqrt(norm()); for (let p = 0; p < N2; p++) { re[p] *= f; im[p] *= f; } }
+  const norm = () => { let s = 0; for (let p = 0; p < N; p++) s += re[p] * re[p] + im[p] * im[p]; return s * dx * dx; };
+  function normalise() { const f = 1 / Math.sqrt(norm()); for (let p = 0; p < N; p++) { re[p] *= f; im[p] *= f; } }
+  const renorm = imaginary || gamma > 0;
+  function step() {
+    potentialStep(dt / 2); xStep(); yStep(); xStep(); potentialStep(dt / 2);
+    if (renorm) normalise();
+  }
+  /** Spectral derivatives ∂xψ, ∂yψ (complex), for L_z and the kinetic energy. */
+  function gradients() {
+    const dxRe = Float64Array.from(re), dxIm = Float64Array.from(im), dyRe = Float64Array.from(re), dyIm = Float64Array.from(im);
+    for (let j = 0; j < n; j++) {
+      const b = n * j, R = dxRe.subarray(b, b + n), I = dxIm.subarray(b, b + n);
+      fft(R, I); for (let m = 0; m < n; m++) { const r = R[m]; R[m] = -k[m] * I[m]; I[m] = k[m] * r; } fft(R, I, true);
+    }
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) { rowRe[j] = dyRe[i + n * j]; rowIm[j] = dyIm[i + n * j]; }
+      fft(rowRe, rowIm); for (let m = 0; m < n; m++) { const r = rowRe[m]; rowRe[m] = -k[m] * rowIm[m]; rowIm[m] = k[m] * r; } fft(rowRe, rowIm, true);
+      for (let j = 0; j < n; j++) { dyRe[i + n * j] = rowRe[j]; dyIm[i + n * j] = rowIm[j]; }
+    }
+    return { dxRe, dxIm, dyRe, dyIm };
+  }
+  /** ⟨L_z⟩ per atom, energy per atom in the turning frame E − ΩL_z (and parts), μ. */
+  function observables() {
+    const { dxRe, dxIm, dyRe, dyIm } = gradients();
+    let lz = 0, kin = 0, pot = 0, int = 0, nrm = 0;
+    for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+      const p = i + n * j, r = re[p], q = im[p], rho = r * r + q * q;
+      // Im(ψ* ∂ψ) = r ∂q − q ∂r
+      const jx = r * dxIm[p] - q * dxRe[p], jy = r * dyIm[p] - q * dyRe[p];
+      lz += xs[i] * jy - xs[j] * jx;
+      kin += 0.5 * (dxRe[p] ** 2 + dxIm[p] ** 2 + dyRe[p] ** 2 + dyIm[p] ** 2);
+      pot += V[p] * rho; int += 0.5 * g * rho * rho; nrm += rho;
+    }
+    const a = dx * dx;
+    lz *= a; kin *= a; pot *= a; int *= a; nrm *= a;
+    return { lz: lz / nrm, kin: kin / nrm, pot: pot / nrm, int: int / nrm, E: (kin + pot + int) / nrm, Erot: (kin + pot + int - Om * lz) / nrm, mu: (kin + pot + 2 * int) / nrm, norm: nrm };
+  }
+  function moments() {
+    let sx = 0, sy = 0, s = 0;
+    for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) { const p = i + n * j, rho = re[p] ** 2 + im[p] ** 2; sx += xs[i] * rho; sy += xs[j] * rho; s += rho; }
+    return { x: sx / s, y: sy / s };
+  }
+  return { n, L, dx, xs, re, im, V, step, norm, normalise, observables, moments, setOmega, setPotential, get omega() { return Om; } };
+}
 
-  const s = {
-    n, L, dx, g, omega, eps, gamma, dt, imaginary, xs, V, re, im, t: 0, steps: 0,
-    step() {
-      nonlinearHalf(); rows(); cols(); rows(); nonlinearHalf();
-      if (imaginary || gamma > 0) renormalise();
-      s.t += dt; s.steps++;
-    },
-    norm,
-    density() { const d = new Float64Array(N2); for (let p = 0; p < N2; p++) d[p] = re[p] * re[p] + im[p] * im[p]; return d; },
-    /** Energy terms per particle in the rotating frame (spectral derivatives). */
-    energy(opts) { return energyTerms(s, opts); },
-  };
+/** Thomas–Fermi start, then imaginary time in the round, still trap (ground state of the condensate at rest). */
+function groundState({ n = 128, L = 18, g, steps = 600, dt = 0.01 }) {
+  const s = createSolver({ n, L, g, omega: 0, eps: 0, gamma: 0, dt, imaginary: true });
+  const mu = Math.sqrt(g / Math.PI);
+  // Thomas–Fermi profile as the start (a Gaussian when g = 0)
+  for (let p = 0; p < n * n; p++) { s.re[p] = g > 0 ? Math.sqrt(Math.max(mu - s.V[p], 0) / g) + 1e-6 : Math.exp(-s.V[p]); s.im[p] = 0; }
+  s.normalise();
+  for (let i = 0; i < steps; i++) s.step();
   return s;
 }
 
-/** Kinetic, trap, interaction energy, ⟨L_z⟩, rotating-frame energy E, chemical potential μ, ⟨x²⟩, ⟨y²⟩. */
-function energyTerms({ n, L, g, omega, xs, V, re, im }, { residual = false } = {}) {
-  const N2 = n * n, dx = L / n, dA = dx * dx;
-  const k = fftFreq(n, dx);
-  const hr = Float64Array.from(re), hi = Float64Array.from(im);
-  fftND(hr, hi, [n, n]);
-  let kin = 0;
-  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) { const p = i + n * j; kin += 0.5 * (k[i] * k[i] + k[j] * k[j]) * (hr[p] * hr[p] + hi[p] * hi[p]); }
-  kin *= dA / N2;                                           // Parseval: Σ|ψ|² = Σ|ψ̂|²/N²
-  // ∂ₓψ and ∂ᵧψ: multiply by i k and transform back
-  const xr = new Float64Array(N2), xi = new Float64Array(N2), yr = new Float64Array(N2), yi = new Float64Array(N2);
-  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
-    const p = i + n * j;
-    xr[p] = -k[i] * hi[p]; xi[p] = k[i] * hr[p];
-    yr[p] = -k[j] * hi[p]; yi[p] = k[j] * hr[p];
-  }
-  fftND(xr, xi, [n, n], true); fftND(yr, yi, [n, n], true);
-  let pot = 0, int = 0, lz = 0, nrm = 0, x2 = 0, y2 = 0;
-  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
-    const p = i + n * j, d = re[p] * re[p] + im[p] * im[p];
-    nrm += d; pot += V[p] * d; int += d * d;
-    x2 += xs[i] * xs[i] * d; y2 += xs[j] * xs[j] * d;
-    // L_z = −i (x ∂ᵧ − y ∂ₓ): ⟨L_z⟩ = Σ Im(ψ* D), D = x ∂ᵧψ − y ∂ₓψ
-    const Dr = xs[i] * yr[p] - xs[j] * xr[p], Di = xs[i] * yi[p] - xs[j] * xi[p];
-    lz += re[p] * Di - im[p] * Dr;
-  }
-  nrm *= dA; pot *= dA; int *= 0.5 * g * dA; lz *= dA; x2 *= dA; y2 *= dA;
-  const E = kin + pot + int - omega * lz, mu = (E + int) / nrm;
-  const out = { norm: nrm, kin, pot, int, lz, E, mu, x2: x2 / nrm, y2: y2 / nrm };
-  if (residual) {
-    // ‖(H − μ)ψ‖²: −½∇²ψ from ½k²ψ̂, then (V + g|ψ|²)ψ and −ΩL_zψ = iΩ D
-    const lr = new Float64Array(N2), li = new Float64Array(N2);
-    for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) { const p = i + n * j, f = 0.5 * (k[i] * k[i] + k[j] * k[j]); lr[p] = f * hr[p]; li[p] = f * hi[p]; }
-    fftND(lr, li, [n, n], true);
-    let r2 = 0;
-    for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
-      const p = i + n * j, d = re[p] * re[p] + im[p] * im[p], w = V[p] + g * d - mu;
-      const Dr = xs[i] * yr[p] - xs[j] * xr[p], Di = xs[i] * yi[p] - xs[j] * xi[p];
-      const hr2 = lr[p] + w * re[p] - omega * Di, hi2 = li[p] + w * im[p] + omega * Dr;
-      r2 += hr2 * hr2 + hi2 * hi2;
-    }
-    out.residual = r2 * dA;
-  }
-  return out;
+/** Vortices inside the cloud: phase windings where the blurred density is ≥ frac of its peak. */
+function findVortices(s, { frac = 0.15 } = {}) {
+  const { n, re, im, xs, dx } = s;
+  const { vortices } = phaseWinding(re, im, { shape: [n, n], threshold: 1e-4 });
+  const rho = Float64Array.from(re, (r, p) => r * r + im[p] * im[p]);
+  let peak = 0; for (const v of rho) peak = Math.max(peak, v);
+  const w = Math.max(2, Math.round(0.8 / dx));
+  const local = (x, y) => { let sum = 0, c = 0; for (let j = Math.max(0, y - w); j <= Math.min(n - 1, y + w); j++) for (let i = Math.max(0, x - w); i <= Math.min(n - 1, x + w); i++) { sum += rho[i + n * j]; c++; } return sum / c; };
+  // a blurred density needs a reference that is blurred too: the blurred peak near the centre
+  const ref = local(n / 2, n / 2) > 0 ? Math.max(local(n / 2, n / 2), peak * 0.5) : peak;
+  return vortices.filter(v => local(Math.round(v.x), Math.round(v.y)) > frac * ref).map(v => ({ x: xs[0] + v.x * dx, y: xs[0] + v.y * dx, charge: v.charge }));
 }
 
-/** Thomas–Fermi wavefunction of the isotropic trap, ∫|ψ|² = 1 on the grid (μ_TF = √(g/π)). */
-function thomasFermi(n, L, g, { omega = 0 } = {}) {
-  const dx = L / n, w2 = 1 - omega * omega, mu = Math.sqrt(g * w2 / Math.PI);
-  const re = new Float64Array(n * n);
-  let s = 0;
-  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
-    const x = -L / 2 + i * dx, y = -L / 2 + j * dx;
-    const v = Math.max(mu - 0.5 * w2 * (x * x + y * y), 0) / g + 1e-6 * Math.exp(-(x * x + y * y));
-    re[i + n * j] = Math.sqrt(v); s += v;
+/** Nearest-neighbour statistics of the vortices in the inner part of the cloud (r < inner·R). */
+function latticeStats(vs, R, inner = 0.65) {
+  const nn = [];
+  for (const v of vs) {
+    if (Math.hypot(v.x, v.y) > inner * R) continue;
+    let d = Infinity;
+    for (const w of vs) if (w !== v) d = Math.min(d, Math.hypot(v.x - w.x, v.y - w.y));
+    if (Number.isFinite(d)) nn.push(d);
   }
-  const f = 1 / Math.sqrt(s * dx * dx);
-  for (let p = 0; p < re.length; p++) re[p] *= f;
-  return re;
+  if (nn.length < 2) return { count: nn.length, a: NaN, cv: NaN };
+  const a = nn.reduce((s, x) => s + x, 0) / nn.length;
+  const sd = Math.sqrt(nn.reduce((s, x) => s + (x - a) ** 2, 0) / nn.length);
+  return { count: nn.length, a, cv: sd / a };
 }
 
-/** Imaginary-time ground state: iterate until μ changes by < tol per unit τ (or maxSteps). */
-function groundState({ n, L, g, omega = 0, eps = 0, dt = 0.01, tol = 1e-9, maxSteps = 4000, re0, im0, check = 50 }) {
-  const sim = createGPE({ n, L, g, omega, eps, dt, imaginary: true, re0: re0 ?? thomasFermi(n, L, g), im0 });
-  let mu = Infinity, rate = Infinity;
-  while (sim.steps < maxSteps) {
-    for (let s = 0; s < check; s++) sim.step();
-    const m = sim.energy().mu;
-    rate = Math.abs(m - mu) / (check * dt); mu = m;
-    if (rate < tol) break;
-  }
-  return { re: sim.re, im: sim.im, mu, rate, steps: sim.steps, energy: sim.energy() };
-}
+// ------------------------------------------------------------------ the page's model
 
-/**
- * Vortex cores as phase windings: for every grid plaquette, w = (1/2π) Σ wrap(Δφ) around its four
- * corners is exactly an integer. Only plaquettes inside the condensate count: the density smoothed
- * over a box of half-width `blur` (cells) must exceed `threshold` × its maximum, which excludes the
- * phase defects of the dilute outer halo ("ghost vortices"). Returns [{ x, y, w }] with w = ±1 (or ±2…).
- */
-function findVortices({ n, L, re, im }, { threshold = 0.15, blurLength = 0.6 } = {}) {
-  const N2 = n * n, dx = L / n, phase = new Float64Array(N2), dens = new Float64Array(N2);
-  for (let p = 0; p < N2; p++) { phase[p] = Math.atan2(im[p], re[p]); dens[p] = re[p] * re[p] + im[p] * im[p]; }
-  const smooth = boxBlur(dens, n, Math.max(1, Math.round(blurLength / dx)));
-  let max = 0; for (const v of smooth) max = Math.max(max, v);
-  const wrap = a => a - 2 * Math.PI * Math.round(a / (2 * Math.PI));
-  const out = [];
-  for (let j = 0; j < n - 1; j++) for (let i = 0; i < n - 1; i++) {
-    const p = i + n * j;
-    if (smooth[p] < threshold * max) continue;
-    const a = phase[p], b = phase[p + 1], c = phase[p + 1 + n], d = phase[p + n];
-    const w = Math.round((wrap(b - a) + wrap(c - b) + wrap(d - c) + wrap(a - d)) / (2 * Math.PI));
-    if (w !== 0) out.push({ x: -L / 2 + (i + 0.5) * dx, y: -L / 2 + (j + 0.5) * dx, w });
-  }
-  return out;
-}
+const GRID = { n: 128, L: 18, g: 400, dt: 0.01, noise: 0.01 };
+const OMEGA_TRAP = 2 * Math.PI * 100;                  // example trap ω⊥ (rad/s), for ms and µm readouts
+const RB87 = 86.909180531 * u;                               // kg (AME2020 atomic mass of ⁸⁷Rb)
+const A_HO = Math.sqrt(hbar / (RB87 * OMEGA_TRAP));          // m
+const OMEGA_Z = 2 * Math.PI * 1000, A_Z = Math.sqrt(hbar / (RB87 * OMEGA_Z));
+const EXAMPLE = {
+  aHoMicron: A_HO * 1e6,
+  msPerUnit: 1e3 / OMEGA_TRAP,                                // one 1/ω⊥ in ms
+  atoms: GRID.g * A_Z / (Math.sqrt(8 * Math.PI) * 100 * a0),  // N from g = √(8π) N a_s / a_z (lengths in a_ho)
+};
+const T_END = 200;                                    // run length in 1/ω⊥ (≈ 318 ms)
+const MAX_OMEGA = 0.9;
+const GAMMA_MIN = 0.025;                              // Δt = 0.01 is stable only with this much friction (verify)
+const feynmanSpacing = om => Math.sqrt(2 * Math.PI / (Math.sqrt(3) * om));
 
-/** Winding number of the phase along a closed circle of radius r (bilinear-free: nearest cells, fine sampling). */
-function windingOnCircle({ n, L, re, im }, r, samples = 720) {
-  const dx = L / n, at = (x, y) => {
-    const i = Math.round((x + L / 2) / dx), j = Math.round((y + L / 2) / dx), p = i + n * j;
-    return Math.atan2(im[p], re[p]);
-  };
-  let sum = 0, prev = at(r, 0);
-  for (let s = 1; s <= samples; s++) {
-    const th = 2 * Math.PI * s / samples, cur = at(r * Math.cos(th), r * Math.sin(th));
-    let d = cur - prev; d -= 2 * Math.PI * Math.round(d / (2 * Math.PI)); sum += d; prev = cur;
-  }
-  return sum / (2 * Math.PI);
-}
-
-function boxBlur(src, n, r) {
-  const tmp = new Float64Array(src.length), out = new Float64Array(src.length);
-  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
-    let s = 0, c = 0;
-    for (let d = -r; d <= r; d++) { const q = i + d; if (q >= 0 && q < n) { s += src[q + n * j]; c++; } }
-    tmp[i + n * j] = s / c;
-  }
-  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
-    let s = 0, c = 0;
-    for (let d = -r; d <= r; d++) { const q = j + d; if (q >= 0 && q < n) { s += tmp[i + n * q]; c++; } }
-    out[i + n * j] = s / c;
-  }
-  return out;
-}
-
-/** Feynman's rule: areal density n_v = 2Ω/κ = Ω/π (κ = h/m = 2π); count over the elliptical TF area π R_x R_y, R² = 6⟨x²⟩. */
-function feynmanCount(omega, x2, y2) {
-  return (omega / Math.PI) * Math.PI * 6 * Math.sqrt(x2 * y2);
-}
-
-/**
- * Bulk vortex areal density from the lattice: mean nearest-neighbour distance b of the vortices
- * within r < frac·R (R² = 6√(⟨x²⟩⟨y²⟩), elliptical TF radius), n_v = 2/(√3 b²) for a triangular
- * lattice. Returns null when fewer than 3 vortices lie in that region.
- */
-function bulkDensity(vortices, x2, y2, frac = 0.65) {
-  const R = Math.sqrt(6 * Math.sqrt(x2 * y2));
-  const inner = vortices.filter(v => Math.hypot(v.x, v.y) < frac * R);
-  if (inner.length < 3 || vortices.length < 4) return null;
-  let sum = 0;
-  for (const a of inner) {
-    let best = Infinity;
-    for (const b of vortices) if (a !== b) best = Math.min(best, Math.hypot(a.x - b.x, a.y - b.y));
-    sum += best;
-  }
-  const b = sum / inner.length;
-  return { spacing: b, density: 2 / (Math.sqrt(3) * b * b), used: inner.length };
-}
-
-return { createGPE, energyTerms, thomasFermi, groundState, findVortices, windingOnCircle, feynmanCount, bulkDensity };
-})();
-
-// ---- local:physics.mjs
-__psim["local:physics.mjs"] = (() => {
-// Stirred Bose–Einstein condensate: vortex nucleation and lattice formation in the 2D
-// Gross–Pitaevskii equation (mean-field), solved in the frame rotating with the stirrer.
-//
-// SCIENTIFIC AIM  Show how a condensate stirred by a rotating anisotropic trap (Madison et al., PRL 84,
-//   806 (2000); Abo-Shaeer et al., Science 292, 476 (2001)) takes in quantised vortices that settle
-//   into a lattice, and compare the vortex number with Feynman's rule n_v = 2Ω/κ, κ = h/m.
-// STATE  Complex order parameter ψ(x, y, t) on an n×n periodic grid (side L), ∫|ψ|² = 1.
-// LAW    i∂ψ/∂t = [−½∇² + V + g|ψ|² − Ω L_z] ψ (rotating frame), V = ½[(1+ε)x² + (1−ε)y²];
-//        optional phenomenological damping (i − γ)∂ψ/∂t = (H − μ)ψ (Tsubota et al. 2002).
-// UNITS  ħ = m = ω⊥ = 1: length a_ho = √(ħ/mω⊥), time 1/ω⊥, energy ħω⊥, L_z in ħ per particle.
-//        g = g₂D N m/ħ² (dimensionless 2D coupling times atom number). κ = h/m = 2π, so n_v = Ω/π.
-// INITIAL Ground state of the isotropic, non-rotating trap (imaginary time from Thomas–Fermi),
-//        plus seeded complex noise of relative amplitude η (disclosed) to break the residual
-//        parity symmetry of the stirring potential; at t = 0 the anisotropy ε and rotation Ω switch on.
-// OBSERVABLES  vortex cores (±2π phase windings on grid plaquettes inside the condensate), their
-//        number N_v(t); E/N in the rotating frame; ⟨L_z⟩/N; μ; Feynman count Ω·R_x R_y with the
-//        TF radii R² = 6⟨x²⟩; bulk vortex density from the lattice spacing.
-// PROGRESS AXIS  physical time since the stirrer was switched on, in units of 1/ω⊥.
-// METHOD Strang split-step Fourier with exact ADI treatment of the rotation term (gpe.mjs).
-// VALIDITY  Mean-field (T = 0, no quantum depletion, no thermal cloud except through γ); 2D
-//        (strong axial confinement; no vortex bending); periodic box much larger than the cloud.
-const { rng, fftFreq } = __psim["core/numerics.mjs"];
-const { fftND } = __psim["core/fields.mjs"];
-const { createGPE, groundState, energyTerms, findVortices, feynmanCount, bulkDensity, windingOnCircle, thomasFermi } = __psim["local:gpe.mjs"];
 const PARAMS = [
-  { key: 'omega', label: 'Stirring (frame) rotation rate Ω', min: 0, max: 0.9, value: 0.75, unit: 'ω⊥', digits: 3,
-    hint: 'Many vortices enter only for Ω ≳ 0.6 ω⊥ (the stirred surface modes go unstable); at Ω = 0.5 only 2 entered by t = 150. Ω → 1: the trap no longer confines.' },
-  { key: 'eps', label: 'Trap anisotropy ε (the stirrer)', min: 0, max: 0.15, value: 0.05, digits: 3,
-    hint: 'V = ½[(1+ε)x² + (1−ε)y²], rotating at Ω. ε = 0: an axisymmetric trap that cannot stir.' },
-  { key: 'gamma', label: 'Phenomenological damping γ', min: 0, max: 0.2, value: 0.05, digits: 3,
-    hint: '(i − γ)∂ψ/∂t = (H − μ)ψ: energy loss to an implicit thermal cloud co-rotating at Ω. γ = 0: pure GPE.' },
-  { key: 'g', label: 'Interaction g (2D coupling × atom number)', min: 100, max: 1500, value: 500, log: true, digits: 3,
-    hint: 'Larger g: bigger cloud, thinner cores (healing length ξ ∝ g^-1/4), more vortices.' },
-  { key: 'noise', label: 'Seed noise η (relative amplitude)', min: 0, max: 0.05, value: 0.01, digits: 3,
-    hint: 'Small random perturbation of the initial state that breaks the (x, y) → (−x, −y) symmetry (seeded).' },
-  { key: 'seed', label: 'Noise seed', min: 1, max: 999, value: 7, integer: true },
-  { key: 'dt', label: 'Time step Δt', min: 0.0025, max: 0.02, value: 0.01, log: true, unit: 'ω⊥⁻¹', digits: 3 },
-  { key: 'n', label: 'Grid', value: 128, options: [{ value: 64, label: '64 × 64 (coarse)' }, { value: 128, label: '128 × 128' }, { value: 256, label: '256 × 256 (slow)' }] },
+  { key: 'omega', label: 'Stirring speed Ω (fraction of the trap frequency)', min: 0.3, max: MAX_OMEGA, value: 0.8, unit: '× ω⊥', hint: 'How fast the squeezed trap turns. 0.8 × ω⊥ is 80 turns per second in the example 100 Hz trap.' },
+  { key: 'squeeze', label: 'Squeeze of the stirring trap ε', min: 1, max: 12, value: 5, unit: '%', hint: 'How much the trap is stretched out of round: the stirrer’s grip on the cloud.' },
+  { key: 'gamma', label: 'Friction with the thermal cloud γ', min: GAMMA_MIN, max: 0.1, value: 0.03, log: true, hint: 'Phenomenological damping (Tsubota et al. 2002 used 0.03). It lets the whirlpools settle into a grid. Below 0.025 the page\u2019s time step would be unstable (see Verification).' },
+  { key: 'seed', label: 'Seed of the initial ripples', min: 1, max: 99, value: 1, integer: true, hint: 'The 1 % random ripples that break the symmetry; it changes when and where whirlpools enter.' },
 ];
 
-/** Thomas–Fermi radius in the rotating frame (isotropic, ε = 0): μ = √(g(1−Ω²)/π), R² = 2μ/(1−Ω²). */
-function tfRadius(g, omega) {
-  const w2 = 1 - omega * omega;
-  return Math.sqrt(2 * Math.sqrt(g * w2 / Math.PI) / w2);
-}
-/** Box side: the cloud plus a margin of ≈ 1.3 R on each side, rounded up to a multiple of 2 a_ho. */
-function boxSize(g, omega) {
-  return Math.max(12, 2 * Math.ceil(1.28 * tfRadius(g, Math.min(omega, 0.9)) ));
-}
-
 const groundCache = new Map();
-function cachedGround(n, L, g) {
-  const key = `${n}|${L}|${g}`;
-  if (!groundCache.has(key)) {
-    if (groundCache.size > 6) groundCache.delete(groundCache.keys().next().value);
-    groundCache.set(key, groundState({ n, L, g, dt: 0.01, tol: 1e-7, maxSteps: 3000 }));
-  }
+function cachedGround() {
+  const key = `${GRID.n}|${GRID.L}|${GRID.g}`;
+  if (!groundCache.has(key)) { const s = groundState({ n: GRID.n, L: GRID.L, g: GRID.g }); groundCache.set(key, { re: Float64Array.from(s.re), im: Float64Array.from(s.im) }); }
   return groundCache.get(key);
 }
 
-/**
- * Initial state: the ground state plus a seeded, smooth complex perturbation (white noise low-pass
- * filtered to k < k_c = 3/a_ho, i.e. wavelengths ≳ 2 a_ho, unit RMS), weighted by η·√(|ψ|·|ψ|_max)
- * so it lives inside the cloud; renormalised to ∫|ψ|² = 1.
- */
-function initialState({ n, L, g, noise, seed }) {
-  const gs = cachedGround(n, L, g);
-  const re = Float64Array.from(gs.re), im = Float64Array.from(gs.im);
-  if (noise > 0) {
-    const rand = rng(seed), N2 = n * n, dx = L / n, k = fftFreq(n, dx), kc = 3;
-    const nr = Float64Array.from({ length: N2 }, () => rand.normal()), ni = Float64Array.from({ length: N2 }, () => rand.normal());
-    fftND(nr, ni, [n, n]);
-    for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) { const f = Math.exp(-(k[i] ** 2 + k[j] ** 2) / (2 * kc * kc)); nr[i + n * j] *= f; ni[i + n * j] *= f; }
-    fftND(nr, ni, [n, n], true);
-    let rms = 0; for (let p = 0; p < N2; p++) rms += nr[p] * nr[p] + ni[p] * ni[p];
-    rms = Math.sqrt(rms / N2 / 2);
-    let peak = 0; for (let p = 0; p < N2; p++) peak = Math.max(peak, Math.hypot(re[p], im[p]));
-    let s = 0;
-    for (let p = 0; p < N2; p++) {
-      const w = noise * Math.sqrt(Math.hypot(re[p], im[p]) * peak) / rms;
-      re[p] += w * nr[p]; im[p] += w * ni[p];
-      s += re[p] * re[p] + im[p] * im[p];
-    }
-    const f = 1 / Math.sqrt(s * dx * dx);
-    for (let p = 0; p < N2; p++) { re[p] *= f; im[p] *= f; }
-  }
-  return { re, im, mu0: gs.mu };
+/** Second moment ⟨x² + y²⟩ of the density. */
+function r2mean(s) {
+  const { n, re, im, xs } = s; let a = 0, b = 0;
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) { const p = i + n * j, rho = re[p] * re[p] + im[p] * im[p]; a += rho * (xs[i] * xs[i] + xs[j] * xs[j]); b += rho; }
+  return a / b;
 }
 
-/** Split-step stability bound for γ ≈ 0 (measured: unstable above X_max·Δt ≈ 2): Δt ≤ 1.6 / max|½k² + Ω (L/2) k|. */
-function stableStep(n, L, omega) {
-  const kmax = Math.PI * n / L;
-  return 1.6 / (0.5 * kmax * kmax + Math.abs(omega) * (L / 2) * kmax);
+/** Everything measured from one state: whirlpools, spin, rigid-body spin, lattice spacing. */
+function measure(s) {
+  const o = s.observables(), vort = findVortices(s), r2 = r2mean(s), R = Math.sqrt(3 * r2);
+  const lat = latticeStats(vort, R);
+  return { vort, nv: vort.length, lz: o.lz, rigid: s.omega * r2, R, a: lat.a, cv: lat.cv, inner: lat.count, Erot: o.Erot, mu: o.mu, wrong: vort.filter(v => v.charge !== 1).length };
+}
+
+/** Solver started from the still ground state plus seeded ripples, with the stirrer switched on. */
+function startRun({ omega, squeeze, gamma, seed, dt = GRID.dt }) {
+  const { n, L, g, noise } = GRID, gs = cachedGround();
+  const s = createSolver({ n, L, g, omega, eps: squeeze / 100, gamma, dt });
+  const r = rng(seed >>> 0 || 1); let pk = 0;
+  for (let p = 0; p < n * n; p++) pk = Math.max(pk, Math.abs(gs.re[p]));
+  for (let p = 0; p < n * n; p++) { s.re[p] = gs.re[p] + noise * pk * r.normal(); s.im[p] = gs.im[p] + noise * pk * r.normal(); }
+  s.normalise();
+  return s;
 }
 
 function createSim(params) {
-  const { omega, eps, gamma, g, noise, seed } = params;
-  const n = +params.n, L = boxSize(g, omega);
-  // Without damping the split-step scheme has a resonance instability (Weideman & Herbst, SIAM J.
-  // Numer. Anal. 23, 485 (1986)); γ ≥ 0.02 damps it. Below that, Δt is capped at the measured bound.
-  const dtStable = stableStep(n, L, omega), capped = gamma < 0.02 && params.dt > dtStable, dt = capped ? dtStable : params.dt;
-  const init = initialState({ n, L, g, noise, seed });
-  const gpe = createGPE({ n, L, g, omega, eps, gamma, dt, re0: init.re, im0: init.im });
-  const sampleEvery = Math.max(1, Math.round(0.1 / dt));        // energy/dissipation sampling: every 0.1 ω⁻¹
-  const vortexEvery = Math.max(1, Math.round(0.25 / dt));       // vortex census: every 0.25 ω⁻¹
-  const rate = e => 2 * gamma / (1 + gamma * gamma) * e.residual;   // −dE/dt from the damping
-  let e = gpe.energy({ residual: true });
-  const E0 = e.E;
-  let dissipated = 0, lastRate = rate(e), lastE = e, vortices = findVortices(gpe), peakNorm = 0;
-  const census = () => {
-    const b = bulkDensity(vortices, lastE.x2, lastE.y2);
-    return { t: gpe.t, nv: vortices.length, anti: vortices.filter(v => v.w < 0).length,
-      feynman: feynmanCount(omega, lastE.x2, lastE.y2), bulk: b ? b.density / (omega / Math.PI) : null };
-  };
-  const history = [{ ...census(), E: e.E, lz: e.lz, mu: e.mu, rigid: omega * (e.x2 + e.y2), balance: 0 }];
-  let lastCensus = history[0];
-
+  const omega0 = Math.min(MAX_OMEGA, Math.max(0.3, +params.omega || 0.8));
+  const p = { omega: omega0, squeeze: Math.min(12, Math.max(1, +params.squeeze || 5)), gamma: Math.min(0.1, Math.max(GAMMA_MIN, +params.gamma || 0.03)), seed: Math.round(+params.seed || 1) };
+  const s = startRun(p), dt = GRID.dt, ms = EXAMPLE.msPerUnit;
+  const gs = cachedGround(); let rhoPeak = 0; for (let q = 0; q < gs.re.length; q++) rhoPeak = Math.max(rhoPeak, gs.re[q] ** 2 + gs.im[q] ** 2);
+  let tau = 0, angle = 0, k = 0, last = measure(s), firstEntry = null;
+  const trace = [[0, last.nv, last.lz, last.rigid]];
+  const schedule = [];                       // experimenter actions: [{ tau, omega }]
   const sim = {
-    params: { ...params, n, L }, gpe, n, L, dx: L / n, E0, dt, capped,
-    get t() { return gpe.t; },
-    get vortices() { return vortices; },
-    get energy() { return lastE; },
-    get census() { return lastCensus; },
-    history,
-    rTF: tfRadius(g, omega),
-    xi: 1 / Math.sqrt(2 * Math.sqrt(g / Math.PI)),            // healing length at the centre of the t = 0 cloud
+    params: p, solver: s, schedule, rhoPeak,
+    get t() { return tau * ms; },            // ms, example trap ω⊥ = 2π × 100 Hz
+    get tau() { return tau; },
+    get angle() { return angle; },           // the stirrer's angle ∫Ω dt (rad)
+    get omega() { return s.omega; },
+    get last() { return last; },
+    get firstEntry() { return firstEntry; },
+    trace,
     step() {
-      gpe.step();
-      if (gpe.steps % sampleEvery === 0) {
-        e = gpe.energy({ residual: true });
-        const r = rate(e);
-        dissipated += 0.5 * (r + lastRate) * sampleEvery * dt;  // trapezoid ∫ (2γ/(1+γ²))‖(H−μ)ψ‖² dt
-        lastRate = r; lastE = e;
-        peakNorm = Math.max(peakNorm, Math.abs(e.norm - 1));
-      }
-      if (gpe.steps % vortexEvery === 0) {
-        vortices = findVortices(gpe);
-        lastCensus = census();
-        history.push({ ...lastCensus, E: lastE.E, lz: lastE.lz, mu: lastE.mu, rigid: omega * (lastE.x2 + lastE.y2), balance: sim.balanceError() });
+      s.step(); tau += dt; angle += s.omega * dt; k++;
+      if (k % 25 === 0) {
+        last = measure(s);
+        if (firstEntry == null && last.nv > 0) firstEntry = tau * ms;
+        trace.push([tau * ms, last.nv, last.lz, last.rigid]);
       }
     },
-    /** |E(t) − E(0) + ∫ dissipation| / |E(0)|: energy conservation (γ = 0) or the stated loss balance (γ > 0). */
-    balanceError() { return Math.abs(lastE.E - E0 + dissipated) / Math.abs(E0); },
-    dissipated: () => dissipated,
-    density() { return gpe.density(); },
-    phase() { const p = new Float64Array(n * n); for (let i = 0; i < p.length; i++) p[i] = Math.atan2(gpe.im[i], gpe.re[i]); return p; },
-    diagnostics() {
-      const c = lastCensus;
+    /** The main action: turn the stirrer faster from now on (recorded with its time). */
+    stirFaster() {
+      const o = Math.min(MAX_OMEGA, +(s.omega + 0.1).toFixed(3));
+      if (o === s.omega) return false;
+      s.setOmega(o); schedule.push({ t: tau * ms, omega: o }); return true;
+    },
+    diagnostics: () => {
+      const aF = feynmanSpacing(s.omega), ok = last.inner >= 3 && Number.isFinite(last.a);
       return [
-        { key: 'balance', label: gamma > 0 ? 'Energy balance |E−E₀+∫loss|/|E₀|' : 'Rotating-frame energy drift |ΔE/E₀|', kind: 'error', value: sim.balanceError(), good: 1e-4, warn: 1e-2 },
-        gamma > 0 ? { key: 'norm', label: 'Norm ∫|ψ|²', kind: 'value', value: 1, text: '1 (renormalised: γ > 0 plays the role of μ)' }
-          : { key: 'norm', label: 'Norm drift |∫|ψ|² − 1|', kind: 'error', value: Math.max(peakNorm, 1e-17), good: 1e-10, warn: 1e-6 },
-        { key: 'nv', label: 'Vortices inside the cloud', kind: 'value', value: c.nv, text: `${c.nv}${c.anti ? ` (${c.anti} anti)` : ''}` },
-        { key: 'feynman', label: 'Feynman count Ω·R_x·R_y (TF area)', kind: 'value', value: c.feynman, text: c.feynman.toFixed(1) },
-        { key: 'bulk', label: 'Bulk vortex density ÷ (Ω/π)', kind: 'value', value: c.bulk ?? 0, pending: c.bulk == null, text: c.bulk == null ? 'needs ≥ 4 vortices' : c.bulk.toFixed(2) },
-        { key: 'lz', label: '⟨L_z⟩ per particle', kind: 'value', value: lastE.lz, text: `${lastE.lz.toFixed(3)} ħ` },
-        { key: 'E', label: 'E/N (rotating frame)', kind: 'value', value: lastE.E, text: `${lastE.E.toFixed(4)} ħω⊥` },
-        { key: 'mu', label: 'Chemical potential μ', kind: 'value', value: lastE.mu, text: `${lastE.mu.toFixed(4)} ħω⊥` },
+        { key: 'nv', label: 'Whirlpools in the cloud', value: last.nv, kind: 'value', text: `${last.nv}` },
+        { key: 'lz', label: 'Spin per atom ⟨L_z⟩', value: last.lz, kind: 'value', unit: 'ħ', text: `${last.lz.toFixed(2)} ħ` },
+        { key: 'rigid', label: 'Spin a normal liquid would carry, Ω⟨r²⟩', value: last.rigid, kind: 'value', unit: 'ħ', text: `${last.rigid.toFixed(2)} ħ (superfluid has ${(100 * last.lz / last.rigid).toFixed(0)} %)` },
+        ok ? { key: 'a', label: 'Spacing of inner whirlpools vs Feynman', value: last.a, kind: 'value', text: `${(last.a * EXAMPLE.aHoMicron).toFixed(2)} µm vs ${(aF * EXAMPLE.aHoMicron).toFixed(2)} µm (${((last.a / aF - 1) * 100).toFixed(1)} %)` }
+          : { key: 'a', label: 'Spacing of inner whirlpools vs Feynman', value: 0, kind: 'value', pending: true },
+        { key: 'om', label: 'Stirring speed now', value: s.omega, kind: 'value', text: `${s.omega.toFixed(2)} ω⊥ = ${(s.omega * 100).toFixed(0)} turns/s` },
       ];
     },
-    state() {
-      return { t: gpe.t, n, L, vortices: vortices.length, Lz: lastE.lz, E: lastE.E, norm: lastE.norm, balance: sim.balanceError(), center: [gpe.re[n / 2 + n * n / 2], gpe.im[n / 2 + n * n / 2]] };
-    },
-    record() {
-      return { header: ['t [1/omega]', 'N_v', 'antivortices', 'Feynman_TF_count', 'bulk_density_over_Omega_by_pi', 'E_per_N [hbar omega]', 'Lz_per_N [hbar]', 'mu [hbar omega]', 'energy_balance_error'],
-        rows: history.map(h => [h.t.toFixed(3), h.nv, h.anti, h.feynman.toFixed(3), h.bulk == null ? '' : h.bulk.toFixed(4), h.E.toFixed(8), h.lz.toFixed(6), h.mu.toFixed(6), h.balance.toExponential(3)]) };
-    },
+    state: () => ({ t: tau * ms, omega: s.omega, nv: last.nv, lz: s.observables().lz, schedule: schedule.slice() }),
+    record: () => ({ header: ['t (ms)', 'whirlpools', 'Lz per atom (hbar)', 'rigid-body Lz (hbar)'], rows: trace.map(r => r.slice()) }),
   };
   return sim;
 }
 
-// ------------------------------------------------------------------ evidence
+// ------------------------------------------------------------------ verification
 
-/** One stirring run with the page's protocol; returns the final census (used by the Ω scan). */
-function stirRun(params, T, log) {
-  const sim = createSim(params);
-  while (sim.t < T - 1e-9) sim.step();
-  const tail = sim.history.filter(h => h.t > T - 20);
-  log?.(`Ω = ${params.omega}: N_v = ${sim.census.nv} at t = ${T}`);
-  return { omega: params.omega, nv: sim.census.nv, nvMean: tail.reduce((s, h) => s + h.nv, 0) / tail.length,
-    feynman: sim.census.feynman, bulk: sim.census.bulk, lz: sim.energy.lz, firstEntry: sim.history.find(h => h.nv > 0)?.t ?? null };
+/** One stirred run with samples every `every` (1/ω⊥); optional branch at tBranch with a new Ω. */
+function stirredRun(p, { dt = GRID.dt, tEnd = T_END, every = 2, branch } = {}) {
+  const s = startRun({ ...p, dt }), nStep = Math.round(tEnd / dt), per = Math.round(every / dt);
+  const samples = [];
+  let branched = null;
+  for (let i = 1; i <= nStep; i++) {
+    s.step();
+    if (branch && i === Math.round(branch.t / dt)) {
+      branched = createSolver({ n: GRID.n, L: GRID.L, g: GRID.g, omega: branch.omega, eps: p.squeeze / 100, gamma: p.gamma, dt });
+      branched.re.set(s.re); branched.im.set(s.im); branched.samples = [];
+    }
+    if (branched) { branched.step(); if (i % per === 0) { const m = measure(branched); branched.samples.push({ t: i * dt, nv: m.nv }); } }
+    if (i % per === 0) { const m = measure(s); samples.push({ t: i * dt, ...m, vort: undefined }); }
+  }
+  const fin = measure(s);
+  const tEnter = samples.find(x => x.nv > 0)?.t ?? NaN;
+  let tSettle = NaN;
+  for (let k = samples.length - 1; k >= 0; k--) {
+    const x = samples[k];
+    if (Math.abs(x.nv - fin.nv) <= 1 && x.inner >= 3 && x.cv <= 0.06) tSettle = x.t; else break;
+  }
+  return { fin, samples, tEnter, tSettle, branched };
 }
 
-const DEFAULTS = Object.fromEntries(PARAMS.map(p => [p.key, p.value]));
+const PRESETS = [
+  { label: 'Stir gently (0.6)', values: { omega: 0.6, squeeze: 5, gamma: 0.03, seed: 1 } },
+  { label: 'Default (0.8)', values: { omega: 0.8, squeeze: 5, gamma: 0.03, seed: 1 } },
+  { label: 'Stir hard (0.9)', values: { omega: 0.9, squeeze: 5, gamma: 0.03, seed: 1 } },
+];
+const runKey = v => `${(+v.omega).toFixed(3)}|${(+v.squeeze).toFixed(2)}|${(+v.gamma).toFixed(4)}|${Math.round(+v.seed)}`;
 
 function verify({ log } = {}) {
-  const checks = [], notes = [];
-  const add = (label, value, pass, state) => checks.push({ label, value, pass, ...(state ? { state } : {}) });
-
-  // 1. Harmonic-oscillator limit g = 0: μ = ħω⊥ exactly (2D ground state): an exact benchmark of the operators.
-  {
-    const gs = groundState({ n: 64, L: 12, g: 0, dt: 0.002, tol: 1e-12, maxSteps: 20000, re0: thomasFermi(64, 12, 1) });
-    const err = Math.abs(gs.mu - 1);
-    add('Ground state at g = 0: μ = ħω⊥ (exact)', `μ = ${gs.mu.toFixed(7)}, |μ−1| = ${err.toExponential(1)}`, err < 1e-4);
-  }
-  // 2. Thomas–Fermi μ_TF = √(g/π): 2D, ω⊥ = 1, ∫|ψ|² = 1 ⇒ ∫(μ − r²/2)/g dA = πμ²/g = 1.
-  //    The normalised split-step imaginary-time flow has an O(Δτ) fixed-point error (measured), so μ is
-  //    computed at Δτ = 0.002, 0.001, 0.0005 and extrapolated (two Richardson stages, linear + quadratic).
-  log?.('Thomas–Fermi limit');
-  const tf = [[250, 16, 128], [1000, 20, 128], [4000, 28, 256]].map(([g, L, n]) => {
-    let prev = null; const mus = [];
-    for (const dt of [0.002, 0.001, 0.0005]) { prev = groundState({ n, L, g, dt, tol: 1e-10, maxSteps: 20000, re0: prev?.re, im0: prev?.im }); mus.push(prev.mu); }
-    const R1 = 2 * mus[1] - mus[0], R2 = 2 * mus[2] - mus[1], mu = (4 * R2 - R1) / 3, muTF = Math.sqrt(g / Math.PI);
-    return { g, mu, muTF, rel: mu / muTF - 1, extrapolation: Math.abs(mu - mus[2]), E: prev.energy.E };
-  });
-  add('Imaginary-time μ (Δτ → 0) vs Thomas–Fermi √(g/π): excess must fall as g grows',
-    tf.map(r => `g=${r.g}: μ=${r.mu.toFixed(3)} vs ${r.muTF.toFixed(3)} (+${(100 * r.rel).toFixed(2)} %)`).join('; '),
-    tf.every((r, i) => r.rel > 0 && (i === 0 || r.rel < tf[i - 1].rel)) && tf.at(-1).rel < 0.005);
-  notes.push(`Imaginary-time μ converges only to first order in Δτ (normalised gradient flow with splitting); the Δτ → 0 extrapolation moved μ by at most ${(Math.max(...tf.map(r => r.extrapolation / r.muTF)) * 100).toFixed(2)} %. The page starts from a Δτ = 0.01 ground state (μ about 1 % above its Δτ → 0 value at g = 500), i.e. a very slightly excited initial cloud.`);
-  notes.push('μ exceeds μ_TF by the kinetic (surface) energy that the Thomas–Fermi approximation neglects; the excess shrinks as g grows, as it must.');
-
-  // 3. Pure GPE (γ = 0): norm and rotating-frame energy; Δt at the stability cap and half of it.
-  log?.('conservation, γ = 0');
-  const base = { ...DEFAULTS, gamma: 0, n: 128 };
-  const drift = dt => {
-    const s = createSim({ ...base, dt });
-    let maxE = 0, maxN = 0;
-    while (s.t < 20 - 1e-9) {
-      s.step();
-      if (s.gpe.steps % 50 === 0) { const e = s.gpe.energy(); maxE = Math.max(maxE, Math.abs(e.E - s.E0) / Math.abs(s.E0)); maxN = Math.max(maxN, Math.abs(e.norm - 1)); }
-    }
-    return { maxE, maxN, dt: s.dt };
+  const checks = [], { n, L } = GRID;
+  // 1. exact linear benchmark: displaced ground state of the round trap, g = γ = ε = 0, seen from a frame turning at Ω.
+  //    Lab frame ⟨x⟩ = cos t, ⟨y⟩ = 0; the turning frame sees it rotated by −Ωt. Errors at three steps → order.
+  log?.('exact harmonic-trap benchmark');
+  const linErr = dt => {
+    const s = createSolver({ n, L, g: 0, omega: 0.5, eps: 0, gamma: 0, dt });
+    for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) { s.re[i + n * j] = Math.exp(-((s.xs[i] - 1) ** 2 + s.xs[j] ** 2) / 2) / Math.sqrt(Math.PI); s.im[i + n * j] = 0; }
+    const T = 4, steps = Math.round(T / dt);
+    for (let i = 0; i < steps; i++) s.step();
+    const m = s.moments(), th = 0.5 * T, xl = Math.cos(T);
+    return Math.hypot(m.x - xl * Math.cos(th), m.y + xl * Math.sin(th));
   };
-  const d1 = drift(0.01), d2 = drift(d1.dt / 2);
-  add('Norm conserved in real time (γ = 0, Ω = 0.75, ε = 0.05, t ≤ 20, 5900 steps)', `max |∫|ψ|²−1| = ${d1.maxN.toExponential(1)} (round-off)`, d1.maxN < 1e-10);
-  add('Rotating-frame energy conserved (γ = 0, t ≤ 20)', `max |ΔE/E₀| = ${d1.maxE.toExponential(2)} (Δt=${d1.dt.toFixed(4)}), ${d2.maxE.toExponential(2)} (Δt/2)`, d1.maxE < 1e-4 && d2.maxE < d1.maxE / 2.5);
-  notes.push(`Without damping, split-step Fourier has a resonance instability for large Δt (measured here: unstable above max|½k² + Ω(L/2)k|·Δt ≈ 2); with γ < 0.02 the page caps Δt at 1.6/max|…| (${d1.dt.toFixed(4)} ω⊥⁻¹ on the default 128² grid).`);
+  const e1 = linErr(0.04), e2 = linErr(0.02), e3 = linErr(0.01), order = Math.log2(e2 / e3);
+  checks.push({ label: 'Turning-frame split-step vs exact harmonic-trap motion (t = 4/ω⊥, Δt = 0.01)', value: e3, pass: e3 < 1e-4 });
+  checks.push({ label: `Convergence order of the split-step, Δt = 0.04/0.02/0.01 (errors ${e1.toExponential(1)}, ${e2.toExponential(1)}, ${e3.toExponential(1)}; expected 2)`, value: order, pass: order > 1.7 });
 
-  log?.('time-step order');
-  const run = (dt, n, T, extra = {}) => { const s = createSim({ ...base, dt, n, noise: 0, ...extra }); while (s.t < T - 1e-9) s.step(); return s; };
-  const diff = (a, b) => { let s = 0, r = 0; for (let p = 0; p < a.gpe.re.length; p++) { s += (a.gpe.re[p] - b.gpe.re[p]) ** 2 + (a.gpe.im[p] - b.gpe.im[p]) ** 2; r += a.gpe.re[p] ** 2 + a.gpe.im[p] ** 2; } return Math.sqrt(s / r); };
-  const r1 = run(0.003, 128, 3), r2 = run(0.0015, 128, 3), r3 = run(0.00075, 128, 3);
-  const e12 = diff(r1, r2), e23 = diff(r2, r3), order = Math.log2(e12 / e23);
-  add('Time-step convergence order of ψ(t = 3), γ = 0 (Strang splitting: 2)', `p = ${order.toFixed(2)} (‖Δψ‖/‖ψ‖ ${e12.toExponential(1)} → ${e23.toExponential(1)})`, Math.abs(order - 2) < 0.3);
-
-  log?.('grid refinement');
-  // a vortex core is the finest structure (size ~ ξ): μ of the single-vortex state at Ω = 0.3 on 64², 128², 256²
-  const vortexMu = n => {
-    const L = 16, g = 500, b0 = thomasFermi(n, L, g), re = new Float64Array(n * n), im = new Float64Array(n * n);
-    for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) { const th = Math.atan2(-L / 2 + j * L / n, -L / 2 + i * L / n), p = i + n * j; re[p] = b0[p] * Math.cos(th); im[p] = b0[p] * Math.sin(th); }
-    return groundState({ n, L, g, omega: 0.3, dt: 0.002, tol: 1e-9, maxSteps: 8000, re0: re, im0: im }).energy;
+  // 2. without friction the equation conserves the atom number exactly and the turning-frame energy E − ΩL_z
+  log?.('conservation without friction');
+  const consRun = dt => {
+    const s = startRun({ omega: 0.8, squeeze: 5, gamma: 0, seed: 1, dt });
+    const n0 = s.norm(), E0 = s.observables().Erot, steps = Math.round(5 / dt);
+    for (let i = 0; i < steps; i++) s.step();
+    return { dn: Math.abs(s.norm() / n0 - 1), dE: Math.abs(s.observables().Erot / E0 - 1), steps };
   };
-  const [v64, v128, v256] = [64, 128, 256].map(vortexMu);
-  const dE1 = Math.abs(v64.E - v256.E), dE2 = Math.abs(v128.E - v256.E);
-  add('Grid refinement with a vortex core (single-vortex E/N, Ω = 0.3): 64², 128² vs 256²', `|ΔE| ${dE1.toExponential(1)} → ${dE2.toExponential(1)} (E = ${v256.E.toFixed(5)})`, dE2 < dE1 / 10 && dE2 < 1e-5 * Math.abs(v256.E));
-  notes.push(`Healing length at the cloud centre ξ = 1/√(2μ) ≈ ${(1 / Math.sqrt(2 * Math.sqrt(500 / Math.PI))).toFixed(2)} a_ho for g = 500; the 128² grid has Δx = 0.125 a_ho (≈ 2 points per ξ, spectral accuracy); 64² (Δx = 0.25) is under-resolved.`);
+  //    (without friction the page's Δt = 0.01 is unstable: the split-step resonance; measured here, so it runs at 0.005 and 0.0025)
+  const c0 = consRun(0.01), c1 = consRun(0.005), c2 = consRun(0.0025), eOrder = Math.log2(c1.dE / c2.dE);
+  const budget = Math.sqrt(c2.steps) * 1e-15 * n;
+  checks.push({ label: `Atom number conserved without friction (${c2.steps} steps; round-off budget ${budget.toExponential(1)})`, value: c2.dn, pass: c2.dn < budget });
+  checks.push({ label: `Turning-frame energy E − ΩL_z without friction, t = 5/ω⊥: drift at Δt = 0.005 (0.0025: ${c2.dE.toExponential(1)})`, value: c1.dE, pass: c1.dE < 1e-4 });
+  checks.push({ label: 'Order of that energy drift under Δt halving (expected ≈ 2)', value: eOrder, pass: eOrder > 1.5 });
+  checks.push({ label: `Known limit: without friction the page's Δt = 0.01 is unstable (energy off by this factor after 5/ω⊥); the page therefore keeps γ ≥ ${GAMMA_MIN}`, value: c0.dE, pass: true, state: 'warn' });
+  // the page's Δt with the least friction it allows and the fastest stirring: same energy as Δt/2, and the energy never rises
+  log?.('stability at the smallest friction');
+  const weak = { omega: MAX_OMEGA, squeeze: 5, gamma: GAMMA_MIN, seed: 1 };
+  const eHist = dt => { const s = startRun({ ...weak, dt }), out = [], per = Math.round(1 / dt); for (let i = 1; i <= Math.round(40 / dt); i++) { s.step(); if (i % per === 0) out.push(s.observables().Erot); } return out; };
+  const ea = eHist(0.01), eb = eHist(0.005), maxDiff = Math.max(...ea.map((e, i) => Math.abs(e / eb[i] - 1)));
+  let maxRise = 0; for (let i = 1; i < ea.length; i++) maxRise = Math.max(maxRise, (ea[i] - ea[i - 1]) / Math.abs(ea[i - 1]));
+  checks.push({ label: `γ = ${GAMMA_MIN}, Ω = ${MAX_OMEGA}: turning-frame energy at Δt = 0.01 vs 0.005 over the entry phase (0–40/ω⊥), largest relative difference`, value: maxDiff, pass: maxDiff < 1e-3 });
+  checks.push({ label: '…and it never rises (the damped equation can only lose energy): largest rise per 1/ω⊥', value: Math.max(0, maxRise), pass: maxRise < 1e-5 });
 
-  // 4. Damped run (the page default): energy lost = ∫ 2γ/(1+γ²)‖(H−μ)ψ‖² dt, refined in Δt.
-  log?.('damping energy balance');
-  const bal = [0.01, 0.005, 0.0025].map(dt => { const s = createSim({ ...DEFAULTS, dt }); let m = 0; while (s.t < 40 - 1e-9) { s.step(); if (s.gpe.steps % 100 === 0) m = Math.max(m, s.balanceError()); } return { dt, m, lost: s.E0 - s.energy.E }; });
-  add('Energy loss with γ = 0.05 equals the dissipation integral (t ≤ 40, through vortex entry)',
-    bal.map(b => `Δt=${b.dt}: ${b.m.toExponential(1)}`).join('; ') + ` of |E₀| (ΔE = −${bal[0].lost.toFixed(3)})`,
-    bal[0].m < 5e-3 && bal[1].m < bal[0].m && bal[2].m < bal[1].m);
-  notes.push('The energy-balance residual falls roughly in proportion to Δt: renormalising after each step fixes μ to first order. At the default Δt = 0.01 the dissipation formula accounts for the computed energy loss to ≈ 10⁻³ of |E₀|.');
+  // 3. ground states by imaginary time: μ = ħω exactly at g = 0; Thomas–Fermi μ = √(g/π) at large g
+  log?.('ground states');
+  const mu0 = groundState({ n, L, g: 0, steps: 1500 }).observables().mu;
+  const gs = groundState({ n, L, g: GRID.g, steps: 1500 }), muTF = Math.sqrt(GRID.g / Math.PI), muG = gs.observables().mu;
+  checks.push({ label: 'Ground state at g = 0: μ = ħω⊥ (exact)', value: Math.abs(mu0 - 1), pass: Math.abs(mu0 - 1) < 1e-3 });
+  checks.push({ label: `Ground state at g = 400: μ = ${muG.toFixed(3)} vs Thomas–Fermi ${muTF.toFixed(3)} (TF neglects the edge's kinetic energy: a small excess is expected)`, value: muG / muTF - 1, pass: muG / muTF - 1 > 0 && muG / muTF - 1 < 0.03 });
 
-  // 5. Single vortex: phase winding exactly ±1 and ⟨L_z⟩ = ±1 for a centred (anti)vortex.
+  // 4. one imprinted vortex: one +1 winding, ⟨L_z⟩ = ħ exactly, and it stays so in the round still trap
   log?.('single vortex');
-  for (const [w, omega] of [[1, 0.3], [-1, -0.3]]) {
-    const n = 128, L = 16, g = 500, base0 = thomasFermi(n, L, g);
-    const re = new Float64Array(n * n), im = new Float64Array(n * n);
-    for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
-      const x = -L / 2 + i * L / n, y = -L / 2 + j * L / n, th = w * Math.atan2(y, x), p = i + n * j;
-      re[p] = base0[p] * Math.cos(th); im[p] = base0[p] * Math.sin(th);
+  const v1 = createSolver({ n, L, g: GRID.g, omega: 0, eps: 0, gamma: 0, dt: 0.005 });
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) { const p = i + n * j, x = v1.xs[i] + 1e-9, y = v1.xs[j], r = Math.hypot(x, y), f = gs.re[p] * Math.tanh(r * Math.sqrt(muG)) / r; v1.re[p] = f * x; v1.im[p] = f * y; }
+  v1.normalise();
+  const lz0 = v1.observables().lz; for (let i = 0; i < 500; i++) v1.step();
+  // net phase winding around a square loop of side 6 a_ho (circulation in units of h/m): independent of where the core sits on the grid
+  const loopWinding = sv => {
+    const c = sv.n / 2, h = Math.round(3 / sv.dx), path = [];
+    for (let i = -h; i < h; i++) path.push([c + i, c - h]);
+    for (let j = -h; j < h; j++) path.push([c + h, c + j]);
+    for (let i = h; i > -h; i--) path.push([c + i, c + h]);
+    for (let j = h; j > -h; j--) path.push([c - h, c + j]);
+    const ph = ([i, j]) => Math.atan2(sv.im[i + sv.n * j], sv.re[i + sv.n * j]);
+    let w = 0; for (let k = 0; k < path.length; k++) { const d = ph(path[(k + 1) % path.length]) - ph(path[k]); w += d - 2 * Math.PI * Math.round(d / (2 * Math.PI)); }
+    return w / (2 * Math.PI);
+  };
+  const w0 = loopWinding(v1);
+  const lz1 = v1.observables().lz, w1 = loopWinding(v1);
+  checks.push({ label: 'Imprinted vortex: ⟨L_z⟩ = ħ per atom (exact for f(r)e^{iφ})', value: Math.abs(lz0 - 1), pass: Math.abs(lz0 - 1) < 1e-6 });
+  checks.push({ label: `…after 500 steps (Δt = 0.005, no friction) in the round trap: circulation around a 6 a_ho loop ${w0.toFixed(6)} → ${w1.toFixed(6)} quanta; ⟨L_z⟩ change`, value: Math.abs(lz1 - lz0), pass: Math.abs(w0 - 1) < 1e-9 && Math.abs(w1 - 1) < 1e-9 && Math.abs(lz1 - lz0) < 1e-5 });
+
+  // 5. the stirred runs of the presets (and Δt/2, another seed, and the "Stir faster" action)
+  const runs = {};
+  const ms = EXAMPLE.msPerUnit;
+  const results = [];
+  for (const pr of PRESETS) {
+    log?.(`stirred run: ${pr.label}`);
+    const v = pr.values, isDef = v.omega === 0.8;
+    const r = stirredRun(v, isDef ? { branch: { t: 0.4 * T_END, omega: 0.9 } } : {});
+    runs[runKey(v)] = { tEnter: r.tEnter * ms, tSettle: r.tSettle * ms, nv: r.fin.nv, a: r.fin.a, lz: r.fin.lz, rigid: r.fin.rigid,
+      trace: r.samples.map(x => [+(x.t * ms).toFixed(3), x.nv, +x.lz.toFixed(4), +x.rigid.toFixed(4)]) };
+    results.push({ pr, r });
+    const aF = feynmanSpacing(v.omega), dev = r.fin.a / aF - 1;
+    if (r.fin.inner >= 7) checks.push({ label: `${pr.label}: ${r.fin.nv} whirlpools; inner spacing ${r.fin.a.toFixed(3)} vs Feynman ${aF.toFixed(3)} a_ho (±10 %)`, value: dev, pass: Math.abs(dev) < 0.1 });
+    else checks.push({ label: `${pr.label}: only ${r.fin.nv} whirlpools (${r.fin.inner} inner), too few for a bulk lattice, so Feynman's bulk rule is only indicative: spacing ${r.fin.a.toFixed(3)} vs ${aF.toFixed(3)} a_ho`, value: dev, pass: Math.abs(dev) < 0.2, state: 'warn' });
+    checks.push({ label: `${pr.label}: every winding is +1, in the stirring direction (wrong: ${r.fin.wrong})`, value: r.fin.wrong, pass: r.fin.wrong === 0 && r.fin.nv > 0 });
+    if (isDef) {
+      checks.push({ label: `Default: first whirlpool inside the cloud at ${(r.tEnter * ms).toFixed(0)} ms, grid settled (count ±1, spacing scatter ≤ 6 %) from ${(r.tSettle * ms).toFixed(0)} ms, run ends ${(T_END * ms).toFixed(0)} ms`, value: r.tSettle * ms, pass: r.tSettle < 0.8 * T_END });
+      const b = r.branched, bFin = b.samples.at(-1).nv, within = b.samples.find(x => x.nv >= r.fin.nv + 4);
+      runs.action = { t: 0.4 * T_END * ms, omega: 0.9, nvEnd: bFin, plus4: within ? within.t * ms : NaN };
+      checks.push({ label: `"Stir faster" at ${(0.4 * T_END * ms).toFixed(0)} ms (0.8 → 0.9): ${bFin} whirlpools at the end instead of ${r.fin.nv}; 4 more than steady stirring by ${within ? (within.t * ms).toFixed(0) : '—'} ms`, value: bFin - r.fin.nv, pass: bFin >= r.fin.nv + 6 && !!within });
+      runs.default = runKey(v);
     }
-    const gs = groundState({ n, L, g, omega, dt: 0.005, tol: 1e-8, maxSteps: 4000, re0: re, im0: im });
-    const field = { n, L, re: gs.re, im: gs.im }, found = findVortices(field), wind = windingOnCircle(field, 2.5);
-    add(`Single ${w > 0 ? 'vortex' : 'antivortex'} (imaginary time, Ω = ${omega}): one core, winding ${w > 0 ? '+1' : '−1'}, ⟨L_z⟩ = ${w > 0 ? '+1' : '−1'} ħ`,
-      `${found.length} core, plaquette w = ${found.map(v => v.w).join(',')}, loop winding ${wind.toFixed(6)}, ⟨L_z⟩ = ${gs.energy.lz.toFixed(5)}`,
-      found.length === 1 && found[0].w === w && Math.abs(wind - w) < 1e-9 && Math.abs(gs.energy.lz - w) < 1e-3);
   }
+  const [gentle, def, hard] = results.map(x => x.r.fin);
+  checks.push({ label: `More whirlpools when stirred faster: ${gentle.nv} (0.6) < ${def.nv} (0.8) < ${hard.nv} (0.9)`, value: hard.nv - gentle.nv, pass: gentle.nv < def.nv && def.nv < hard.nv });
+  const sf = results.map(x => x.r.fin.lz / x.r.fin.rigid);
+  checks.push({ label: `Spin per atom approaches the rigid-body value as whirlpools fill in: ${sf.map(x => (100 * x).toFixed(0) + ' %').join(', ')} for Ω = 0.6, 0.8, 0.9`, value: sf[2], pass: sf[0] < sf[1] && sf[1] < sf[2] && sf[2] < 1 });
 
-  // 6. Vortex number vs Ω with the page's protocol (stirring + damping, t = 150), vs Feynman's rule.
-  log?.('Ω scan (stirring protocol, t = 150)');
-  const scan = [0.5, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85].map(omega => stirRun({ ...DEFAULTS, omega }, 150, log));
-  const latt = scan.filter(s => s.bulk != null && s.omega >= 0.65);
-  add('Vortex number vs Ω (stirred, t = 150): N_v / Feynman count over the TF area',
-    scan.map(s => `Ω=${s.omega}: ${s.nv}/${s.feynman.toFixed(0)}`).join('; '),
-    latt.length >= 3 && latt.every(s => s.nv < s.feynman), 'warn');
-  add('Bulk vortex density (from lattice spacing) ÷ Feynman Ω/π, Ω ≥ 0.65',
-    latt.map(s => `Ω=${s.omega}: ${s.bulk.toFixed(2)}`).join('; '),
-    latt.length >= 3 && latt.every(s => Math.abs(s.bulk - 1) < 0.2));
-  notes.push('Feynman’s rule fixes the vortex density in the bulk, and the lattice spacing reproduces it; the total over the TF area overestimates the number because a vortex-free edge layer about one lattice spacing wide is comparable with the cloud radius here (R ≈ 3 lattice spacings).');
-
-  // 7. Refinement of the full stirring protocol (Ω = 0.75): Δt/2 and a 256² grid.
-  log?.('protocol refinement (Δt/2, 256²)');
-  const ref = scan.find(s => s.omega === 0.75);
-  const half = stirRun({ ...DEFAULTS, dt: 0.005 }, 150, log), fine = stirRun({ ...DEFAULTS, n: 256 }, 150, log);
-  add('Stirring protocol refined (Ω = 0.75, t = 150): N_v, bulk density ratio',
-    `128², Δt=0.01: ${ref.nv}, ${ref.bulk.toFixed(2)}; Δt=0.005: ${half.nv}, ${half.bulk?.toFixed(2)}; 256²: ${fine.nv}, ${fine.bulk?.toFixed(2)}`,
-    [half, fine].every(r => r.bulk != null && Math.abs(r.nv - ref.nv) <= 3 && Math.abs(r.bulk - ref.bulk) < 0.1));
-  notes.push('Vortex entry is a dynamical instability driven by the seed noise, so exact vortex positions and entry times are not reproducible across Δt or grids (chaotic dynamics); the converged quantities are the number (±3) and the lattice density.');
+  log?.('default at Δt/2 and with another seed');
+  const half = stirredRun(PRESETS[1].values, { dt: GRID.dt / 2 }).fin;
+  checks.push({ label: `Δt halved (0.005): ${half.nv} vs ${def.nv} whirlpools, spacing ${half.a.toFixed(3)} vs ${def.a.toFixed(3)} a_ho, ⟨L_z⟩ ${half.lz.toFixed(2)} vs ${def.lz.toFixed(2)} (the entry is chaotic: compare the settled state, |Δ⟨L_z⟩| ≤ 3 %)`, value: Math.abs(half.lz / def.lz - 1), pass: Math.abs(half.nv - def.nv) <= 2 && Math.abs(half.a / def.a - 1) < 0.04 && Math.abs(half.lz / def.lz - 1) < 0.03 });
+  const other = stirredRun({ ...PRESETS[1].values, seed: 2 }).fin;
+  checks.push({ label: `Other noise seed (2): ${other.nv} vs ${def.nv} whirlpools, ⟨L_z⟩ ${other.lz.toFixed(2)} vs ${def.lz.toFixed(2)}`, value: Math.abs(other.lz / def.lz - 1), pass: Math.abs(other.nv - def.nv) <= 2 && Math.abs(other.lz / def.lz - 1) < 0.03 });
 
   return {
-    summary: 'Split-step GPE in the rotating frame, checked against the harmonic-oscillator and Thomas–Fermi limits, conservation laws, the damping energy balance, exact vortex windings, Feynman’s rule and time/grid refinement.',
-    checks, notes, scan, tf,
+    summary: `2D Gross–Pitaevskii, turning frame, split-step: order ${order.toFixed(2)} on an exact benchmark; ${def.nv} whirlpools at Ω = 0.8 with spacing ${((def.a / feynmanSpacing(0.8) - 1) * 100).toFixed(1)} % from Feynman's rule`,
+    checks,
+    notes: [
+      'Benchmarks: exact harmonic-trap motion (linear limit), exact conservation laws without friction, μ = ħω at g = 0, Thomas–Fermi μ at g = 400, ⟨L_z⟩ = ħ for one vortex, Feynman’s rule n_v = mΩ/πħ for the whirlpool density.',
+      'Nucleation is chaotic: the moment and place of entry change with Δt and the noise seed; the settled count, spacing and spin do not (checked).',
+      'Spacing is measured as the mean nearest-neighbour distance of whirlpools in the inner 65 % of the cloud radius √(3⟨r²⟩).',
+      'Friction γ is phenomenological; the model is 2D. Times in ms and lengths in µm use the example trap ω⊥ = 2π × 100 Hz with ⁸⁷Rb.',
+    ],
+    runs,
   };
 }
 
-return { PARAMS, tfRadius, boxSize, initialState, stableStep, createSim, stirRun, DEFAULTS, verify };
+return { createSolver, groundState, findVortices, latticeStats, GRID, OMEGA_TRAP, EXAMPLE, T_END, MAX_OMEGA, GAMMA_MIN, feynmanSpacing, PARAMS, measure, startRun, createSim, PRESETS, runKey, verify };
 })();
 
 // ---- page
 const { createInstrument } = __psim["ui/instrument-app.mjs"];
-const { createFieldRenderer, drawColorBar, colormap } = __psim["ui/gl.mjs"];
-const { PARAMS, createSim, tfRadius } = __psim["local:physics.mjs"];
-// The build-time report (with the Ω scan) must be read before createInstrument replaces the body.
-const REPORT = (() => { try { return JSON.parse(document.getElementById('psim-verification').textContent); } catch { return null; } })();
-// ------------------------------------------------------------------ timeline: the scan protocol's span and its computed key times
-const T_RUN = 150;                                 // ω⊥⁻¹: the Ω-scan protocol (verify(): stirRun(…, 150))
-// the build-time scan run for these parameters (only Ω may differ from the defaults: the scan used them)
-const SCAN_DEFAULTS = { eps: 0.05, gamma: 0.05, g: 500, noise: 0.01, seed: 7, dt: 0.01, n: 128 };
-const scanFor = v => (Object.entries(SCAN_DEFAULTS).every(([k, x]) => +v[k] === x) ? (REPORT?.scan ?? []).find(s => s.omega === +v.omega) ?? null : null);
+const { colormap, drawColorBar } = __psim["ui/gl.mjs"];
+const { PARAMS, PRESETS, EXAMPLE, T_END, MAX_OMEGA, GRID, createSim, feynmanSpacing, runKey } = __psim["local:physics.mjs"];
+// the build-time report (verify()): key times of the stirred runs, per setting
+let REPORT = null;
+try { REPORT = JSON.parse(document.getElementById('psim-verification').textContent); } catch { REPORT = null; }
+const runFor = sim => REPORT?.runs?.[runKey(sim.params)] ?? null;
+const ms = EXAMPLE.msPerUnit;
 
-// ------------------------------------------------------------------ representation
-let field = null, uploadedFor = null, mode = 'density', showCores = true, showTrap = true, lastRange = [0, 1];
-const MODES = {
-  density: { map: 'inferno', label: 'density |ψ|² (a_ho⁻², linear)', smooth: true },
-  phase: { map: 'phase', label: 'phase arg ψ (rad, cyclic)', smooth: false },
-  masked: { map: 'phase', label: 'phase arg ψ where |ψ|² > 2 % of peak', smooth: false },
-};
-const legendFor = () => [
-  mode === 'density' ? 'colour: condensate density |ψ|², linear (dark holes = vortex cores)' : 'colour: phase of ψ on a cyclic hue circle (rotating-frame gauge); every vortex is a point where all hues meet',
-  'rings: vortex cores found as +2π phase windings (× = −2π); frame co-rotates with the stirrer at Ω',
-];
+// ---------------------------------------------------------------- the picture: the cloud seen from above
+const LUT = Array.from({ length: 256 }, (_, i) => colormap('inferno', i / 255).map(v => Math.round(255 * v)));
+const STIR = '#7fd4ff';                       // fixed light overlay colour (inferno has a fixed dark end)
+let turnWithStirrer = false, markCores = false, maxedSim = null;   // maxedSim: "Stir faster" pressed at the fastest allowed speed
+let off = null, img = null;
+const SHOW_R = 9;                           // a_ho shown from the centre to the view's short edge
 
-/** Square field rectangle in CSS px. Wide: right-aligned, colour bar to its left (the HUD sits top-left).
- *  Narrow (phone): below the HUD, horizontal colour bar underneath, legend at the bottom. */
-function layout(view) {
-  if (view.W < 560) {
-    const y = 205, s = Math.max(140, Math.min(view.W - 24, view.H - y - 150));
-    return { x: (view.W - s) / 2, y, s, bar: 0 };
-  }
-  const TL = 72;                                   // px kept free at the bottom for the timeline bar
-  const s = Math.max(160, Math.min(view.W - 120, view.H - 24 - TL));
-  return { x: view.W - s - 12, y: (view.H - TL - s) / 2, s, bar: 1 };
-}
-/** Physical (x, y) in a_ho → CSS px. Texel i covers [i, i+1)/n of the rect; grid node x_i = −L/2 + i·Δx sits at its centre. */
-const toPx = (sim, r, x, y) => [r.x + (x + sim.L / 2 + sim.dx / 2) / sim.L * r.s, r.y + r.s - (y + sim.L / 2 + sim.dx / 2) / sim.L * r.s];
-
-function upload(sim) {
-  const key = `${sim.gpe.steps}|${mode}`;
-  if (uploadedFor?.sim === sim && uploadedFor.key === key) return;
-  const n = sim.n, d = sim.density();
-  let max = 0; for (const v of d) max = Math.max(max, v);
-  if (mode === 'density') { field.update(d, n, n, { range: [0, max] }); lastRange = [0, max]; }
-  else {
-    const p = sim.phase();
-    if (mode === 'masked') for (let i = 0; i < p.length; i++) if (d[i] < 0.02 * max) p[i] = NaN;
-    field.update(p, n, n, { range: [-Math.PI, Math.PI] }); lastRange = [-Math.PI, Math.PI];
-  }
-  uploadedFor = { sim, key };
-}
-
-function drawGL(gl, sim, view) {
-  if (!field) field = createFieldRenderer(gl);
-  upload(sim);
-  const r = layout(view);
-  field.draw({ rect: [r.x, r.y, r.s, r.s], colormap: MODES[mode].map, smooth: MODES[mode].smooth });
-}
-
-// overlays drawn on the field: its background is the colour map's dark end in both themes
-const ON_FIELD = { ink: '#e6e9ef', accent: '#8cc8ff' };
 function draw(ctx, sim, view) {
-  const C = view.color, r = layout(view), p = sim.params;
-  ctx.strokeStyle = C('--line-strong'); ctx.lineWidth = 1; ctx.strokeRect(r.x - 0.5, r.y - 0.5, r.s + 1, r.s + 1);
-  // the stirring potential (static in this frame): equipotential V = μ₀ of the initial cloud
-  if (showTrap && p.eps > 0) {
-    const mu0 = Math.sqrt(p.g / Math.PI), ax = Math.sqrt(2 * mu0 / (1 + p.eps)), ay = Math.sqrt(2 * mu0 / (1 - p.eps));
-    const [cx, cy] = toPx(sim, r, 0, 0), k = r.s / sim.L;
-    ctx.setLineDash([5, 5]); ctx.strokeStyle = ON_FIELD.accent; ctx.globalAlpha = 0.75;
-    ctx.beginPath(); ctx.ellipse(cx, cy, ax * k, ay * k, 0, 0, 2 * Math.PI); ctx.stroke();
-    ctx.setLineDash([]); ctx.globalAlpha = 1;
-    ctx.fillStyle = ON_FIELD.accent; ctx.font = '11px var(--sans), system-ui, sans-serif';
-    ctx.fillText(`dashed: stirring trap V = μ₀ (ε = ${p.eps})`, r.x + 10, r.y + r.s - 36);
-  }
-  if (showCores) {
-    const rad = Math.max(3.5, 0.32 / sim.L * r.s);
-    ctx.lineWidth = 1.6;
-    for (const v of sim.vortices) {
-      const [x, y] = toPx(sim, r, v.x, v.y);
-      if (v.w > 0) { ctx.strokeStyle = mode === 'density' ? '#7fe7ff' : '#ffffff'; ctx.beginPath(); ctx.arc(x, y, rad, 0, 2 * Math.PI); ctx.stroke(); }
-      else { ctx.strokeStyle = '#ff5d73'; ctx.beginPath(); ctx.moveTo(x - rad, y - rad); ctx.lineTo(x + rad, y + rad); ctx.moveTo(x + rad, y - rad); ctx.lineTo(x - rad, y + rad); ctx.stroke(); }
+  const { W, H } = view, s = sim.solver, n = s.n;
+  if (!off) { off = document.createElement('canvas'); off.width = n; off.height = n; img = off.getContext('2d').createImageData(n, n); }
+  // column density |ψ|² relative to the centre of the still cloud; image row 0 = top (largest y)
+  const d = img.data, inv = 1 / sim.rhoPeak;
+  for (let j = 0; j < n; j++) {
+    const row = (n - 1 - j) * n;
+    for (let i = 0; i < n; i++) {
+      const p = i + n * j, rho = (s.re[p] * s.re[p] + s.im[p] * s.im[p]) * inv;
+      const c = LUT[Math.min(255, Math.max(0, Math.round(255 * rho)))], q = 4 * (row + i);
+      d[q] = c[0]; d[q + 1] = c[1]; d[q + 2] = c[2]; d[q + 3] = Math.min(255, Math.round(255 * 25 * rho));   // fades into the view where there are (almost) no atoms
     }
   }
-  // rotation sense of the frame / stirrer (counter-clockwise, Ω > 0)
-  {
-    const [cx, cy] = [r.x + r.s - 34, r.y + r.s - 34];
-    ctx.strokeStyle = ON_FIELD.ink; ctx.lineWidth = 1.4;
-    ctx.beginPath(); ctx.arc(cx, cy, 14, -0.3, -0.3 - 1.6 * Math.PI, true); ctx.stroke();
-    const a = -0.3 - 1.6 * Math.PI, tx = cx + 14 * Math.cos(a), ty = cy + 14 * Math.sin(a);
-    ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(tx + 6, ty - 3); ctx.moveTo(tx, ty); ctx.lineTo(tx + 1, ty + 7); ctx.stroke();
-    ctx.fillStyle = ON_FIELD.ink; ctx.font = '11px var(--mono), monospace'; ctx.textAlign = 'right';
-    ctx.fillText(`frame turns at Ω = ${p.omega}`, cx - 22, cy + 4); ctx.textAlign = 'start';
+  off.getContext('2d').putImageData(img, 0, 0);
+  const small = W < 560, cx = W / 2, cy = H / 2 + (small ? 6 : 10);
+  const scale = Math.min(W, H - (small ? 56 : 70)) / (2 * SHOW_R);        // px per a_ho
+  const theta = turnWithStirrer ? 0 : sim.angle;                            // lab frame: the computed frame turned by ∫Ω dt
+  // grid point i sits at x = −L/2 + i·dx: the image's left edge is half a cell before it
+  const x0 = (-s.L / 2 - s.dx / 2) * scale, size = s.L * scale, yTop = -(s.L / 2 - s.dx + s.dx / 2) * scale;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, SHOW_R * scale, 0, 2 * Math.PI); ctx.clip();
+  ctx.translate(cx, cy); ctx.rotate(-theta);                                 // screen y points down: −θ turns anticlockwise
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(off, x0, yTop, size, size);
+  if (markCores) {
+    ctx.strokeStyle = STIR; ctx.lineWidth = 1.2;
+    for (const v of sim.last.vort) { ctx.beginPath(); ctx.arc(v.x * scale, -v.y * scale, Math.max(4, 0.45 * scale), 0, 2 * Math.PI); ctx.stroke(); }
   }
-  // scale bar: 2 a_ho, and the healing length
-  {
-    const k = r.s / sim.L, x0 = r.x + 12, y0 = r.y + r.s - 14;
-    ctx.strokeStyle = ON_FIELD.ink; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 + 2 * k, y0); ctx.stroke();
-    ctx.fillStyle = ON_FIELD.ink; ctx.font = '11px var(--mono), monospace';
-    ctx.fillText(`2 a_ho   (ξ ≈ ${sim.xi.toFixed(2)} a_ho)`, x0, y0 - 6);
+  ctx.restore();
+
+  // the stirrer: the long (soft) axis of the squeezed trap is the computed frame's y axis; two bars at its ends
+  const R = Math.min(SHOW_R - 0.3, sim.last.R + 0.5) * scale;
+  ctx.save(); ctx.translate(cx, cy); ctx.rotate(-theta);
+  ctx.strokeStyle = STIR; ctx.lineWidth = small ? 3 : 4; ctx.lineCap = 'round';
+  for (const sgn of [1, -1]) { ctx.beginPath(); ctx.moveTo(-0.6 * scale, -sgn * R); ctx.lineTo(0.6 * scale, -sgn * R); ctx.stroke(); }
+  ctx.restore();
+  // its turning direction: a fixed arrow arc just outside the cloud (anticlockwise, the sense of Ω)
+  const ra = SHOW_R * scale - 5, a0 = -0.97 * Math.PI, a1 = -0.66 * Math.PI;
+  ctx.strokeStyle = STIR; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, ra, a1, a0, true); ctx.stroke();
+  const ax = cx + ra * Math.cos(a0), ay = cy + ra * Math.sin(a0);
+  ctx.fillStyle = STIR; ctx.beginPath(); ctx.moveTo(ax - 6, ay - 8); ctx.lineTo(ax + 6, ay - 8); ctx.lineTo(ax, ay + 4); ctx.fill();
+
+  // labels: the count (steady, fixed place) and the stirrer
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  const nv = sim.last.nv, top = view.steady('count', cx, small ? 20 : 24);
+  ctx.fillStyle = '#f4f1ea'; ctx.font = `600 ${small ? 14 : 16}px system-ui, sans-serif`;
+  ctx.fillText(nv === 0 ? 'no whirlpools yet: the cloud only wobbles' : `${nv} whirlpool${nv === 1 ? '' : 's'} in the cloud`, top.x, top.y);
+  if (maxedSim === sim) {
+    ctx.fillStyle = '#f4f1ea'; ctx.font = `${small ? 12 : 13}px system-ui, sans-serif`; ctx.textAlign = 'center';
+    ctx.fillText(`already the fastest stirring here (${MAX_OMEGA} ω⊥): the cloud must stay in the computed box`, cx, small ? 60 : 46);
   }
-  if (r.bar) {
-    const hb = Math.min(200, r.s * 0.45), yb = r.y + r.s - hb;
-    drawColorBar(ctx, { x: r.x - 74, y: yb, width: 12, height: hb, colormap: MODES[mode].map, range: lastRange, label: '', color: C('--ink-2'), format: mode === 'density' ? undefined : v => `${+(v / Math.PI).toFixed(1)}π`.replace('-', '−') });
-    ctx.fillStyle = C('--ink-2'); ctx.font = '11px var(--sans), system-ui, sans-serif'; ctx.textAlign = 'right';
-    const [l1, l2] = mode === 'density' ? ['density |ψ|²', '(a_ho⁻², linear)'] : ['phase arg ψ', '(cyclic)'];
-    ctx.fillText(l1, r.x - 10, yb - 22); ctx.fillText(l2, r.x - 10, yb - 8); ctx.textAlign = 'start';
-  } else drawColorBar(ctx, { x: r.x, y: r.y + r.s + 26, width: r.s, height: 8, horizontal: true, colormap: MODES[mode].map, range: lastRange, label: MODES[mode].label, color: C('--ink-2') });
-  if (sim.capped) { ctx.fillStyle = C('--warn'); ctx.font = '11px var(--sans), system-ui'; ctx.fillText(`γ < 0.02: Δt capped at the split-step stability bound ${sim.dt.toFixed(4)}`, r.x + 8, r.y + 16); }
+  ctx.fillStyle = STIR; ctx.font = `${small ? 12 : 13}px system-ui, sans-serif`;
+  if (small) { ctx.textAlign = 'left'; ctx.fillText(`stirrer (blue): ${(sim.omega * 100).toFixed(0)} turns/s`, 12, 42); }
+  else { ctx.textAlign = 'right'; ctx.fillText(`stirrer: ${(sim.omega * 100).toFixed(0)} turns/s`, ax - 10, ay - 12); }
+
+  // colour bar and scale bar (measurement aids)
+  const bw = small ? 110 : 250;
+  drawColorBar(ctx, { x: 12, y: H - 26, width: bw, height: 7, horizontal: true, colormap: 'inferno', range: [0, 1], ticks: 3, label: small ? 'atom density' : 'atom density (1 = centre of still cloud)' });
+  const um = 10, len = um / EXAMPLE.aHoMicron * scale;
+  ctx.strokeStyle = '#d8d4cc'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(W - 14 - len, H - 18); ctx.lineTo(W - 14, H - 18); ctx.stroke();
+  ctx.fillStyle = '#d8d4cc'; ctx.font = '11px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(`${um} µm`, W - 14 - len / 2, H - 24);
 }
 
-// ------------------------------------------------------------------ workbench: equations and figures
-function bench({ eqs, figs, createPlot, createEquation, createDerivation, M }) {
-  const nvPlot = createPlot({ title: 'Vortices inside the cloud vs time', height: 230, x: { label: 't', unit: 'ω⊥⁻¹', min: 0, max: 150 }, y: { label: 'N_v', min: 0, max: 30 } });
-  const ePlot = createPlot({ title: 'Energy per particle, rotating frame', height: 230, x: { label: 't', unit: 'ω⊥⁻¹', min: 0, max: 150 }, y: { label: 'E/N', unit: 'ħω⊥' } });
-  const lPlot = createPlot({ title: 'Angular momentum per particle', height: 230, x: { label: 't', unit: 'ω⊥⁻¹', min: 0, max: 150 }, y: { label: '⟨L_z⟩/N', unit: 'ħ', min: 0, max: 12 } });
-  const scanPlot = createPlot({ title: 'Vortex number vs rotation rate (stirred, t = 150)', height: 260, x: { label: 'Ω', unit: 'ω⊥', min: 0.45, max: 0.9 }, y: { label: 'N_v', min: 0, max: 50 } });
-  const bulkPlot = createPlot({ title: 'Bulk vortex density ÷ Feynman Ω/π', height: 200, x: { label: 'Ω', unit: 'ω⊥', min: 0.45, max: 0.9 }, y: { label: 'n_v / (Ω/π)', min: 0, max: 1.6 } });
-  figs.append(nvPlot.el, ePlot.el, lPlot.el, scanPlot.el, bulkPlot.el);
+// ---------------------------------------------------------------- below the view: the evidence
+function bench({ eqs, figs, createPlot, createEquation, M }) {
+  const tMax = T_END * ms;
+  const count = createPlot({ title: 'Whirlpools in the cloud (computed live)', height: 220,
+    x: { label: 'time since stirring began', unit: 'ms', min: 0, max: tMax }, y: { label: 'whirlpools', min: 0, max: 24 } });
+  const spin = createPlot({ title: 'Spin per atom: superfluid vs a normal liquid stirred the same way', height: 220,
+    x: { label: 'time since stirring began', unit: 'ms', min: 0, max: tMax }, y: { label: 'spin per atom', unit: 'ħ', min: 0, max: 18 } });
+  const wrap = (plot, text) => { const w = document.createElement('div'); const c = document.createElement('p'); c.className = 'psim-hint'; c.textContent = text; w.append(plot.el, c); return w; };
+  figs.append(
+    wrap(count, 'Phase windings of the computed wave inside the cloud, counted every 0.4 ms. Vertical lines: the key times of the build-time run with these settings.'),
+    wrap(spin, 'Solid: the superfluid’s spin per atom ⟨L_z⟩. Dashed: Ω⟨x² + y²⟩, what the same cloud would carry turning as a rigid body (a normal liquid). The superfluid catches up only by taking in whirlpools.'));
 
-  const cap = text => { const p = document.createElement('p'); p.className = 'psim-hint'; p.textContent = text; return p; };
-  figs.append(cap('Time figures: this run, computed live (sampled every 0.25 ω⊥⁻¹). Ω-scan figures: seven runs of the same protocol (g = 500, ε = 0.05, γ = 0.05, η = 0.01, 128², Δt = 0.01) computed by verify() when the page was built and embedded with its report; the pink marker is this run (still evolving until t ≈ 150). Feynman curve: Ω·R²(Ω) with the Thomas–Fermi radius R² = 2√(g/π)/√(1−Ω²) of the rotating cloud (analytical).'));
-
-  let cur = null;
-  const psi = M.i('ψ'), Om = M.i('Ω');
+  let obs = null, cur = null;
+  const o = () => obs ?? { kin: 0, pot: 0, int: 0, lz: 0 };
   const gpe = createEquation({
-    title: 'Gross–Pitaevskii equation in the rotating frame (energies per particle, live)',
-    lhs: { mathml: `${M.i('i')}<mo>∂</mo>${psi}<mo>/</mo><mo>∂</mo>${M.i('t')}`, label: 'μ ψ for a stationary state', unit: 'ħω⊥', value: () => cur?.energy.mu },
+    title: 'Gross–Pitaevskii equation in the frame turning with the stirrer',
+    lhs: { mathml: `${M.paren(`${M.i('i')}<mo>−</mo>${M.i('γ')}`)}<mo>∂</mo>${M.i('ψ')}<mo>/</mo><mo>∂</mo>${M.i('t')}`, label: 'change of the wave (with friction γ)' },
     terms: [
-      { id: 'kin', mathml: `<mo>−</mo>${M.frac(M.n(1), M.n(2))}${M.sup('<mo>∇</mo>', M.n(2))}${psi}`, label: 'kinetic (flow, cores)', color: '--body-1', unit: 'ħω⊥', value: () => cur?.energy.kin },
-      { id: 'pot', mathml: `${M.i('V')}<mo>(</mo>${M.i('x')}<mo>,</mo>${M.i('y')}<mo>)</mo>${psi}`, label: 'stirring trap ½[(1+ε)x² + (1−ε)y²]', color: '--body-0', unit: 'ħω⊥', value: () => cur?.energy.pot },
-      { id: 'int', mathml: `${M.i('g')}<mo>|</mo>${psi}${M.sup('<mo>|</mo>', M.n(2))}${psi}`, label: 'contact interaction (×2 in μ)', color: '--body-2', unit: 'ħω⊥', value: () => cur && 2 * cur.energy.int },
-      { id: 'rot', sign: '−', mathml: `${Om}${M.sub(M.i('L'), M.i('z'))}${psi}`, label: 'rotating frame: −Ω⟨L_z⟩', color: '--body-3', unit: 'ħω⊥', value: () => cur && cur.params.omega * cur.energy.lz },
+      { id: 'kin', mathml: `<mo>−</mo>${M.frac(M.n(1), M.n(2))}${M.sup('<mo>∇</mo>', M.n(2))}${M.i('ψ')}`, label: 'motion (kinetic)', color: '--body-0', unit: 'ħω⊥', value: () => o().kin, digits: 3 },
+      { id: 'trap', mathml: `${M.i('V')}${M.i('ψ')}`, label: 'squeezed trap ½[(1+ε)x² + (1−ε)y²]', color: '--body-1', unit: 'ħω⊥', value: () => o().pot, digits: 4 },
+      { id: 'int', mathml: `${M.i('g')}${M.sup(`<mo>|</mo>${M.i('ψ')}<mo>|</mo>`, M.n(2))}${M.i('ψ')}`, label: 'repulsion between atoms', color: '--body-2', unit: 'ħω⊥', value: () => 2 * o().int, digits: 4 },
+      { id: 'rot', sign: '−', mathml: `${M.i('Ω')}${M.sub(M.i('L'), M.i('z'))}${M.i('ψ')}`, label: 'stirring (turning frame)', color: '--warn', unit: 'ħω⊥', value: () => (cur ? cur.omega : 0) * o().lz, digits: 4 },
+      { id: 'mu', sign: '−', mathml: `${M.i('μ')}${M.i('ψ')}`, label: 'chemical potential (keeps the atom number)', color: '--muted', unit: 'ħω⊥', value: () => o().kin + o().pot + 2 * o().int - (cur ? cur.omega : 0) * o().lz, digits: 4 },
     ],
     where: [
-      { mathml: M.sub(M.i('L'), M.i('z')), meaning: '−i(x∂ᵧ − y∂ₓ), angular momentum (ħ = 1)', value: () => cur?.energy.lz, unit: 'ħ per particle' },
-      { mathml: M.i('g'), meaning: '2D coupling × atom number (dimensionless)', value: () => cur?.params.g },
-      { mathml: M.i('ε'), meaning: 'trap anisotropy (the stirrer)', value: () => cur?.params.eps },
+      { mathml: M.i('Ω'), meaning: 'stirring speed (× ω⊥)', value: () => cur?.omega ?? 0, digits: 3 },
+      { mathml: M.i('ε'), meaning: 'squeeze of the trap', value: () => (cur?.params.squeeze ?? 0) / 100, digits: 3 },
+      { mathml: M.i('γ'), meaning: 'friction with the thermal cloud (phenomenological)', value: () => cur?.params.gamma ?? 0, digits: 3 },
+      { mathml: M.i('g'), meaning: `2D repulsion (≈ ${Math.round(EXAMPLE.atoms / 100) * 100} ⁸⁷Rb atoms in a 100 Hz × 1 kHz pancake)`, value: () => GRID.g },
     ],
-    note: 'Units ħ = m = ω⊥ = 1. Damping γ, when on: (i − γ)∂ψ/∂t = (H − μ)ψ (phenomenological, Tsubota et al. 2002).',
-    link: [ePlot],
+    note: 'Units ħ = m = ω⊥ = 1. Each value is the term’s average per atom, ⟨ψ|term|ψ⟩; μ is fixed so the atom number stays constant, which makes the right side average to zero.',
   });
   const feyn = createEquation({
-    title: 'Feynman’s rule: vortex density of a rigidly rotating superfluid',
-    lhs: { mathml: M.sub(M.i('n'), M.i('v')), label: 'vortices per a_ho² (bulk, measured from lattice spacing)', value: () => cur?.census.bulk == null ? 'needs ≥ 4 vortices' : cur.census.bulk * cur.params.omega / Math.PI, unit: 'a_ho⁻²' },
-    terms: [{ id: 'feyn', mathml: `${M.frac(`${M.n(2)}${Om}`, M.i('κ'))}<mo>=</mo>${M.frac(Om, M.i('π'))}`, label: 'κ = h/m = 2π (circulation quantum)', color: '--body-5', unit: 'a_ho⁻²', value: () => cur && cur.params.omega / Math.PI }],
-    where: [
-      { mathml: `${Om}${M.sub(M.i('R'), M.i('x'))}${M.sub(M.i('R'), M.i('y'))}`, meaning: 'Feynman count over the TF area of this cloud (R² = 6⟨x²⟩)', value: () => cur?.census.feynman, digits: 3 },
-      { mathml: M.sub(M.i('N'), M.i('v')), meaning: 'vortices counted (+2π windings inside the cloud)', value: () => cur?.census.nv },
-    ],
-    link: [scanPlot, bulkPlot],
+    title: 'Feynman’s rule: the stirring speed fixes how densely the whirlpools pack',
+    lhs: { mathml: M.sub(M.i('a'), M.i('grid')), label: 'measured spacing (inner whirlpools)', unit: 'µm', value: () => (cur && cur.last.inner >= 3 ? cur.last.a * EXAMPLE.aHoMicron : 'measuring…'), digits: 3 },
+    op: '≈',
+    terms: [{ id: 'feyn', mathml: M.sqrt(M.frac(`${M.n(2)}<mi>π</mi>${M.i('ħ')}`, `${M.sqrt(M.n(3))}${M.i('m')}${M.i('Ω')}`)), label: 'triangular grid with mΩ/πħ whirlpools per area', color: '--accent', unit: 'µm', value: () => (cur ? feynmanSpacing(cur.omega) * EXAMPLE.aHoMicron : 0), digits: 3 }],
+    note: 'Left: mean nearest-neighbour distance of the whirlpools in the inner 65 % of the cloud (live). Right: Feynman (1955); every whirlpool carries one quantum of circulation h/m.',
   });
-  const tf = createDerivation([
-    { mathml: `${M.sup('<mo>|</mo>' + psi + '<mo>|</mo>', M.n(2))}<mo>=</mo>${M.frac(`${M.i('μ')}<mo>−</mo>${M.sup(M.i('r'), M.n(2))}<mo>/</mo>${M.n(2)}`, M.i('g'))}`, note: 'Thomas–Fermi: drop the kinetic term (Ω = 0, ε = 0, ω⊥ = 1).' },
-    { mathml: `<mo>∫</mo>${M.sup('<mo>|</mo>' + psi + '<mo>|</mo>', M.n(2))}<mi>d</mi>${M.i('A')}<mo>=</mo>${M.frac(`${M.i('π')}${M.sup(M.i('μ'), M.n(2))}`, M.i('g'))}<mo>=</mo>${M.n(1)}`, note: 'Integrate over the disc r² < 2μ and normalise to one.' },
-    { mathml: `${M.sub(M.i('μ'), M.i('TF'))}<mo>=</mo>${M.sqrt(`${M.i('g')}<mo>/</mo>${M.i('π')}`)}`, note: `Imaginary-time ground states approach it from above as g grows (Verification).` },
-  ], { title: 'Thomas–Fermi chemical potential (2D, checked against imaginary time)' });
-  eqs.append(gpe.el, feyn.el, tf);
+  eqs.append(gpe.el, feyn.el);
 
-  // build-time Ω scan
-  const scan = REPORT?.scan ?? [];
-  if (scan.length) {
-    scanPlot.data('nv', scan.map(s => [s.omega, s.nv]), { color: '--body-1', dots: true, label: 'N_v counted (GPE, t = 150)' });
-    bulkPlot.data('bulk', scan.filter(s => s.bulk != null).map(s => [s.omega, s.bulk]), { color: '--body-1', dots: true, label: 'from lattice spacing' });
-  }
-  bulkPlot.hline('one', 1, { color: '--body-5', label: 'Feynman' });
-  bulkPlot.band('nonuc', 0.45, 0.6, { label: 'too few vortices' });
-
-  let lastSim = null, lastN = 0;
+  let built = null, tick = 0;
   return {
-    update(sim, t, { rebuilt }) {
-      cur = sim; gpe.update(); feyn.update();
-      const p = sim.params, g = p.g;
-      if (rebuilt || lastSim !== sim) {
-        lastSim = sim; lastN = 0;
-        scanPlot.fn('feyn', w => w * tfRadius(g, w) ** 2, { color: '--body-5', dash: true, label: `Feynman Ω·R²(Ω), TF, g = ${g}` });
-        lPlot.remove('rigid');
+    update(sim, t, { rebuilt } = {}) {
+      cur = sim;
+      if (built !== sim || rebuilt) {
+        built = sim; obs = null;
+        const run = runFor(sim);
+        count.remove('enter'); count.remove('settle');
+        if (run && Number.isFinite(run.tEnter)) count.vline('enter', run.tEnter, { label: 'first enters' });
+        if (run && Number.isFinite(run.tSettle)) count.vline('settle', run.tSettle, { label: 'grid settled' });
+        count.setY({ min: 0, max: sim.params.omega > 0.82 ? 40 : 24 });
       }
-      const h = sim.history;
-      if (h.length === lastN && !rebuilt) return;
-      lastN = h.length;
-      const tMax = Math.max(150, Math.ceil(t / 50) * 50);
-      for (const pl of [nvPlot, ePlot, lPlot]) pl.setX({ min: 0, max: tMax });
-      nvPlot.data('nv', h.map(q => [q.t, q.nv]), { color: '--body-1', label: 'N_v counted', width: 2 });
-      nvPlot.data('feyn', h.map(q => [q.t, q.feynman]), { color: '--body-5', dash: true, label: 'Feynman count over TF area' });
-      nvPlot.setY({ min: 0, max: Math.max(10, Math.ceil(Math.max(...h.map(q => Math.max(q.nv, q.feynman))) / 10) * 10) });
-      ePlot.data('E', h.map(q => [q.t, q.E]), { color: '--body-0', label: 'E/N (rotating frame)', width: 2 });
-      { const es = h.map(q => q.E), lo = Math.min(...es), hi = Math.max(...es), pad = Math.max(0.05, 0.1 * (hi - lo)); ePlot.setY({ auto: false, min: Math.floor((lo - pad) * 10) / 10, max: Math.ceil((hi + pad) * 10) / 10 }); }
-      lPlot.data('lz', h.map(q => [q.t, q.lz]), { color: '--body-3', label: '⟨L_z⟩/N', width: 2 });
-      lPlot.data('rigid', h.map(q => [q.t, q.rigid]), { color: '--muted', dash: true, label: 'rigid body Ω⟨x²+y²⟩' });
-      lPlot.setY({ min: 0, max: Math.max(2, Math.ceil(Math.max(...h.map(q => Math.max(q.lz, q.rigid))) / 2) * 2) });
-      const c = sim.census;
-      scanPlot.marker('now', p.omega, c.nv, { color: '--body-2', label: `this run: ${c.nv}` });
-      if (c.bulk != null) bulkPlot.marker('now', p.omega, c.bulk, { color: '--body-2', label: 'this run' }); else bulkPlot.remove('now');
-      for (const pl of [nvPlot, ePlot, lPlot, scanPlot, bulkPlot]) { pl.invalidate(); pl.draw(); }
+      if (tick++ % 3 === 0 || !obs) obs = sim.solver.observables();
+      if (sim.omega > 0.82) count.setY({ min: 0, max: 40 });
+      count.data('nv', sim.trace.map(r => [r[0], r[1]]), { color: '--body-1', width: 2, label: 'whirlpools' });
+      spin.data('lz', sim.trace.map(r => [r[0], r[2]]), { color: '--warn', width: 2.2, label: 'superfluid ⟨L_z⟩' });
+      spin.data('rigid', sim.trace.map(r => [r[0], r[3]]), { color: '--muted', dash: true, label: 'normal liquid Ω⟨r²⟩' });
+      count.invalidate(); count.draw(); spin.invalidate(); spin.draw();
+      gpe.update(); feyn.update();
     },
   };
 }
 
 createInstrument({
-  title: 'Stirred Bose–Einstein condensate: vortex lattice',
-  subtitle: '2D Gross–Pitaevskii equation (mean field) in the frame of a rotating anisotropic trap, split-step Fourier; vortices found as 2π phase windings',
+  title: 'Stirring a Bose–Einstein condensate until a vortex lattice forms',
+  subtitle: '2D Gross–Pitaevskii equation with thermal-cloud friction, solved split-step in the frame turning with the stirrer (a reduced 2D model of the experiments)',
   tier: 'approximate',
-  tierReason: 'A verified numerical solution of the 2D Gross–Pitaevskii equation with a phenomenological damping term: a mean-field, zero-temperature, two-dimensional model of a real (3D, finite-temperature) condensate. Solver accuracy is checked against exact limits (harmonic oscillator, Thomas–Fermi), conservation laws, the damping energy balance, exact vortex windings and refinement; Feynman’s rule is reproduced in the bulk.',
-  layout: 'workbench', gl: true, drawGL, draw, bench,
-  params: PARAMS, create: createSim,
+  tierReason: 'Reduced model: two dimensions and a phenomenological friction γ. The solver is checked against exact harmonic-trap motion (second order), exact conservation laws and Thomas–Fermi; the settled grid matches Feynman’s rule within 3 % (Verification).',
+  layout: 'workbench',
+  intro: {
+    text: 'This is a cloud of a few thousand atoms, cooled until they all move as one quantum wave (a superfluid), seen from above. A slightly squeezed trap turns around it like a spoon. Water would simply start to swirl; a superfluid cannot. It takes in the spin only as tiny, identical whirlpools, which come in from the edge and settle into a regular pattern: a triangular grid once there are enough of them.',
+    watch: ['dark dots coming in from the edge: each one is a whirlpool', 'later they stop jostling and settle into a pattern that turns with the stirrer (a triangular grid when there are many)', 'press "Stir faster": more whirlpools crowd in and the grid gets tighter'],
+  },
+  actions: [{
+    label: 'Stir faster', hint: 'the stirrer speeds up by 10 turns/s: more whirlpools crowd in', reveal: 20,
+    onClick: ({ getSim, play }) => { const sim = getSim(); if (!sim.stirFaster()) maxedSim = sim; play(); },
+  }],
+  params: PARAMS,
+  create: createSim,
+  draw, bench,
+  viewControls(container, { toggle }) {
+    container.append(
+      toggle('Turn with the stirrer (the grid then holds still)', false, v => { turnWithStirrer = v; }),
+      toggle('Ring each whirlpool found by the phase count', false, v => { markCores = v; }));
+  },
+  timeUnit: 'ms', timeLabel: 'time since stirring began', timeDigits: 0,
   timeline: {
-    duration: T_RUN,
-    markers: (sim, v) => {
-      const sc = scanFor(v);
-      return sc ? [
-        ...(sc.firstEntry != null ? [{ t: sc.firstEntry, label: `first vortex enters the cloud (computed at build time, Ω = ${sc.omega}, same seed)`, short: 'first vortex', kind: 'computed' }] : []),
-        ...(sc.nvMean === sc.nv ? [{ t: T_RUN - 20, label: `vortex count steady: mean N_v over t = 130–150 equals the final ${sc.nv} (computed at build time)`, short: `N_v = ${sc.nv} steady`, kind: 'computed' }] : []),
-      ] : [];
+    duration: T_END * ms,
+    markers: sim => {
+      const run = runFor(sim), out = [];
+      if (!run) return out;
+      if (Number.isFinite(run.tEnter)) out.push({ t: run.tEnter, label: 'first whirlpool inside the cloud (computed at build time, these settings)', short: 'first enters', kind: 'computed' });
+      if (Number.isFinite(run.tSettle)) out.push({ t: run.tSettle, label: 'grid settled: count steady, spacing scatter ≤ 6 % (computed at build time)', short: 'grid settled', kind: 'computed' });
+      return out;
     },
-    note: `The run lasts ${T_RUN} ω⊥⁻¹, the protocol of the build-time Ω scan, so this run’s final vortex count can be compared with the scan figure. Vortices enter, then reorder into the lattice; the last stretch shows that the count no longer changes. Key times are shown when only Ω differs from the defaults (they come from the scan run with the same seed); vortex entry is chaotic, so another seed or Δt shifts it by several ω⊥⁻¹.`,
+    seconds: 110,
+    note: 'The run (318 ms, about 32 trap periods) ends after the grid has settled at the default stirring. Key times come from the build-time run with the same settings and steady stirring (available for the three “Try this” settings); pressing “Stir faster” changes what follows the press.',
   },
-  timeUnit: 'ω⊥⁻¹', timeLabel: 'time since the stirrer started', speed: 3, speedRange: [0.1, 30], duration: 150, frameBudget: 11, testSteps: 120, timeDigits: 1,
-  hudLine: sim => `${sim.census.nv} vortices · Ω = ${sim.params.omega} ω⊥ · ε = ${sim.params.eps} · γ = ${sim.params.gamma} · ${sim.n}² grid, Δt = ${+sim.dt.toPrecision(3)}`,
-  presets: [
-    { label: 'Lattice at Ω = 0.75', values: { omega: 0.75, eps: 0.05, gamma: 0.05, g: 500, n: 128, dt: 0.01 } },
-    { label: 'Faster: Ω = 0.85', values: { omega: 0.85, eps: 0.05, gamma: 0.05, g: 500, n: 128, dt: 0.01 } },
-    { label: 'Too slow: Ω = 0.5', values: { omega: 0.5, eps: 0.05, gamma: 0.05, g: 500, n: 128, dt: 0.01 } },
-    { label: 'Pure GPE (γ = 0)', values: { omega: 0.75, eps: 0.05, gamma: 0, g: 500, n: 128, dt: 0.01 } },
-  ],
-  viewControls(body, { select, toggle, el, view }) {
-    body.append(el('div', { class: 'psim-field' }, el('div', { class: 'top' }, el('span', {}, 'Colour shows')),
-      select([{ value: 'density', label: 'density |ψ|²' }, { value: 'masked', label: 'phase (cyclic), inside the cloud' }, { value: 'phase', label: 'phase (cyclic), whole box' }], mode, v => { mode = v; uploadedFor = null; view.setLegend(legendFor()); })));
-    body.append(toggle('Mark vortex cores', showCores, v => { showCores = v; }));
-    body.append(toggle('Show stirring-trap contour', showTrap, v => { showTrap = v; }));
-  },
+  hudLine: sim => `${sim.last.nv} whirlpools · stirring ${sim.omega.toFixed(2)} ω⊥ = ${(sim.omega * 100).toFixed(0)} turns/s`,
+  hudError: false,
+  presets: PRESETS.map(p => ({ label: p.label, values: p.values })),
+  texts: { paramsNote: 'Changing a setting restarts the stirring from a still cloud.' },
   model: {
-    legend: legendFor(),
-    equations: [
-      { caption: 'Rotating-frame GPE (ħ = m = ω⊥ = 1, ∫|ψ|² = 1); γ = 0 is the pure GPE:', mathml: '<math display="block"><mo>(</mo><mi>i</mi><mo>−</mo><mi>γ</mi><mo>)</mo><mfrac><mrow><mo>∂</mo><mi>ψ</mi></mrow><mrow><mo>∂</mo><mi>t</mi></mrow></mfrac><mo>=</mo><mrow><mo>[</mo><mo>−</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><msup><mo>∇</mo><mn>2</mn></msup><mo>+</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><mo>(</mo><mo>(</mo><mn>1</mn><mo>+</mo><mi>ε</mi><mo>)</mo><msup><mi>x</mi><mn>2</mn></msup><mo>+</mo><mo>(</mo><mn>1</mn><mo>−</mo><mi>ε</mi><mo>)</mo><msup><mi>y</mi><mn>2</mn></msup><mo>)</mo><mo>+</mo><mi>g</mi><msup><mrow><mo>|</mo><mi>ψ</mi><mo>|</mo></mrow><mn>2</mn></msup><mo>−</mo><mi>Ω</mi><msub><mi>L</mi><mi>z</mi></msub><mo>−</mo><mi>μ</mi><mo>]</mo></mrow><mi>ψ</mi></math>' },
-      { caption: 'Split-step (Strang, ADI rotation; Bao, Wang & Markowich 2003), each factor exact in its own variables:', mathml: '<math display="block"><mi>ψ</mi><mo>←</mo><msup><mi>e</mi><mrow><mo>−</mo><mi>i</mi><mi>z</mi><mi>N</mi><mi>Δt</mi><mo>/</mo><mn>2</mn></mrow></msup><msup><mi>e</mi><mrow><mo>−</mo><mi>i</mi><mi>z</mi><mi>A</mi><mi>Δt</mi><mo>/</mo><mn>2</mn></mrow></msup><msup><mi>e</mi><mrow><mo>−</mo><mi>i</mi><mi>z</mi><mi>B</mi><mi>Δt</mi></mrow></msup><msup><mi>e</mi><mrow><mo>−</mo><mi>i</mi><mi>z</mi><mi>A</mi><mi>Δt</mi><mo>/</mo><mn>2</mn></mrow></msup><msup><mi>e</mi><mrow><mo>−</mo><mi>i</mi><mi>z</mi><mi>N</mi><mi>Δt</mi><mo>/</mo><mn>2</mn></mrow></msup><mi>ψ</mi><mo>,</mo><mspace width="0.5em"/><mi>A</mi><mo>=</mo><mfrac><msubsup><mi>k</mi><mi>x</mi><mn>2</mn></msubsup><mn>2</mn></mfrac><mo>+</mo><mi>Ω</mi><mi>y</mi><msub><mi>k</mi><mi>x</mi></msub><mo>,</mo><mspace width="0.3em"/><mi>B</mi><mo>=</mo><mfrac><msubsup><mi>k</mi><mi>y</mi><mn>2</mn></msubsup><mn>2</mn></mfrac><mo>−</mo><mi>Ω</mi><mi>x</mi><msub><mi>k</mi><mi>y</mi></msub><mo>,</mo><mspace width="0.3em"/><mi>z</mi><mo>=</mo><mfrac><mrow><mn>1</mn><mo>−</mo><mi>i</mi><mi>γ</mi></mrow><mrow><mn>1</mn><mo>+</mo><msup><mi>γ</mi><mn>2</mn></msup></mrow></mfrac></math>' },
-      { caption: 'Energy balance with damping (checked; the error diagnostic is its residual):', mathml: '<math display="block"><mfrac><mrow><mi>d</mi><mi>E</mi></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac><mo>=</mo><mo>−</mo><mfrac><mrow><mn>2</mn><mi>γ</mi></mrow><mrow><mn>1</mn><mo>+</mo><msup><mi>γ</mi><mn>2</mn></msup></mrow></mfrac><msup><mrow><mo>‖</mo><mo>(</mo><mi>H</mi><mo>−</mo><mi>μ</mi><mo>)</mo><mi>ψ</mi><mo>‖</mo></mrow><mn>2</mn></msup></math>' },
+    legend: [
+      'colour: atom density seen from above (fading to the dark background where there are no atoms; the dark dots are whirlpool cores)',
+      'blue bars: the long axis of the squeezed trap, which turns (the stirrer); arrow: its direction',
+      'computed live: 2D Gross–Pitaevskii equation, 128 × 128 grid; ms and µm for an example 100 Hz ⁸⁷Rb trap',
     ],
+    equations: [],
     assumptions: [
-      'Mean-field Gross–Pitaevskii theory: zero temperature, no quantum depletion or fluctuations beyond the classical field. Real condensates have a thermal cloud; γ stands in for it phenomenologically (Tsubota, Kasamatsu & Ueda, PRA 65, 023603 (2002)) and is not derived from a temperature.',
-      'Two dimensions: the axial direction is frozen out (pancake trap), so vortices are straight lines and cannot bend or reconnect as in the 3D experiments (Madison et al. 2000 used an elongated cigar-shaped trap).',
-      'Units ħ = m = ω⊥ = 1; g = g₂D·N·m/ħ² folds the atom number into the coupling. For ⁸⁷Rb with ω⊥ = 2π·100 Hz, 1/ω⊥ ≈ 1.6 ms and a_ho ≈ 1.1 µm (illustrative scale, not fitted to an experiment).',
-      'Stirring = a rotating anisotropic trap, static in the rotating frame; ε and Ω switch on suddenly at t = 0 from the non-rotating ground state.',
-      'Seed: smooth random perturbation of relative amplitude η (seeded, wavelengths ≳ 2 a_ho) breaks the (x, y) → (−x, −y) symmetry; without it vortices still enter, in symmetric pairs and later.',
-      'Periodic box of side L ≈ 2.6 R_TF; the cloud density at the box edge is negligible, so the periodic boundary does not act.',
-      'Without damping, split-step Fourier is unstable for large Δt (resonance instability); with γ < 0.02 the page caps Δt at the measured bound. Exact vortex positions and entry times are chaotic and not converged; vortex number (±3) and lattice density are.',
-      'Vortex nucleation is a dynamical (surface-mode) instability: with this protocol only 2 vortices had entered by t = 150 at Ω = 0.5, against 8 at Ω = 0.6 and 15 at 0.75, although a many-vortex state is energetically favoured well below that (a nucleation barrier, as in the experiments). Counts below Ω ≈ 0.6 are therefore entry-limited, not equilibrium values.',
+      'Two dimensions: a flattened (pancake) cloud, or the cross-section of a long cloud whose vortex lines stay straight. Vortex bending and 3D tangles are not modelled.',
+      'Friction γ with the thermal cloud is phenomenological (Choi, Morgan & Bigelow 1998; Tsubota, Kasamatsu & Ueda 2002): it is not derived from a temperature.',
+      'Start: the ground state of the round, still trap plus seeded 1 % random ripples (standing in for thermal and quantum noise). At t = 0 the squeeze switches on and turns at Ω.',
+      `Time step 0.01/ω⊥, stable only with γ ≥ 0.025 (without friction this step is unstable; measured in Verification). The cloud stays inside the 18 a_ho periodic box for Ω ≤ ${MAX_OMEGA}.`,
+      'When and where the first whirlpools enter is chaotic (it changes with the noise seed and the time step); the settled number, spacing and spin do not (checked).',
     ],
     conventions: [
-      'View is the rotating frame (the stirrer’s long axis stays vertical); in the lab the whole picture turns at Ω.',
-      'Density colour: linear, from 0 to the current maximum of |ψ|² (in a_ho⁻² for a normalised ψ). Phase colour: a constant-lightness cyclic hue circle; the phase is gauge-dependent (only its windings are physical), so it is shown as a convention for locating vortices.',
-      'Vortex markers: plaquettes whose four wrapped phase differences sum to ±2π, counted only where the density smoothed over 0.6 a_ho exceeds 15 % of its maximum (excludes the dilute halo’s "ghost" vortices). Updated every 0.25 ω⊥⁻¹.',
-      'Dashed ellipse: equipotential V = μ₀ of the stirring trap (static in this frame).',
-      'Feynman count uses the TF radii R_x,y² = 6⟨x², y²⟩ of the computed cloud.',
+      `Units ħ = m = ω⊥ = 1. Example scale for readouts only: ω⊥ = 2π × 100 Hz, ⁸⁷Rb, a_ho = ${EXAMPLE.aHoMicron.toFixed(2)} µm, 1/ω⊥ = ${ms.toFixed(2)} ms; g = 400 ≈ ${Math.round(EXAMPLE.atoms / 100) * 100} atoms in a pancake with ω_z = 2π × 1 kHz.`,
+      'The computation runs in the frame turning with the stirrer; the view turns it back by the stirrer’s angle ∫Ω dt to show the lab (View: “Turn with the stirrer” shows the computed frame).',
+      'Colour: |ψ|² divided by the peak density of the still cloud, inferno map, linear. Whirlpools: phase windings of ψ where the locally averaged density exceeds 15 % of the centre.',
+      'Clock: real time in the example trap; playback is slowed about 350× (the run lasts 318 ms).',
     ],
     references: [
-      'K. W. Madison, F. Chevy, W. Wohlleben, J. Dalibard, Phys. Rev. Lett. 84, 806 (2000).',
-      'J. R. Abo-Shaeer, C. Raman, J. M. Vogels, W. Ketterle, Science 292, 476 (2001).',
-      'R. P. Feynman, Progress in Low Temperature Physics 1, 17 (1955): n_v = 2Ω/κ.',
-      'M. Tsubota, K. Kasamatsu, M. Ueda, Phys. Rev. A 65, 023603 (2002); K. Kasamatsu, M. Tsubota, M. Ueda, Phys. Rev. A 67, 033610 (2003).',
-      'W. Bao, H. Wang, P. A. Markowich, J. Comput. Phys. 187, 318 (2003); W. Bao, H. Wang, J. Comput. Phys. 217, 612 (2006).',
-      'J. A. C. Weideman, B. M. Herbst, SIAM J. Numer. Anal. 23, 485 (1986): split-step instability.',
-      'D. E. Sheehy, A. L. Fetter, Phys. Rev. A 70, 063620 (2004): vortex density deficit near the edge.',
-      'C. J. Pethick, H. Smith, Bose–Einstein Condensation in Dilute Gases, 2nd ed. (Cambridge 2008), ch. 6–7.',
+      'K. W. Madison, F. Chevy, W. Wohlleben, J. Dalibard, Phys. Rev. Lett. 84, 806 (2000): vortices in a stirred BEC.',
+      'J. R. Abo-Shaeer, C. Raman, J. M. Vogels, W. Ketterle, Science 292, 476 (2001): observation of vortex lattices.',
+      'M. Tsubota, K. Kasamatsu, M. Ueda, Phys. Rev. A 65, 023603 (2002): vortex lattice formation in the damped GP equation.',
+      'S. Choi, S. A. Morgan, N. P. Bigelow, Phys. Rev. A 57, 4057 (1998): phenomenological damping.',
+      'W. Bao, H. Wang, P. A. Markowich, Commun. Math. Sci. 3, 57 (2005): split-step methods for rotating condensates.',
+      'R. P. Feynman, Prog. Low Temp. Phys. 1, 17 (1955): whirlpool density mΩ/πħ.',
     ],
   },
 });
-
-// GPU self-test: the field renderer shows the computed density with the colour map at the right place.
-window.psim.selfTest = () => {
-  const gl = document.querySelector('canvas.psim-gl').getContext('webgl2');
-  const W = gl.drawingBufferWidth, H = gl.drawingBufferHeight, dpr = devicePixelRatio || 1;
-  const view = { W: W / dpr, H: H / dpr };
-  const s0 = createSim({ ...window.psim.params() });
-  uploadedFor = null; mode = 'density';
-  gl.viewport(0, 0, W, H); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
-  drawGL(gl, s0, view);
-  const r = layout(view), n = s0.n, d = s0.density();
-  let max = 0; for (const v of d) max = Math.max(max, v);
-  // the pixel at the trap centre (grid node n/2, n/2) and one well outside the cloud
-  const [cx, cy] = toPx(s0, r, 0, 0), [ox, oy] = toPx(s0, r, -0.47 * s0.L, -0.47 * s0.L);
-  const px = (x, y) => { const b = new Uint8Array(4); gl.readPixels(Math.round(x * dpr), Math.round(H - 1 - y * dpr), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, b); return [...b]; };
-  const centre = px(cx, cy), outside = px(ox, oy);
-  const want = colormap('inferno', d[n / 2 + n * n / 2] / max).map(v => Math.round(255 * v)), zero = colormap('inferno', 0).map(v => Math.round(255 * v));
-  const dev = Math.max(...[0, 1, 2].map(i => Math.abs(centre[i] - want[i]))), dev0 = Math.max(...[0, 1, 2].map(i => Math.abs(outside[i] - zero[i])));
-  return { label: 'GPU density map: centre and empty corner take the colour-map colours of the computed |ψ|²', centre, want, outside, zero, pass: dev <= 6 && dev0 <= 6 };
-};
 
 </script>
 </body>

@@ -3,13 +3,13 @@
 // in a separate project from a real /p-simtor prompt. Nothing here builds simulations.
 //
 //   node scripts/gallery.mjs add PAGE.html --prompt "/p-simtor show why galaxies need dark matter" [--about "one line"] [--title T] [--id ID]
-//                                           [--wait MS] [--advance T] [--click TEXT]   thumbnail after MS ms, after
+//                                           [--wait MS] [--advance T|auto] [--click TEXT]   thumbnail after MS ms, after
 //                                           advancing to time T, after pressing the button labelled TEXT
 //   node scripts/gallery.mjs remove ID
 //   node scripts/gallery.mjs list
 //   node scripts/gallery.mjs order ID…      put these demos first, in this order
 //   node scripts/gallery.mjs build           regenerate docs/index.html and the README demo list (add/remove/order do this too)
-//   add … --group experiments|space|particles|quantum|biology|matter   the README section
+//   add … --group experiments|space|particles|quantum|biology|matter|waves   the README section
 //
 // `add` copies the page into docs/, takes a thumbnail (if Chrome is available) and records the
 // prompt, the source path and the date in docs/demos.json.
@@ -52,8 +52,10 @@ async function thumbnail(id, { wait = 3500, advance, click } = {}) {
     await b.goto(`${pathToFileURL(join(DOCS, `${id}.html`)).href}?theme=dark&autoplay=1`, { width: 1280, height: 800, scale: 1 });
     await new Promise(r => setTimeout(r, wait));
     if (advance != null) {
-      // show the interesting state: fast-forward in the page's own time unit, then let it draw
-      await b.eval(`window.psim?.advanceTo?.(${+advance}); window.psim?.fit?.()`, 120000);
+      // show the interesting state: fast-forward in the page's own time unit and hold it there
+      // 'auto': 60 % through the declared timeline (the interesting middle of the run)
+      const T = advance === 'auto' ? `(() => { const tl = window.psim?.timeline; return tl ? tl.start + 0.6 * (tl.duration - tl.start) : 0; })()` : +advance;
+      await b.eval(`window.psim?.advanceTo?.(${T}); window.psim?.pause?.(); window.psim?.fit?.()`, 600000);
       await new Promise(r => setTimeout(r, 1200));
     }
     if (click) {
@@ -76,11 +78,12 @@ async function thumbnail(id, { wait = 3500, advance, click } = {}) {
 // Subject groups for the README list (a demo's group is set with --group on add).
 export const GROUPS = [
   { key: 'experiments', title: 'Famous experiments, recreated' },
-  { key: 'space', title: 'Space and gravity' },
+  { key: 'space', title: 'Space, gravity and the cosmos' },
   { key: 'particles', title: 'Particle physics and 4D gauge theory' },
   { key: 'quantum', title: 'Quantum mechanics' },
   { key: 'biology', title: 'Quantum biology' },
   { key: 'matter', title: 'Heat, matter and chaos' },
+  { key: 'waves', title: 'Waves and flows' },
 ];
 const SITE = 'https://janosvajda.github.io/p-simtor/';
 const README = join(ROOT, 'README.md');
@@ -113,16 +116,28 @@ function writeReadme(demos) {
 function build() {
   const { demos } = load();
   writeReadme(demos);
-  const cards = demos.map(d => `
+  // the same sections, in the same order, as the README list
+  const sections = [...GROUPS, { key: undefined, title: 'More' }]
+    .map(g => ({ ...g, list: demos.filter(d => (g.key ? d.group === g.key : !GROUPS.some(x => x.key === d.group))) }))
+    .filter(g => g.list.length)
+    .map(g => ({ ...g, anchor: g.key ?? 'more' }));
+  const card = d => `
     <a class="card" href="${esc(d.id)}.html">
       ${d.thumb ? `<img src="thumbs/${esc(d.id)}.jpg" alt="${esc(d.title)}" loading="lazy" width="545" height="442">` : '<div class="ph"></div>'}
       <div class="txt">
-        <h2>${esc(d.title)}</h2>
+        <h3>${esc(d.title)}</h3>
         <div class="cmd"><span>Prompt</span><code>${esc(d.prompt)}</code></div>
         ${d.about ? `<p class="about">${esc(d.about)}</p>` : ''}
         <p class="meta">Generated ${esc(d.date)} by an agent using the installed skill${d.skillVersion ? ` (p-simtor ${esc(d.skillVersion)})` : ''}</p>
       </div>
-    </a>`).join('');
+    </a>`;
+  const nav = `<nav class="groups">${sections.map(g => `<a href="#${g.anchor}">${esc(g.title)} <span>${g.list.length}</span></a>`).join('')}</nav>`;
+  const body = sections.map(g => `
+  <section class="group" id="${g.anchor}">
+    <h2>${esc(g.title)} <span>${g.list.length}</span></h2>
+    <div class="grid">${g.list.map(card).join('')}
+    </div>
+  </section>`).join('');
   const empty = '<p class="empty">No demos yet. Generate one in a test project with <code>/p-simtor …</code>, then add it with <code>node scripts/gallery.mjs add &lt;page.html&gt; --prompt "…"</code>.</p>';
   const html = `<!doctype html>
 <html lang="en">
@@ -140,16 +155,27 @@ main { max-width: 1180px; margin: 0 auto; padding: 56px 20px 72px; }
 header h1 { margin: 0 0 10px; font-size: clamp(28px, 4vw, 40px); letter-spacing: -.02em; }
 header p { margin: 0; max-width: 760px; color: var(--ink2); }
 .tag { display: inline-block; margin-bottom: 14px; font: 600 11px/1 ui-monospace, Menlo, monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-top: 40px; }
+.groups { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 28px; }
+.groups a { padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink2); text-decoration: none; font-size: 13px; }
+.groups a:hover { border-color: var(--accent); color: var(--ink); }
+.groups span, .group h2 span { color: var(--muted); font-weight: 400; }
+.group { margin-top: 44px; scroll-margin-top: 16px; }
+.group h2 { margin: 0; font-size: 20px; letter-spacing: -.01em; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 20px; margin-top: 16px; }
 .card { display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; color: inherit; text-decoration: none; transition: transform .15s, border-color .15s; }
 .card:hover { transform: translateY(-2px); border-color: var(--accent); }
 .card img, .card .ph { width: 100%; height: auto; aspect-ratio: 545 / 442; object-fit: cover; display: block; background: #0a0d13; border-bottom: 1px solid var(--line); }
 .txt { padding: 16px 18px 18px; display: grid; gap: 10px; }
-.txt h2 { margin: 0; font-size: 17px; }
+.txt h3 { margin: 0; font-size: 17px; }
 .repo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 18px; }
 .repo a { display: inline-block; padding: 10px 18px; border-radius: 999px; background: var(--accent); color: #fff; font-weight: 600; text-decoration: none; }
 .repo a:hover { filter: brightness(1.1); }
 .repo code { font: 13px ui-monospace, Menlo, monospace; color: var(--ink2); }
+.effort { margin-top: 28px; max-width: 760px; padding: 18px 20px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; color: var(--ink2); }
+.effort h2 { margin: 0 0 8px; font-size: 17px; color: var(--ink); }
+.effort p { margin: 0; }
+.effort ul { margin: 10px 0; padding-left: 20px; display: grid; gap: 6px; }
+.effort b { color: var(--ink); }
 .about { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink2); }
 .cmd, .chk { display: grid; gap: 2px; margin: 0; font-size: 13px; color: var(--ink2); }
 .cmd span, .chk span { font: 600 10.5px/1.6 ui-monospace, Menlo, monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
@@ -165,8 +191,19 @@ code { font: 12.5px ui-monospace, Menlo, monospace; color: var(--ink); overflow-
     <h1>Physics simulations created by p-simtor</h1>
     <p>Each demo was generated by a coding agent using the installed p-simtor skill, from the prompt shown on its card, in a separate project. Every page computes its motion from the real equations, shows its own verification, and runs entirely in your browser.</p>
     <p class="repo"><a href="https://github.com/janosvajda/p-simtor">Get the skill on GitHub →</a> <code>npx skills add janosvajda/p-simtor</code></p>
+    <div class="effort">
+      <h2>Precision first: what goes into one page</h2>
+      <p>One simulation takes the agent about 15–30 minutes (the heaviest here took about an hour) and around 200 000 tokens. That time is spent on getting the science right, not on drawing:</p>
+      <ul>
+        <li><b>Research.</b> It reads the skill's guide for the subject, finds the model and its sources, and checks the request for wrong premises.</li>
+        <li><b>Proof before the page.</b> The physics must pass its own tests first: exact solutions, published measurements, convergence and conservation checks.</li>
+        <li><b>A full browser check.</b> Dark, light and phone views, extreme inputs, the exact end of the run, the frame rate, every preset and every main button.</li>
+        <li><b>A newcomer's eye.</b> It looks at its own screenshots and asks whether someone without a science degree would understand them; after every fix it builds and checks again.</li>
+      </ul>
+      <p>What it cannot compute (a black-hole merger, the protein around a molecule) each page says plainly, next to what it does compute.</p>
+    </div>
   </header>
-  ${demos.length ? `<section class="grid">${cards}\n  </section>` : empty}
+  ${demos.length ? `${nav}${body}` : empty}
 </main>
 </body>
 </html>
@@ -187,7 +224,7 @@ if (cmd === 'add') {
   if (!info.generator) fail(`${src} was not produced by p-simtor (no generator meta tag)`);
   const id = opt('id') ?? basename(src, '.html').toLowerCase().replace(/[^a-z0-9-]+/g, '-');
   const m = load();
-  const previous = m.demos.find(d => d.id === id);
+  const previous = m.demos.find(d => d.id === id), at = m.demos.findIndex(d => d.id === id);
   m.demos = m.demos.filter(d => d.id !== id);
   copyFileSync(src, join(DOCS, `${id}.html`));
   const shot = args.includes('--no-thumb') ? { thumb: false } : await thumbnail(id, { wait: +(opt('wait') ?? 3500), advance: opt('advance'), click: opt('click') });
@@ -198,11 +235,13 @@ if (cmd === 'add') {
     const pkg = join(dir, '.claude', 'skills', 'p-simtor', 'package.json');
     if (existsSync(pkg)) { skillVersion = JSON.parse(readFileSync(pkg, 'utf8')).version; break; }
   }
-  m.demos.push({
+  // re-adding an existing demo (a rebuilt page) keeps its place, description and group unless given
+  const entry = {
     id, title: opt('title') ?? info.title ?? id, prompt: prompt.startsWith('/p-simtor') ? prompt : `/p-simtor ${prompt}`,
-    about: opt('about'), group: opt('group') ?? previous?.group, gl: shot.gl ?? previous?.gl,
+    about: opt('about') ?? previous?.about, group: opt('group') ?? previous?.group, gl: shot.gl ?? previous?.gl,
     date: new Date().toISOString().slice(0, 10), source: resolve(src), checks: info.checks, thumb, skillVersion,
-  });
+  };
+  if (at >= 0) m.demos.splice(at, 0, entry); else m.demos.push(entry);
   save(m);
   console.log(`Added "${id}"${info.checks ? ` (${info.checks.passed}/${info.checks.total} checks passed)` : ''}.`);
   build();

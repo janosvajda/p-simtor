@@ -168,8 +168,9 @@ export async function checkPage(file, { shotsDir, waitMs = 3000, advance, params
       }
       await sleep(waitMs);
       if (advance != null) {
-        // fast-forward the simulation (in the page's own time unit) to see long-term behaviour
-        const r = await evalWithin(b, `window.psim?.advanceTo ? (window.psim.advanceTo(${+advance}), window.psim.fit?.(), 'ok') : 'no advanceTo'`, 600000);
+        // fast-forward the simulation (in the page's own time unit) and hold it at T, so the
+        // screenshots show exactly that moment
+        const r = await evalWithin(b, `window.psim?.advanceTo ? (window.psim.advanceTo(${+advance}), window.psim.pause?.(), window.psim.fit?.(), 'ok') : 'no advanceTo'`, 600000);
         if (r.frozen || r.error) {
           const summary = r.error ?? `advancing to t = ${advance} took longer than 10 min`;
           problems.push(`${v.label}: ${summary}`);
@@ -179,8 +180,10 @@ export async function checkPage(file, { shotsDir, waitMs = 3000, advance, params
         await sleep(600);
       }
       // A heavy page may need longer than waitMs for its first frames: wait for it to go live.
+      // a run may start before zero (timeline.start < 0): live means the clock has moved past its start
+      const t0 = await b.eval('window.psim?.timeline?.start ?? 0').catch(() => 0);
       let a = await b.eval(READ_ATTRS);
-      for (let k = 0; k < 60 && a.ready === true && !((a.frames ?? 0) > 0 && (a.t ?? 0) > 0); k++) { await sleep(250); a = await b.eval(READ_ATTRS); }
+      for (let k = 0; k < 60 && a.ready === true && !((a.frames ?? 0) > 0 && (a.t ?? t0) > t0); k++) { await sleep(250); a = await b.eval(READ_ATTRS); }
       const overflow = await b.eval('document.documentElement.scrollWidth - document.documentElement.clientWidth');
       // name the widest culprits, so a phone overflow can be fixed without guessing
       const wide = overflow > 1 ? await b.eval(`(() => { const W = document.documentElement.clientWidth; return [...document.querySelectorAll('body *')].filter(e => e.getBoundingClientRect().right > W + 1 && ![...e.children].some(c => c.getBoundingClientRect().right > W + 1)).slice(0, 3).map(e => e.tagName.toLowerCase() + (e.className && typeof e.className === 'string' ? '.' + e.className.trim().split(/\\s+/).join('.') : '') + ' "' + (e.textContent || '').trim().slice(0, 40) + '"'); })()`) : [];
@@ -189,13 +192,19 @@ export async function checkPage(file, { shotsDir, waitMs = 3000, advance, params
       const base = join(shotsDir, `${name}-${v.label.replace(/[^a-z]+/g, '-')}`);
       const shot = await b.screenshot(`${base}.png`);
       const more = v.scroll ? await scrollShots(b, base) : [];
+      // a mid-run picture too (60 % through the timeline): the start alone is often the least telling moment
+      if (v.label === 'dark · desktop' && advance == null) {
+        const mid = await b.eval(`(() => { const tl = window.psim?.timeline; if (!tl) return false; window.psim.advanceTo(tl.start + 0.6 * (tl.duration - tl.start)); window.psim.pause?.(); return true; })()`, 120000).catch(() => false);
+        if (mid) { await sleep(400); more.push(await b.screenshot(`${base}-midrun.png`)); }
+      }
       const errors = [...(Array.isArray(a.errors) ? a.errors : []), ...b.consoleErrors];
-      const live = (a.frames ?? 0) > 0 && (a.t ?? 0) > 0;
+      const live = (a.frames ?? 0) > 0 && (a.t ?? t0) > t0;
       const ok = a.ready === true && errors.length === 0 && live && overflow <= 1 && blank.length === 0;
       const summary = a.ready === undefined
         ? 'page did not report ready (script failed to start?)'
         : `frames ${a.frames ?? 0}, t = ${typeof a.t === 'number' ? a.t.toFixed(3) : '—'}${a.steps != null ? `, steps ${a.steps}` : ''}`
           + `${typeof a.drift === 'number' ? `, ${a.driftLabel ?? 'error'} ${a.drift.toExponential(2)}` : ''}`
+          + `${a.ready === true && !live ? `, not running: the clock did not move past its start (${t0}) after ${waitMs} ms` : ''}`
           + `${overflow > 1 ? `, horizontal overflow ${overflow}px (widest: ${wide.join('; ')})` : ''}`
           + `${blank.length ? `, diagnostics without a value: ${blank.join(', ')}` : ''}`
           + `${errors.length ? `, errors: ${errors.join(' | ')}` : ''}`;
@@ -219,10 +228,64 @@ export async function checkPage(file, { shotsDir, waitMs = 3000, advance, params
         if (!t.ok) problems.push(`${t.label}: ${t.summary}`);
       }
     }
+    for (const t of await actionTests(b, file, { params, base: join(shotsDir, `${name}-dark-desktop`) })) {
+      runs.push(t);
+      if (!t.ok) problems.push(`${t.label}: ${t.summary}`);
+    }
   } finally {
     await b.close();
   }
   return { runs, problems };
+}
+
+/**
+ * Press every main action button (spec.actions) the way a visitor would: from 40 % through the
+ * run, then play for two seconds and save a screenshot (<page>-dark-desktop-action-N.png), so what
+ * the button does is seen and judged, not assumed. Fails on an error or a frozen page; a press
+ * that changes neither the parameters nor the next drawn frame is reported for a look.
+ */
+export async function actionTests(b, file, { params, base, playMs = 2000 } = {}) {
+  const out = [];
+  const url = `${pathToFileURL(file).href}?theme=dark&autoplay=0`;
+  await b.goto(url, { width: 1440, height: 900 });
+  const labels = await b.eval(`[...document.querySelectorAll('.psim-action')].map(x => x.textContent.trim())`).catch(() => []);
+  for (let i = 0; i < Math.min(labels.length, 6); i++) {
+    if (i) await b.goto(url, { width: 1440, height: 900 });
+    if (params) await b.eval(`window.psim?.setParams?.(${JSON.stringify(params)}, { play: false })`, 60000);
+    await sleep(500);
+    b.consoleErrors.length = 0;
+    const frame = `(window.psim?.nextFrame?.() ?? Promise.resolve()).then(() => { try { return [...document.querySelectorAll('.psim-view canvas')].map(c => c.toDataURL()).join('|'); } catch { return ''; } })`;
+    const before = await evalWithin(b, `(() => { const tl = window.psim?.timeline; window.psim?.restart?.(); if (tl) window.psim.advanceTo(tl.start + 0.4 * (tl.duration - tl.start)); window.psim?.pause?.(); return (${frame}).then(img => JSON.stringify({ img, p: window.psim?.params?.() ?? null, t: window.psim?.t ?? null })); })()`, 120000);
+    const pressed = await evalWithin(b, `(() => { document.querySelectorAll('.psim-action')[${i}].click(); window.psim?.pause?.(); return (${frame}).then(img => JSON.stringify({ img, p: window.psim?.params?.() ?? null, t: window.psim?.t ?? null })); })()`, 60000);
+    const label = `action "${labels[i]}" pressed`;
+    if (before.frozen || before.error || pressed.frozen || pressed.error) {
+      out.push({ label, ok: false, summary: pressed.error ?? before.error ?? 'the page froze when the button was pressed' });
+      continue;
+    }
+    await b.eval('window.psim?.play?.()');
+    await sleep(playMs);
+    await b.eval('window.psim?.pause?.()');
+    await sleep(300);
+    const shot = await b.screenshot(`${base}-action-${i + 1}.png`);
+    // and once its result should be plainly visible (spec.actions[i].reveal seconds of playback)
+    const reveal = Math.min(30, Math.max(playMs / 1000, +(await b.eval(`window.psim?.actions?.[${i}]?.reveal ?? 8`)) || 8));
+    let result = null;
+    if (reveal * 1000 > playMs) {
+      await b.eval('window.psim?.play?.()');
+      await sleep(reveal * 1000 - playMs);
+      await b.eval('window.psim?.pause?.()');
+      await sleep(300);
+      result = await b.screenshot(`${base}-action-${i + 1}-result.png`);
+    }
+    const a = JSON.parse(before.value ?? '{}'), z = JSON.parse(pressed.value ?? '{}');
+    const errors = [...JSON.parse(await b.eval(`document.documentElement.dataset.psimErrors || '[]'`)), ...b.consoleErrors];
+    const changed = JSON.stringify(a.p) !== JSON.stringify(z.p) || a.t !== z.t || (a.img && z.img && a.img !== z.img);
+    const compared = changed || !!(a.img && z.img);
+    out.push({ label, ok: errors.length === 0, screenshot: shot, more: result ? [result] : [],
+      summary: errors.length ? `errors: ${errors.join(' | ')}`
+        : `${changed ? 'changed the picture' : compared ? 'warning: the next frame, the time and the parameters are unchanged (fine if its effect grows while playing; look at the screenshot)' : 'pressed without errors (picture not comparable)'}; screenshots after ${playMs / 1000} s${result ? ` and ${reveal} s (result)` : ''} of play` });
+  }
+  return out;
 }
 
 /**
@@ -342,6 +405,33 @@ export const interactionTests = {
     } else if (timeDependent) {
       out.push({ label: 'timeline', ok: true, summary: 'warning: no spec.timeline declared. Declare the run span and its key times (computed and requested) so the clock shows when things happen and stops at the end' });
     }
+    // A visitor without a physics degree must learn what they are looking at: a plain intro.
+    const intro = JSON.parse(await b.eval('JSON.stringify(window.psim?.intro ?? null)') ?? 'null');
+    if (intro !== null || await b.eval('!!window.psim?.defaultSpeed')) {
+      const words = intro?.text ? intro.text.trim().split(/\s+/).length : 0;
+      out.push({ label: 'plain-language intro (spec.intro)', ok: words >= 12 && words <= 90 && (intro?.watch ?? []).length <= 4,
+        summary: intro ? `${words} words, ${(intro.watch ?? []).length} "look for" items${words > 90 ? ': too long, keep it under 90 words' : words < 12 ? ': too short to explain what is shown' : ''}` : 'missing: add intro: { text, watch } in everyday words (what is shown, why it matters, what to look for)' });
+    }
+    // The page's main action (spec.actions) must be on the first screen, under the view.
+    const act = await b.eval(`(() => { const a = [...document.querySelectorAll('.psim-action')]; if (!a.length) return null; window.scrollTo(0, 0); return { n: a.length, visible: a.every(x => { const r = x.getBoundingClientRect(); return r.bottom <= innerHeight && r.top >= 0; }) }; })()`);
+    if (act) out.push({ label: 'main action visible on the first screen (1440×900)', ok: act.visible, summary: `${act.n} action button(s)${act.visible ? '' : ': below the fold, make the view shorter or the page will hide its main action'}` });
+    // The run must be watchable: at the default speed it should take long enough to follow.
+    if (tlv) {
+      const speed = await b.eval('window.psim.defaultSpeed ?? 0');
+      const secs = speed > 0 ? (tlv.duration - (tlv.start ?? 0)) / speed : Infinity;
+      out.push({ label: 'playback length at default speed', ok: secs >= 30,
+        summary: `${Number.isFinite(secs) ? secs.toFixed(1) : '∞'} s for the whole run${secs < 30 ? ': too short to follow, aim for 45–120 s (lower the default speed)' : secs < 45 ? ' (short; 45–120 s reads better)' : ''}` });
+    }
+    // Smoothness: frames per second while playing, at a laptop window size.
+    if (timeDependent) {
+      await b.eval('window.psim.restart(); window.psim.play?.()');
+      await sleep(1500);
+      const fps = await b.eval(`new Promise(res => { let n = 0; const t0 = performance.now(); const f = () => { n++; const dt = performance.now() - t0; if (dt < 3000) requestAnimationFrame(f); else res(n / (dt / 1000)); }; requestAnimationFrame(f); })`, 20000);
+      const limited = await b.eval(`/compute-limited/.test(document.querySelector('.psim-hud .flag')?.textContent ?? '')`);
+      out.push({ label: 'smooth playback (frames per second, 1440×900)', ok: fps >= 24,
+        summary: `${fps.toFixed(0)} fps${limited ? ', compute-limited (the physics cannot keep up with the default speed)' : ''}${fps < 24 ? ': too slow, reduce the per-frame work or the resolution' : fps < 45 ? ' (below 45: check on a laptop)' : ''}` });
+      await b.eval('window.psim.pause?.()');
+    }
     const input = '.psim-side .psim-field input[type=number]';
     if (!(await b.eval(`!!document.querySelector('${input}')`))) {
       return [...out, { label: 'parameter edit → model', ok: true, summary: 'no numeric parameters to test' }];
@@ -377,11 +467,14 @@ export const interactionTests = {
       const after = await b.eval(`document.querySelector('.psim-figure canvas').toDataURL()`);
       out.push({ label: 'spectrum axis control', ok: before !== after, summary: before !== after ? 'changing only the axis scale redrew the spectrum' : 'axis selector left the plot unchanged' });
     }
+    // in a non-default mode (--params / --preset) a parameter may legitimately do nothing (a field
+    // that only acts on polarised particles, with polarisation off): a warning there, a failure by default
+    const modeOnly = !!params && !!changedKey && !differs;
     return [...out, {
       label: 'parameter edit → model',
-      ok: !!changedKey && differs,
+      ok: (!!changedKey && differs) || modeOnly,
       summary: changedKey
-        ? `${changedKey}: ${p0[changedKey]} → ${p1[changedKey]} via the UI; recomputed state after ${n} steps ${differs ? 'differs' : 'is IDENTICAL (parameter not wired to the physics?)'}`
+        ? `${changedKey}: ${p0[changedKey]} → ${p1[changedKey]} via the UI; recomputed state after ${n} steps ${differs ? 'differs' : modeOnly ? 'is identical in this mode (warning: confirm it has no effect here; the default mode must pass)' : 'is IDENTICAL (parameter not wired to the physics?)'}`
         : 'editing the first parameter input did not change the model parameters',
     }];
   },

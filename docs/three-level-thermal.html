@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="generator" content="p-simtor">
-<title>Three-level system heating up</title>
+<title>Three levels warming up</title>
 <style>/* psim:ui/instrument.css */
 /* p-simtor instrument shell.
    A simulation page is a scientific instrument: a large stage for the physics,
@@ -143,35 +143,10 @@ body {
   background:
     radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 92%, var(--accent) 8%) 0%, var(--stage) 60%);
 }
-.psim-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
-.psim-stage canvas.grab { cursor: grab; }
-.psim-stage canvas.grabbing { cursor: grabbing; }
-.psim-stage canvas.move { cursor: move; }
+.psim-view canvas.grab { cursor: grab; }
+.psim-view canvas.grabbing { cursor: grabbing; }
+.psim-view canvas.move { cursor: move; }
 
-.psim-hud {
-  position: absolute; left: 16px; top: 14px;
-  display: grid; gap: 2px; pointer-events: none;
-  font: 12px/1.35 var(--mono); color: var(--ink-2);
-}
-.psim-hud b { font-weight: 500; color: var(--ink); font-size: 20px; letter-spacing: -.01em; }
-.psim-hud .dim { color: var(--muted); }
-.psim-hud .flag { color: var(--warn); }
-
-.psim-legend {
-  position: absolute; right: 16px; top: 14px; display: grid; gap: 4px; justify-items: end;
-  font: 11px/1.3 var(--sans); color: var(--muted); pointer-events: none; text-align: right;
-}
-
-.psim-transport {
-  position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
-  display: flex; align-items: center; gap: 4px;
-  padding: 5px; border-radius: 12px;
-  background: color-mix(in srgb, var(--panel) 86%, transparent);
-  border: 1px solid var(--line);
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 10px 30px rgba(0,0,0,.25);
-  max-width: calc(100% - 32px);
-}
 .psim-transport button {
   height: 32px; min-width: 32px; padding: 0 9px; border-radius: 8px;
   border: 0; background: transparent; color: var(--ink-2); cursor: pointer;
@@ -316,7 +291,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 @media (max-width: 860px) {
-  .psim-app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 64vh auto; height: auto; }
+  .psim-app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto; height: auto; }
   .psim-head { gap: 10px; }
   .psim-title { flex: 1; }
   .psim-tier { padding: 6px; }
@@ -324,7 +299,6 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
   .psim-side { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
   .psim-head { padding: 10px 16px; }
   .psim-title p { display: none; }
-  .psim-transport label.speed { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -378,28 +352,17 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 
 /* ---------- workbench layout: stage + figures + equations (instrument-app layout: 'workbench') ---------- */
 .psim-app.workbench .psim-stage { overflow: auto; background: var(--stage); }
-.psim-bench { position: relative; display: grid; gap: 18px; padding: 18px 18px 84px; min-height: 100%; }
-.psim-bench .psim-canvaswrap { position: relative; height: clamp(300px, 52vh, 620px); border-radius: 12px; overflow: hidden; border: 1px solid var(--line);
-  background: radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 90%, var(--accent) 10%) 0%, var(--stage) 65%); }
-.psim-bench .psim-canvaswrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+.psim-bench { position: relative; display: grid; gap: 18px; padding: 18px; min-height: 100%; }
 .psim-bench .psim-figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
 .psim-bench .psim-eqs { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
-.psim-app.workbench .psim-transport { position: fixed; left: calc((100vw - 372px) / 2); }
-.psim-app.workbench .psim-hud { left: 30px; top: 30px; }
-.psim-app.workbench .psim-legend { right: 30px; top: 30px; }
 @media (max-width: 860px) {
-  .psim-app.workbench .psim-transport { left: 50%; }
-  .psim-bench { padding: 12px 12px 84px; }
+  .psim-bench { padding: 12px; }
 }
 
 @media (max-width: 860px) {
   /* phones: legend bottom-right, clear of HUD (top-left), scale bars (bottom-left) and transport */
-  .psim-legend { top: auto; bottom: 70px; left: auto; right: 14px; max-width: 58%; justify-items: end; text-align: right; font-size: 10.5px; }
   .psim-app.workbench { grid-template-rows: auto auto auto; }
   .psim-app.workbench .psim-stage { overflow: visible; }
-  .psim-app.workbench .psim-transport { position: absolute; }
-  .psim-app.workbench .psim-legend { top: auto; bottom: 14px; left: auto; right: 26px; }
-  .psim-bench .psim-canvaswrap { height: 70vh; }
 }
 
 /* GPU layer (ui/gl.mjs): under the 2D canvas, which keeps labels and pointer events */
@@ -410,112 +373,203 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px co
 .psim-presets .psim-hint { width: 100%; margin: 0; }
 
 /* Over a GPU scene the HUD and legend get a soft backing so they stay readable on bright content */
-.psim-app.has-gl .psim-hud, .psim-app.has-gl .psim-legend {
-  padding: 6px 9px; border-radius: 8px;
-  background: color-mix(in srgb, var(--stage) 72%, transparent);
-  backdrop-filter: blur(3px);
-}
 
 /* ---------- full screen (scene + HUD + legend + playback bar) ---------- */
 .psim-fs { background: var(--stage, var(--bg)); border-radius: 0 !important; border: 0 !important; }
-.psim-app .psim-fs .psim-transport { position: absolute; left: 50%; right: auto; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 5; }
 .psim-pseudo-fs { position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100dvh !important; max-height: none !important; z-index: 1000; margin: 0 !important; }
 .psim-fsbtn { position: absolute; right: 12px; bottom: 12px; z-index: 4; width: 34px; height: 34px; display: grid; place-items: center;
   border-radius: 9px; border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); cursor: pointer; }
 .psim-fsbtn:hover { background: var(--raise); color: var(--ink); }
 .psim-fsbtn svg { width: 15px; height: 15px; }
 
-/* ---------- timeline: the run's span and its key times (spec.timeline) ---------- */
-.psim-timeline { position: absolute; left: 50%; transform: translateX(-50%); bottom: 78px; width: min(560px, 62%); z-index: 3;
-  font: 10.5px var(--mono); color: var(--muted); pointer-events: auto; }
-.psim-canvaswrap > .psim-timeline { bottom: 14px; }
-.psim-app .psim-fs > .psim-timeline { bottom: 86px; }
+
+
+/* The animation view is a dark screen in BOTH page themes: scenes (glows, density maps, space) are
+   designed for it, and every page looks the same. Panels, text and figures follow the page theme. */
+.psim-view, :root[data-theme="light"] .psim-view {
+  --bg: #07090d;
+  --stage: #0a0d13;
+  --panel: #0e1219;
+  --raise: #141923;
+  --line: rgba(196, 214, 255, 0.09);
+  --line-strong: rgba(196, 214, 255, 0.18);
+  --ink: #e6e9ef;
+  --ink-2: #b6bdcb;
+  --muted: #7b8396;
+  --faint: #4a5163;
+  --accent: #8cc8ff;
+  --accent-ink: #06121f;
+  --good: #7fd8a4;
+  --warn: #f2c46d;
+  --bad: #ff7a85;
+  --grid: rgba(150, 175, 230, 0.06);
+  --grid-strong: rgba(150, 175, 230, 0.13);
+  --glow: 1;
+  --body-0: #ffb35c;
+  --body-1: #68c3ff;
+  --body-2: #ff6f9a;
+  --body-3: #9be08a;
+  --body-4: #c49bff;
+  --body-5: #ffe07a;
+  color-scheme: dark;
+}
+
+/* ---------- the scene: plain intro, clean view, player bar, key ---------- */
+/* Everything about the animation lives in one card: what it shows (in plain words), the view with
+   nothing written over it, a video-player bar right under it, and the key to its colours below. */
+.psim-scene { display: flex; flex-direction: column; min-height: 0; background: var(--stage); }
+.psim-stage > .psim-scene { position: absolute; inset: 0; }
+.psim-scene.psim-canvaswrap { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
+.psim-view { position: relative; flex: 1 1 auto; min-height: 0;
+  background: radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, var(--stage) 90%, var(--accent) 10%) 0%, var(--stage) 65%); }
+.psim-canvaswrap > .psim-view { flex: none; height: clamp(320px, 58vh, 660px); }
+.psim-view canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+.psim-intro { padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); font: 14px/1.55 var(--sans); color: var(--ink-2); }
+.psim-side > .psim-intro { margin: 14px 16px 4px; }
+.psim-intro b { display: block; font: 600 11px/1.4 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.psim-intro p { margin: 0; color: var(--ink); max-width: 80ch; }
+.psim-intro ul { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 3px; font-size: 13px; color: var(--ink-2); }
+.psim-intro li::before { content: '→ '; color: var(--accent); }
+.psim-intro.collapsed p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.psim-intro.collapsed ul { display: none; }
+.psim-more { margin-top: 4px; padding: 0; border: 0; background: none; color: var(--accent); font: 500 12.5px var(--sans); cursor: pointer; }
+.psim-more:hover { text-decoration: underline; }
+.psim-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 92%, var(--stage)); }
+.psim-action { padding: 9px 16px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--line)); background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--ink); font: 600 13.5px var(--sans); cursor: pointer; }
+.psim-action:hover { background: color-mix(in srgb, var(--accent) 26%, transparent); }
+
+.psim-transport { display: flex; align-items: center; gap: 4px; padding: 6px 10px; flex-wrap: nowrap;
+  border-top: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 92%, var(--stage)); }
+.psim-clock[hidden] { display: none; }
+.psim-clock { display: grid; line-height: 1.15; padding: 0 8px; min-width: 0; max-width: 220px; }
+.psim-clock .dim { font: 10.5px var(--sans); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.psim-clock b { font: 500 15px var(--mono); color: var(--ink); white-space: nowrap; }
+
+.psim-timeline { flex: 1 1 200px; min-width: 120px; padding: 0 10px; font: 10.5px var(--mono); color: var(--muted); position: relative; }
+.psim-timeline .ticks { position: relative; height: 17px; }
 .psim-timeline .bar { position: relative; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--ink) 16%, transparent); cursor: pointer; }
+.psim-timeline .bar::before { content: ''; position: absolute; inset: -8px 0; }   /* a taller hit area */
 .psim-timeline .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 3px; background: var(--accent); }
 .psim-timeline .m { position: absolute; top: -4px; width: 2px; height: 14px; margin-left: -1px; background: var(--ink); }
-.psim-timeline .ticks { position: relative; height: 30px; }
 .psim-timeline .lab { position: absolute; bottom: 2px; transform: translateX(-50%); white-space: nowrap; color: var(--ink-2); }
-.psim-timeline .lab.r1 { bottom: 16px; }
 .psim-timeline .ends { display: flex; justify-content: space-between; margin-top: 3px; }
 .psim-timeline .m.measured, .psim-tlrow i.measured { background: var(--good, #4cc38a); }
 .psim-timeline .lab.measured { color: var(--good, #4cc38a); }
 .psim-timeline .m.requested, .psim-tlrow i.requested { background: var(--warn, #e0a030); }
 .psim-timeline .lab.requested { color: var(--warn, #e0a030); }
-.psim-timeline { background: color-mix(in srgb, var(--stage) 78%, transparent); padding: 4px 12px 6px; border-radius: 10px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 .psim-tlrow { display: grid; grid-template-columns: 10px 1fr auto; gap: 2px 8px; align-items: baseline; margin: 6px 0; font-size: 12px; }
 .psim-tlrow i { width: 8px; height: 8px; border-radius: 2px; background: var(--ink); }
 .psim-tlrow code { font: 12px var(--mono); color: var(--ink); }
 .psim-tlrow small { grid-column: 2 / 4; color: var(--muted); font-size: 11px; }
+
+.psim-key { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 18px; padding: 8px 14px 10px;
+  border-top: 1px solid var(--line); font: 12px/1.45 var(--sans); color: var(--ink-2); }
+.psim-key:has(.psim-legend:empty):has(.psim-hud span:empty + span:empty + span:empty) { display: none; }
+.psim-legend { display: flex; flex-wrap: wrap; gap: 2px 16px; min-width: 0; }
+.psim-legend span { min-width: 0; }
+.psim-hud { display: flex; flex-wrap: wrap; gap: 2px 14px; font: 11.5px/1.45 var(--mono); color: var(--muted); }
+.psim-hud span:empty { display: none; }
+.psim-hud .flag { color: var(--warn); }
+
+.psim-endcard { position: absolute; right: 12px; bottom: 12px; z-index: 4; display: flex; align-items: center; gap: 10px;
+  padding: 6px 6px 6px 12px; border-radius: 10px; border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 90%, transparent);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); font: 12.5px var(--sans); color: var(--ink-2); }
+.psim-endcard .psim-btn { padding: 5px 10px; }
+.psim-endcard[hidden] { display: none; }
+
+/* full screen: the view grows, the intro steps aside, player and key stay */
+.psim-fs > .psim-view, .psim-fs.psim-canvaswrap > .psim-view { flex: 1 1 auto; height: auto; }
+.psim-fs .psim-transport { padding-bottom: max(6px, env(safe-area-inset-bottom)); }
+
 @media (max-width: 860px) {
-  .psim-timeline { left: 10px; transform: none; width: calc(50% - 16px); bottom: 70px; }
-  .psim-app .psim-legend { max-width: calc(50% - 16px); }
-  .psim-canvaswrap > .psim-timeline { bottom: 12px; }
+  .psim-stage { overflow: visible; }
+  .psim-stage > .psim-scene { position: relative; inset: auto; }
+  /* the first screen holds the view and the whole player bar: header ≈ 64 px, player ≈ 104 px */
+  .psim-stage > .psim-scene > .psim-view, .psim-canvaswrap > .psim-view { flex: none; height: max(280px, calc(100svh - 64px - 132px - 26px)); }
+  .psim-scene:has(.psim-actions) > .psim-view { height: max(260px, calc(100svh - 64px - 132px - 26px - 62px)); }   /* the action row fits too */
+  .psim-intro { padding: 12px 14px; font-size: 13.5px; }
+  .psim-side > .psim-intro { margin: 12px 12px 4px; }
+  .psim-transport { flex-wrap: wrap; row-gap: 2px; padding: 6px 8px; }
+  .psim-transport .psim-timeline { order: -1; flex: 1 1 100%; padding: 0 4px 4px; }
+  .psim-transport .psim-clock { flex: 1 1 auto; }
+  .psim-transport label.speed { padding: 0 4px; }
+  .psim-transport label.speed { font-size: 0; }
+  .psim-transport input[type=range] { width: 80px; }
+  .psim-transport output { min-width: 0; font-size: 11px; }
+  .psim-transport .sep { display: none; }
   .psim-timeline .lab { font-size: 9.5px; }
+  .psim-key { padding: 8px 12px; font-size: 11.5px; }
+  .psim-fs > .psim-view { height: auto; }
 }
 </style>
-<style>.psim-bench .psim-figs { order: 1; } .psim-bench .psim-eqs { order: 2; }</style>
 </head>
 <body>
 <script type="application/json" id="psim-verification">{
- "summary": "Canonical populations checked against closed forms, thermodynamic identities, high/low-T limits and the published two-level Schottky peak:",
+ "summary": "Boltzmann populations of three levels checked against closed-form ratios, the Gibbs density matrix, cold/hot limits, no inversion, C = dU/dT and two-level benchmarks",
  "checks": [
   {
-   "label": "Equal spacing: populations vs closed form e^(−iΔ/kT)/Z (121 temperatures)",
-   "value": "max |ΔP| = 2.2e-16",
+   "label": "Population ratios = (g_j/g_i)·e^(−ΔE/k_BT) (closed form, 600 temperatures)",
+   "value": 6.439293542825908e-15,
    "pass": true
   },
   {
-   "label": "ΣP_i = 1 at all T (4 level schemes)",
-   "value": "max |ΣP − 1| = 2.2e-16",
+   "label": "Populations sum to 1",
+   "value": 2.220446049250313e-16,
    "pass": true
   },
   {
-   "label": "No inversion at T > 0: P_i/g_i falls with energy; P₀ only falls, P₂ only rises",
-   "value": "0 violations in 484 states",
+   "label": "Agrees with the Gibbs density matrix e^(−H/k_BT)/Z (core/quantum thermalState)",
+   "value": 2.220446049250313e-16,
    "pass": true
   },
   {
-   "label": "Cold limit (0.5 K, Δ = 10 meV): P₀ → 1, S → ln g₀ = 0",
-   "value": "1 − P₀ = 0.0e+0, S = 3.7e-99",
+   "label": "Cold side: middle share at T = gap/20 equals e^(−20)/Z",
+   "value": 0,
    "pass": true
   },
   {
-   "label": "Hot limit (10⁹ K, g = 1,1,3): P → g/Σg = (0.2, 0.2, 0.6), S → ln 5",
-   "value": "max |ΔP| = 4.2e-8, |S − ln 5| = 4.2e-15",
+   "label": "Hot limit: shares → g_i/Σg (T = 10⁶ × top energy)",
+   "value": 1.9444444754324053e-7,
    "pass": true
   },
   {
-   "label": "C/k_B = Var(E)/(k_BT)² agrees with dU/dT (finite difference)",
-   "value": "max rel. diff 1.2e-7",
+   "label": "No population inversion per state (max of P_upper/g − P_lower/g ≤ round-off)",
+   "value": -6.676475590729973e-16,
    "pass": true
   },
   {
-   "label": "S/k_B = ln Z + U/k_BT agrees with −dF/dT (finite difference)",
-   "value": "max rel. diff 8.6e-8",
+   "label": "Heat capacity = dU/dT (central difference, h = 10⁻³ T)",
+   "value": 7.328316646848521e-7,
    "pass": true
   },
   {
-   "label": "S = −Σ P_i ln(P_i/g_i) agrees with the partition-function entropy",
-   "value": "max |ΔS| = 4.4e-16",
+   "label": "Marker temperatures solve P = 10 % (middle 45.54 K, top 171.01 K)",
+   "value": 1.3877787807814457e-17,
    "pass": true
   },
   {
-   "label": "Two-level limit: Schottky peak vs published C_max = 0.4392 k_B at k_BT = 0.4168 Δ",
-   "value": "C_max = 0.4392 k_B at k_BT = 0.4168 Δ",
+   "label": "Two-level limit: middle reaches 10 % at Δ/ln 9 = 45.512 K",
+   "value": 2.220446049250313e-16,
    "pass": true
   },
   {
-   "label": "Middle-level peak (Δ = 5, 25 meV): analytic T* vs numerical search of P₁(T)",
-   "value": "T* = 216.31 K, search 216.30 K (rel. 3.8e-5); P₁max = 0.3892 > 1/3",
+   "label": "Two-level heat-capacity peak at Δ/2.3994 (grid step 0.2 K)",
+   "value": 0.0018673713055654684,
    "pass": true
   }
  ],
  "notes": [
-  "Exact within the stated model: three fixed levels in equilibrium with a heat bath. Real systems have further levels and level shifts that this model omits.",
-  "Benchmark source for the Schottky peak: x = Δ/k_BT ≈ 2.3994 solves x·tanh(x/2) = 2, giving C_max ≈ 0.4392 k_B (e.g. Kittel & Kroemer, Thermal Physics, 2nd ed., ch. 3)."
+  "Exact equilibrium (canonical ensemble); no dynamics or heating rate is modelled.",
+  "Energies are temperature-independent; only three levels are included."
  ],
- "generated": "2026-10-15T08:58:32.401Z",
- "runtimeMs": 71
+ "keyTemperatures": {
+  "mid10": 45.54049056971059,
+  "top10": 171.00702833509737
+ },
+ "generated": "2026-10-16T02:27:22.506Z",
+ "runtimeMs": 45
 }</script>
 <script type="module">
 const __psim = {};
@@ -607,6 +661,17 @@ function cssVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
+/**
+ * A colour token as it applies INSIDE the animation view: the view is dark in both page themes
+ * (like a screen), so scene drawing (canvas labels, grids, glows) reads its tokens here, while
+ * figures and panels use cssVar and follow the page theme.
+ */
+function sceneVar(name) {
+  if (typeof name !== 'string' || !name.startsWith('--')) return name;
+  const host = typeof document !== 'undefined' ? document.querySelector('.psim-view') ?? document.documentElement : null;
+  return host ? getComputedStyle(host).getPropertyValue(name).trim() : '';
+}
+
 // ---------- layout pieces ----------
 
 function section(title, { open = true, aside } = {}) {
@@ -628,7 +693,8 @@ function row(label, value = '—', cls = '') {
 /** Value for a numeric input: short, exact enough, scientific notation for small or huge numbers. */
 const inputValue = v => {
   const a = Math.abs(v);
-  return a !== 0 && (a < 1e-3 || a >= 1e7) ? v.toExponential(4) : String(+Number(v).toPrecision(6));
+  // large or tiny values in scientific form without padded zeros (3e+10, not 3.0000e+10)
+  return a !== 0 && (a < 1e-3 || a >= 1e7) ? v.toExponential(4).replace(/\.?0+e/, 'e') : String(+Number(v).toPrecision(6));
 };
 
 /**
@@ -716,6 +782,13 @@ function transport({ onToggle, onStep, onRestart, onFit, onFullscreen, speed, sp
     el('button', { title: 'Fit the view', 'aria-label': 'Fit view', html: ICONS.fit, onclick: onFit }),
     onFullscreen ? el('button', { class: 'fs', title: 'Full screen (F)', 'aria-label': 'Full screen', html: ICONS.fullscreen, onclick: onFullscreen }) : null);
   bar.setPlaying = p => { play.innerHTML = p ? ICONS.pause : ICONS.play; };
+  /** Show a speed set by the shell (e.g. a timeline's play time); widens the slider range if needed. */
+  bar.setSpeed = s => {
+    const v = Math.log10(s);
+    if (v < +range.min) range.min = v - 1;
+    if (v > +range.max) range.max = v + 1;
+    range.value = v; out.textContent = speedLabel(s);
+  };
   bar.setFullscreen = on => {
     const b = bar.querySelector('button.fs');
     if (b) { b.innerHTML = on ? ICONS.exitFullscreen : ICONS.fullscreen; b.title = on ? 'Leave full screen (F or Esc)' : 'Full screen (F)'; }
@@ -851,7 +924,7 @@ function beacon() {
   };
 }
 
-return { el, ICONS, sci, fix, grade, initTheme, cssVar, section, row, inputValue, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon };
+return { el, ICONS, sci, fix, grade, initTheme, cssVar, sceneVar, section, row, inputValue, slider, toggle, select, button, toast, transport, createClock, logPlot, download, readJsonScript, beacon };
 })();
 
 // ---- psim:ui/plot.mjs
@@ -2040,10 +2113,12 @@ const polylines = {
  * horizontal. Ticks at nice values (decades when log). Returns the bar's rectangle.
  */
 function drawColorBar(ctx, { x, y, width = 12, height = 120, colormap: map = 'viridis', range = [0, 1], log = false, label = '', ticks = 5, horizontal = false, color, format } = {}) {
-  const css = name => (typeof getComputedStyle === 'function' ? getComputedStyle(document.documentElement).getPropertyValue(name).trim() : '');
+  // tokens of the element the bar is drawn in (the view is dark in both page themes)
+  const css = name => (typeof getComputedStyle === 'function' ? getComputedStyle(ctx.canvas?.closest?.('.psim-view') ?? document.documentElement).getPropertyValue(name).trim() : '');
   const text = color ?? (css('--muted') || '#8a94a6');
   const [lo, hi] = log ? range.map(Math.log10) : range;
   const steps = Math.max(2, Math.round(horizontal ? width : height));
+  ctx.save();   // leaves the caller's fill, stroke, font and text alignment unchanged
   for (let i = 0; i < steps; i++) {
     const c = colormap(map, (i + 0.5) / steps).map(v => Math.round(255 * v));
     ctx.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`;
@@ -2066,8 +2141,10 @@ function drawColorBar(ctx, { x, y, width = 12, height = 120, colormap: map = 'vi
   }
   if (label) {
     ctx.textAlign = horizontal ? 'center' : 'left'; ctx.textBaseline = 'bottom';
-    ctx.fillText(label, horizontal ? x + width / 2 : x, y - 4);
+    // vertical: clear of the top tick's label, which is centred on the bar's top edge
+    ctx.fillText(label, horizontal ? x + width / 2 : x, y - (horizontal ? 4 : 10));
   }
+  ctx.restore();
   return { x, y, width, height };
 }
 
@@ -2412,12 +2489,12 @@ __psim["ui/instrument-app.mjs"] = (() => {
 // Simulation contract (returned by create(params)):
 //   sim.t                    physical time of the latest computed state
 //   sim.step()               advance by one integrator step (or one analytic tick)
-//   sim.sample?(t)           state at t between steps, for drawing (default: current state)
+//   sim.sample?(t)           state at t between steps: the shell passes t to draw/drawGL; call it there (not called by the shell)
 //   sim.diagnostics()        [{ key, label, value, kind: 'error'|'value', unit?, good?, warn? }]
 //   sim.state()              JSON-serialisable state (export, tests)
 //   sim.record?()            { header: [...], rows: [[...], ...] } for CSV export
 //   sim.timeDependent        false for static analytic visualisations (no transport)
-const { el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast, ICONS, transport, createClock, logPlot, download, readJsonScript, beacon, cssVar } = __psim["ui/instrument.mjs"];
+const { el, sci, fix, grade, initTheme, section, row, slider, toggle, select, button, toast, ICONS, transport, createClock, logPlot, download, readJsonScript, beacon, sceneVar } = __psim["ui/instrument.mjs"];
 const { createPlot } = __psim["ui/plot.mjs"];
 const { createGLLayer } = __psim["ui/gl.mjs"];
 const { createEquation, createDerivation, M } = __psim["ui/equation.mjs"];
@@ -2433,7 +2510,7 @@ function createInstrument(spec) {
   const {
     title, subtitle = '', tier, tierReason, create, draw, params = [], model = {},
     timeUnit = 'T', timeLabel = 'simulated time', speed: speed0 = 1, gl: wantGL = false, drawGL, controls, onPointer, layout = 'stage', bench,
-    presets = [], texts = {}, hudError = true, formatTime, timeDigits: digitsGiven, frameBudget = 9, speedRange, viewControls, testSteps = 300,
+    presets = [], texts = {}, hudError = false, formatTime, timeDigits: digitsGiven, frameBudget = 9, speedRange, viewControls, testSteps = 300,
     glResolution = 'auto', timeline: timelineSpec,
   } = spec;
   // counted progress (sweeps, steps, generations, events) shows whole numbers unless told otherwise
@@ -2456,10 +2533,15 @@ function createInstrument(spec) {
       <button class="psim-tier" type="button"><i></i><span></span></button>
       <button class="psim-iconbtn" type="button" aria-label="Toggle theme"></button>
     </header>
-    <main class="psim-stage"><canvas></canvas>
-      <div class="psim-hud"><span class="dim"></span><b>0</b><span class="h1"></span><span class="dim h2"></span><span class="flag"></span></div>
-      <div class="psim-timeline" hidden><div class="ticks"></div><div class="bar"><i class="fill"></i></div><div class="ends"><span></span><span></span></div></div>
-      <div class="psim-legend"></div>
+    <main class="psim-stage">
+      <section class="psim-scene">
+        <div class="psim-view"><canvas></canvas>
+          <div class="psim-endcard" hidden><span></span><button type="button" class="psim-btn">↺ Replay</button></div>
+        </div>
+        <div class="psim-clock" hidden><span class="dim"></span><b>0</b></div>
+        <div class="psim-timeline" hidden><div class="ticks"></div><div class="bar"><i class="fill"></i></div><div class="ends"><span></span><span></span></div></div>
+        <div class="psim-key"><div class="psim-legend"></div><div class="psim-hud"><span class="h1"></span><span class="h2"></span><span class="flag"></span></div></div>
+      </section>
     </main>
     <aside class="psim-side"></aside>
   </div>`;
@@ -2470,43 +2552,113 @@ function createInstrument(spec) {
   tierBtn.dataset.tier = verified ? tier : 'unverified';
   tierBtn.querySelector('span').textContent = trustLabel;
   initTheme($('.psim-iconbtn'));
-  const stage = $('.psim-stage'), side = $('.psim-side');
+  const stage = $('.psim-stage'), side = $('.psim-side'), sceneEl = $('.psim-scene'), viewEl = $('.psim-view');
+  // a plain-language introduction above the scene: what is shown and what to look for
+  const intro = typeof spec.intro === 'string' ? { text: spec.intro } : spec.intro;
+  // it goes BELOW the animation and its controls (like a video's description): after the scene card
+  // when equations follow, otherwise first in the side panel (which follows the player on phones)
+  // shown as two lines with "more", so the settings below it stay in reach
+  const introEl = intro?.text ? el('section', { class: 'psim-intro collapsed' }, el('b', {}, texts.intro ?? 'What you are seeing'), el('p', {}, intro.text),
+    (intro.watch ?? []).length ? el('ul', {}, ...intro.watch.map(w => el('li', {}, w))) : null) : null;
+  if (introEl) {
+    const more = el('button', { type: 'button', class: 'psim-more', 'aria-expanded': 'false' }, texts.more ?? 'more');
+    more.addEventListener('click', () => {
+      const open = introEl.classList.toggle('collapsed') === false;
+      more.textContent = open ? (texts.less ?? 'less') : (texts.more ?? 'more');
+      more.setAttribute('aria-expanded', String(open));
+    });
+    introEl.append(more);
+  }
   // Workbench layout: the live canvas on top, then term-split equations and figures that
   // update with the model (spec.bench builds them; see references/compose.md).
   let benchParts = null;
   if (layout === 'workbench') {
-    const wrap = el('div', { class: 'psim-canvaswrap' }, stage.querySelector('canvas'), stage.querySelector('.psim-hud'), stage.querySelector('.psim-legend'));
+    const wrap = sceneEl;
+    wrap.classList.add('psim-canvaswrap');
     const eqs = el('div', { class: 'psim-eqs' }), figs = el('div', { class: 'psim-figs' });
     stage.prepend(el('div', { class: 'psim-bench' }, wrap, eqs, figs));
     benchParts = { wrap, eqs, figs };
+  }
+  // the same place on every page: first in the side panel on wide screens; on phones (one column)
+  // right under the scene card, so it follows the player bar instead of the equations
+  if (introEl) {
+    const narrow = matchMedia('(max-width: 860px)');
+    const place = () => { if (narrow.matches && benchParts) sceneEl.after(introEl); else side.prepend(introEl); };
+    place();
+    narrow.addEventListener('change', place);
   }
   const canvas = stage.querySelector('canvas');
   const ctx = canvas.getContext('2d');
   // optional GPU layer under the 2D canvas (ui/gl.mjs): drawGL renders the scene, draw adds labels
   const glLayer = wantGL ? createGLLayer(canvas) : null;
   if (glLayer) $('.psim-app').classList.add('has-gl');      // HUD and legend get a backing over bright GPU scenes
-  $('.psim-hud .dim').textContent = timeLabel;
-  const hud = { t: $('.psim-hud b'), a: $('.psim-hud .h1'), b: $('.psim-hud .h2'), flag: $('.psim-hud .flag') };
+  $('.psim-clock .dim').textContent = timeLabel;
+  $('.psim-clock').title = timeLabel;
+  const hud = { t: $('.psim-clock b'), a: $('.psim-hud .h1'), b: $('.psim-hud .h2'), flag: $('.psim-hud .flag') };
   // the legend beside the view; view.setLegend(items) replaces it when the representation changes
   const setLegend = items => $('.psim-legend').replaceChildren(...(items ?? []).map(t => el('span', {}, t)));
   setLegend(model.legend);
 
   // ------------------------------------------------------------ state
   const values = Object.fromEntries(params.map(p => [p.key, p.value]));
-  let sim, tDisplay = 0, limited = false;
+  let sim, tDisplay = 0, limited = false, defaultSpeedNow = speed0;
+  const steadyLabels = new Map();
   const clock = createClock({ speed: speed0 });
   const view = {
-    W: 0, H: 0, dpr: 1, color: cssVar, opts: {}, pointer: null, gl: glLayer?.gl ?? null, glError: glLayer && !glLayer.ok ? glLayer.reason : '',
+    W: 0, H: 0, dpr: 1, color: sceneVar, opts: {}, pointer: null, gl: glLayer?.gl ?? null, glError: glLayer && !glLayer.ok ? glLayer.reason : '',
     /** Current playback speed (simulated time per second) and state, e.g. to disclose time compression. */
     get speed() { return clock.speed; }, get playing() { return clock.playing; },
     /** GL layer resolution as a fraction of the device pixel ratio (adaptive unless glResolution is a number). */
     get glScale() { return glLayer?.scale ?? 1; },
-    /** 'dark' or 'light': the theme now shown (e.g. additive vs alpha blending, mesh colours). */
-    get theme() { return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'; },
+    /** The scene's theme: always 'dark' (the view is a dark screen in both page themes); use it for blending and mesh colours. */
+    get theme() { return 'dark'; },
+    /** The page theme around the view ('dark' or 'light'), for anything drawn outside it. */
+    get pageTheme() { return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'; },
     setLegend,
     /** The embedded build-time report (verify()'s return value, including any extra data fields), or null. */
     report,
+    /**
+     * Shell overlays drawn over the canvas, in canvas CSS pixels: `overlays` lists each visible one
+     * ({ name: 'hud' | 'legend' | 'timeline' | 'transport', x, y, w, h }); `insets` gives how far the
+     * bottom ones (timeline, playback bar, a phone legend) reach up from the bottom edge and the top
+     * ones (HUD, legend) down from the top. Lay the scene out inside them. Cached for 200 ms.
+     */
+    get overlays() { return overlayInfo().list; },
+    /**
+     * A steady position for a label attached to something that moves or flickers (a wave's peak,
+     * a cloud's centre): returns { x, y } that follows (x, y) smoothly and ignores sub-`deadband`
+     * jitter, so the text does not jump from frame to frame. One state per id; reset on rebuild.
+     */
+    steady(id, x, y, { deadband = 6, ease = 0.15 } = {}) {
+      const p = steadyLabels.get(id);
+      if (!p || !Number.isFinite(p.x)) { const q = { x, y }; steadyLabels.set(id, q); return q; }
+      const dx = x - p.x, dy = y - p.y, d = Math.hypot(dx, dy);
+      if (d > 120) { p.x = x; p.y = y; }                       // a jump (new run, reframing): follow at once
+      else if (d > deadband) { const k = ease * (1 - deadband / d); p.x += k * dx; p.y += k * dy; }
+      return p;
+    },
+    get insets() { return overlayInfo().insets; },
   };
+  let overlayCache = null;
+  function overlayInfo() {
+    const now = performance.now();
+    if (overlayCache && now - overlayCache.at < 200) return overlayCache;
+    const c = canvas.getBoundingClientRect(), list = [];
+    const add = (name, node) => {
+      if (!node || node.hidden || !node.getClientRects().length) return;
+      const r = node.getBoundingClientRect();
+      const x = Math.max(r.left, c.left), y = Math.max(r.top, c.top), x1 = Math.min(r.right, c.right), y1 = Math.min(r.bottom, c.bottom);
+      if (x1 > x && y1 > y && (r.width > 0 && r.height > 0)) list.push({ name, x: x - c.left, y: y - c.top, w: x1 - x, h: y1 - y });
+    };
+    for (const node of viewEl.children) if (node.tagName !== 'CANVAS') add(node.className.split(' ')[0].replace('psim-', ''), node);
+    const insets = { top: 0, bottom: 0 };
+    for (const o of list) {
+      if (o.y + o.h / 2 < c.height / 2) insets.top = Math.max(insets.top, o.y + o.h);
+      else insets.bottom = Math.max(insets.bottom, c.height - o.y);
+    }
+    overlayCache = { at: now, list, insets };
+    return overlayCache;
+  }
 
   let benchApi = null;
   // ------------------------------------------------------------ timeline: the run's span and its key times
@@ -2515,7 +2667,6 @@ function createInstrument(spec) {
   // on a bar under the time readout; clicking the bar jumps to that time (recomputing if earlier).
   let tl = null;
   const tlEl = $('.psim-timeline');
-  if (benchParts) benchParts.wrap.append(tlEl);              // inside the scene card in the workbench layout
   const secTimeline = timelineSpec ? section(texts.timeline ?? 'Timeline', { aside: 'key times' }) : null;
   const shortLabel = m => m.short ?? m.label.replace(/\s*\(.*$/, '').slice(0, 28);
   function resolveTimeline() {
@@ -2530,23 +2681,27 @@ function createInstrument(spec) {
     const markers = (val(timelineSpec.markers) ?? []).filter(m => Number.isFinite(m.t));
     for (const m of markers) if (m.t < start - tol || m.t > duration + tol) throw new Error(`timeline marker "${m.label}" at ${m.t} lies outside the run ${start}…${duration}`);
     tl = { start, duration, markers, note: val(timelineSpec.note) ?? '' };
+    // a watchable run in every mode: `seconds` (or a function of sim and params) sets the default
+    // speed so that the whole run plays in that many seconds, whatever its length in this mode
+    const secs = +val(timelineSpec.seconds);
+    // (only when the run's length changed, so a speed the viewer chose survives a restart)
+    if (secs > 0 && (duration - start) / secs !== defaultSpeedNow) { clock.speed = (duration - start) / secs; tp?.setSpeed?.(clock.speed); defaultSpeedNow = clock.speed; }
     tlEl.hidden = false;
     const fmt = t => (formatTime ? formatTime(t) : `${+t.toPrecision(4)} ${timeUnit}`);
     // the bar: one tick per key time, short labels above (staggered when close), full text as a tooltip
     const bar = tlEl.querySelector('.bar'), ticks = tlEl.querySelector('.ticks');
     bar.querySelectorAll('.m').forEach(e => e.remove());
-    let lastX = -1, level = 0;
     ticks.replaceChildren(...markers.slice().sort((a, b) => a.t - b.t).map(m => {
       const x = 100 * (m.t - start) / span;
-      level = x - lastX < 22 ? 1 - level : 0; lastX = x;
       bar.append(el('span', { class: `m ${m.kind ?? 'computed'}`, style: `left:${x.toFixed(3)}%`, title: `${m.label}: ${fmt(m.t)}` }));
       const sl = shortLabel(m), withTime = /\d/.test(sl) ? sl : `${sl} · ${fmt(m.t)}`;   // no repeated time
       // near the ends, anchor the label at its tick instead of centring it (never clipped by the bar's edges)
       const anchor = x < 15 ? 'translateX(0)' : x > 85 ? 'translateX(-100%)' : 'translateX(-50%)';
-      return el('span', { class: `lab ${m.kind ?? 'computed'} r${level}`, style: `left:${x.toFixed(3)}%;transform:${anchor}`, title: `${m.label}: ${fmt(m.t)}` }, withTime);
+      return el('span', { class: `lab ${m.kind ?? 'computed'}`, style: `left:${x.toFixed(3)}%;transform:${anchor}`, title: `${m.label}: ${fmt(m.t)}` }, withTime);
     }));
     const [a, b] = tlEl.querySelectorAll('.ends span');
     a.textContent = fmt(start); b.textContent = `${fmt(duration)} (end)`;
+    layoutTimelineLabels();
     // the side panel lists every key time in full, with its kind, and the note
     if (secTimeline) {
       const kinds = { computed: 'computed in this model', measured: 'measured (literature)', requested: 'named in the request' };
@@ -2556,6 +2711,33 @@ function createInstrument(spec) {
         tl.note ? el('p', { class: 'psim-hint' }, tl.note) : null);
     }
   }
+  // Labels are placed by their measured widths: each goes in the lowest of three rows where it does
+  // not touch another label; one that fits nowhere is hidden (its tick keeps the tooltip, and the
+  // side panel lists every key time). Rerun when the bar changes size (phone, full screen).
+  const TL_ROWS = 3, TL_ROW_H = 13, TL_GAP = 6;
+  function layoutTimelineLabels() {
+    if (!tl || tlEl.hidden) return;
+    const labs = [...tlEl.querySelectorAll('.ticks .lab')];
+    labs.forEach(l => { l.style.bottom = '2px'; l.style.visibility = ''; l.classList.remove('hid'); });
+    const box = tlEl.querySelector('.ticks').getBoundingClientRect();
+    if (!(box.width > 0)) return;
+    const rows = Array.from({ length: TL_ROWS }, () => []);
+    let used = labs.length ? 1 : 0;
+    for (const l of labs) {
+      const r = l.getBoundingClientRect(), lo = Math.max(r.left, box.left), hi = Math.min(r.right, box.right);
+      const k = rows.findIndex(slots => slots.every(([a, b]) => hi + TL_GAP <= a || lo >= b + TL_GAP));
+      if (k < 0) { l.style.visibility = 'hidden'; l.classList.add('hid'); continue; }
+      rows[k].push([lo, hi]); used = Math.max(used, k + 1);
+      l.style.bottom = `${2 + k * TL_ROW_H}px`;
+    }
+    tlEl.querySelector('.ticks').style.height = `${4 + used * TL_ROW_H}px`;
+    // the two end labels: drop the start when they would touch
+    const [a, b] = tlEl.querySelectorAll('.ends span');
+    a.style.visibility = '';
+    if (a.getBoundingClientRect().right + TL_GAP > b.getBoundingClientRect().left) a.style.visibility = 'hidden';
+  }
+  new ResizeObserver(() => layoutTimelineLabels()).observe(tlEl);
+
   tlEl.querySelector('.bar').addEventListener('click', e => {
     if (!tl) return;
     const r = e.currentTarget.getBoundingClientRect(), T = tl.start + Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * (tl.duration - tl.start);
@@ -2564,6 +2746,7 @@ function createInstrument(spec) {
   });
 
   function rebuild() {
+    steadyLabels.clear();
     sim = create({ ...values });
     tDisplay = sim.t ?? 0;
     resolveTimeline();
@@ -2576,14 +2759,14 @@ function createInstrument(spec) {
   // ------------------------------------------------------------ full screen
   // The scene (canvas, HUD, legend) and the playback bar fill the screen. Falls back to filling the
   // window with CSS where the Fullscreen API is missing or refused (iPhone Safari, sandboxed frames).
-  const scene = benchParts?.wrap ?? stage;
+  const scene = sceneEl;
   let pseudoFs = false, fsBtn = null;
   const fsElement = () => document.fullscreenElement ?? document.webkitFullscreenElement ?? null;
   const isFullscreen = () => pseudoFs || fsElement() === scene;
   function afterFullscreen() {
     const on = isFullscreen();
     scene.classList.toggle('psim-fs', on);
-    if (tp) { if (on && tp.parentNode !== scene) scene.append(tp); else if (!on && tp.parentNode !== stage) stage.append(tp); tp.setFullscreen(on); }
+    tp?.setFullscreen(on);
     if (fsBtn) fsBtn.innerHTML = on ? ICONS.exitFullscreen : ICONS.fullscreen;
     requestAnimationFrame(() => spec.onFit?.(view));
   }
@@ -2614,13 +2797,39 @@ function createInstrument(spec) {
       onFullscreen: () => toggleFullscreen(),
       onSpeed: s => { clock.speed = s; },
     });
-    stage.append(tp);
+    // the player bar sits directly under the view, like a video player: buttons, the clock and
+    // the timeline with its key moments, speed, full screen
+    const firstSep = tp.querySelector('.sep');
+    const clockEl = $('.psim-clock');
+    clockEl.hidden = false;
+    tp.insertBefore(clockEl, firstSep);
+    tp.insertBefore(tlEl, firstSep);
+    viewEl.after(tp);
   } else {
     fsBtn = el('button', { class: 'psim-fsbtn', title: 'Full screen (F)', 'aria-label': 'Full screen', html: ICONS.fullscreen, onclick: () => toggleFullscreen() });
-    scene.append(fsBtn);
-    stage.querySelector('.psim-hud').querySelector('.dim').textContent = '';
+    viewEl.append(fsBtn);
   }
-  function setPlaying(p) { clock.playing = p; tp?.setPlaying(p); }
+  // the page's main actions ("Heat it up", "Fire one electron"): large buttons directly under the
+  // view, where the eye already is; settings stay in the side panel
+  if ((spec.actions ?? []).length) {
+    const api = () => ({ setParams, setParam, getSim: () => sim, values, play: () => setPlaying(true), pause: () => setPlaying(false), restart: () => rebuild() });
+    const bar = el('div', { class: 'psim-actions' }, ...spec.actions.map(a => {
+      const b = el('button', { type: 'button', class: 'psim-action', title: a.hint ?? '' }, a.label);
+      b.addEventListener('click', () => a.onClick?.(api()));
+      return b;
+    }));
+    viewEl.after(bar);
+  }
+  // at the end of a run: the final state stays on screen with a replay button over it
+  const endcard = $('.psim-endcard');
+  endcard.querySelector('button').addEventListener('click', () => { rebuild(); setPlaying(true); });
+  function showEndcard() {
+    const on = timeDependent && !clock.playing && isDone();
+    if (endcard.hidden === !on) return;
+    endcard.hidden = !on;
+    if (on) endcard.querySelector('span').textContent = texts.finishedCard ?? `Finished at ${formatTime ? formatTime(endTime()) : `${fix(endTime(), timeDigits)} ${timeUnit}`}`;
+  }
+  function setPlaying(p) { clock.playing = p; tp?.setPlaying(p); showEndcard(); }
   // A model that ends (a merger, everything decayed, the last particle left) sets sim.done (or
   // sim.ended): the clock stops there instead of counting time in which nothing is computed,
   // and play starts the run again from the beginning.
@@ -2795,6 +3004,7 @@ function createInstrument(spec) {
   }
 
   let frames = 0, lastUi = 0;
+  const frameWaiters = [];   // resolved right after a frame has been drawn (GPU self-tests read pixels then)
   function frame(now) {
     const frameStart = performance.now();
     if (timeDependent) {
@@ -2815,7 +3025,7 @@ function createInstrument(spec) {
     if (glLayer?.ok) { glLayer.sync(view.dpr); drawGL?.(glLayer.gl, sim, view, tDisplay); }
     ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
     ctx.clearRect(0, 0, view.W, view.H);
-    if (glLayer && !glLayer.ok) { ctx.fillStyle = cssVar('--muted'); ctx.font = '13px system-ui, sans-serif'; ctx.fillText(`${glLayer.reason}: the 3D view cannot be shown.`, 16, view.H - 20); }
+    if (glLayer && !glLayer.ok) { ctx.fillStyle = sceneVar('--muted'); ctx.font = '13px system-ui, sans-serif'; ctx.fillText(`${glLayer.reason}: the 3D view cannot be shown.`, 16, view.H - 20); }
     draw(ctx, sim, view, tDisplay);
     if (now - lastUi > 100) {
       lastUi = now;
@@ -2825,7 +3035,8 @@ function createInstrument(spec) {
       const firstErr = d.find(x => x.kind === 'error' && !x.pending);
       hud.a.textContent = firstErr && hudError ? `${firstErr.label} ${sci(firstErr.value)}` : '';
       hud.b.textContent = spec.hudLine?.(sim) ?? '';
-      hud.flag.textContent = isDone() ? (texts.finished ?? 'finished · play restarts')
+      showEndcard();
+      hud.flag.textContent = isDone() ? (texts.finished ?? 'finished')
         : limited ? 'compute-limited: playback slowed to keep the calculation exact' : '';
       benchApi?.update?.(sim, tDisplay, { rebuilt: false });
       status.set('t', timeDependent ? tDisplay : 1);
@@ -2833,6 +3044,7 @@ function createInstrument(spec) {
     }
     if (++frames === 1 || frames % 30 === 0) status.set('frames', frames);   // first frame at once: slow pages count as live
     adaptResolution(now, performance.now() - frameStart);
+    if (frameWaiters.length) { const w = frameWaiters.splice(0); w.forEach(f => f()); }
     requestAnimationFrame(frame);
   }
 
@@ -2850,11 +3062,16 @@ function createInstrument(spec) {
     /** The run's declared span and key times ({ duration, markers, note }), or null. */
     get timeline() { return tl ? { start: tl.start, duration: tl.duration, markers: tl.markers.map(m => ({ ...m })), note: tl.note } : null; },
     get done() { return isDone(); },
+    /** The default playback speed (simulated time per second) and the plain-language intro, for checks. */
+    get defaultSpeed() { return defaultSpeedNow; },
+    get intro() { return intro?.text ? { text: intro.text, watch: [...(intro.watch ?? [])] } : null; },
     restart: () => rebuild(),
     setParams: (next, opts) => setParams(next, opts),
     setParam: (k, v) => setParam(k, v),
     getSim: () => sim,
     toggleFullscreen: () => toggleFullscreen(),
+    /** Resolves after the next frame has been drawn: await it in a self-test before reading GPU pixels. */
+    nextFrame: () => new Promise(res => frameWaiters.push(res)),
     report,
     get fullscreen() { return isFullscreen(); },
     testSteps,
@@ -2862,14 +3079,15 @@ function createInstrument(spec) {
     steps: n => { if (typeof sim.step === "function") for (let i = 0; i < n; i++) sim.step(); tDisplay = sim.t ?? 0; return window.psim.state(); },
   };
 
+  rebuild();   // the first sim exists before bench() runs, so bench may call getSim() at once
   if (bench && benchParts) {
     benchApi = bench({
       ...benchParts, createPlot, createEquation, createDerivation, M, values, report,
       setParam, setParams, play: () => setPlaying(true), pause: () => setPlaying(false),
       getSim: () => sim,
     }) ?? null;
+    benchApi?.update?.(sim, tDisplay, { rebuilt: true });
   }
-  rebuild();
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   setPlaying(timeDependent && (query.get('autoplay') ? query.get('autoplay') !== '0' : !reduced));
   addEventListener('keydown', e => {
@@ -3741,617 +3959,905 @@ function normalFrom(rand) {
 return { logSumExp, normalizeWeights, normalizeLogWeights, shannonEntropy, relativeEntropy, covarianceMatrix, canonicalEnsemble, maxwellSpeed, effusiveSpeed };
 })();
 
-// ---- psim:core/constants.mjs
-__psim["core/constants.mjs"] = (() => {
-// Physical constants, SI units. CODATA 2018 recommended values
-// (Tiesinga et al., Rev. Mod. Phys. 93, 025010, 2021). "exact" = defined by the 2019 SI.
-// Import from here instead of typing constants by hand; cite the source in the page.
-// PDG (end of file): particle-physics inputs as { value, error, unit, source }, from the PDG 2024
-// Review of Particle Physics or CODATA 2022 as each entry's source says.
+// ---- psim:core/ode.mjs
+__psim["core/ode.mjs"] = (() => {
+// General time integration for finite-dimensional evolution, independent of subject.
+//
+//   odeStepper       y' = f(t, y)            any first-order system (RK4 or adaptive Dormand–Prince)
+//   mechanicsStepper q'' = a(t, q)           position-only accelerations (symplectic leapfrog / Yoshida-4)
+//
+// Both keep the previous step so the state can be evaluated at any time between steps
+// (cubic Hermite), which makes playback independent of frame rate: the step sequence
+// depends only on the problem and the step parameters, never on when frames are drawn.
+const { DORMAND_PRINCE: DP, brent } = __psim["core/numerics.mjs"];
+/** Cubic Hermite interpolation of values y with derivatives d between (t0, t1). */
+function hermite(t0, y0, d0, t1, y1, d1, t, out) {
+  const h = t1 - t0;
+  if (!(h !== 0)) { out.set(y1); return out; }
+  const u = Math.min(1, Math.max(0, (t - t0) / h)), u2 = u * u, u3 = u2 * u;
+  const a = 2 * u3 - 3 * u2 + 1, b = u3 - 2 * u2 + u, c = -2 * u3 + 3 * u2, d = u3 - u2;
+  for (let i = 0; i < y0.length; i++) out[i] = a * y0[i] + b * h * d0[i] + c * y1[i] + d * h * d1[i];
+  return out;
+}
 
-const CODATA = 'CODATA 2018';
+const finiteArray = (a, who) => {
+  if (!a.length || !Array.from(a).every(Number.isFinite)) throw new Error(`${who}: state must be non-empty and finite`);
+};
 
-const c = 299792458;                 // m s^-1, exact
-const h = 6.62607015e-34;            // J s, exact
-const hbar = 6.62607015e-34 / (2 * Math.PI);  // J s, exact (h/2π)
-const e = 1.602176634e-19;           // C, exact
-const kB = 1.380649e-23;             // J K^-1, exact
-const NA = 6.02214076e23;            // mol^-1, exact
-const eps0 = 8.8541878128e-12;       // F m^-1
-const mu0 = 1.25663706212e-6;        // N A^-2
-const G = 6.67430e-11;               // m^3 kg^-1 s^-2 (relative uncertainty 2.2e-5)
-const me = 9.1093837015e-31;         // kg
-const mp = 1.67262192369e-27;        // kg
-const mn = 1.67492749804e-27;        // kg
-const u = 1.66053906660e-27;         // kg (atomic mass constant)
-const a0 = 5.29177210903e-11;        // m (Bohr radius)
-const alpha = 7.2973525693e-3;       // fine-structure constant
-const Eh = 4.3597447222071e-18;      // J (Hartree energy)
-const Ry = 13.605693122994;          // eV (Rydberg energy)
-const eV = 1.602176634e-19;          // J, exact
-const MeV = 1.602176634e-13;         // J, exact
-const mpc2MeV = 938.27208816;        // MeV (proton rest energy)
-const mec2MeV = 0.51099895000;       // MeV (electron rest energy)
-const hbarcMeVfm = 197.3269804;      // MeV fm
-const mAlphaMeV = 3727.3794066;      // MeV (alpha-particle rest energy)
-const muB = 1.602176634e-19 * (6.62607015e-34 / (2 * Math.PI)) / (2 * 9.1093837015e-31); // J T^-1, Bohr magneton eħ/2mₑ (CODATA 9.2740100783e-24)
-const ge = 2.00231930436256;         // |g| of the free electron (g_e = −2.00231930436256)
-
-// Astronomy (IAU 2012/2015 nominal values)
-const AU = 1.495978707e11;           // m, exact (IAU 2012)
-const GMsun = 1.3271244e20;          // m^3 s^-2 (IAU 2015 nominal)
-const Msun = 1.3271244e20 / 6.67430e-11;     // kg, GM☉/G (G-limited, ±2.2e-5)
-const yearJulian = 365.25 * 86400;   // s
 /**
- * G in AU³ M☉⁻¹ yr⁻² with the Julian year and IAU GM☉: 39.47693 (≈ 4π², which is exact only
- * for the Gaussian year 2π/k). Using this value keeps AU–yr runs consistent with SI ones.
+ * Stepper for y' = f(t, y).
+ *   method 'rk4'    fixed step h (classical 4th order)
+ *   method 'dopri5' adaptive Dormand–Prince 5(4) with error control (rtol, atol); h is the first trial step
+ * f(t, y) returns the derivative (array-like of the same length).
+ * events: [{ g(t, y) → number, direction: 0 | +1 | −1, terminal }]: after each step a sign change
+ * of g (rising for +1, falling for −1) is located on the dense output with Brent's method and
+ * recorded in `events` as { index, t, y }; a terminal event stops the integration exactly there
+ * (stopped = true): ground contact, collisions, thresholds, "time until …". Event times inherit
+ * the dense-output accuracy (O(h⁴) per step), so check them under step refinement.
+ * Events are found from sign changes at step ends: a g that changes sign and changes back within
+ * one step (entering and leaving a thin region) is missed. Cap the step near such regions with
+ * `s.hmax` (mutable: e.g. small inside a drawn window, Infinity outside).
+ * advanceTo(t, maxSteps, { exact: true }) shortens the last step so the state ends exactly at t
+ * (also for rk4); without it the stepper stops at the first step end ≥ t.
+ * Returns { t, y, hmax, step(hLimit?), advanceTo(t, maxSteps, { exact }), sampleAt(t, out), steps, rejected, events, stopped }.
  */
-const G_AU_MSUN_YR = 1.3271244e20 * (365.25 * 86400) ** 2 / 1.495978707e11 ** 3;
+function odeStepper({ f, y0, t0 = 0, method = 'dopri5', h, rtol = 1e-9, atol = 1e-12, hmax = Infinity, events: watch = [] }) {
+  if (typeof f !== 'function') throw new Error('odeStepper: f(t, y) is required');
+  finiteArray(y0, 'odeStepper');
+  if (!(Number.isFinite(h) && h > 0)) throw new Error('odeStepper: a positive finite step h is required');
+  if (method !== 'rk4' && method !== 'dopri5') throw new Error(`odeStepper: unknown method "${method}"`);
+  const n = y0.length;
+  const y = Float64Array.from(y0), dy = Float64Array.from(f(t0, y));
+  const prev = { t: t0, y: y.slice(), dy: dy.slice() };
+  const k = Array.from({ length: 7 }, () => new Float64Array(n));
+  const tmp = new Float64Array(n), yn = new Float64Array(n);
+  let hNext = h;
+  const s = {
+    t: t0, y, dy, steps: 0, rejected: 0, method, events: [], stopped: false, hmax,
+    step(hLimit = Infinity) {
+      if (s.stopped) return;
+      prev.t = s.t; prev.y.set(y); prev.dy.set(dy);
+      if (method === 'rk4') {
+        const hr = Math.min(h, hLimit);
+        const k1 = dy, k2 = new Float64Array(n), k3 = new Float64Array(n), k4 = new Float64Array(n);
+        for (let i = 0; i < n; i++) tmp[i] = y[i] + hr / 2 * k1[i];
+        k2.set(f(s.t + hr / 2, tmp));
+        for (let i = 0; i < n; i++) tmp[i] = y[i] + hr / 2 * k2[i];
+        k3.set(f(s.t + hr / 2, tmp));
+        for (let i = 0; i < n; i++) tmp[i] = y[i] + hr * k3[i];
+        k4.set(f(s.t + hr, tmp));
+        for (let i = 0; i < n; i++) y[i] += hr / 6 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]);
+        s.t += hr;
+      } else {
+        for (let attempt = 0; ; attempt++) {
+          if (attempt > 60) throw new Error(`odeStepper: cannot meet tolerance at t = ${s.t}`);
+          const hh = Math.min(hNext, s.hmax, hLimit), clipped = hLimit < Math.min(hNext, s.hmax), keep = hNext;
+          if (s.t + hh === s.t) throw new Error(`odeStepper: step underflow at t = ${s.t}`);
+          k[0].set(dy);
+          for (let st = 1; st < 7; st++) {
+            for (let i = 0; i < n; i++) {
+              let acc = y[i];
+              for (let j = 0; j < st; j++) acc += hh * DP.a[st][j] * k[j][i];
+              tmp[i] = acc;
+            }
+            k[st].set(f(s.t + DP.c[st] * hh, tmp));
+          }
+          let err = 0;
+          for (let i = 0; i < n; i++) {
+            let acc = y[i], e = 0;
+            for (let j = 0; j < 7; j++) { acc += hh * DP.b[j] * k[j][i]; e += hh * DP.e[j] * k[j][i]; }
+            yn[i] = acc;
+            err = Math.max(err, Math.abs(e) / (atol + rtol * Math.max(Math.abs(y[i]), Math.abs(acc))));
+          }
+          if (!Number.isFinite(err)) throw new Error(`odeStepper: non-finite derivative or state at t = ${s.t}`);
+          const fac = err === 0 ? 5 : Math.min(5, Math.max(0.2, 0.9 * Math.pow(err, -0.2)));
+          hNext = hh * fac;
+          if (err <= 1) { y.set(yn); s.t += hh; if (clipped) hNext = Math.max(hNext, keep); break; }
+          s.rejected++;
+        }
+      }
+      dy.set(f(s.t, y));
+      if (!Array.from(y).every(Number.isFinite)) throw new Error(`odeStepper: state became non-finite at t = ${s.t}`);
+      s.steps++;
+      if (watch.length) detectEvents();
+    },
+    /** Advance until t ≥ target (or a terminal event). Returns false if maxSteps were used first. */
+    advanceTo(target, maxSteps = Infinity, { exact = false } = {}) {
+      let i = 0;
+      while (s.t < target && !s.stopped) {
+        if (i++ >= maxSteps) return false;
+        s.step(exact ? target - s.t : Infinity);
+        if (exact && Math.abs(s.t - target) <= 4 * Number.EPSILON * Math.max(1, Math.abs(target))) s.t = target;
+      }
+      return true;
+    },
+    /** State at time t within the last step (cubic Hermite with the derivatives at both ends). */
+    sampleAt(t, out = new Float64Array(n)) { return hermite(prev.t, prev.y, prev.dy, s.t, y, dy, t, out); },
+  };
+  const probe = new Float64Array(n);
+  function detectEvents() {
+    let first = null;
+    watch.forEach((e, index) => {
+      const g0 = e.g(prev.t, prev.y), g1 = e.g(s.t, y), dir = e.direction ?? 0;
+      const crosses = (g0 < 0 && g1 >= 0 && dir >= 0) || (g0 > 0 && g1 <= 0 && dir <= 0);
+      if (!crosses) return;
+      const te = g1 === 0 ? s.t : brent(tt => e.g(tt, s.sampleAt(tt, probe)), prev.t, s.t, 1e-14 * Math.max(1, Math.abs(s.t)));
+      const hit = { index, t: te, y: s.sampleAt(te) };
+      if (e.terminal && (!first || te < first.t)) first = hit;
+      s.events.push(hit);
+    });
+    if (first) {                                               // stop exactly at the earliest terminal event
+      y.set(first.y); s.t = first.t; dy.set(f(s.t, y)); s.stopped = true;
+      s.events = s.events.filter(ev => ev.t <= first.t);
+    }
+  }
+  return s;
+}
 
-// Everyday mechanics and the Earth–Moon system
-const gn = 9.80665;                  // m s^-2, standard gravity (exact by definition, 3rd CGPM 1901)
-const GMearth = 3.986004e14;         // m^3 s^-2 (IAU 2015 nominal terrestrial mass parameter)
-const Rearth = 6.3781e6;             // m, equatorial (IAU 2015 nominal); mean radius 6.3710e6 m
-const RearthMean = 6.3710e6;         // m (IUGG mean radius)
-const GMmoon = 4.9028e12;            // m^3 s^-2 (JPL DE430: 4902.800066 km^3 s^-2)
-const Rmoon = 1.7374e6;              // m, mean radius (NASA lunar fact sheet)
-const earthMoonDistance = 3.844e8;   // m, mean (NASA lunar fact sheet)
+const CBRT2 = Math.cbrt(2);
+const YOSHIDA4 = [1 / (2 - CBRT2), -CBRT2 / (2 - CBRT2), 1 / (2 - CBRT2)];
 
-// Gases and the atmosphere
-const R = 8.314462618;               // J mol^-1 K^-1, molar gas constant = kB·NA (exact)
-const Mair = 28.9644e-3;             // kg mol^-1, dry air (U.S. Standard Atmosphere 1976 / ISA)
-const gammaAir = 1.4;                // cp/cv of dry air near room temperature (measured 1.401 at 20 °C)
-const p0 = 101325;                   // Pa, standard atmosphere (exact)
-const T0isa = 288.15;                // K, ISA sea-level temperature
-const rho0isa = 1.2250;              // kg m^-3, ISA sea-level density (= p0·Mair/(R·T0isa))
+/**
+ * Symplectic stepper for q'' = a(t, q) with position-only accelerations (conservative,
+ * separable mechanics). accel(t, q, out) writes the acceleration into out.
+ *   method 'leapfrog' (kick–drift–kick, 2nd order) or 'yoshida4' (4th order composition)
+ * Bounded energy error over long runs; time-reversible. Fixed step h.
+ * Returns { t, q, v, step(), advanceTo(t, maxSteps), sampleAt(t, outQ, outV), steps }.
+ */
+function mechanicsStepper({ accel, q0, v0, t0 = 0, h, method = 'yoshida4' }) {
+  if (typeof accel !== 'function') throw new Error('mechanicsStepper: accel(t, q, out) is required');
+  finiteArray(q0, 'mechanicsStepper'); finiteArray(v0, 'mechanicsStepper');
+  if (q0.length !== v0.length) throw new Error('mechanicsStepper: q0 and v0 must have the same length');
+  if (!(Number.isFinite(h) && h !== 0)) throw new Error('mechanicsStepper: a non-zero finite step h is required');
+  const weights = method === 'leapfrog' ? [1] : method === 'yoshida4' ? YOSHIDA4 : null;
+  if (!weights) throw new Error(`mechanicsStepper: unknown method "${method}"`);
+  const n = q0.length;
+  const q = Float64Array.from(q0), v = Float64Array.from(v0), a = new Float64Array(n);
+  const prev = { t: t0, q: q.slice(), v: v.slice() };
+  accel(t0, q, a);
+  const s = {
+    t: t0, q, v, steps: 0, h, method,
+    step() {
+      prev.t = s.t; prev.q.set(q); prev.v.set(v);
+      for (const w of weights) {
+        const dt = w * s.h;
+        for (let i = 0; i < n; i++) v[i] += dt / 2 * a[i];
+        for (let i = 0; i < n; i++) q[i] += dt * v[i];
+        s.t += dt;
+        accel(s.t, q, a);
+        for (let i = 0; i < n; i++) v[i] += dt / 2 * a[i];
+      }
+      if (!q.every(Number.isFinite) || !v.every(Number.isFinite)) throw new Error(`mechanicsStepper: state became non-finite at t = ${s.t}`);
+      s.steps++;
+    },
+    advanceTo(target, maxSteps = Infinity) {
+      let i = 0;
+      while ((s.h > 0 ? s.t < target : s.t > target)) { if (i++ >= maxSteps) return false; s.step(); }
+      return true;
+    },
+    /** Positions (and velocities) at time t within the last step: cubic Hermite, O(h⁴). */
+    sampleAt(t, outQ = new Float64Array(n), outV) {
+      hermite(prev.t, prev.q, prev.v, s.t, q, v, t, outQ);
+      if (outV) {
+        // velocity: linear blend of end velocities (adequate for display; use step states for analysis)
+        const span = s.t - prev.t, u = span ? Math.min(1, Math.max(0, (t - prev.t) / span)) : 1;
+        for (let i = 0; i < n; i++) outV[i] = (1 - u) * prev.v[i] + u * v[i];
+      }
+      return outQ;
+    },
+  };
+  return s;
+}
 
-// Particle-physics inputs: { value, error, unit, source }. PDG 2024 = Review of Particle Physics,
-// Navas et al., Phys. Rev. D 110, 030001 (2024); CODATA 2022 where it is the primary source.
-// Quark masses are MS-bar running masses except the top (direct-measurement mass).
-const pdg = (value, error, unit, source, note) => Object.freeze(note ? { value, error, unit, source, note } : { value, error, unit, source });
-const RPP = 'PDG 2024 (RPP)';
-const PDG = Object.freeze({
-  me: pdg(0.51099895069, 0.00000000016, 'MeV', 'CODATA 2022'),
-  mmu: pdg(105.6583755, 0.0000023, 'MeV', 'CODATA 2022'),
-  tauMu: pdg(2.1969811e-6, 0.0000022e-6, 's', RPP),
-  amu: pdg(116592059e-11, 22e-11, '', RPP, 'experimental world average (BNL + FNAL 2023), a_μ = (g−2)/2'),
-  mp: pdg(938.27208943, 0.00000029, 'MeV', 'CODATA 2022'),
-  mpiCharged: pdg(139.57039, 0.00018, 'MeV', RPP),
-  mpi0: pdg(134.9768, 0.0005, 'MeV', RPP),
-  tauPiCharged: pdg(2.6033e-8, 0.0005e-8, 's', RPP, 'π± mean life (cτ = 7.80 m)'),
-  tauPi0: pdg(8.43e-17, 0.13e-17, 's', RPP, 'π⁰ mean life'),
-  mKCharged: pdg(493.677, 0.015, 'MeV', RPP),
-  tauKCharged: pdg(1.2380e-8, 0.0020e-8, 's', RPP, 'K± mean life'),
-  GF: pdg(1.1663788e-5, 0.0000006e-5, 'GeV^-2', RPP, 'G_F/(ħc)³ from the muon lifetime'),
-  mW: pdg(80.3692, 0.0133, 'GeV', RPP),
-  mZ: pdg(91.1876, 0.0021, 'GeV', RPP),
-  mH: pdg(125.20, 0.11, 'GeV', RPP),
-  sin2thetaW: pdg(0.23129, 0.00004, '', RPP, 'MS-bar, at μ = M_Z'),
-  alphaS_MZ: pdg(0.1180, 0.0009, '', RPP, 'MS-bar, nf = 5, world average'),
-  alphaInv0: pdg(137.035999177, 0.000000021, '', 'CODATA 2022', 'α(0)⁻¹, Thomson limit'),
-  hbarc: pdg(197.3269804, 0, 'MeV fm', 'CODATA 2022', 'exact in the 2019 SI (shown truncated)'),
-  mc_mc: pdg(1.2730, 0.0046, 'GeV', RPP, 'MS-bar m_c(m_c)'),
-  mb_mb: pdg(4.183, 0.007, 'GeV', RPP, 'MS-bar m_b(m_b)'),
-  mt: pdg(172.57, 0.29, 'GeV', RPP, 'direct measurements (≈ pole mass)'),
-  michelRho: pdg(0.74979, 0.00026, '', RPP, 'Michel parameter ρ (SM: 3/4)'),
-  michelDelta: pdg(0.75047, 0.00034, '', RPP, 'Michel parameter δ (SM: 3/4)'),
-  michelXi: pdg(1.0009, 0.0016, '', RPP, 'Michel parameter ξ (SM: 1); asymmetric error +0.0016 −0.0007, larger side given'),
-  michelEta: pdg(0.057, 0.034, '', RPP, 'Michel parameter η (SM: 0)'),
-});
+/**
+ * Observed order of accuracy of any solver: run(h) returns a result vector at a fixed end
+ * time; the order is log2(|r(h) − r(h/2)| / |r(h/2) − r(h/4)|) using the max-norm.
+ * Works for ODEs, PDEs and quadrature alike. Returns { order, errors: [e1, e2], results }.
+ */
+function refinementOrder(run, h) {
+  const r = [h, h / 2, h / 4].map(x => Array.from(run(x)));
+  const diff = (a, b) => a.reduce((m, ai, i) => Math.max(m, Math.abs(ai - b[i])), 0);
+  const e1 = diff(r[0], r[1]), e2 = diff(r[1], r[2]);
+  return { order: e2 > 0 ? Math.log2(e1 / e2) : Infinity, errors: [e1, e2], results: r };
+}
 
-// Standard atomic weights (IUPAC; abridged values where the natural variation is large), g/mol.
-// Multiply by u·1000 (or divide by NA·1000) for the mass of one atom in kg.
-const ATOMIC_WEIGHT = Object.freeze({
-  H: 1.008, He: 4.002602, C: 12.011, N: 14.007, O: 15.999, Na: 22.98976928, Al: 26.9815384, Si: 28.085,
-  Cl: 35.45, Ar: 39.95, K: 39.0983, Fe: 55.845, Cu: 63.546, Rb: 85.4678, Ag: 107.8682, Cs: 132.90545196,
-  W: 183.84, Au: 196.966570, Hg: 200.592, Pb: 207.2, U: 238.02891,
-});
+/**
+ * Largest Lyapunov exponent of dy/dt = f(t, y): the average exponential growth rate of a small
+ * perturbation (> 0: sensitive dependence on initial conditions; ≈ 0: regular motion).
+ * With jvp(t, y, w) (the Jacobian–vector product J·w) it integrates the linearised equations;
+ * otherwise a twin trajectory d0·max(1, |y|) away (Benettin's method). Both share the same adaptive steps and
+ * are renormalised about every `interval`. Discard a `transient` before averaging.
+ * Returns { lambda, history: [{ t, lambda }] } — a finite-time estimate: report how it settles.
+ */
+function lyapunovExponent({ f, jvp, y0, t0 = 0, duration, interval = 1, transient = 0, d0 = 1e-8, h = 1e-3, rtol = 1e-10, atol = 1e-14 }) {
+  if (typeof f !== 'function') throw new Error('lyapunovExponent: f(t, y) is required');
+  finiteArray(y0, 'lyapunovExponent');
+  if (!(duration > 0 && interval > 0 && transient >= 0 && d0 > 0)) throw new Error('lyapunovExponent: need duration, interval, d0 > 0 and transient ≥ 0');
+  const n = y0.length, out = new Float64Array(2 * n), dir = new Float64Array(n).fill(1 / Math.sqrt(n));
+  const aug = jvp
+    ? (t, z) => { const y = z.subarray(0, n); out.set(f(t, y)); out.set(jvp(t, y, z.subarray(n)), n); return out; }
+    : (t, z) => { out.set(f(t, z.subarray(0, n))); out.set(f(t, z.subarray(n)), n); return out; };
+  const z = new Float64Array(2 * n);
+  let eps = d0;                                     // twin offset, scaled with |y| so rounding cannot swamp it
+  const restart = (y, u) => {
+    z.set(y);
+    eps = d0 * Math.max(1, Math.hypot(...y));
+    for (let i = 0; i < n; i++) z[n + i] = jvp ? u[i] : y[i] + eps * u[i];
+  };
+  restart(y0, dir);
+  const end = t0 + transient + duration, history = [];
+  let t = t0, sum = 0, step = h;
+  while (t < end - 1e-12 * interval) {
+    const s = odeStepper({ f: aug, y0: z, t0: t, method: 'dopri5', h: step, rtol, atol });
+    const stop = Math.min(t + interval, end);
+    while (s.t < stop) s.step();
+    step = Math.max((s.t - t) / Math.max(s.steps, 1), 1e-12);
+    const y = s.y.subarray(0, n), sep = new Float64Array(n);
+    for (let i = 0; i < n; i++) sep[i] = jvp ? s.y[n + i] : s.y[n + i] - y[i];
+    const len = Math.hypot(...sep), growth = len / (jvp ? 1 : eps);
+    if (!(growth > 0 && Number.isFinite(growth))) throw new Error('lyapunovExponent: perturbation collapsed or overflowed; shorten interval');
+    if (s.t > t0 + transient + 1e-12 * interval) {
+      sum += Math.log(growth) * (s.t - Math.max(t, t0 + transient)) / (s.t - t);
+      history.push({ t: s.t, lambda: sum / (s.t - t0 - transient) });
+    }
+    restart(y, sep.map(v => v / len));
+    t = s.t;
+  }
+  return { lambda: history.at(-1)?.lambda ?? NaN, history };
+}
 
-// Chemistry energy units (J per unit): kcal/mol, kJ/mol, wavenumber cm⁻¹ (= h c × 100 m⁻¹), all exact.
-const kcalPerMol = 4184 / 6.02214076e23;
-const kJPerMol = 1000 / 6.02214076e23;
-const invCm = 6.62607015e-34 * 299792458 * 100;
-// Nuclide masses in u (AME2020): isotope effects need these, not the standard atomic weights.
-const NUCLIDE_MASS = Object.freeze({ H1: 1.00782503207, H2: 2.01410177812, H3: 3.01604928, C12: 12, N14: 14.00307400443, O16: 15.99491461957 });
+/**
+ * Exact solution of first-order linear chains with branching (radioactive decay series, sequential
+ * first-order reactions, compartment chains): species i is lost at rate rates[i] (0 = stable), and
+ * links [[from, to, fraction]] send that fraction of from's losses to `to` (from < to).
+ * Bateman's solution, generalised to branching: eigen-decomposition of the triangular rate matrix.
+ * Rates must be distinct (Bateman's formula divides by their differences; for equal or nearly
+ * equal rates use expm from core/linalg.mjs). Returns { at(t, x0) → amounts, matrix }.
+ */
+function linearChain({ rates, links = [] }) {
+  const n = rates.length;
+  if (!n || !rates.every(r => Number.isFinite(r) && r >= 0)) throw new Error('linearChain: rates must be finite and ≥ 0');
+  const A = Array.from({ length: n }, (_, i) => { const row = new Float64Array(n); row[i] = -rates[i]; return row; });
+  const out = new Float64Array(n);
+  for (const [from, to, fraction] of links) {
+    if (!(Number.isInteger(from) && Number.isInteger(to) && from < to && to < n && fraction >= 0)) throw new Error('linearChain: links are [from, to, fraction] with from < to');
+    A[to][from] += fraction * rates[from];
+    out[from] += fraction;
+  }
+  if (out.some(f => f > 1 + 1e-12)) throw new Error('linearChain: branching fractions from one species exceed 1');
+  for (let i = 0; i < n; i++) {for (let j = 0; j < i; j++) {
+    if (Math.abs(rates[i] - rates[j]) <= 1e-9 * Math.max(rates[i], rates[j])) throw new Error('linearChain: equal rates; use expm from core/linalg.mjs');
+  }}
+  // eigenvector k (eigenvalue −λ_k) of the lower-triangular matrix, unit at position k
+  const V = Array.from({ length: n }, (_, k) => {
+    const v = new Float64Array(n); v[k] = 1;
+    for (let i = k + 1; i < n; i++) { let s = 0; for (let j = k; j < i; j++) s += A[i][j] * v[j]; v[i] = s / (rates[i] - rates[k]); }
+    return v;
+  });
+  return {
+    matrix: A,
+    at(t, x0) {
+      if (x0.length !== n) throw new Error('linearChain: x0 must have one amount per species');
+      const c = new Float64Array(n);                       // V c = x0, V unit lower triangular (columns = eigenvectors)
+      for (let i = 0; i < n; i++) { let s = x0[i]; for (let k = 0; k < i; k++) s -= V[k][i] * c[k]; c[i] = s; }
+      const x = new Float64Array(n);
+      for (let k = 0; k < n; k++) { const e = c[k] * Math.exp(-rates[k] * t); for (let i = k; i < n; i++) x[i] += e * V[k][i]; }
+      return x;
+    },
+  };
+}
 
+return { odeStepper, mechanicsStepper, refinementOrder, lyapunovExponent, linearChain };
+})();
 
-return { CODATA, c, h, hbar, e, kB, NA, eps0, mu0, G, me, mp, mn, u, a0, alpha, Eh, Ry, eV, MeV, mpc2MeV, mec2MeV, hbarcMeVfm, mAlphaMeV, muB, ge, AU, GMsun, Msun, yearJulian, G_AU_MSUN_YR, gn, GMearth, Rearth, RearthMean, GMmoon, Rmoon, earthMoonDistance, R, Mair, gammaAir, p0, T0isa, rho0isa, PDG, ATOMIC_WEIGHT, kcalPerMol, kJPerMol, invCm, NUCLIDE_MASS };
+// ---- psim:core/quantum.mjs
+__psim["core/quantum.mjs"] = (() => {
+// Finite-dimensional quantum systems: spins, qubits, excitons, few-level molecules. Complex dense
+// matrices, tensor products, spin operators for any j, a complex Hermitian eigensolver, exact
+// propagators and open-system (Lindblad) dynamics of the density matrix. Pure functions.
+//
+//   cmat(n), identity(n), fromReal(rows), cadd, cscale, cmul, dagger, kron, trace, expectation
+//   spinOps(j)                        { x, y, z, plus, minus } for spin j (ħ = 1), dimension 2j + 1
+//   embed(op, k, dims)                op acting on subsystem k of a tensor product with these dims
+//   eigHermitian(H)                   complex Jacobi: ascending real values, unitary V (columns = eigenvectors)
+//   propagator(eig, t, hbar)          U = V e^{−iEt/ħ} V† (exact for time-independent H)
+//   evolve(rho, U)                    U ρ U†
+//   lindblad({ H, jumps, rho0 })      stepper for dρ/dt = −i[H, ρ]/ħ + Σ γ(LρL† − ½{L†L, ρ}), adaptive dopri5
+//   thermalState(H, kT)               e^{−H/kT}/Z (detailed balance reference)
+//   checkDensity(rho)                 { trace, hermiticity, minEigenvalue } for verify()
+//
+// A complex matrix is { n, re, im } with row-major Float64Arrays of length n². Units: ħ = 1 unless
+// hbar is passed; energies and rates then share one unit (e.g. cm⁻¹ with time in cm, or rad/µs).
+const { odeStepper } = __psim["core/ode.mjs"];
+const cmat = n => ({ n, re: new Float64Array(n * n), im: new Float64Array(n * n) });
+function identity(n) { const A = cmat(n); for (let i = 0; i < n; i++) A.re[i * n + i] = 1; return A; }
+/** From real rows (and optional imaginary rows). */
+function fromReal(rows, imRows) {
+  const n = rows.length, A = cmat(n);
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { A.re[i * n + j] = rows[i][j]; if (imRows) A.im[i * n + j] = imRows[i][j]; }
+  return A;
+}
+const same = (A, B, who) => { if (A.n !== B.n) throw new Error(`${who}: matrices must have the same size`); };
+function cadd(A, B, b = 1) { same(A, B, 'cadd'); const C = cmat(A.n); for (let i = 0; i < A.re.length; i++) { C.re[i] = A.re[i] + b * B.re[i]; C.im[i] = A.im[i] + b * B.im[i]; } return C; }
+/** s·A for a real s or a complex [sRe, sIm]. */
+function cscale(A, s) {
+  const [sr, si] = typeof s === 'number' ? [s, 0] : s, C = cmat(A.n);
+  for (let i = 0; i < A.re.length; i++) { C.re[i] = sr * A.re[i] - si * A.im[i]; C.im[i] = sr * A.im[i] + si * A.re[i]; }
+  return C;
+}
+function cmul(A, B) {
+  same(A, B, 'cmul');
+  const n = A.n, C = cmat(n);
+  for (let i = 0; i < n; i++) {for (let k = 0; k < n; k++) {
+    const ar = A.re[i * n + k], ai = A.im[i * n + k];
+    if (ar === 0 && ai === 0) continue;
+    for (let j = 0; j < n; j++) {
+      const br = B.re[k * n + j], bi = B.im[k * n + j];
+      C.re[i * n + j] += ar * br - ai * bi; C.im[i * n + j] += ar * bi + ai * br;
+    }
+  }}
+  return C;
+}
+function dagger(A) { const n = A.n, C = cmat(n); for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { C.re[j * n + i] = A.re[i * n + j]; C.im[j * n + i] = -A.im[i * n + j]; } return C; }
+function kron(A, B) {
+  const n = A.n * B.n, C = cmat(n);
+  for (let i = 0; i < A.n; i++) {for (let j = 0; j < A.n; j++) {
+    const ar = A.re[i * A.n + j], ai = A.im[i * A.n + j];
+    if (ar === 0 && ai === 0) continue;
+    for (let k = 0; k < B.n; k++) {for (let l = 0; l < B.n; l++) {
+      const br = B.re[k * B.n + l], bi = B.im[k * B.n + l], o = (i * B.n + k) * n + j * B.n + l;
+      C.re[o] = ar * br - ai * bi; C.im[o] = ar * bi + ai * br;
+    }}
+  }}
+  return C;
+}
+function trace(A) { let r = 0, i = 0; for (let k = 0; k < A.n; k++) { r += A.re[k * A.n + k]; i += A.im[k * A.n + k]; } return { re: r, im: i }; }
+/** Tr(ρ O): the expectation value of O in the state ρ (real for Hermitian O). */
+function expectation(rho, O) {
+  same(rho, O, 'expectation');
+  const n = rho.n; let r = 0;
+  for (let i = 0; i < n; i++) for (let k = 0; k < n; k++) r += rho.re[i * n + k] * O.re[k * n + i] - rho.im[i * n + k] * O.im[k * n + i];
+  return r;
+}
+
+/** Spin operators S_x, S_y, S_z, S₊, S₋ for spin j (integer or half-integer), basis m = j, j−1, …, −j. */
+function spinOps(j) {
+  const d = Math.round(2 * j + 1);
+  if (!(d >= 2 && Math.abs(d - (2 * j + 1)) < 1e-12)) throw new Error('spinOps: j must be ½, 1, 3/2, …');
+  const z = cmat(d), plus = cmat(d), minus = cmat(d);
+  for (let a = 0; a < d; a++) {
+    const m = j - a;
+    z.re[a * d + a] = m;
+    if (a > 0) plus.re[(a - 1) * d + a] = Math.sqrt(j * (j + 1) - m * (m + 1));     // S₊|m⟩ = √(j(j+1) − m(m+1)) |m+1⟩
+  }
+  for (let a = 0; a < d; a++) for (let b = 0; b < d; b++) minus.re[a * d + b] = plus.re[b * d + a];
+  const x = cscale(cadd(plus, minus), 0.5), y = cscale(cadd(plus, minus, -1), [0, -0.5]);
+  return { x, y, z, plus, minus, dim: d };
+}
+
+/** The operator op on subsystem k of a tensor product of subsystems with dimensions dims. */
+function embed(op, k, dims) {
+  let M = null;
+  dims.forEach((d, i) => { const f = i === k ? op : identity(d); M = M ? kron(M, f) : f; });
+  return M;
+}
+
+/**
+ * Eigen-decomposition of a complex Hermitian matrix by cyclic complex Jacobi rotations: each
+ * off-diagonal element is first made real by a phase on its column, then removed by a real
+ * rotation. Handles degenerate eigenvalues (vectors stay orthonormal). Returns { values (ascending),
+ * vectors } where vectors is a cmat whose column i is the eigenvector of values[i].
+ */
+function eigHermitian(H, { rtol = 1e-14, maxSweeps = 100 } = {}) {
+  const n = H.n, re = Float64Array.from(H.re), im = Float64Array.from(H.im);
+  for (let i = 0; i < n; i++) {for (let j = i; j < n; j++) {
+    const dr = re[i * n + j] - re[j * n + i], di = im[i * n + j] + im[j * n + i];
+    if (Math.hypot(dr, di) > 1e-10 * (1 + Math.abs(re[i * n + j]) + Math.abs(im[i * n + j]))) throw new Error('eigHermitian: matrix must be Hermitian');
+  }}
+  for (let i = 0; i < n; i++) im[i * n + i] = 0;
+  const V = identity(n), vr = V.re, vi = V.im;
+  let scale = 0; for (let i = 0; i < n * n; i++) scale = Math.hypot(scale, re[i], im[i]);
+  const off = () => { let s = 0; for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) s = Math.hypot(s, re[i * n + j], im[i * n + j]); return s; };
+  for (let sweep = 0; off() > rtol * (scale || 1); sweep++) {
+    if (sweep === maxSweeps) throw new Error('eigHermitian: no convergence');
+    for (let p = 0; p < n; p++) {for (let q = p + 1; q < n; q++) {
+      const cr = re[p * n + q], ci = im[p * n + q], mag = Math.hypot(cr, ci);
+      if (mag <= 1e-300 || mag < 1e-18 * (scale || 1)) continue;
+      // 1. phase e^{−iφ} on column q (and e^{iφ} on row q) makes A_pq real = |c|
+      const ur = cr / mag, ui = -ci / mag;                    // e^{−iφ}
+      for (let k = 0; k < n; k++) {
+        let a = re[k * n + q], b = im[k * n + q];               // column q × e^{−iφ}
+        re[k * n + q] = a * ur - b * ui; im[k * n + q] = a * ui + b * ur;
+        a = re[q * n + k]; b = im[q * n + k];                   // row q × e^{iφ}
+        re[q * n + k] = a * ur + b * ui; im[q * n + k] = -a * ui + b * ur;
+        a = vr[k * n + q]; b = vi[k * n + q];
+        vr[k * n + q] = a * ur - b * ui; vi[k * n + q] = a * ui + b * ur;
+      }
+      im[q * n + q] = 0;
+      // 2. real Jacobi rotation in the (p, q) plane
+      const app = re[p * n + p], aqq = re[q * n + q], delta = (aqq - app) / 2;
+      const t = delta === 0 ? 1 : mag / (delta + Math.sign(delta) * Math.hypot(delta, mag));
+      const c = 1 / Math.hypot(1, t), s = t * c;
+      re[p * n + p] = app - t * mag; re[q * n + q] = aqq + t * mag;
+      re[p * n + q] = re[q * n + p] = im[p * n + q] = im[q * n + p] = 0;
+      for (let k = 0; k < n; k++) {
+        if (k !== p && k !== q) {
+          const ur2 = re[k * n + p], ui2 = im[k * n + p], wr = re[k * n + q], wi = im[k * n + q];
+          re[k * n + p] = c * ur2 - s * wr; im[k * n + p] = c * ui2 - s * wi;
+          re[k * n + q] = s * ur2 + c * wr; im[k * n + q] = s * ui2 + c * wi;
+          re[p * n + k] = re[k * n + p]; im[p * n + k] = -im[k * n + p];
+          re[q * n + k] = re[k * n + q]; im[q * n + k] = -im[k * n + q];
+        }
+        const ar = vr[k * n + p], ai = vi[k * n + p], br = vr[k * n + q], bi = vi[k * n + q];
+        vr[k * n + p] = c * ar - s * br; vi[k * n + p] = c * ai - s * bi;
+        vr[k * n + q] = s * ar + c * br; vi[k * n + q] = s * ai + c * bi;
+      }
+    }}
+  }
+  const order = Array.from({ length: n }, (_, i) => i).sort((a, b) => re[a * n + a] - re[b * n + b]);
+  const vectors = cmat(n);
+  order.forEach((col, i) => { for (let k = 0; k < n; k++) { vectors.re[k * n + i] = vr[k * n + col]; vectors.im[k * n + i] = vi[k * n + col]; } });
+  return { values: Float64Array.from(order, i => re[i * n + i]), vectors };
+}
+
+/** U(t) = V diag(e^{−iE_k t/ħ}) V† from an eigHermitian result. */
+function propagator({ values, vectors }, t, hbar = 1) {
+  const n = values.length, D = cmat(n);
+  for (let k = 0; k < n; k++) { const ph = -values[k] * t / hbar; D.re[k * n + k] = Math.cos(ph); D.im[k * n + k] = Math.sin(ph); }
+  return cmul(cmul(vectors, D), dagger(vectors));
+}
+const evolve = (rho, U) => cmul(cmul(U, rho), dagger(U));
+
+/** Thermal (Gibbs) state e^{−H/kT}/Z. */
+function thermalState(H, kT) {
+  const { values, vectors } = eigHermitian(H), n = H.n, D = cmat(n), e0 = values[0];
+  let Z = 0; for (const e of values) Z += Math.exp(-(e - e0) / kT);
+  values.forEach((e, k) => { D.re[k * n + k] = Math.exp(-(e - e0) / kT) / Z; });
+  return cmul(cmul(vectors, D), dagger(vectors));
+}
+
+/**
+ * Open-system dynamics, Lindblad form: dρ/dt = −i[H, ρ]/ħ + Σ_k γ_k (L_k ρ L_k† − ½{L_k†L_k, ρ}).
+ * jumps: [{ L (cmat), rate γ }] (dephasing: L = |i⟩⟨i|; decay i → j: L = |j⟩⟨i|; a trap/sink is a
+ * decay into an extra level). Trace-preserving and completely positive. Adaptive Dormand–Prince on
+ * the 2n² real entries. Returns { t, rho (cmat, current), step(), advanceTo(t), population(i) }.
+ */
+function lindblad({ H, jumps = [], rho0, hbar = 1, t0 = 0, rtol = 1e-10, atol = 1e-12, h = 1e-3 }) {
+  const n = H.n, N = n * n;
+  const Ls = jumps.map(({ L, rate }) => { if (!(rate >= 0)) throw new Error('lindblad: rates must be ≥ 0'); return { L, Ld: dagger(L), LdL: cmul(dagger(L), L), rate }; });
+  const unpack = y => ({ n, re: y.subarray(0, N), im: y.subarray(N) });
+  const f = (_t, y) => {
+    const rho = unpack(y), out = new Float64Array(2 * N);
+    const comm = cadd(cmul(H, rho), cmul(rho, H), -1);          // [H, ρ]
+    for (let i = 0; i < N; i++) { out[i] = comm.im[i] / hbar; out[N + i] = -comm.re[i] / hbar; }   // −i[H, ρ]/ħ
+    for (const { L, Ld, LdL, rate } of Ls) {
+      if (!rate) continue;
+      const a = cmul(cmul(L, rho), Ld), b = cmul(LdL, rho), c = cmul(rho, LdL);
+      for (let i = 0; i < N; i++) { out[i] += rate * (a.re[i] - 0.5 * (b.re[i] + c.re[i])); out[N + i] += rate * (a.im[i] - 0.5 * (b.im[i] + c.im[i])); }
+    }
+    return out;
+  };
+  const y0 = new Float64Array(2 * N); y0.set(rho0.re); y0.set(rho0.im, N);
+  const s = odeStepper({ f, y0, t0, method: 'dopri5', h, rtol, atol });
+  const api = {
+    get t() { return s.t; },
+    get rho() { return { n, re: Float64Array.from(s.y.subarray(0, N)), im: Float64Array.from(s.y.subarray(N)) }; },
+    population: i => s.y[i * n + i],
+    step: () => s.step(),
+    advanceTo: (t, opts) => s.advanceTo(t, Infinity, opts),
+    stepper: s,
+  };
+  return api;
+}
+
+/** Trace, Hermiticity error and smallest eigenvalue of a density matrix (all should be 1, ~0, ≥ −round-off). */
+function checkDensity(rho) {
+  const n = rho.n; let herm = 0;
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) herm = Math.max(herm, Math.hypot(rho.re[i * n + j] - rho.re[j * n + i], rho.im[i * n + j] + rho.im[j * n + i]));
+  const sym = cadd(rho, dagger(rho)); const half = cscale(sym, 0.5);
+  return { trace: trace(rho).re, hermiticity: herm, minEigenvalue: eigHermitian(half).values[0] };
+}
+
+return { cmat, identity, fromReal, cadd, cscale, cmul, dagger, kron, trace, expectation, spinOps, embed, eigHermitian, propagator, evolve, thermalState, lindblad, checkDensity };
 })();
 
 // ---- local:physics.mjs
 __psim["local:physics.mjs"] = (() => {
-// Three-level quantum system in thermal equilibrium: level populations versus temperature.
+// Three-level quantum system in thermal equilibrium with its surroundings, scanned in temperature.
 //
-// Scientific aim: show how the occupation probabilities of a system with three discrete
-// energy levels change as the temperature of the bath it is in contact with is raised.
+// ONE IDEA (SKILL.md step 5)
+//   Learn:   heating does not lift the system to its top level; it spreads it out, so the higher
+//            levels fill up gradually and (per state) never overtake the lower ones.
+//   Picture: an energy ladder of three levels, each with a bar showing how likely the system is to be
+//            found there, beside the three chance-versus-temperature curves traced so far.
+//   Action:  "Heat it up": start from absolute zero and warm the surroundings step by step.
 //
-// Model (canonical ensemble, tier: analytical)
-//   State        level populations P0, P1, P2 (probabilities of the whole level, incl. degeneracy)
-//   Law          P_i = g_i exp(−E_i/k_BT) / Z,  Z = Σ g_i exp(−E_i/k_BT)
-//   Inputs       gaps Δ1 = E1 − E0, Δ2 = E2 − E1 (meV), degeneracies g_i, bath temperature T (K)
-//   Observables  P_i(T); mean energy U; heat capacity C/k_B = Var(E)/(k_BT)²; entropy S/k_B
-//   Progress     none: temperature is a parameter (quasi-static scan), not physical time
-//   Validity     levels fixed (no T-dependence), system weakly coupled to the bath and given time
-//                to equilibrate at each T; other levels assumed far enough to ignore. Generic,
-//                illustrative energies; no specific atom or molecule is claimed.
-//
-// Calculation uses core/probability.mjs canonicalEnsemble (log-sum-exp stable).
-// verify() checks it against independent closed forms and a published Schottky benchmark.
+// Model (canonical ensemble, Boltzmann distribution):
+//   P_i(T) = g_i exp(−E_i / k_B T) / Z,   Z = Σ_i g_i exp(−E_i / k_B T),   i = lowest, middle, top
+//   Energies are given as temperatures E_i / k_B in kelvin (1 K ↔ 86.17 µeV ↔ 0.695 cm⁻¹).
+//   E_0 = 0, E_1 = gap1, E_2 = gap1 + gap2. g_i = number of quantum states in level i.
+//   Evaluated with canonicalEnsemble (core/probability.mjs); T = 0 is the separate ground-state limit.
+// Progress axis: the temperature of the surroundings, a scan through equilibrium states (not time:
+//   no heating rate is modelled; at every temperature the system is assumed fully settled).
+// Observables: level populations P_i (chance of finding the system in level i, equivalently the
+//   fraction of a large collection of identical, independent systems), mean energy U, entropy S/k_B,
+//   heat capacity C/k_B (Schottky bump).
+// Span: 0 K to 4 × E_2/k_B; there every per-state weight is within a factor e^(−1/4) of the others,
+//   i.e. close to the hot limit g_i / Σg. Key temperatures (computed, Brent root on the model):
+//   middle level reaches 10 %, top level reaches 10 %.
+// Validity: an isolated set of three levels with temperature-independent energies, weakly coupled
+//   to a heat bath (canonical ensemble). Real atoms or molecules have more levels; this is a model.
+// Tier: analytical (closed form evaluated exactly; checks are identities and limits).
 const { canonicalEnsemble } = __psim["core/probability.mjs"];
-const { kB, eV } = __psim["core/constants.mjs"];
-/** Boltzmann constant in meV per kelvin (from exact SI kB and eV). */
-const KB_MEV = kB / eV * 1e3;          // 0.08617333262… meV/K
-
-const T_RANGE = [0.5, 5000];             // K, figure axis (log)
-
+const { brent } = __psim["core/numerics.mjs"];
+const { thermalState } = __psim["core/quantum.mjs"];
 const PARAMS = [
-  { key: 'T', label: 'Bath temperature T', min: 0.5, max: 5000, value: 80, log: true, unit: 'K', digits: 4,
-    hint: 'Equilibrium temperature. Drag the cursor on either plot, or press "Heat it up".' },
-  { key: 'd1', label: 'Gap Δ₁ = E₁ − E₀', min: 0.01, max: 200, value: 5, log: true, unit: 'meV', digits: 3 },
-  { key: 'd2', label: 'Gap Δ₂ = E₂ − E₁', min: 0.01, max: 200, value: 25, log: true, unit: 'meV', digits: 3 },
-  { key: 'g0', label: 'Degeneracy g₀ (ground)', min: 1, max: 9, value: 1, integer: true },
-  { key: 'g1', label: 'Degeneracy g₁ (middle)', min: 1, max: 9, value: 1, integer: true },
-  { key: 'g2', label: 'Degeneracy g₂ (top)', min: 1, max: 9, value: 1, integer: true },
+  { key: 'gap1', label: 'Step from lowest to middle level', min: 1, max: 10000, value: 100, log: true, unit: 'K', hint: 'Energy gap written as a temperature, E/k_B (100 K ≈ 8.6 meV).' },
+  { key: 'gap2', label: 'Step from middle to top level', min: 1, max: 10000, value: 200, log: true, unit: 'K', hint: 'Energy gap written as a temperature, E/k_B.' },
+  { key: 'g0', label: 'States in the lowest level', min: 1, max: 5, value: 1, integer: true, hint: 'Degeneracy: how many distinct quantum states share this energy.' },
+  { key: 'g1', label: 'States in the middle level', min: 1, max: 5, value: 1, integer: true },
+  { key: 'g2', label: 'States in the top level', min: 1, max: 5, value: 1, integer: true },
 ];
 
-const PRESETS = [
-  { label: 'Middle level overshoots', values: { d1: 5, d2: 25, g0: 1, g1: 1, g2: 1 } },
-  { label: 'Equally spaced', values: { d1: 10, d2: 10, g0: 1, g1: 1, g2: 1 } },
-  { label: 'Degenerate top level', values: { d1: 10, d2: 10, g0: 1, g1: 1, g2: 3 } },
-];
+const LEVEL_NAMES = ['lowest', 'middle', 'top'];
+const STEPS = 2400;   // scan points over the run (populations are exact at every point)
 
-/** Full equilibrium at temperature T (K) for gaps (meV) and degeneracies. */
-function equilibrium(T, d1, d2, g) {
-  const E = [0, d1, d1 + d2];
-  const kT = KB_MEV * T;
-  const r = canonicalEnsemble(E, { kT, degeneracies: g });
-  return { E, kT, P: Array.from(r.probabilities), U: r.meanEnergy, C: r.heatCapacity, S: r.entropy, F: r.freeEnergy };
-}
-
-/**
- * Temperature at which the middle level's population peaks (interior maximum).
- * P1 = 1 / [(g0/g1) e^{βΔ1} + 1 + (g2/g1) e^{−βΔ2}]; d/dβ of the bracket vanishes at
- * e^{β(Δ1+Δ2)} = g2Δ2/(g0Δ1). An interior maximum exists only if g2Δ2 > g0Δ1.
- */
-function middlePeak(d1, d2, g) {
-  const ratio = g[2] * d2 / (g[0] * d1);
-  if (!(ratio > 1)) return null;
-  const kT = (d1 + d2) / Math.log(ratio);
-  return { T: kT / KB_MEV, kT };
-}
-
-/** Temperature of the heat-capacity (Schottky) maximum, by golden-section search on log T. */
-function schottkyPeak(d1, d2, g) {
-  const f = lt => equilibrium(10 ** lt, d1, d2, g).C;
-  // coarse scan, then refine around the best grid point
-  let best = 0, bv = -1;
-  const lo = Math.log10(T_RANGE[0]) - 2, hi = Math.log10(T_RANGE[1]) + 2, n = 400;
-  for (let i = 0; i <= n; i++) { const lt = lo + (hi - lo) * i / n, v = f(lt); if (v > bv) { bv = v; best = lt; } }
-  let a = best - (hi - lo) / n, b = best + (hi - lo) / n;
-  const gr = (Math.sqrt(5) - 1) / 2;
-  for (let k = 0; k < 80; k++) {
-    const c = b - gr * (b - a), d = a + gr * (b - a);
-    if (f(c) > f(d)) b = d; else a = c;
+/** Equilibrium properties at temperature T (K) for levels E (K) with degeneracies g. */
+function equilibrium(E, g, T) {
+  if (!(T > 0)) {
+    // ground-state limit: everything in the lowest level; entropy ln g0, no heat capacity
+    return { P: [1, 0, 0], U: E[0], S: Math.log(g[0]), C: 0 };
   }
-  const lt = (a + b) / 2;
-  return { T: 10 ** lt, C: f(lt) };
+  const r = canonicalEnsemble(E, { kT: T, degeneracies: g });
+  return { P: Array.from(r.probabilities), U: r.meanEnergy, S: r.entropy, C: r.heatCapacity };
 }
 
-function createSim(p) {
-  const g = [p.g0, p.g1, p.g2];
-  const eq = equilibrium(p.T, p.d1, p.d2, g);
-  const gsum = g[0] + g[1] + g[2];
-  const peak1 = middlePeak(p.d1, p.d2, g);
-  const schottky = schottkyPeak(p.d1, p.d2, g);
-  const curve = key => T => equilibrium(T, p.d1, p.d2, g)[key];
-  // P_i(T) sampled once per rebuild for the stage (log-spaced over the figure range)
-  const curves = { T: [], P: [[], [], []] };
-  for (let k = 0; k <= 300; k++) {
-    const T = T_RANGE[0] * (T_RANGE[1] / T_RANGE[0]) ** (k / 300), P = equilibrium(T, p.d1, p.d2, g).P;
-    curves.T.push(T); for (let i = 0; i < 3; i++) curves.P[i].push(P[i]);
+/** First temperature in (0, Tmax] at which f(T) rises through `target`; null if it never does. */
+function firstCrossing(f, target, Tmax, n = 400) {
+  let a = 0, fa = f(0) - target;
+  for (let k = 1; k <= n; k++) {
+    const b = Tmax * k / n, fb = f(b) - target;
+    if (fa < 0 && fb >= 0) return brent(T => f(T) - target, a, b, 1e-13);
+    a = b; fa = fb;
   }
+  return null;
+}
+
+function keyTemperatures(E, g, Tmax) {
+  const P = i => T => equilibrium(E, g, T).P[i];
+  const mid10 = firstCrossing(P(1), 0.1, Tmax), top10 = firstCrossing(P(2), 0.1, Tmax);
+  let cPeak = 0, best = -1;   // heat-capacity peak on a grid of Tmax/2000
+  for (let k = 1; k <= 2000; k++) { const T = Tmax * k / 2000, C = equilibrium(E, g, T).C; if (C > best) { best = C; cPeak = T; } }
+  return { mid10, top10, cPeak };
+}
+
+function createSim({ gap1, gap2, g0, g1, g2 }) {
+  const E = [0, gap1, gap1 + gap2], g = [g0, g1, g2];
+  const Tmax = 4 * E[2], h = Tmax / STEPS;
+  const hot = g.map(x => x / (g0 + g1 + g2));     // T → ∞ limit
+  const keys = keyTemperatures(E, g, Tmax);
+  let T = 0, eq = equilibrium(E, g, 0);
+  const trace = [[0, ...eq.P]];
+  // exact evaluation at any displayed temperature in the run (read-only; used for smooth drawing)
+  const at = t => equilibrium(E, g, Math.min(Math.max(t, 0), Tmax));
   return {
-    t: 0, timeDependent: false, params: p, g, gsum, ...eq, peak1, schottky, curves,
-    pop: i => T => equilibrium(T, p.d1, p.d2, g).P[i],
-    heatCapacity: curve('C'), entropy: curve('S'),
-    diagnostics() {
-      const d = [
-        { key: 'P0', label: 'Ground population P₀', value: eq.P[0], kind: 'value', text: eq.P[0].toFixed(4) },
-        { key: 'P1', label: 'Middle population P₁', value: eq.P[1], kind: 'value', text: eq.P[1].toFixed(4) },
-        { key: 'P2', label: 'Top population P₂', value: eq.P[2], kind: 'value', text: eq.P[2].toFixed(4) },
-        { key: 'kT', label: 'Thermal energy k_BT', value: eq.kT, kind: 'value', unit: 'meV' },
-        { key: 'U', label: 'Mean energy U (above E₀)', value: eq.U, kind: 'value', unit: 'meV' },
+    E, g, hot, Tmax, keys, at,
+    params: { gap1, gap2, g0, g1, g2 },
+    get t() { return T; },
+    get P() { return eq.P; },
+    get eq() { return eq; },
+    trace,
+    get done() { return T >= Tmax; },
+    step() {
+      if (T >= Tmax) return;
+      T = Math.min(Tmax, T + h);
+      if (Tmax - T < 1e-9 * Tmax) T = Tmax;
+      eq = equilibrium(E, g, T);
+      trace.push([T, ...eq.P]);
+    },
+    diagnostics: () => {
+      const sum = eq.P[0] + eq.P[1] + eq.P[2];
+      return [
+        { key: 'norm', label: 'Chances add up to 1 (|ΣP − 1|)', value: Math.max(Math.abs(sum - 1), 1e-17), kind: 'error', good: 1e-12, warn: 1e-9 },
+        ...LEVEL_NAMES.map((n, i) => ({ key: `p${i}`, label: `Chance in the ${n} level`, value: eq.P[i], kind: 'value', text: `${(100 * eq.P[i]).toFixed(2)} %` })),
+        { key: 'U', label: 'Average energy U/k_B', value: eq.U, kind: 'value', unit: 'K', text: `${eq.U.toFixed(2)} K` },
+        { key: 'S', label: 'Entropy S/k_B', value: eq.S, kind: 'value', text: eq.S.toFixed(4) },
         { key: 'C', label: 'Heat capacity C/k_B', value: eq.C, kind: 'value', text: eq.C.toFixed(4) },
-        { key: 'S', label: 'Entropy S/k_B (max ln Σg)', value: eq.S, kind: 'value', text: `${eq.S.toFixed(4)} of ${Math.log(gsum).toFixed(4)}` },
-        { key: 'Tc', label: 'Schottky peak (max C)', value: schottky.T, kind: 'value', unit: 'K' },
       ];
-      if (peak1) d.push({ key: 'T1', label: 'Middle-level peak T*', value: peak1.T, kind: 'value', unit: 'K' });
-      return d;
     },
-    state: () => ({ T: p.T, levels_meV: eq.E, degeneracies: g, populations: eq.P, U_meV: eq.U, C_over_kB: eq.C, S_over_kB: eq.S }),
-    record() {
-      const rows = [];
-      for (let i = 0; i <= 200; i++) {
-        const T = T_RANGE[0] * (T_RANGE[1] / T_RANGE[0]) ** (i / 200), e = equilibrium(T, p.d1, p.d2, g);
-        rows.push([T, ...e.P, e.U, e.C, e.S].map(v => +v.toPrecision(10)));
-      }
-      return { header: ['T_K', 'P0', 'P1', 'P2', 'U_meV', 'C_over_kB', 'S_over_kB'], rows };
-    },
+    state: () => ({ T, E, g, P: eq.P, U: eq.U, S: eq.S, C: eq.C }),
+    record: () => ({ header: ['T (K)', 'P lowest', 'P middle', 'P top'], rows: trace.map(r => r.slice()) }),
   };
 }
 
-// ---------------------------------------------------------------------------- verification
 function verify() {
   const checks = [];
-  const logGrid = (a, b, n) => Array.from({ length: n + 1 }, (_, i) => a * (b / a) ** (i / n));
-  const Ts = logGrid(0.5, 5000, 120);
-  const cases = [
-    { d1: 5, d2: 25, g: [1, 1, 1] }, { d1: 10, d2: 10, g: [1, 1, 1] },
-    { d1: 10, d2: 10, g: [1, 1, 3] }, { d1: 0.3, d2: 120, g: [2, 5, 1] },
-  ];
-
-  // 1. Closed form for the equally spaced, non-degenerate system: P_i = e^{−ix}/(1+e^{−x}+e^{−2x})
-  let e1 = 0;
-  for (const T of Ts) {
-    const x = 10 / (KB_MEV * T), z = 1 + Math.exp(-x) + Math.exp(-2 * x);
-    const P = equilibrium(T, 10, 10, [1, 1, 1]).P;
-    for (let i = 0; i < 3; i++) e1 = Math.max(e1, Math.abs(P[i] - Math.exp(-i * x) / z));
-  }
-  checks.push({ label: 'Equal spacing: populations vs closed form e^(−iΔ/kT)/Z (121 temperatures)', value: `max |ΔP| = ${e1.toExponential(1)}`, pass: e1 < 1e-14 });
-
-  // 2. Normalisation and no population inversion (P_i/g_i decreases with energy) at every T
-  let eNorm = 0, inversions = 0, monotone = 0;
-  for (const c of cases) {
-    let prev = null;
-    for (const T of Ts) {
-      const P = equilibrium(T, c.d1, c.d2, c.g).P;
-      eNorm = Math.max(eNorm, Math.abs(P[0] + P[1] + P[2] - 1));
-      if (P[1] / c.g[1] > P[0] / c.g[0] * (1 + 1e-12) || P[2] / c.g[2] > P[1] / c.g[1] * (1 + 1e-12)) inversions++;
-      if (prev && (P[0] > prev[0] * (1 + 1e-12) || P[2] < prev[2] * (1 - 1e-12))) monotone++;
-      prev = P;
+  const E = [0, 100, 300];
+  // 1. Boltzmann ratios against the closed form (g_j/g_i)·exp(−ΔE/T), three degeneracy sets
+  let ratioErr = 0, normErr = 0;
+  for (const gg of [[1, 1, 1], [2, 3, 1], [1, 1, 5]]) {
+    for (let k = 1; k <= 200; k++) {
+      const T = 1200 * k / 200, { P } = equilibrium(E, gg, T);
+      normErr = Math.max(normErr, Math.abs(P[0] + P[1] + P[2] - 1));
+      for (const [i, j] of [[0, 1], [1, 2], [0, 2]]) {
+        const exact = gg[j] / gg[i] * Math.exp(-(E[j] - E[i]) / T);
+        if (exact > 1e-300) ratioErr = Math.max(ratioErr, Math.abs(P[j] / P[i] / exact - 1));
+      }
     }
   }
-  checks.push({ label: 'ΣP_i = 1 at all T (4 level schemes)', value: `max |ΣP − 1| = ${eNorm.toExponential(1)}`, pass: eNorm < 1e-14 });
-  checks.push({ label: 'No inversion at T > 0: P_i/g_i falls with energy; P₀ only falls, P₂ only rises', value: `${inversions + monotone} violations in ${4 * Ts.length} states`, pass: inversions + monotone === 0 });
+  checks.push({ label: 'Population ratios = (g_j/g_i)·e^(−ΔE/k_BT) (closed form, 600 temperatures)', value: ratioErr, pass: ratioErr < 1e-12 });
+  checks.push({ label: 'Populations sum to 1', value: normErr, pass: normErr < 1e-14 });
 
-  // 3. Limits: T → 0 ground state; T → ∞ populations g_i/Σg and S → ln Σg
-  const cold = equilibrium(0.5, 10, 10, [1, 1, 3]), hot = equilibrium(1e9, 10, 10, [1, 1, 3]);
-  const eHot = Math.max(Math.abs(hot.P[0] - 0.2), Math.abs(hot.P[1] - 0.2), Math.abs(hot.P[2] - 0.6));
-  checks.push({ label: 'Cold limit (0.5 K, Δ = 10 meV): P₀ → 1, S → ln g₀ = 0', value: `1 − P₀ = ${(1 - cold.P[0]).toExponential(1)}, S = ${cold.S.toExponential(1)}`, pass: 1 - cold.P[0] < 1e-90 && cold.S < 1e-90 });
-  checks.push({ label: 'Hot limit (10⁹ K, g = 1,1,3): P → g/Σg = (0.2, 0.2, 0.6), S → ln 5', value: `max |ΔP| = ${eHot.toExponential(1)}, |S − ln 5| = ${Math.abs(hot.S - Math.log(5)).toExponential(1)}`, pass: eHot < 1e-6 && Math.abs(hot.S - Math.log(5)) < 1e-9 });
-
-  // 4. Thermodynamic consistency: C = dU/dT and S = −dF/dT (central differences in T)
-  let eC = 0, eS = 0;
-  for (const c of cases) for (const T of logGrid(2, 2000, 30)) {
-    const h = T * 1e-4, up = equilibrium(T + h, c.d1, c.d2, c.g), dn = equilibrium(T - h, c.d1, c.d2, c.g), mid = equilibrium(T, c.d1, c.d2, c.g);
-    const Cfd = (up.U - dn.U) / (2 * h) / KB_MEV, Sfd = -(up.F - dn.F) / (2 * h) / KB_MEV;
-    eC = Math.max(eC, Math.abs(Cfd - mid.C) / Math.max(mid.C, 1e-3));
-    eS = Math.max(eS, Math.abs(Sfd - mid.S) / Math.max(mid.S, 1e-3));
+  // 2. Independent route: Gibbs density matrix e^(−H/kT)/Z of the full Hamiltonian (one row per
+  //    quantum state, degenerate states included) from core/quantum.mjs thermalState (eigen-decomposition);
+  //    a level's population is the sum of its states' diagonal entries.
+  {
+    let maxDiff = 0;
+    for (const gg of [[1, 1, 1], [1, 3, 2]]) for (const T of [5, 50, 150, 600, 5000]) {
+      const levelOf = gg.flatMap((n, i) => Array(n).fill(i)), n = levelOf.length;
+      const rows = Array.from({ length: n }, (_, a) => Array.from({ length: n }, (_, b) => (a === b ? E[levelOf[a]] : 0)));
+      const H = { n, re: new Float64Array(rows.flat()), im: new Float64Array(n * n) };
+      const rho = thermalState(H, T), pop = [0, 0, 0];
+      for (let a = 0; a < n; a++) pop[levelOf[a]] += rho.re[a * n + a];
+      const { P } = equilibrium(E, gg, T);
+      for (let i = 0; i < 3; i++) maxDiff = Math.max(maxDiff, Math.abs(pop[i] - P[i]));
+    }
+    checks.push({ label: 'Agrees with the Gibbs density matrix e^(−H/k_BT)/Z (core/quantum thermalState)', value: maxDiff, pass: maxDiff < 1e-12 });
   }
-  checks.push({ label: 'C/k_B = Var(E)/(k_BT)² agrees with dU/dT (finite difference)', value: `max rel. diff ${eC.toExponential(1)}`, pass: eC < 1e-6 });
-  checks.push({ label: 'S/k_B = ln Z + U/k_BT agrees with −dF/dT (finite difference)', value: `max rel. diff ${eS.toExponential(1)}`, pass: eS < 1e-6 });
 
-  // 5. Degenerate entropy as a probability sum: S = −Σ P ln(P/g)
-  let eSum = 0;
-  for (const c of cases) for (const T of logGrid(2, 2000, 30)) {
-    const r = equilibrium(T, c.d1, c.d2, c.g);
-    const s = -r.P.reduce((a, p, i) => a + (p > 0 ? p * Math.log(p / c.g[i]) : 0), 0);
-    eSum = Math.max(eSum, Math.abs(s - r.S));
+  // 3. Limits: cold → all in the lowest level; hot → shares g_i/Σg
+  {
+    const cold = equilibrium(E, [1, 1, 1], 5).P;   // T = gap1/20: P1 = e^(−20)/(1 + e^(−20) + e^(−60))
+    const coldErr = Math.abs(cold[1] / (Math.exp(-20) / (1 + Math.exp(-20) + Math.exp(-60))) - 1);
+    const hot = equilibrium(E, [1, 2, 3], 3e8).P, hotErr = Math.max(...hot.map((p, i) => Math.abs(p - [1, 2, 3][i] / 6)));
+    checks.push({ label: 'Cold side: middle share at T = gap/20 equals e^(−20)/Z', value: coldErr, pass: coldErr < 1e-12 });
+    checks.push({ label: 'Hot limit: shares → g_i/Σg (T = 10⁶ × top energy)', value: hotErr, pass: hotErr < 1e-5 });
   }
-  checks.push({ label: 'S = −Σ P_i ln(P_i/g_i) agrees with the partition-function entropy', value: `max |ΔS| = ${eSum.toExponential(1)}`, pass: eSum < 1e-12 });
 
-  // 6. Published benchmark: two-level Schottky anomaly peak C_max = 0.4392 k_B at k_BT = 0.4168 Δ
-  //    (third level pushed out of reach with Δ₂ = 10⁶ meV)
-  const sk = schottkyPeak(10, 1e6, [1, 1, 1]), kTp = KB_MEV * sk.T / 10;
-  checks.push({ label: 'Two-level limit: Schottky peak vs published C_max = 0.4392 k_B at k_BT = 0.4168 Δ', value: `C_max = ${sk.C.toFixed(4)} k_B at k_BT = ${kTp.toFixed(4)} Δ`, pass: Math.abs(sk.C - 0.4392) < 1e-4 && Math.abs(kTp - 0.4168) < 1e-4 });
+  // 4. Per state, a higher level is never more likely than a lower one at any positive T (no inversion)
+  {
+    let worst = -Infinity;
+    for (const gg of [[1, 1, 1], [1, 5, 5], [5, 1, 5]]) for (let k = 1; k <= 400; k++) {
+      const { P } = equilibrium(E, gg, 1200 * k / 400);
+      worst = Math.max(worst, P[1] / gg[1] - P[0] / gg[0], P[2] / gg[2] - P[1] / gg[1]);
+    }
+    checks.push({ label: 'No population inversion per state (max of P_upper/g − P_lower/g ≤ round-off)', value: worst, pass: worst <= 1e-15 });
+  }
 
-  // 7. Middle-level maximum: analytic T* = (Δ1+Δ2)/(k_B ln(g2Δ2/(g0Δ1))) vs a numerical search
-  const pk = middlePeak(5, 25, [1, 1, 1]);
-  let bestT = 0, bestP = -1;
-  for (const T of logGrid(10, 2000, 20000)) { const P1 = equilibrium(T, 5, 25, [1, 1, 1]).P[1]; if (P1 > bestP) { bestP = P1; bestT = T; } }
-  const ePk = Math.abs(bestT - pk.T) / pk.T;
-  checks.push({ label: 'Middle-level peak (Δ = 5, 25 meV): analytic T* vs numerical search of P₁(T)', value: `T* = ${pk.T.toFixed(2)} K, search ${bestT.toFixed(2)} K (rel. ${ePk.toExponential(1)}); P₁max = ${bestP.toFixed(4)} > 1/3`, pass: ePk < 1e-3 && bestP > 1 / 3 });
+  // 5. Thermodynamic consistency: C = dU/dT by central differences (error O(h²))
+  {
+    let cErr = 0;
+    for (const T of [40, 120, 400]) {
+      const hT = 1e-3 * T, U = t => equilibrium(E, [1, 1, 1], t).U;
+      const dUdT = (U(T + hT) - U(T - hT)) / (2 * hT);
+      cErr = Math.max(cErr, Math.abs(dUdT / equilibrium(E, [1, 1, 1], T).C - 1));
+    }
+    checks.push({ label: 'Heat capacity = dU/dT (central difference, h = 10⁻³ T)', value: cErr, pass: cErr < 1e-5 });
+  }
+
+  // 6. Key temperatures (the timeline markers)
+  const sim = createSim({ gap1: 100, gap2: 200, g0: 1, g1: 1, g2: 1 });
+  const { mid10, top10 } = sim.keys;
+  {
+    const r1 = Math.abs(equilibrium(sim.E, sim.g, mid10).P[1] - 0.1), r2 = Math.abs(equilibrium(sim.E, sim.g, top10).P[2] - 0.1);
+    checks.push({ label: `Marker temperatures solve P = 10 % (middle ${mid10.toFixed(2)} K, top ${top10.toFixed(2)} K)`, value: Math.max(r1, r2), pass: Math.max(r1, r2) < 1e-12 });
+    // two-level limit: top level far away; P1 = 0.1 ⇔ e^(−Δ/T) = 1/9 ⇔ T = Δ / ln 9
+    const two = keyTemperatures([0, 100, 1e5], [1, 1, 1], 1200).mid10, exact = 100 / Math.log(9);
+    const e2 = Math.abs(two / exact - 1);
+    checks.push({ label: `Two-level limit: middle reaches 10 % at Δ/ln 9 = ${exact.toFixed(3)} K`, value: e2, pass: e2 < 1e-9 });
+    // Schottky peak of a two-level system at T = Δ/x, x·tanh(x/2) = 2 (x = 2.3994)
+    const xs = brent(x => x * Math.tanh(x / 2) - 2, 1, 4), peak2 = keyTemperatures([0, 100, 1e6], [1, 1, 1], 400).cPeak;
+    const e3 = Math.abs(peak2 / (100 / xs) - 1);
+    checks.push({ label: `Two-level heat-capacity peak at Δ/${xs.toFixed(4)} (grid step 0.2 K)`, value: e3, pass: e3 < 0.005 });
+  }
 
   return {
-    summary: 'Canonical populations checked against closed forms, thermodynamic identities, high/low-T limits and the published two-level Schottky peak:',
+    summary: 'Boltzmann populations of three levels checked against closed-form ratios, the Gibbs density matrix, cold/hot limits, no inversion, C = dU/dT and two-level benchmarks',
     checks,
     notes: [
-      'Exact within the stated model: three fixed levels in equilibrium with a heat bath. Real systems have further levels and level shifts that this model omits.',
-      'Benchmark source for the Schottky peak: x = Δ/k_BT ≈ 2.3994 solves x·tanh(x/2) = 2, giving C_max ≈ 0.4392 k_B (e.g. Kittel & Kroemer, Thermal Physics, 2nd ed., ch. 3).',
+      'Exact equilibrium (canonical ensemble); no dynamics or heating rate is modelled.',
+      'Energies are temperature-independent; only three levels are included.',
     ],
+    keyTemperatures: { mid10, top10 },
   };
 }
 
-return { KB_MEV, T_RANGE, PARAMS, PRESETS, equilibrium, middlePeak, schottkyPeak, createSim, verify };
+return { PARAMS, LEVEL_NAMES, equilibrium, keyTemperatures, createSim, verify };
 })();
 
 // ---- page
+
+// ONE IDEA
+//   Learn:   heating spreads the system over its levels; the higher ones fill gradually and,
+//            per state, never overtake the lower ones.
+//   Picture: an energy ladder with a "chance" bar on each level, beside the chance-vs-temperature curves.
+//   Action:  "Heat it up" (restart from absolute zero and warm the surroundings).
 const { createInstrument } = __psim["ui/instrument-app.mjs"];
-const { PARAMS, PRESETS, T_RANGE, KB_MEV, createSim } = __psim["local:physics.mjs"];
-const COL = ['--body-1', '--body-4', '--body-0'];        // level identity (categorical, symbolic)
-const NAME = ['E₀ ground', 'E₁ middle', 'E₂ top'];
-const fmtT = T => `${+T.toPrecision(T < 10 ? 3 : 4)} K`;
+const { PARAMS, createSim, LEVEL_NAMES } = __psim["local:physics.mjs"];
+const COLORS = ['--body-1', '--body-0', '--body-2'];   // lowest, middle, top
 
-// ------------------------------------------------------------------ stage: level ladder + population bars
-let setParamFn = null;
-const MONO = '10.5px ui-monospace, Menlo, monospace', SANS = '11px ui-sans-serif, system-ui';
-
-/** Stage geometry: left = level ladder with population bars, right = P_i(T) curves (stacked on phones). */
-function layout(view) {
-  const { W, H } = view, narrow = W < 640;
-  if (narrow) {
-    const mid = H * 0.42;
-    return { narrow, lad: { x0: 46, x1: W - 16, y0: 100, y1: mid }, cur: { x0: 52, x1: W - 16, y0: mid + 60, y1: H - 150 } };
-  }
-  const split = Math.max(330, W * 0.4);
-  return { narrow, lad: { x0: 60, x1: split, y0: 100, y1: H - 52 }, cur: { x0: split + 64, x1: W - 30, y0: 100, y1: H - 52 } };
-}
-
-function drawLadder(ctx, sim, view, r) {
-  const C = view.color;
-  const xAxis = r.x0, xL0 = xAxis + 12, xL1 = xL0 + Math.min(110, (r.x1 - r.x0) * 0.32);
-  const xB0 = xL1 + 34, xB1 = r.x1 - 8, bw = xB1 - xB0, top = r.y0, bottom = r.y1;
-  const Emax = sim.E[2] * 1.12;
-  const Yraw = e => bottom - (e / Emax) * (bottom - top);
-  const ys = sim.E.map(Yraw);
-  let spread = false;
-  for (let i = 1; i < 3; i++) if (ys[i - 1] - ys[i] < 16) { ys[i] = ys[i - 1] - 16; spread = true; }
-  // energy axis, 1-2-5 ticks (meV)
-  ctx.strokeStyle = C('--line-strong'); ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(xAxis + 0.5, top - 8); ctx.lineTo(xAxis + 0.5, bottom + 0.5); ctx.stroke();
-  const raw = Emax / 4, e10 = 10 ** Math.floor(Math.log10(raw)), f = raw / e10;
-  const step = (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * e10;
-  ctx.font = MONO; ctx.textAlign = 'right';
-  for (let v = 0; v <= Emax + 1e-9; v += step) {
-    const y = Math.round(Yraw(v)) + 0.5;
-    ctx.strokeStyle = C('--grid'); ctx.beginPath(); ctx.moveTo(xAxis - 4, y); ctx.lineTo(xL1, y); ctx.stroke();
-    ctx.fillStyle = C('--faint'); ctx.fillText(String(+v.toPrecision(4)), xAxis - 6, y + 3.5);
-  }
-  ctx.save(); ctx.translate(12, bottom); ctx.rotate(-Math.PI / 2); ctx.fillStyle = C('--muted'); ctx.font = SANS; ctx.textAlign = 'start';
-  ctx.fillText('energy above E₀ (meV)', 0, 0); ctx.restore();
-  // k_BT on the same energy axis, from E₀
-  const kTy = Math.max(top - 8, Yraw(sim.kT)), xk = xL1 + 14;
-  ctx.strokeStyle = C('--warn'); ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(xk, bottom); ctx.lineTo(xk, kTy); ctx.moveTo(xk - 4, kTy); ctx.lineTo(xk + 4, kTy); ctx.stroke();
-  ctx.fillStyle = C('--warn'); ctx.textAlign = 'center'; ctx.font = MONO;
-  ctx.fillText(`k_BT${sim.kT > Emax ? '↑' : ''}`, xk, kTy - 6);
-  // levels (g segments each) and population bars on a fixed 0..1 scale
-  ctx.strokeStyle = C('--grid'); ctx.lineWidth = 1; ctx.textAlign = 'center'; ctx.font = MONO;
-  for (const v of [0, 0.5, 1]) {
-    const x = Math.round(xB0 + v * bw) + 0.5;
-    ctx.beginPath(); ctx.moveTo(x, top - 4); ctx.lineTo(x, bottom); ctx.stroke();
-    ctx.fillStyle = C('--faint'); ctx.fillText(String(v), x, bottom + 14);
-  }
-  ctx.fillStyle = C('--muted'); ctx.font = SANS; ctx.fillText('population Pᵢ at this T', xB0 + bw / 2, bottom + 30);
-  for (let i = 0; i < 3; i++) {
-    const y = ys[i], g = sim.g[i], gap = 4, w = (xL1 - xL0 - gap * (g - 1)) / g;
-    ctx.strokeStyle = C(COL[i]); ctx.lineWidth = 3; ctx.lineCap = 'round';
-    for (let k = 0; k < g; k++) { const x = xL0 + k * (w + gap); ctx.beginPath(); ctx.moveTo(x + 2, y); ctx.lineTo(x + w - 2, y); ctx.stroke(); }
-    ctx.lineCap = 'butt';
-    ctx.fillStyle = C('--ink-2'); ctx.textAlign = 'start'; ctx.font = SANS;
-    ctx.fillText(`${NAME[i]}${g > 1 ? ` ×${g}` : ''}`, xL0, y - 7);
-    const len = sim.P[i] * bw;
-    ctx.globalAlpha = 0.9; ctx.fillStyle = C(COL[i]); ctx.fillRect(xB0, y - 6, Math.max(len, 1), 12); ctx.globalAlpha = 1;
-    const xl = xB0 + (sim.g[i] / sim.gsum) * bw;
-    ctx.strokeStyle = C('--ink'); ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
-    ctx.beginPath(); ctx.moveTo(xl, y - 10); ctx.lineTo(xl, y + 10); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = C('--ink'); ctx.font = '600 11.5px ui-monospace, Menlo, monospace';
-    const txt = sim.P[i] < 1e-4 ? sim.P[i].toExponential(1) : sim.P[i].toFixed(4);
-    const tw = ctx.measureText(txt).width;
-    ctx.textAlign = 'start'; ctx.fillText(txt, Math.min(xB0 + len + 6, xB1 - tw), y - 10);
-  }
-  if (spread) { ctx.fillStyle = C('--warn'); ctx.font = SANS; ctx.textAlign = 'start'; ctx.fillText('levels < 16 px apart drawn spread (not to scale)', xL0, top - 22); }
-}
-
-const TX = (r, T) => r.x0 + Math.log(T / T_RANGE[0]) / Math.log(T_RANGE[1] / T_RANGE[0]) * (r.x1 - r.x0);
-const TinvX = (r, x) => T_RANGE[0] * (T_RANGE[1] / T_RANGE[0]) ** Math.min(1, Math.max(0, (x - r.x0) / (r.x1 - r.x0)));
-
-function drawCurves(ctx, sim, view, r) {
-  const C = view.color, Y = p => r.y1 - p * (r.y1 - r.y0);
-  ctx.lineWidth = 1; ctx.font = MONO;
-  for (let e = 0; e <= 3; e++) for (const m of [1, 2, 5]) {
-    const T = m * 10 ** e; if (T < T_RANGE[0] || T > T_RANGE[1]) continue;
-    const x = Math.round(TX(r, T)) + 0.5;
-    ctx.strokeStyle = C(m === 1 ? '--grid-strong' : '--grid'); ctx.beginPath(); ctx.moveTo(x, r.y0); ctx.lineTo(x, r.y1); ctx.stroke();
-    if (m === 1) { ctx.fillStyle = C('--faint'); ctx.textAlign = 'center'; ctx.fillText(String(T), x, r.y1 + 14); }
-  }
-  ctx.textAlign = 'right';
-  for (const v of [0, 0.25, 0.5, 0.75, 1]) {
-    const y = Math.round(Y(v)) + 0.5;
-    ctx.strokeStyle = C('--grid'); ctx.beginPath(); ctx.moveTo(r.x0, y); ctx.lineTo(r.x1, y); ctx.stroke();
-    ctx.fillStyle = C('--faint'); ctx.fillText(String(v), r.x0 - 6, y + 3.5);
-  }
-  ctx.fillStyle = C('--muted'); ctx.font = SANS; ctx.textAlign = 'center';
-  ctx.fillText('bath temperature T (K, log scale) — drag to set', (r.x0 + r.x1) / 2, r.y1 + 30);
-  ctx.save(); ctx.translate(r.x0 - 34, r.y1); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'start'; ctx.fillText('population Pᵢ', 0, 0); ctx.restore();
-  // hot limits g_i/Σg (dashed) and middle-level peak T*
-  for (let i = 0; i < 3; i++) {
-    ctx.strokeStyle = C(COL[i]); ctx.globalAlpha = 0.6; ctx.setLineDash([4, 4]);
-    ctx.beginPath(); ctx.moveTo(r.x0, Y(sim.g[i] / sim.gsum)); ctx.lineTo(r.x1, Y(sim.g[i] / sim.gsum)); ctx.stroke();
-  }
-  ctx.globalAlpha = 1; ctx.setLineDash([]);
-  if (sim.peak1 && sim.peak1.T > T_RANGE[0] && sim.peak1.T < T_RANGE[1]) {
-    const x = TX(r, sim.peak1.T);
-    ctx.strokeStyle = C('--muted'); ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.moveTo(x, r.y0); ctx.lineTo(x, r.y1); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = C('--muted'); ctx.font = MONO; ctx.textAlign = 'start'; ctx.fillText(`T* = ${fmtT(sim.peak1.T)}`, x + 4, r.y0 + 12);
-  }
-  // computed curves
-  for (let i = 0; i < 3; i++) {
-    ctx.strokeStyle = C(COL[i]); ctx.lineWidth = 2.2; ctx.lineJoin = 'round'; ctx.beginPath();
-    sim.curves.T.forEach((T, k) => { const x = TX(r, T), y = Y(sim.curves.P[i][k]); k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
-    ctx.stroke();
-  }
-  // current temperature
-  const xc = TX(r, sim.params.T);
-  ctx.strokeStyle = C('--ink'); ctx.lineWidth = 1; ctx.setLineDash([2, 3]);
-  ctx.beginPath(); ctx.moveTo(xc, r.y0 - 4); ctx.lineTo(xc, r.y1); ctx.stroke(); ctx.setLineDash([]);
-  for (let i = 0; i < 3; i++) {
-    ctx.fillStyle = C(COL[i]); ctx.beginPath(); ctx.arc(xc, Y(sim.P[i]), 4.5, 0, 7); ctx.fill();
-    ctx.strokeStyle = C('--panel'); ctx.lineWidth = 1.5; ctx.stroke();
-  }
-  // direct labels at the right end
-  ctx.font = SANS; ctx.textAlign = 'right';
-  const ends = [0, 1, 2].map(i => ({ i, y: Y(sim.curves.P[i].at(-1)) })).sort((a, b) => a.y - b.y);
-  for (let k = 1; k < 3; k++) if (ends[k].y - ends[k - 1].y < 13) ends[k].y = ends[k - 1].y + 13;
-  for (const { i, y } of ends) { ctx.fillStyle = C(COL[i]); ctx.fillText(`P${'₀₁₂'[i]}`, r.x1 - 4, y - 5); }
-  ctx.fillStyle = C('--muted'); ctx.textAlign = 'start'; ctx.font = SANS;
-  ctx.fillText('dashed: hot limit gᵢ/Σg', r.x0 + 4, r.y0 - 6);
+function niceStep(span, target) {
+  const raw = span / target, p = 10 ** Math.floor(Math.log10(raw));
+  for (const m of [1, 2, 5, 10]) if (m * p >= raw) return m * p;
+  return 10 * p;
 }
 
 function draw(ctx, sim, view) {
-  const L = layout(view);
-  drawLadder(ctx, sim, view, L.lad);
-  drawCurves(ctx, sim, view, L.cur);
+  const { W, H } = view, C = view.color;
+  const T = sim.t;   // the scan point the model has reached (same value as the readout below)
+  const eq = sim.eq;
+  const narrow = W < 560;
+  // regions: the ladder (left or top) and the curves (right or bottom)
+  const lad = narrow ? { x: 34, y: 12, w: W - 48, h: H * 0.5 - 18 } : { x: 40, y: 24, w: W * 0.44 - 52, h: H - 48 };
+  const plt = narrow ? { x: 52, y: H * 0.5 + 18, w: W - 70, h: H * 0.5 - 52 } : { x: W * 0.44 + 52, y: 30, w: W * 0.56 - 80, h: H - 78 };
+
+  // ---- ladder: level heights to scale of energy (nudged apart if closer than a label)
+  const Etop = sim.E[2] || 1, minGap = narrow ? 34 : 46;
+  const ys = sim.E.map(e => lad.y + lad.h - 10 - (lad.h - 46) * e / Etop);
+  if (ys[0] - ys[1] < minGap) ys[1] = ys[0] - minGap;
+  if (ys[1] - ys[2] < minGap) ys[2] = ys[1] - minGap;
+  const lineW = narrow ? 44 : 64, barX = lad.x + lineW + 14, barW = lad.x + lad.w - barX;
+  ctx.font = `600 ${narrow ? 13 : 15}px system-ui, sans-serif`;
+  for (let i = 0; i < 3; i++) {
+    const y = ys[i], col = C(COLORS[i]);
+    // the level: one line per quantum state (degeneracy)
+    ctx.strokeStyle = col; ctx.lineWidth = 3;
+    for (let k = 0; k < sim.g[i]; k++) { const yy = y - k * 5; ctx.beginPath(); ctx.moveTo(lad.x, yy); ctx.lineTo(lad.x + lineW, yy); ctx.stroke(); }
+    // the chance bar: track = 100 %, fill = population
+    const bh = narrow ? 12 : 16;
+    ctx.fillStyle = C('--grid-strong'); ctx.fillRect(barX, y - bh / 2, barW, bh);
+    ctx.fillStyle = col; ctx.globalAlpha = 0.9; ctx.fillRect(barX, y - bh / 2, barW * eq.P[i], bh); ctx.globalAlpha = 1;
+    // label (fixed position, above the bar)
+    ctx.fillStyle = C('--ink'); ctx.textAlign = 'left';
+    const states = sim.g[i] > 1 ? ` (${sim.g[i]} states)` : '';
+    ctx.fillText(`${LEVEL_NAMES[i]} level${states}: ${(100 * eq.P[i]).toFixed(1)} %`, barX, y - bh / 2 - 7);
+  }
+  // energy axis hint: a thin arrow on the far left
+  ctx.strokeStyle = C('--muted'); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(lad.x - 10, ys[0] + 6); ctx.lineTo(lad.x - 10, ys[2] - 14); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(lad.x - 14, ys[2] - 8); ctx.lineTo(lad.x - 10, ys[2] - 16); ctx.lineTo(lad.x - 6, ys[2] - 8); ctx.stroke();
+  ctx.save(); ctx.translate(lad.x - 18, (ys[0] + ys[2]) / 2); ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = C('--muted'); ctx.font = '12px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('energy', 0, 0); ctx.restore();
+
+  // ---- curves: chance in each level against temperature, traced up to now
+  const X = s => plt.x + plt.w * s / sim.Tmax, Y = p => plt.y + plt.h * (1 - p);
+  ctx.strokeStyle = C('--grid-strong'); ctx.lineWidth = 1;
+  ctx.font = '11px ui-monospace, monospace'; ctx.fillStyle = C('--muted');
+  const step = niceStep(sim.Tmax, narrow ? 4 : 6);
+  for (let s = 0; s <= sim.Tmax + 1e-9; s += step) {
+    ctx.beginPath(); ctx.moveTo(X(s), plt.y); ctx.lineTo(X(s), plt.y + plt.h); ctx.stroke();
+    ctx.textAlign = 'center'; ctx.fillText(`${+s.toPrecision(4)}`, X(s), plt.y + plt.h + 15);
+  }
+  for (const p of [0, 0.25, 0.5, 0.75, 1]) {
+    ctx.beginPath(); ctx.moveTo(plt.x, Y(p)); ctx.lineTo(plt.x + plt.w, Y(p)); ctx.stroke();
+    ctx.textAlign = 'right'; ctx.fillText(`${p * 100}%`, plt.x - 6, Y(p) + 4);
+  }
+  ctx.textAlign = 'center'; ctx.fillText('temperature of the surroundings (K)', plt.x + plt.w / 2, plt.y + plt.h + (narrow ? 30 : 32));
+  ctx.save(); ctx.translate(plt.x - (narrow ? 38 : 42), plt.y + plt.h / 2); ctx.rotate(-Math.PI / 2);
+  ctx.fillText('chance in each level', 0, 0); ctx.restore();
+  // computed curves: scan points up to the shown temperature, then the exact value at it
+  for (let i = 0; i < 3; i++) {
+    ctx.strokeStyle = C(COLORS[i]); ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.beginPath();
+    let first = true;
+    for (const r of sim.trace) { if (r[0] > T) break; const x = X(r[0]), y = Y(r[1 + i]); first ? ctx.moveTo(x, y) : ctx.lineTo(x, y); first = false; }
+    ctx.lineTo(X(T), Y(eq.P[i])); ctx.stroke();
+  }
+  // "now": a vertical line at the current temperature, with a dot on each curve
+  ctx.strokeStyle = C('--ink'); ctx.globalAlpha = 0.5; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(X(T), plt.y); ctx.lineTo(X(T), plt.y + plt.h); ctx.stroke(); ctx.globalAlpha = 1;
+  for (let i = 0; i < 3; i++) { ctx.fillStyle = C(COLORS[i]); ctx.beginPath(); ctx.arc(X(T), Y(eq.P[i]), 5, 0, 2 * Math.PI); ctx.fill(); }
 }
 
-function onPointer(canvas, view) {
-  let drag = false;
-  const set = e => {
-    const r = canvas.getBoundingClientRect(), L = layout(view).cur;
-    const x = e.clientX - r.left, y = e.clientY - r.top;
-    if (!drag && (x < L.x0 - 10 || x > L.x1 + 10 || y < L.y0 - 20 || y > L.y1 + 20)) return false;
-    setParamFn?.('T', +TinvX(L, x).toPrecision(4));
-    return true;
-  };
-  canvas.addEventListener('pointerdown', e => { if (set(e)) { drag = true; canvas.setPointerCapture(e.pointerId); } });
-  canvas.addEventListener('pointermove', e => { if (drag) set(e); });
-  canvas.addEventListener('pointerup', () => { drag = false; });
-}
-
-// ------------------------------------------------------------------ workbench: equations + figures
-function bench({ eqs, figs, createPlot, createEquation, createDerivation, M, setParam }) {
-  setParamFn = setParam;
-  const setT = T => setParam('T', +T.toPrecision(4));
-  const pops = createPlot({
-    title: 'Populations on a log scale: the exponential Boltzmann tails when k_BT ≪ Δ', height: 280,
-    x: { label: 'temperature T', unit: 'K', min: T_RANGE[0], max: T_RANGE[1], log: true },
-    y: { label: 'population P_i', min: 1e-8, max: 1, log: true },
-    onCursor: setT,
-  });
+function bench({ eqs, figs, createPlot, createEquation, M }) {
   const thermo = createPlot({
-    title: 'Heat capacity and entropy per system', height: 260,
-    x: { label: 'temperature T', unit: 'K', min: T_RANGE[0], max: T_RANGE[1], log: true },
+    title: 'Heat soaked up and spread: heat capacity and entropy', height: 260,
+    x: { label: 'temperature of the surroundings', unit: 'K', min: 0, max: 1200 },
     y: { label: 'C/k_B, S/k_B', min: 0, max: 1.2 },
-    onCursor: setT,
   });
-  figs.append(pops.el, thermo.el);
+  const wrap = document.createElement('div');
+  const cap = document.createElement('p'); cap.className = 'psim-hint';
+  cap.textContent = 'Analytical. Heat capacity peaks where the populations change fastest (the Schottky bump); entropy rises from ln g₀ towards ln(g₀+g₁+g₂).';
+  wrap.append(thermo.el, cap); figs.append(wrap);
 
   const cur = { sim: null };
-  const S = () => cur.sim;
-  const Ei = M.sub(M.i('E'), M.i('i')), gi = M.sub(M.i('g'), M.i('i')), kT = `${M.sub(M.i('k'), M.i('B'))}${M.i('T')}`;
-  const level = i => createEquation({
-    title: i === 0 ? 'Boltzmann population of each level, term by term (live at the current T)' : undefined,
-    lhs: { mathml: M.sub(M.i('P'), M.n(i)), label: `population of ${NAME[i]}`, value: () => S().P[i], digits: 4 },
+  const P = i => () => cur.sim ? cur.sim.at(cur.sim.t).P[i] : 0;
+  const boltz = createEquation({
+    title: 'Boltzmann distribution, for the middle level (live values at the current temperature)',
+    lhs: { mathml: M.sub(M.i('P'), M.n(1)), label: 'chance in the middle level', value: P(1), digits: 4 },
     terms: [
-      { id: `p${i}`, mathml: M.sub(M.i('g'), M.n(i)), label: 'degeneracy (number of states)', color: COL[i], value: () => S().g[i], digits: 2 },
-      { id: `p${i}`, sign: '×', mathml: M.sup(M.i('e'), M.row(`<mo>−</mo>${M.frac(M.sub(M.i('E'), M.n(i)), kT)}`)), label: 'Boltzmann factor', color: COL[i], value: () => Math.exp(-S().E[i] / S().kT), digits: 4 },
-      { id: `p${i}`, sign: '÷', mathml: M.i('Z'), label: 'partition function (normalises)', color: COL[i], value: () => S().g.reduce((a, g, j) => a + g * Math.exp(-S().E[j] / S().kT), 0), digits: 4 },
+      { id: 'g', mathml: M.sub(M.i('g'), M.n(1)), label: 'number of states in the level', color: '--body-0', value: () => cur.sim ? cur.sim.g[1] : 1, digits: 1 },
+      { id: 'boltz', sign: '×', mathml: M.sup(M.i('e'), `<mo>−</mo>${M.frac(M.sub(M.i('E'), M.n(1)), `${M.i('k')}${M.i('T')}`)}`), label: 'Boltzmann factor: cost of the step at this temperature', color: '--body-0', digits: 4,
+        value: () => { const s = cur.sim; if (!s) return 0; return s.t > 0 ? Math.exp(-s.E[1] / s.t) : 0; } },
+      { id: 'z', sign: '÷', mathml: M.i('Z'), label: 'sum of g·e^(−E/kT) over all three levels', color: '--muted', digits: 4,
+        value: () => { const s = cur.sim; if (!s) return 1; if (!(s.t > 0)) return s.g[0]; return s.E.reduce((a, e, i) => a + s.g[i] * Math.exp(-e / s.t), 0); } },
     ],
-    link: pops,
-  });
-  const levelEqs = [0, 1, 2].map(level);
-  const zEq = createEquation({
-    title: 'Partition function and thermodynamics',
-    lhs: { mathml: M.i('Z'), label: 'sum over the three levels', value: () => S().g.reduce((a, g, j) => a + g * Math.exp(-S().E[j] / S().kT), 0), digits: 4 },
-    terms: [{ id: 'z', mathml: `<munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>0</mn></mrow><mn>2</mn></munderover>${gi}${M.sup(M.i('e'), M.row(`<mo>−</mo>${M.frac(Ei, kT)}`))}`, label: 'Σ gᵢ e^(−Eᵢ/k_BT); E₀ = 0', color: '--ink-2', value: () => S().g.reduce((a, g, j) => a + g * Math.exp(-S().E[j] / S().kT), 0), digits: 4 }],
     where: [
-      { mathml: M.sub(M.i('k'), M.i('B')), meaning: 'Boltzmann constant (exact SI)', value: () => KB_MEV, unit: 'meV/K' },
-      { mathml: `${M.i('C')}<mo>/</mo>${M.sub(M.i('k'), M.i('B'))}`, meaning: 'heat capacity = (⟨E²⟩ − ⟨E⟩²)/(k_BT)²', value: () => S().C },
-      { mathml: `${M.i('S')}<mo>/</mo>${M.sub(M.i('k'), M.i('B'))}`, meaning: 'entropy = ln Z + U/k_BT', value: () => S().S },
+      { mathml: `${M.sub(M.i('E'), M.n(1))}<mo>/</mo>${M.i('k')}`, meaning: 'middle level energy, as a temperature', value: () => cur.sim ? cur.sim.E[1] : 0, unit: 'K' },
+      { mathml: M.i('T'), meaning: 'temperature of the surroundings', value: () => cur.sim ? cur.sim.t : 0, unit: 'K' },
     ],
-    link: thermo,
+    note: 'At T = 0 the Boltzmann factor is 0 for every raised level and Z = g₀: everything is in the lowest level.',
   });
-  const steps = createDerivation([
-    { mathml: `${M.sub(M.i('P'), M.n(1))}<mo>=</mo>${M.frac(M.n(1), `${M.frac(M.sub(M.i('g'), M.n(0)), M.sub(M.i('g'), M.n(1)))}${M.sup(M.i('e'), M.row(`<mi>β</mi>${M.sub(M.i('Δ'), M.n(1))}`))}<mo>+</mo><mn>1</mn><mo>+</mo>${M.frac(M.sub(M.i('g'), M.n(2)), M.sub(M.i('g'), M.n(1)))}${M.sup(M.i('e'), M.row(`<mo>−</mo><mi>β</mi>${M.sub(M.i('Δ'), M.n(2))}`))}`)}`, note: 'Divide numerator and denominator by g₁e^(−βE₁), β = 1/k_BT. Heating lowers the first term (the ground state empties) but raises the last (the top level fills).' },
-    { mathml: `${M.sup(M.i('e'), M.row(`<mi>β</mi><mo>(</mo>${M.sub(M.i('Δ'), M.n(1))}<mo>+</mo>${M.sub(M.i('Δ'), M.n(2))}<mo>)</mo>`))}<mo>=</mo>${M.frac(`${M.sub(M.i('g'), M.n(2))}${M.sub(M.i('Δ'), M.n(2))}`, `${M.sub(M.i('g'), M.n(0))}${M.sub(M.i('Δ'), M.n(1))}`)}`, note: 'Setting the β-derivative of the denominator to zero gives one equation for the temperature where P₁ is largest.' },
-    { mathml: `${M.sub(M.i('k'), M.i('B'))}${M.sup(M.i('T'), M.o('*'))}<mo>=</mo>${M.frac(`${M.sub(M.i('Δ'), M.n(1))}<mo>+</mo>${M.sub(M.i('Δ'), M.n(2))}`, `<mi>ln</mi><mo>⁡</mo><mo>(</mo>${M.sub(M.i('g'), M.n(2))}${M.sub(M.i('Δ'), M.n(2))}<mo>/</mo>${M.sub(M.i('g'), M.n(0))}${M.sub(M.i('Δ'), M.n(1))}<mo>)</mo>`)}`, note: 'A real maximum exists only if g₂Δ₂ > g₀Δ₁; otherwise P₁ rises all the way to its hot limit g₁/Σg. Checked against a numerical search (Verification).' },
-  ], { title: 'When does the middle level overshoot?' });
+  eqs.append(boltz.el);
 
-  // presets + quasi-static heating scan
-  const bar = document.createElement('div'); bar.className = 'psim-btns';
-  for (const p of PRESETS) {
-    const b = document.createElement('button'); b.className = 'psim-btn'; b.type = 'button'; b.textContent = p.label;
-    b.onclick = () => { for (const [k, v] of Object.entries(p.values)) setParam(k, v); };
-    bar.append(b);
-  }
-  const heat = document.createElement('button'); heat.className = 'psim-btn'; heat.type = 'button'; heat.textContent = 'Heat it up (scan 1 K → 3000 K)';
-  let raf = 0;
-  heat.onclick = () => {
-    cancelAnimationFrame(raf);
-    const t0 = performance.now(), dur = 7000;
-    const tick = now => {
-      const s = Math.min(1, (now - t0) / dur);
-      setT(1 * 3000 ** s);
-      if (s < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-  };
-  bar.append(heat);
-  const note = document.createElement('p'); note.className = 'psim-hint';
-  note.textContent = 'The scan steps the bath temperature on a log scale; each frame is a separate equilibrium, so the scan speed is not physical time (the system is assumed to relax faster than it is heated).';
-  eqs.append(bar, note, ...levelEqs.map(e => e.el), zEq.el, steps);
-
-  let key = '';
+  let lastKey = '';
   return {
     update(sim) {
-      cur.sim = sim;
-      levelEqs.forEach(e => e.update()); zEq.update();
-      const k = [sim.params.d1, sim.params.d2, ...sim.g].join();
-      if (k !== key) {
-        key = k;
-        for (let i = 0; i < 3; i++) {
-          pops.fn(`p${i}`, sim.pop(i), { color: COL[i], label: `P${'₀₁₂'[i]} ${NAME[i]}`, width: 2.2 });
-        }
-                thermo.setY({ max: Math.max(1, Math.log(sim.gsum) * 1.12) });
-        thermo.fn('C', sim.heatCapacity, { color: '--body-2', label: 'C/k_B (Schottky anomaly)', width: 2.2 });
-        thermo.fn('S', sim.entropy, { color: '--body-3', label: 'S/k_B', width: 2.2 });
-        thermo.hline('lnG', Math.log(sim.gsum), { color: '--body-3', label: `ln Σg = ${Math.log(sim.gsum).toFixed(3)}` });
-        thermo.marker('sk', sim.schottky.T, sim.schottky.C, { color: '--body-2', r: 3.5, label: `peak ${fmtT(sim.schottky.T)}` });
+      cur.sim = sim; boltz.update();
+      const key = JSON.stringify(sim.params);
+      if (key !== lastKey) {
+        lastKey = key;
+        thermo.setX({ min: 0, max: sim.Tmax });
+        const n = 300, Cs = [], Ss = [];
+        for (let k = 0; k <= n; k++) { const T = sim.Tmax * k / n, e = sim.at(T); Cs.push([T, e.C]); Ss.push([T, e.S]); }
+        const ymax = Math.max(1.2, ...Ss.map(r => r[1]), ...Cs.map(r => r[1])) * 1.05;
+        thermo.setY({ min: 0, max: ymax });
+        thermo.data('C', Cs, { color: '--body-3', label: 'heat capacity C/k_B' });
+        thermo.data('S', Ss, { color: '--body-4', label: 'entropy S/k_B' });
       }
-      for (let i = 0; i < 3; i++) pops.marker(`m${i}`, sim.params.T, sim.P[i], { color: COL[i], r: 4 });
-      pops.cursor(sim.params.T); thermo.cursor(sim.params.T);
-      thermo.marker('mc', sim.params.T, sim.C, { color: '--body-2', r: 4 });
-      thermo.marker('ms', sim.params.T, sim.S, { color: '--body-3', r: 4 });
-      pops.invalidate(); thermo.invalidate(); pops.draw(); thermo.draw();
+      thermo.cursor(sim.t);
+      thermo.draw();
     },
   };
 }
 
+const ALL = { gap1: 100, gap2: 200, g0: 1, g1: 1, g2: 1 };
+
 createInstrument({
-  title: 'Three-level system heating up',
-  subtitle: 'Boltzmann populations of three discrete levels in equilibrium with a heat bath, scanned over temperature',
+  title: 'Three energy levels warming up',
+  subtitle: 'Boltzmann populations of a three-level quantum system in equilibrium, scanned in temperature (canonical ensemble, exact)',
   tier: 'analytical',
-  tierReason: 'Populations, heat capacity and entropy are the exact canonical-ensemble results for three fixed levels (evaluated with a stable log-sum-exp); checked against closed forms, thermodynamic identities, the high/low-T limits and the published two-level Schottky peak (Verification). The level energies are illustrative, not a specific atom or molecule.',
+  tierReason: 'Exact Boltzmann distribution of the stated three-level model; checked against closed-form ratios, the Gibbs density matrix, limits and two-level benchmarks (Verification). A model, not a specific atom.',
   layout: 'workbench',
+  intro: {
+    text: 'A tiny quantum object, such as an atom or a molecule, can hold only certain amounts of energy: here three. Its warm surroundings keep knocking it up and down between them. When it is cold it almost always sits in the lowest level; as the surroundings heat up, the higher levels fill gradually, until all three are shared nearly equally (a level with more room, more states, ends up with a bigger share).',
+    watch: ['the middle level starts filling well before the top one', 'with one state each, the top level never gets ahead of the lower ones', 'try "Top level has 3 states": now it wins in total, but each of its states still holds less'],
+  },
+  actions: [{ label: 'Heat it up', hint: 'start again from absolute zero and warm the surroundings', onClick: ({ restart, play }) => { restart(); play(); } }],
   params: PARAMS,
   create: createSim,
-  draw, bench, onPointer,
-  timeDependent: false,
-  hudLine: sim => `T = ${fmtT(sim.params.T)} · k_BT = ${+sim.kT.toPrecision(3)} meV`,
+  draw, bench,
+  timeUnit: 'K', timeLabel: 'temperature of the surroundings', timeDigits: 1,
+  timeline: {
+    duration: sim => sim.Tmax,
+    start: 0,
+    markers: sim => [
+      sim.keys.mid10 != null && { t: sim.keys.mid10, label: `middle level reaches 10 % (computed, ${sim.keys.mid10.toFixed(0)} K)`, short: 'middle 10%', kind: 'computed' },
+      sim.keys.top10 != null && { t: sim.keys.top10, label: `top level reaches 10 % (computed, ${sim.keys.top10.toFixed(0)} K)`, short: 'top 10%', kind: 'computed' },
+    ].filter(Boolean),
+    seconds: 60,
+    note: 'A temperature scan, not a heating time: each moment is a fully settled state. The scan ends at 4 × the top level’s energy, where the shares are close to their hot limit.',
+  },
+  hudError: false,
+  hudLine: sim => { const P = sim.P; return `lowest ${(100 * P[0]).toFixed(1)} % · middle ${(100 * P[1]).toFixed(1)} % · top ${(100 * P[2]).toFixed(1)} %`; },
+  presets: [
+    { label: 'Evenly spaced levels', values: { ...ALL, gap1: 150, gap2: 150 }, play: true },
+    { label: 'Top level has 3 states', values: { ...ALL, g2: 3 }, play: true },
+    { label: 'Big first step', values: { ...ALL, gap1: 300, gap2: 30 }, play: true },
+  ],
+  texts: { parameters: 'The levels', paramsNote: 'Energies are written as temperatures (E/k_B): 100 K is about 8.6 meV.' },
   model: {
-    legend: ['colour = level (label only)', 'bars = Pᵢ now · curves = Pᵢ(T)', 'equilibrium at each T, not time'],
-    equations: [
-      { caption: 'Canonical (Boltzmann) populations, β = 1/k_BT:', mathml: '<math display="block"><msub><mi>P</mi><mi>i</mi></msub><mo>=</mo><mfrac><mrow><msub><mi>g</mi><mi>i</mi></msub><msup><mi>e</mi><mrow><mo>−</mo><mi>β</mi><msub><mi>E</mi><mi>i</mi></msub></mrow></msup></mrow><mi>Z</mi></mfrac><mo>,</mo><mspace width="0.6em"/><mi>Z</mi><mo>=</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>0</mn></mrow><mn>2</mn></munderover><msub><mi>g</mi><mi>i</mi></msub><msup><mi>e</mi><mrow><mo>−</mo><mi>β</mi><msub><mi>E</mi><mi>i</mi></msub></mrow></msup></math>' },
+    legend: [
+      'bar on each level: chance of finding the system there (computed)',
+      'level heights: energy, to scale; extra lines = extra states',
+      'curves: the same chances against temperature; thin line = now',
+      'the clock is the temperature of the surroundings, not time',
     ],
+    equations: [{ caption: 'Boltzmann distribution over the three levels', mathml: '<math><msub><mi>P</mi><mi>i</mi></msub><mo>=</mo><mfrac><mrow><msub><mi>g</mi><mi>i</mi></msub><msup><mi>e</mi><mrow><mo>−</mo><msub><mi>E</mi><mi>i</mi></msub><mo>/</mo><msub><mi>k</mi><mi>B</mi></msub><mi>T</mi></mrow></msup></mrow><mi>Z</mi></mfrac><mo>,</mo><mspace width="0.6em"/><mi>Z</mi><mo>=</mo><munder><mo>∑</mo><mi>i</mi></munder><msub><mi>g</mi><mi>i</mi></msub><msup><mi>e</mi><mrow><mo>−</mo><msub><mi>E</mi><mi>i</mi></msub><mo>/</mo><msub><mi>k</mi><mi>B</mi></msub><mi>T</mi></mrow></msup></math>' }],
     assumptions: [
-      'A system with exactly three discrete energy levels E₀ = 0, E₁ = Δ₁, E₂ = Δ₁ + Δ₂ and degeneracies g₀, g₁, g₂; any further levels are assumed far above k_BT and are ignored.',
-      'The system is weakly coupled to a heat bath at temperature T and has equilibrated: heating is quasi-static. How fast it relaxes (transition rates, spontaneous emission) is not modelled.',
-      'Level energies do not change with temperature; no interactions between many such systems (independent systems, e.g. a dilute paramagnet or impurity ensemble).',
-      'At any positive temperature the populations per state never invert (Pᵢ/gᵢ always falls with energy); with g all 1 they approach 1/3 each as T → ∞. Population inversion needs a non-equilibrium drive (as in a laser), not heating.',
-      'Default gaps (5 meV and 25 meV, i.e. 58 K and 290 K) are illustrative values chosen to show the middle-level overshoot.',
+      'Three levels only, with fixed energies E₀ = 0, E₁, E₂ and integer numbers of states g₀, g₁, g₂ (a generic model, not a particular atom).',
+      'The system is weakly coupled to large surroundings at temperature T and has fully settled at every temperature (canonical ensemble).',
+      'No heating rate or relaxation time is modelled: the progress axis is a scan through equilibrium states.',
+      'The chances describe one system observed many times, or the fractions of a large collection of identical, independent systems.',
     ],
     conventions: [
-      'Stage, left: vertical axis is energy above E₀ (meV, linear, to scale unless flagged); each level is drawn as gᵢ short segments; the orange bar is k_BT on the same axis.',
-      'Stage, right: the computed Pᵢ(T) curves on a log temperature axis; dots mark the current T, dashed lines the hot limits gᵢ/Σg, and T* the middle-level maximum when it exists.',
-      'Bar length is the level population Pᵢ (probability of finding the system anywhere in that level) on a fixed 0–1 scale; the dashed tick marks its infinite-temperature value gᵢ/Σg.',
-      'Level colours (blue, violet, orange) only identify levels; they are not optical colours.',
-      'Temperature axes in the figures are logarithmic. The "Heat it up" button is a quasi-static parameter scan, not elapsed time.',
+      'Energies are given as temperatures E/k_B in kelvin (1 K ≙ 86.17 µeV ≙ 0.695 cm⁻¹).',
+      'Level heights are to scale of energy, nudged apart only when two levels are closer than a label’s height.',
+      'Curves are drawn through the computed scan points (2400 per run).',
+      'T = 0 K is the ground-state limit (everything in the lowest level).',
     ],
     references: [
-      'C. Kittel and H. Kroemer, Thermal Physics, 2nd ed. (Freeman, 1980), ch. 3: Boltzmann factor, partition function, two-level heat capacity.',
-      'MIT OCW 5.62 Physical Chemistry II (2008), lecture 3: canonical partition function with degeneracy.',
-      'E. S. R. Gopal, Specific Heats at Low Temperatures (Plenum, 1966): the Schottky anomaly.',
-      'E. Tiesinga et al., CODATA 2018, Rev. Mod. Phys. 93, 025010 (2021): exact k_B and e.',
+      'C. Kittel & H. Kroemer, Thermal Physics, 2nd ed. (Freeman, 1980), ch. 3: Boltzmann factor and partition function.',
+      'S. J. Blundell & K. M. Blundell, Concepts in Thermal Physics, 2nd ed. (OUP, 2010): two-level systems and the Schottky anomaly.',
     ],
   },
 });

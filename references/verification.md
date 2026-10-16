@@ -8,7 +8,7 @@ Every page carries evidence for its trust tier. Derive checks from the chosen eq
 |---|---|---|---|
 | Energy conservation | \|E(t) − E₀\| / \|E₀\| over the run | Hamiltonian ODEs, NVE MD, Boris in pure B | ≤1e-8 few-body; ≤1e-4 MD (fluctuates, must not drift) |
 | Momentum / angular momentum | Normalised by Σm\|v\| and Σm\|r\|\|v\| | Isolated systems | ≤1e-10 (round-off level) |
-| Convergence order | Errors at h, h/2, h/4: p = log₂(e₁/e₂) | Every numerical integrator | p within ±0.3 of theoretical order |
+| Convergence order | Errors at h, h/2, h/4: p = log₂(e₁/e₂) | Every numerical integrator | p ≥ theoretical order − 0.3, measured where errors are well above round-off (see *Measuring a convergence order*) |
 | Predictability horizon | Time until h/2 and h/4 runs disagree by 1e-3 × system size | Chaotic systems | Report it; don't hide it |
 | Exact solution | Compare against closed form | Kepler, helix, harmonic oscillator, free wavepacket | Set by the method's known error |
 | Published benchmark | Reproduce a literature outcome | Figure-eight period, Pythagorean ejection, LJ argon equation of state | Matches literature within stated precision |
@@ -30,9 +30,18 @@ Every page carries evidence for its trust tier. Derive checks from the chosen eq
 | Energy *balance* of a driven or damped system (ΔE = W_in − W_lost) | Normalise by the largest energy flow in the run (e.g. the work of one drive), not by a small stored energy; then require the expected convergence order under step refinement |
 | Comparison with an exact solution at the method's resolution | the method's known error at that step size |
 | Comparison with a measurement | its stated uncertainty (often 0.1–5 %) |
-| Convergence order | within ±0.3 of theory |
+| Convergence order | at least theory − 0.3, in the pre-round-off range; higher is fine when explained |
+| Residual of a discretised equation (finite-difference ∂ⱼEᵢⱼ = 0, a discrete Laplacian) | judged by its order under refinement (halve h: the residual falls by 2^p), never by an absolute threshold |
 
 Going further costs tokens without changing any claim. A **differential** measurement (subtract a reference run that shares the systematic error) beats brute-force precision when the effect is tiny (see the Mercury test in `tests/real-world.test.mjs`).
+
+## Measuring a convergence order
+
+- **Pick the step sizes from the error, not from habit.** Use a ladder (h, h/2, h/4, …) where the error is at least ~10³ × the round-off floor (≈ 10⁻¹³ × the quantity's scale). Once the error flattens or grows as h shrinks, round-off dominates: that rung says nothing about the order, so drop it and refine from a coarser start instead.
+- **Too low is a failure** (p < theory − 0.3 in the clean range): the step is ignored, a stage is wrong, or a non-smooth input (a kink, an interpolated table, a switch) limits the order. Find the cause.
+- **Higher than theory is acceptable** when it has a reason: the leading error term cancels by symmetry (a circular orbit, a periodic function under the trapezoid rule), or the integrand is smoother than the method needs. Report the measured value and the reason ("RK4 measured 5.2: the leading error term cancels on this smooth, near-circular orbit"); do not tune the setup until it reads 4.0.
+- Report the ladder you used with the order, so a reader can see it lies in the clean range.
+- A **closed-form** state (the page evaluates an exact solution at t instead of integrating) has no step and no order: verify it against the equation it solves (residual of the ODE at sample times, with its own refinement order when a finite difference is used) and against independent limits.
 
 ## Rules
 

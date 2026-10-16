@@ -151,6 +151,7 @@ function solveE(t, s) {
 }
 
 createInstrument({
+  intro: {"text": "GPS satellites carry atomic clocks. Because they move fast and sit higher above Earth, their clocks tick at a slightly different rate from clocks on the ground, by 38 millionths of a second per day. Without correcting this, GPS positions would drift by kilometres every day.", "watch": ["the two clock effects pull in opposite directions", "the daily drift if nobody corrected it"]},
   title: 'GPS and relativity',
   subtitle: 'Why satellite clocks run 38 µs/day fast: general relativity (+45.8) and special relativity (−7.2)',
   tier: 'validated',
@@ -159,7 +160,7 @@ createInstrument({
   params: PARAMS,
   create: createSim,
   draw, bench,
-  timeUnit: 'h', speed: 1.5, duration: 24,
+  timeUnit: 'h', speed: 0.4, duration: 24,
   // the question is the clock offset per day: one day, with the satellite's orbit marked
   timeline: {
     duration: 24,

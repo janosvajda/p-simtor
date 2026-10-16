@@ -22,15 +22,17 @@
     <button class="psim-iconbtn" id="theme" type="button" aria-label="Toggle theme"></button>
   </header>
   <main class="psim-stage" id="stage">
-    <canvas id="view" aria-label="Orbit view. Drag to pan, shift-drag to tilt, scroll to zoom."></canvas>
-    <div class="psim-hud" aria-live="off">
-      <span class="dim">t</span><b id="hud-t">0</b>
-      <span id="hud-e"></span>
-      <span class="dim" id="hud-dt"></span>
-      <span class="flag" id="hud-flag"></span>
-    </div>
-    <div class="psim-legend" id="legend"></div>
-    <div class="psim-scalebar" id="scalebar"><span></span><em></em></div>
+    <section class="psim-scene">
+      <div class="psim-view">
+        <canvas id="view" aria-label="Orbit view. Drag to pan, shift-drag to tilt, scroll to zoom."></canvas>
+        <div class="psim-scalebar" id="scalebar"><span></span><em></em></div>
+      </div>
+      <div class="psim-clock"><span class="dim">simulated time</span><b id="hud-t">0</b></div>
+      <div class="psim-key">
+        <div class="psim-legend" id="legend"></div>
+        <div class="psim-hud" aria-live="off"><span id="hud-e"></span><span id="hud-dt"></span><span class="flag" id="hud-flag"></span></div>
+      </div>
+    </section>
   </main>
   <aside class="psim-side" id="side"></aside>
 </div>
@@ -114,9 +116,27 @@ const tp = transport({
   onStep: () => { setPlaying(false); stepOnce(); },
   onRestart: () => { rebuild(); },
   onFit: () => view.fit(xNow, { animate: true }),
+  onFullscreen: () => toggleFullscreen(),
   onSpeed: s => { clock.speed = s; },
 });
-stage.append(tp);
+
+// full screen: the view, the player bar and the key fill the screen (CSS fallback where refused)
+const sceneEl = document.querySelector('.psim-scene');
+let pseudoFs = false;
+const isFs = () => pseudoFs || (document.fullscreenElement ?? document.webkitFullscreenElement) === sceneEl;
+function afterFs() { const on = isFs(); sceneEl.classList.toggle('psim-fs', on); tp.setFullscreen(on); requestAnimationFrame(() => view.fit(xNow)); }
+function setPseudo(on) { pseudoFs = on; sceneEl.classList.toggle('psim-pseudo-fs', on); afterFs(); }
+function toggleFullscreen() {
+  if (isFs()) { if (pseudoFs) setPseudo(false); else (document.exitFullscreen ?? document.webkitExitFullscreen)?.call(document); return; }
+  const request = sceneEl.requestFullscreen ?? sceneEl.webkitRequestFullscreen;
+  if (!request) { setPseudo(true); return; }
+  try { Promise.resolve(request.call(sceneEl)).catch(() => setPseudo(true)); } catch { setPseudo(true); }
+}
+addEventListener('fullscreenchange', afterFs);
+addEventListener('webkitfullscreenchange', afterFs);
+// the player bar right under the view: buttons, the clock, speed
+tp.insertBefore(document.querySelector('.psim-clock'), tp.querySelector('.sep'));
+document.querySelector('.psim-view').after(tp);
 
 function setPlaying(p) {
   clock.playing = p;
@@ -125,6 +145,11 @@ function setPlaying(p) {
 
 // ---------------------------------------------------------------- side panel
 const side = document.getElementById('side');
+// what the visitor is looking at, in everyday words (below the animation on phones, first in the panel)
+side.append(el('section', { class: 'psim-intro' },
+  el('b', {}, 'What you are seeing'),
+  el('p', {}, 'Bodies pulling on each other by gravity. Every position is computed step by step from Newton\u2019s law of gravity; the coloured trails are the paths the calculation produced, not drawn curves.'),
+  el('ul', {}, el('li', {}, 'close passes swing the bodies onto new paths'), el('li', {}, 'pick another scenario under Scenario to see a different system'))));
 
 const secScenario = section('Scenario');
 const scenarioSelect = select(
@@ -592,7 +617,8 @@ addEventListener('keydown', e => {
   if (e.code === 'Space') { e.preventDefault(); setPlaying(!clock.playing); }
   else if (e.key === '.') { setPlaying(false); stepOnce(); }
   else if (e.key === 'r' || e.key === 'R') rebuild();
-  else if (e.key === 'f' || e.key === 'F') view.fit(xNow, { animate: true });
+  else if (e.key === 'f' || e.key === 'F') toggleFullscreen();
+  else if (e.key === 'Escape' && pseudoFs) setPseudo(false);
 });
 
 // ---------------------------------------------------------------- boot

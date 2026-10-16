@@ -6,7 +6,10 @@
 //   - Marker radius ∝ m^(1/3) for legibility; bodies are point masses in the model.
 //   - Orthographic projection: lengths in the orbital plane are true to scale.
 
-import { cssVar } from './instrument.mjs';
+import { sceneVar } from './instrument.mjs';
+
+// the view is dark in both page themes: scene colours come from its tokens
+const cssVar = sceneVar;
 
 const TRAIL_CAP = 24000;
 
